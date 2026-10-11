@@ -13344,51 +13344,10 @@ ViT-Ti, while the patch embed came out ${\sim}6\times$ too narrow
 (it divided by the output fan $d\cdot p^2$ rather than the input fan
 $c\cdot p^2$). The smallest model was the worst case.
 
-\emph{What does not match.} Six things, in rough order of how much
-they could matter:
-
-\begin{enumerate}
-\item \textbf{Batch $512$, not DeiT's $1024$.} The learning rate is
-  scaled consistently for it ($5\times 10^{-4}$ at $512$ is DeiT's own
-  $\mathrm{lr} = 5\times10^{-4}\cdot B/512$), so this is a
-  smaller-batch run of the same recipe rather than a mis-tuned one ---
-  but it is not the paper's batch, and repeated augmentation interacts
-  with batch size by construction.
-\item \textbf{Gradient clipping at global norm $1.0$ is ours.} DeiT does
-  not clip: its \texttt{main.py} defaults \texttt{--clip-grad} to
-  \texttt{None}. Ours went in because without it the model collapsed to
-  chance the moment warmup ramped past ${\sim}1.6\times 10^{-4}$ --- but
-  that was observed on the Xavier initialization, before \texttt{vitInit}
-  narrowed the weights $3.6\times$, and whether the collapse survives the
-  init fix is untested. Until it is, the clip stays and is an addition.
-\item \textbf{The GELU is the tanh approximation}, on both paths
-  (Definition~\ref{ax:geluScalar}), where DeiT's is the exact erf form.
-\item \textbf{RandomResizedCrop is TensorFlow's sampler, not
-  torchvision's.} The crop covers $10$--$100\%$ of the image where
-  torchvision's covers $8$--$100\%$, its aspect ratio is drawn uniformly
-  rather than log-uniformly, and a failed draw falls back to the whole
-  image rather than a centre crop. It is what is left of the pipeline's
-  differences: Random-Erasing fills with noise in timm's pixel mode
-  (\texttt{erasingPixel}) and the geometric RandAugment ops resample with
-  a PIL-matched bicubic warp (\texttt{augBicubic}, worst mean $0.094$ of
-  $255$ against PIL), both closed since the first pair.
-\item \textbf{The schedule's shape and the mixing switch.} The learning
-  rate is set per step, warmed up from zero, and annealed over the
-  post-warmup span, where DeiT's scheduler steps once per epoch, warms up
-  from $10^{-6}$, and runs its cosine over all $300$ epochs. Mixup and
-  CutMix alternate step by step, where DeiT draws which one per batch.
-\item \textbf{Smaller things the parity ledger carries.} Evaluation
-  scores the EMA shadow where DeiT scores the live weights --- both are
-  reported above, two tenths apart --- and the shadow's decay is ramped in
-  from the first step where DeiT's is constant; repeated-augmentation copies are spread by a shuffle window
-  rather than placed by an index-level sampler; and the patch-embedding
-  bias starts at zero where PyTorch draws it.
-\end{enumerate}
-
-\noindent These are properties of the recipe and of the shim rather
-than of this trainer, and the verified path inherits them: it runs the
-same $4\times128$, clips at the same $1.0$ inside the render, and streams
-the same \texttt{tf.data} pipeline. But ``matches the paper's number'' and
+\emph{What does not match} is the marker after the side-by-side table;
+the verified path inherits every item, since it runs the same
+$4\times128$, clips at the same $1.0$ inside the render, and streams the
+same \texttt{tf.data} pipeline. ``Matches the paper's number'' and
 ``matches the paper'' are different claims, and only the first is
 established here, on either path.
 
@@ -13509,7 +13468,16 @@ live weights, top-1 / top-5 & 71.86 / 90.88     & 72.15 / 91.11 \\
 \noindent Both columns are ViT-Tiny on the DeiT-Ti recipe, 300 epochs, on
 the same four RTX 3060 cards, scored over the same $50{,}000$ validation
 images. Rows above the first rule differ; rows between the rules are held
-equal by construction.
+equal by construction. \textbf{[TODO: DeiT in five places, on both paths:
+batch $1024$ (accumulated $2\times$ at $512$, exact under LayerNorm), no
+gradient clip, the scheduler stepped once an epoch from $10^{-6}$ over all
+$300$ epochs, Mixup or CutMix drawn per batch, torchvision's crop; plus
+the exact erf GELU, RandAugment's fill at the image mean, the $3\times$
+repeats placed by an index-level sampler, the EMA decay constant from
+step $0$, the patch-embedding bias drawn as PyTorch draws it, and the live
+weights as the headline where the EMA shadow is. One rerun of both halves
+takes all of it --- \texttt{vit-default-jax-4gpu} /
+\texttt{vit-default-emabf16-4gpu}, ${\sim}46 + 65$\,h.]}
 
 \medskip\noindent\textbf{The two paths agree within $0.34$ points on top-1 and
 $0.21$ on top-5}, inside the 95\% Wilson interval ($\pm0.39$ at
@@ -13679,10 +13647,10 @@ embedding and head --- and their references are
 accumulating $4\times128$ to DeiT's $512$. ViT-B's EMA render peaks at
 $13.19$\,GiB, over the $11.68$\,GiB default arena, so its job raises the
 allocator fraction to $0.97$ ($15.11$\,GiB); S fits the default at $10.27$.
-Still out, as for Tiny: the exact erf GELU, DeiT's batch of $1024$, its
-per-epoch schedule and per-batch Mixup/CutMix switch, and torchvision's
-crop sampler; the clip at $1.0$ stays in, and the EMA shadow is what is
-scored. Neither has run.
+
+\noindent\textbf{[TODO: as Tiny's; neither has run ---\\
+\texttt{vits-default-jax-4gpu} / \texttt{vits-default-emabf16-4gpu},\\
+\texttt{vitb-accum-jax-4gpu} / \texttt{vitb-default-emabf16-4gpu}.]}
 
 \subsection*{What Part 1 has established}
 
