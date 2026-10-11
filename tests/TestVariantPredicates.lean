@@ -647,6 +647,7 @@ private def erfSpellings : List String :=
   let refused (act : IO Unit) : IO Bool := do
     try act; pure false catch _ => pure true
   let mut pairs := 0
+  let mut erfs := 0
   for slug in ["vitin", "vitsin", "vitbin", "convnextin", "convnextsin", "convnextbin"] do
     for e in ← System.FilePath.readDir dir do
       let f := e.fileName
@@ -659,6 +660,7 @@ private def erfSpellings : List String :=
           throw <| IO.userError s!"{slug} {variant}: no forward at {fwd}"
         checkGeluWorld variant s!"{dir}/{f}" fwd
         pairs := pairs + 1
+        if erfOn variant then erfs := erfs + 1
   let ts (v : String) := s!"{dir}/convnextin_{v}_train_step.mlir"
   let mixed ← [
       checkGeluWorld "emadpwxclipdroperfbf16" (ts "emadpwxclipdroperfbf16") s!"{dir}/convnextin_fwd.mlir",
@@ -667,7 +669,9 @@ private def erfSpellings : List String :=
     ].mapM refused
   unless mixed.all id do
     throw <| IO.userError s!"checkGeluWorld accepted a mixed pair: refusals {mixed}"
-  unless pairs == 100 do
-    throw <| IO.userError s!"{pairs} train steps paired, expected 100 (50 at each form)"
-  IO.println s!"✓ checkGeluWorld: {pairs} train steps score through a forward at their own form; \
+  -- 51 at each form since the ViT-Ti DeiT-recipe pair (`vitin_emadp256x4wxdropeps0000001{erf,}bf16`,
+  -- 2026-10-11); a new ImageNet ViT / ConvNeXt render lands with its twin, so the two counts stay equal.
+  unless pairs == 102 && erfs == 51 do
+    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 102 (51 at each form)"
+  IO.println s!"✓ checkGeluWorld: {pairs} train steps ({erfs} erf, {pairs - erfs} tanh) score through a forward at their own form; \
 3 mixed pairs refused"
