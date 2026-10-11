@@ -45,7 +45,8 @@ img[60:120, 80:160] = [250, 10, 40]
 pil = Image.fromarray(img)
 # The fill PIL is given is the shim's own: timm's _FILL (128) unless the recipe sets `_AA_FILL`
 # (autoAugmentV0: img_mean, as timm's create_transform passes it). The bilinear control keeps 128.
-fill = tuple(int(v) for v in ns["bicubic"]["_AA_FILL"].numpy()) if "_AA_FILL" in ns["bicubic"] else (128, 128, 128)
+_fill_name = next((k for k in ("_AA_FILL", "_RA_FILL") if k in ns["bicubic"]), None)   # AA v0 / randAugmentFillMean
+fill = tuple(int(v) for v in ns["bicubic"][_fill_name].numpy()) if _fill_name else (128, 128, 128)
 print(f"fill {fill}")
 kw = dict(resample=Image.BICUBIC, fillcolor=fill)
 W, H = pil.size

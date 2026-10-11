@@ -1732,6 +1732,20 @@ never written. Scoring the .bin alone would normalise by zeros."
     IO.println s!"  ⚠ val is {nScored} of ImageNet's 50,000 — this is NOT over timm's denominator"
   (← IO.getStdout).flush
 
+
+/-- timm's `CosineLRScheduler` with `t_in_epochs` (DeiT, the RSB tiers), the rate at 0-based epoch
+    `ep`, held for the whole epoch: `warmupLRInit + t·(baseLR − warmupLRInit)/warmupEpochs` for
+    `t < warmupEpochs`, else `minLR + ½(baseLR − minLR)(1 + cos(π t / epochs))` — the cosine over ALL
+    `epochs` counted from epoch 0 (`warmup_prefix = False`). The reference emits the same two lines
+    (`TrainConfig.schedPerEpoch`);
+    [`scripts/gates/sched_timm_gate.py`](https://github.com/brettkoonce/lean4-mlir/blob/main/scripts/gates/sched_timm_gate.py)
+    checks both against timm itself, this one through
+    [`tests/TestSchedPerEpoch.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestSchedPerEpoch.lean). -/
+def schedPerEpochLR (baseLR minLR warmupLRInit : Float) (warmupEpochs epochs ep : Nat) : Float :=
+  let t := ep.toFloat
+  if ep < warmupEpochs then warmupLRInit + t * (baseLR - warmupLRInit) / warmupEpochs.toFloat
+  else minLR + (baseLR - minLR) * 0.5 * (1.0 + Float.cos (3.14159265358979 * t / epochs.toFloat))
+
 /-- **Scheduled AdamW driver** — threads the first/second moment buffers as one packed
     `[θ|m|v]` param blob through the generic FFI (`n_params = 3k`), with a runtime LR and
     bias correction. `lr`/`bc₁`/`bc₂` ride as three rank-0 scalar params in the blob
@@ -1760,7 +1774,14 @@ def VerifiedNet.trainAdamSched (net : VerifiedNet) (cfg : VerifiedConfig) (dataD
     (expStaircase : Bool := false)
     -- `minLR`: the cosine's floor, timm's `lr_min` — the reference's `TrainConfig.minLR`
     -- (DeiT `--min-lr 1e-5`). `lr = minLR + (baseLR − minLR)·½(1 + cos …)`; 0 is the old curve.
-    (minLR : Float := 0.0) : IO Unit := do
+    (minLR : Float := 0.0)
+    -- `emaWarmup`: the shadow's decay ramps in as `min(decay, (1+t)/(10+t))`; `false` is a constant
+    -- decay from step 0, timm's `ModelEma` as DeiT scores it — the reference's `TrainConfig.emaWarmup`.
+    (emaWarmup : Bool := true)
+    -- `schedPerEpoch` / `warmupLRInit`: timm's `CosineLRScheduler` with `t_in_epochs` (DeiT, the RSB
+    -- tiers) — the rate set once per epoch, warmup linear from `warmupLRInit` (timm `--warmup-lr`),
+    -- the cosine over ALL `cfg.epochs` counted from epoch 0 — the reference's `TrainConfig.schedPerEpoch`.
+    (schedPerEpoch : Bool := false) (warmupLRInit : Float := 0.0) : IO Unit := do
   -- A FINISHED RUN, LAUNCHED AGAIN. The resume below picks a reaped run up where it stopped; once
   -- the `.epoch` marker has reached `cfg.epochs` there is nothing left to train, and resuming runs
   -- zero epochs and prints `done` with no accuracy — a second `lake run cifar` looked like a
@@ -2574,7 +2595,12 @@ gate's control, not a configuration.")
       -- 5004-step epoch, which is exactly why it has to come off the reference rather than a guess.
       --
       -- Spelled `exp ∘ log` rather than with `^` because that is what the next two lines already do.
-      let lrt := if gstep ≤ warmSteps then baseLR * gstep / warmSteps
+      let lrt := if schedPerEpoch then
+                   -- timm's `CosineLRScheduler` as DeiT runs it (`t_in_epochs`): the reference's
+                   -- `schedPerEpoch` branch (`jax/Jax/Codegen.lean`), formula for formula, with `t` the
+                   -- 0-based epoch — `ep` here, `epoch` there — held for the whole epoch.
+                   schedPerEpochLR baseLR minLR warmupLRInit warmupEpochs cfg.epochs ep
+                 else if gstep ≤ warmSteps then baseLR * gstep / warmSteps
                  else if expDecayRate > 0.0 then
                    -- The staircase is TF's `exponential_decay(staircase=True)` on the GLOBAL step
                    -- (warmup only overrides it), the continuous form counts from warmup's end.
@@ -2613,7 +2639,8 @@ gate's control, not a configuration.")
       -- An 80-epoch Imagenette
       -- run is 23,600 steps = 2.4 tau at decay 0.9999 — squarely inside that regime.
       -- `t` is the reference's 0-BASED `_global_step`, i.e. `gstep - 1` here.
-      let emaD := min emaDecay ((gstep - 1.0 + 1.0) / (gstep - 1.0 + 10.0))
+      let emaD := if emaWarmup then min emaDecay ((gstep - 1.0 + 1.0) / (gstep - 1.0 + 10.0))
+                  else emaDecay   -- constant from step 0 (timm `ModelEma`, as DeiT scores)
       if emaOn then
         -- **THE SHADOW MOVES ONCE PER OPTIMIZER STEP, NOT ONCE PER MICRO-BATCH**, and under
         -- accumulation those differ by a factor of `k`. The reference EMAs after the `train_step`

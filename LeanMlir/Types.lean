@@ -582,6 +582,13 @@ structure TrainConfig where
       `lr = minLR + (LR − minLR)·½(1 + cos(π·prog))`. ImageNet streaming path only; 0 emits the
       old formula byte for byte. The verified peer is `trainAdamSched`'s `minLR`. -/
   minLR : Float := 0.0
+  /-- timm's `CosineLRScheduler` as DeiT and the RSB tiers run it (`t_in_epochs`): the rate is set
+      ONCE PER EPOCH, warmup is linear from `warmupLRInit` (timm `--warmup-lr 1e-6`) to the peak
+      over `warmupEpochs`, and the cosine runs over ALL `epochs` counted from epoch 0
+      (`warmup_prefix = False`), floored at `minLR`. Off keeps the per-step warmup-then-cosine
+      byte for byte. The verified peer is `trainAdamSched`'s `schedPerEpoch` / `warmupLRInit`. -/
+  schedPerEpoch : Bool := false
+  warmupLRInit  : Float := 0.0
   augment      : Bool := false
   labelSmoothing : Float := 0.0
   /-- Focal loss (Lin et al. 2017): replace CE loss with
@@ -695,6 +702,10 @@ structure TrainConfig where
   mixupAlpha     : Float := 0.8
   useCutmix      : Bool  := false
   cutmixAlpha    : Float := 1.0
+  /-- With both on, the per-batch choice between them: timm's `Mixup(switch_prob = p)` draws CutMix
+      with probability `p` (DeiT and the RSB tiers: 0.5), seeded from (seed, step). 0 keeps the
+      strict step-parity alternation byte for byte, on the trainer and on the shim's `_mix` alike. -/
+  mixSwitchProb  : Float := 0.0
   /-- KNN-Mixup: pair each sample with its nearest neighbor in the batch
       (pixel-space L2) rather than a random partner. Closer manifold
       mixing → harder, more realistic intermediate samples. Mutually
@@ -752,6 +763,10 @@ structure TrainConfig where
       (timm `AugmentOp`'s `p`, TF's `prob_to_apply`). 0.5 is timm's default and keeps every
       generated file byte-identical; MobileNetV4's paper recipe uses 0.7. -/
   randAugmentProb : Float := 0.5
+  /-- The geometric RandAugment ops fill the out-of-image region with timm's `img_mean`
+      (`round(255·mean)` = (124, 116, 104)) instead of the paper code's grey 128. Needs
+      `augBicubic` (the bilinear path takes a scalar fill). Off keeps the 128 byte for byte. -/
+  randAugmentFillMean : Bool := false
   /-- AutoAugment, ImageNet learned policy (Cubuk et al. 2018) — the full 25
       sub-policies, applied per-image after crop/hflip on the imagenet (tfds)
       path. Unlike `useRandAugment` (color subset only), this includes the
@@ -772,6 +787,10 @@ structure TrainConfig where
       is unchanged, so an epoch sees ~1/K as many unique images ×K views, per
       the RSB recipe. 1 disables. -/
   repeatedAug    : Nat   := 1
+  /-- Keep the `repeatedAug` copies ADJACENT, as timm's `RASampler` places them (the K views of an
+      image land in the same optimizer step): the re-shuffle after the repeat is dropped. Off keeps
+      the spread-across-batches stream byte for byte. -/
+  repeatedAugAdjacent : Bool := false
   /-- Train/test resolution split (RSB-A3): TRAIN at `trainRes`×`trainRes`, EVAL at
       the spec's `imageH/imageW`. 0 = no split (train and eval same resolution). The
       generated `forward` infers the square resolution from the flat input length, so
@@ -817,6 +836,10 @@ structure TrainConfig where
       per epoch (SWA), well below GPU step time. -/
   useEMA         : Bool  := false
   emaDecay       : Float := 0.9999
+  /-- The shadow's decay ramps in as `min(decay, (1+t)/(10+t))` (TF's warmup-corrected EMA), so a
+      short run's shadow does not hold its init; `false` is a CONSTANT decay from step 0, timm's
+      `ModelEma` as DeiT scores it. The verified peer is `trainAdamSched`'s `emaWarmup`. -/
+  emaWarmup      : Bool  := true
   useSWA         : Bool  := false
   /-- First epoch (zero-indexed) that contributes to the SWA average.
       Typical recipe: 0.75 × epochs, e.g. epoch 60 of 80. -/
@@ -908,6 +931,10 @@ structure TrainConfig where
       `precision = [DEFAULT, DEFAULT]` f32 `dot_general` lowers to. Off by default, so every
       other trainer is byte-identical. -/
   f32StemHead : Bool := false
+  /-- `evaluate()` scores through an f32 forward, as the verified path does and as timm scores:
+      `mm` / `convdt` read a module-level dtype that the evaluator swaps for the duration of its
+      once-traced `eval_batch`. Off keeps the bf16 training forward at eval, byte for byte. -/
+  evalF32 : Bool := false
   /-- Running batch-norm statistics. When true, the JAX imagenet
       trainer tracks per-BN-layer running mean/var (EMA of batch stats,
       momentum `bnMomentum`) threaded through `forward` as `has_aux`, and EVAL

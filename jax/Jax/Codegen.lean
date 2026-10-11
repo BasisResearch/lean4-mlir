@@ -523,8 +523,12 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
     -- geometric RandAugment sampler; emit it if either is on.
     (if cfg.useAutoAugment || (cfg.useRandAugment && cfg.randAugmentGeometric)
        then autoAugmentPy ++ "\n" else "") ++
+    (if cfg.randAugmentFillMean && cfg.augBicubic && cfg.useRandAugment && cfg.randAugmentGeometric then
+       "# timm's RandAugment fills the out-of-image region with img_mean = round(255 * mean) (randAugmentFillMean)\n" ++
+       "_RA_FILL = tf.constant([124.0, 116.0, 104.0])\n\n" else "") ++
     (if cfg.augBicubic && (cfg.useAutoAugment || (cfg.useRandAugment && cfg.randAugmentGeometric))
-       then bicubicGeometryPy (if cfg.useAutoAugment && cfg.autoAugmentV0 then "_AA_FILL" else "128.0") ++ "\n\n" else "") ++
+       then bicubicGeometryPy (if cfg.useAutoAugment && cfg.autoAugmentV0 then "_AA_FILL"
+                               else if cfg.randAugmentFillMean then "_RA_FILL" else "128.0") ++ "\n\n" else "") ++
     (if cfg.useAutoAugment && cfg.autoAugmentV0 then aaV0Py ++ "\n\n" else "") ++
     (if cfg.randAugmentInc then "_RA_INC = True   # timm inc1 (gap D)\n\n" else "") ++
     (if cfg.useRandAugment && cfg.randAugmentGeometric then randAugmentPyAt cfg.randAugmentProb ++ "\n" else "") ++
@@ -732,7 +736,11 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
       "        # so an epoch sees ~1/K unique images ×K views (the RSB recipe).\n" ++
       "        ds = ds.flat_map(lambda ex: tf.data.Dataset.from_tensors(ex).repeat(" ++
         toString cfg.repeatedAug ++ "))\n" ++
-      "        ds = ds.shuffle(8192, seed=43, reshuffle_each_iteration=True)\n"
+      (if cfg.repeatedAugAdjacent then
+        "        # repeatedAugAdjacent: no re-shuffle — the K copies stay adjacent, in one optimizer\n" ++
+        "        # step, as timm's RASampler places them (its 3 indices of an image are consecutive).\n"
+       else
+        "        ds = ds.shuffle(8192, seed=43, reshuffle_each_iteration=True)\n")
      else "") ++
     "    ds = ds.map(_pp, num_parallel_calls=tf.data.AUTOTUNE)\n" ++
     -- `drop_remainder` is TRUE ON TRAIN AND FALSE ON VALIDATION, and the asymmetry is the
@@ -2946,7 +2954,8 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
     "# (ENet-B0 350ep = 175 tau) are unaffected either way; short/grad-accum tiers need it.\n" ++
     "@jit\n" ++
     "def ema_update(ema, params, step):\n" ++
-    "    d = jnp.minimum(EMA_DECAY, (1.0 + step) / (10.0 + step))\n" ++
+    (if cfg.emaWarmup then "    d = jnp.minimum(EMA_DECAY, (1.0 + step) / (10.0 + step))\n"
+     else "    d = EMA_DECAY   # emaWarmup off: constant from step 0 (timm ModelEma, as DeiT scores)\n") ++
     "    return jax.tree.map(lambda e, p: d * e + (1.0 - d) * p, ema, params)\n\n"
    else "") ++
   -- LABEL SMOOTHING BELONGS ON THE ONE-HOT, and it lives here in ONE place because both
@@ -3034,6 +3043,9 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
   "    return correct1, correct5, loss\n\n" ++
   "def evaluate(params, images, labels, batch_size=512):\n" ++
   "    batch_size = (batch_size // n_devices) * n_devices or n_devices\n" ++
+  (if cfg.evalF32 then
+    "    _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32   # evalF32: see mm\n" ++
+    "    print('  eval: f32 forward (evalF32)')\n" else "") ++
   -- TWO EVAL HAZARDS, both invisible in the reported number and both handled here.
   --
   -- (1) THE VAL SET IS SORTED BY CLASS. With BATCH-norm eval (`runningBN := false`) each 512-image
@@ -3072,6 +3084,7 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
   "        total_loss += float(l)\n" ++
   "        n_batches += 1\n" ++
   "    evaluated = len(labels)\n" ++
+  (if cfg.evalF32 then "    _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT\n" else "") ++
   "    return correct1, correct5, evaluated, total_loss / max(n_batches, 1)\n\n"
 
 private def emitDataLoadCalls (ds : DatasetKind) (dataDir : String) (spec : NetSpec) : String :=
@@ -3220,7 +3233,9 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
   "    print(\"backend=\" + str(jax.default_backend()) + \"  devices=\" + str(jax.devices()))\n" ++
   (if cfg.repeatedAug > 1 then
     "    print(\"repeated-aug=" ++ toString cfg.repeatedAug ++
-      "x (RSB / timm RASampler approximation: stream-level repeat+shuffle)\")\n"
+      (if cfg.repeatedAugAdjacent
+       then "x (timm RASampler placement: the copies adjacent, in one optimizer step)\")\n"
+       else "x (RSB / timm RASampler approximation: stream-level repeat+shuffle)\")\n")
    else "") ++
   "    print(\"Starting training...\")\n\n" ++
   "    _init_load = os.environ.get('LEAN_MLIR_INIT_LOAD')\n" ++
@@ -3298,7 +3313,20 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
   "        _start_epoch = _global_step // steps_per_epoch\n" ++
   "        print(f'Resumed full train state from {_resume}: step={_global_step} (epoch {_start_epoch + 1}/{EPOCHS})')\n" ++
   "    for epoch in range(_start_epoch, EPOCHS):\n" ++
-  (if hasCosine || cfg.expLRDecayRate > 0.0 then
+  (if cfg.schedPerEpoch then
+    -- timm's `CosineLRScheduler` with `t_in_epochs` (DeiT, the RSB tiers): `warmup_lr_init + t·(lr −
+    -- warmup_lr_init)/warmup_t` for `t < warmup_t`, else `lr_min + ½(lr − lr_min)(1 + cos(π t/t_initial))`
+    -- with `t` the epoch index from 0 and `t_initial = epochs` (`warmup_prefix = False`).
+    "        # timm CosineLRScheduler, t_in_epochs (DeiT / RSB): set ONCE PER EPOCH — warmup linear from\n" ++
+    "        # warmup_lr, then the cosine over ALL EPOCHS counted from epoch 0 (warmup_prefix=False),\n" ++
+    "        # floored at lr_min. schedPerEpoch: the per-step form is not emitted.\n" ++
+    "        if epoch < " ++ warmup ++ ":\n" ++
+    "            lr = jnp.float32(" ++ toString cfg.warmupLRInit ++ " + epoch * (LR - " ++
+      toString cfg.warmupLRInit ++ ") / " ++ warmup ++ ")\n" ++
+    "        else:\n" ++
+    "            lr = jnp.float32(" ++ toString cfg.minLR ++ " + 0.5 * (LR - " ++ toString cfg.minLR ++
+      ") * (1 + np.cos(np.pi * epoch / EPOCHS)))\n"
+   else if hasCosine || cfg.expLRDecayRate > 0.0 then
     "        # Per-step LR (computed inside the inner loop below)\n" ++
     "        pass\n"
    else
@@ -3335,7 +3363,7 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
      else
        "            prog = _global_step / max(total_steps, 1)\n" ++
        cosLine "            "
-   if hasCosine || hasExpLR then
+   if (hasCosine || hasExpLR) && !cfg.schedPerEpoch then
     "            # Per-step LR (warmup → " ++ (if hasExpLR then "exp-decay" else "cosine") ++ ")\n" ++
     (if cfg.warmupEpochs > 0 then
       "            warmup_steps = steps_per_epoch * " ++ warmup ++ "\n" ++
@@ -3346,10 +3374,18 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
    else "") ++
   (let mk := "jax.random.fold_in(jax.random.PRNGKey(" ++ toString cfg.seed ++ "), _global_step)"
    if cfg.useMixup && cfg.useCutmix then
-     "            if _global_step % 2 == 0:\n" ++
-     "                x, y = _mixup(x, y, " ++ mk ++ ")\n" ++
-     "            else:\n" ++
-     "                x, y = _cutmix(x, y, " ++ mk ++ ")\n"
+     (if cfg.mixSwitchProb > 0.0 then
+       "            # timm Mixup(switch_prob): CutMix with probability p per batch, seeded from (seed, step)\n" ++
+       "            if np.random.default_rng([" ++ toString cfg.seed ++ ", _global_step]).random() < " ++
+         toString cfg.mixSwitchProb ++ ":\n" ++
+       "                x, y = _cutmix(x, y, " ++ mk ++ ")\n" ++
+       "            else:\n" ++
+       "                x, y = _mixup(x, y, " ++ mk ++ ")\n"
+      else
+       "            if _global_step % 2 == 0:\n" ++
+       "                x, y = _mixup(x, y, " ++ mk ++ ")\n" ++
+       "            else:\n" ++
+       "                x, y = _cutmix(x, y, " ++ mk ++ ")\n")
    else if cfg.useMixup then
      "            x, y = _mixup(x, y, " ++ mk ++ ")\n"
    else if cfg.useCutmix then
@@ -3394,6 +3430,14 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
     "        ev_t0 = time.time()\n" ++
     "        if _do_val:\n" ++
     "            print(\"  Running validation ...\")\n" ++
+    (if cfg.evalF32 then
+      "            # evalF32: score through an f32 forward. `eval_batch` is traced HERE, on its first call, so\n" ++
+      "            # the swap must precede any trace of it — asserted, not assumed.\n" ++
+      "            if not getattr(eval_batch, '_f32_traced', False):\n" ++
+      "                assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'\n" ++
+      "                eval_batch._f32_traced = True\n" ++
+      "            _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32\n" ++
+      "            print('  eval: f32 forward (evalF32)')\n" else "") ++
     "            v_iter = prefetch_to_device(\n" ++
     "                iter(build_imagenet_iter('validation', " ++ valBatch ++ ", training=False, augment=False)),\n" ++
     "                data_sharding)\n" ++
@@ -3404,6 +3448,7 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
     "                total   += y.shape[0]\n" ++
     "                total_eval_loss += float(l)\n" ++
     "                v_batches += 1\n" ++
+    (if cfg.evalF32 then "            _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT\n" else "") ++
     "        acc1 = correct1 / max(total, 1)\n" ++
     "        acc5 = correct5 / max(total, 1)\n" ++
     "        val_secs = time.time() - ev_t0\n" ++
@@ -3423,6 +3468,14 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
    else
     "        # Validation pass: rebuild iterator each epoch (non-repeating).\n" ++
     "        print(\"  Running validation ...\")\n" ++
+    (if cfg.evalF32 then
+      "        # evalF32: score through an f32 forward. `eval_batch` is traced HERE, on its first call, so\n" ++
+      "        # the swap must precede any trace of it — asserted, not assumed.\n" ++
+      "        if not getattr(eval_batch, '_f32_traced', False):\n" ++
+      "            assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'\n" ++
+      "            eval_batch._f32_traced = True\n" ++
+      "        _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32\n" ++
+      "        print('  eval: f32 forward (evalF32)')\n" else "") ++
     "        ev_t0 = time.time()\n" ++
     "        v_iter = prefetch_to_device(\n" ++
     "            iter(build_imagenet_iter('validation', " ++ valBatch ++ ", training=False, augment=False)),\n" ++
@@ -3439,6 +3492,7 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
     "            total   += y.shape[0]\n" ++
     "            total_eval_loss += float(l)\n" ++
     "            v_batches += 1\n" ++
+    (if cfg.evalF32 then "        _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT\n" else "") ++
     "        acc1 = correct1 / max(total, 1)\n" ++
     "        acc5 = correct5 / max(total, 1)\n" ++
     "        print(\"[Epoch \" + str(epoch+1) + \"] lr=\" + str(round(float(lr), 6)) +\n" ++
@@ -3654,14 +3708,27 @@ private def emitDtype (cfg : TrainConfig) : String :=
   "# returns fp32; master weights / LayerNorm / softmax stay fp32.\n" ++
   "# Helps matmul-bound nets (ViT/transformers ~2.7-3.6x on gfx1100).\n" ++
   "DT = " ++ dt ++ "\n" ++
-  "def mm(a, b):\n" ++
-  "    return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)\n\n" ++
+  (if cfg.evalF32 then
+    "# evalF32: `evaluate()` scores in f32. `mm` / `convdt` read these one-element lists at TRACE\n" ++
+    "# time; `eval_batch` is traced once, on its first call, inside `evaluate()` while they hold\n" ++
+    "# float32, and `train_step` under DT. Neither retraces: fixed shapes, and `take` is traced.\n" ++
+    "_DT_CUR = [DT]\n" ++
+    "def mm(a, b):\n" ++
+    "    return (a.astype(_DT_CUR[0]) @ b.astype(_DT_CUR[0])).astype(jnp.float32)\n\n"
+   else
+    "def mm(a, b):\n" ++
+    "    return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)\n\n") ++
   "# Conv compute dtype. Independent of DT: convs stay fp32 on MIOpen/gfx1100\n" ++
   "# (bf16 conv is slower there), but opt into bf16 on cuDNN/CUDA where tensor\n" ++
   "# cores make bf16 conv ~1.6x faster. CONV_DT=float32 -> casts are no-ops.\n" ++
   "CONV_DT = " ++ convDt ++ "\n" ++
-  "def convdt(x):\n" ++
-  "    return x.astype(CONV_DT)\n\n"
+  (if cfg.evalF32 then
+    "_CONV_DT_CUR = [CONV_DT]\n" ++
+    "def convdt(x):\n" ++
+    "    return x.astype(_CONV_DT_CUR[0])\n\n"
+   else
+    "def convdt(x):\n" ++
+    "    return x.astype(CONV_DT)\n\n")
 
 /-- Generate a complete, self-contained JAX training script from a Lean spec. -/
 def generate (spec : NetSpec) (cfg : TrainConfig) (ds : DatasetKind) (dataDir : String) : String :=
@@ -3938,8 +4005,13 @@ def generateShim (spec : NetSpec) (cfg : TrainConfig) : String :=
   "        # Seeded from (SHIM_SEED, step), like `augSeed`: an unseeded or wall-clock-seeded\n" ++
   "        # draw makes the run unreproducible and breaks every gate that replays a batch.\n" ++
   "        rng = np.random.default_rng([_SHIM_SEED, step])\n" ++
-  "        # `both` alternates per step, matching the reference's `if _global_step % 2 == 0`.\n" ++
-  "        cut = (_MIX_MODE == 'cutmix') or (_MIX_MODE == 'both' and (step % 2) == 1)\n" ++
+  (if cfg.mixSwitchProb > 0.0 then
+    "        # `both` draws CutMix with probability p per batch (timm Mixup switch_prob), as the reference.\n" ++
+    "        cut = (_MIX_MODE == 'cutmix') or (_MIX_MODE == 'both' and rng.random() < " ++
+      toString cfg.mixSwitchProb ++ ")\n"
+   else
+    "        # `both` alternates per step, matching the reference's `if _global_step % 2 == 0`.\n" ++
+    "        cut = (_MIX_MODE == 'cutmix') or (_MIX_MODE == 'both' and (step % 2) == 1)\n") ++
   "        if not cut:\n" ++
   "            lam = np.float32(rng.beta(_MIX_A, _MIX_A))\n" ++
   "            om = np.float32(1.0) - lam\n" ++
