@@ -8439,7 +8439,15 @@ epochs, on the same four RTX 3060 cards, scored over the same $50{,}000$
 validation images. Rows above the first rule differ; rows between the
 rules are held equal by construction, the BatchNorm group included: the
 reference normalizes over the global $256$ under its mesh, and the
-verified render all-reduces to the same $256$.
+verified render all-reduces to the same $256$. \textbf{[TODO: TF-slim in
+three places, on both paths: weight decay off the depthwise kernels,
+slim's Inception colour distortion, RMSProp's learning rate inside the
+momentum term; slim's truncated-normal initialization ($\sigma = 0.09$)
+against He-uniform; and the pair above predates the depthwise fan-in init
+($2/k^2$) on the verified path, the suspect for its $-0.51$. One rerun of
+both halves takes all of it --- \texttt{mnv2-full-jax-4gpu} /
+\texttt{mnv2-default-4gpu}, ${\sim}38 + 66$\,h. The sixteen workers of
+$96$ stay four replicas of $64$.]}
 
 \medskip\noindent\textbf{The two paths differ by $0.51$ points on top-1
 and $0.42$ on top-5}, outside the 95\% Wilson interval ($\pm0.40$ at
@@ -8798,7 +8806,14 @@ scored over the same $50{,}000$ validation images under the same
 protocol. Rows above the first rule differ; rows between the rules are
 held equal by construction, the BatchNorm group included: the reference
 normalizes over the $512$-image shard its accumulation hands each step,
-and the verified render all-reduces to the same $512$.
+and the verified render all-reduces to the same $512$. \textbf{[TODO: the
+paper's tier --- $500$ epochs, wd $0.1$, dropout $0.2$, RandAugment $m15$
+at $p\,0.7$, drop-path $0.075$ --- exists on both paths and has not run:
+\texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, ${\sim}112 +
+95$\,h. Still out of it: the paper's $256^2$ (ours $224$),
+\texttt{timm}'s \texttt{inc1} magnitude mappings, BN decay $0.9$, the
+drop-path ramp over all $23$ blocks, the verified depthwise init; and both
+tiers scored at \texttt{timm}'s $256$ / $1.0$.]}
 
 \medskip\noindent\textbf{The two paths agree to $0.11$ points on top-1
 and $0.16$ on top-5}, inside the 95\% Wilson interval ($\pm0.37$ at $77\%$ on $50{,}000$ images), at one seed each. The
@@ -8856,27 +8871,16 @@ $\Delta$              & $-2.19$ & $+4.40$ & $+1.24$ & $+0.48$ & $+0.37$ & $+0.20
 \noindent One recipe, two paths to XLA, scored every five epochs over
 all $50{,}000$ validation images.
 
-\medskip\noindent\textbf{[TODO, 500 epochs.]} The tier above is detuned by
-construction, at wd $0.05$ against the paper's $0.1$, dropout $0.1$ against
-$0.2$, RandAugment $m9$ at $p\,0.5$ against $m15$ at $p\,0.7$, no
-drop-path against $0.075$, $224$
+\medskip\noindent The tier above is detuned by construction, at wd $0.05$
+against the paper's $0.1$, dropout $0.1$ against $0.2$, RandAugment $m9$
+at $p\,0.5$ against $m15$ at $p\,0.7$, no drop-path against $0.075$, $224$
 against $256$ and $100$ epochs against $500$, so its $76.57\%$ and
 $76.68\%$ are not a reproduction of $79.9\%$. Both curves are flat over
 their last ten epochs; the remaining points live in the regularization and
-the length. The paper tier exists on both paths and has not run:
-\texttt{mnv4-full-jax-4gpu} and \texttt{mnv4-full-4gpu}, the latter on
-\texttt{mnv4in\_accdp8x128wxdropdowd01bf16} --- wd $0.1$, dropout $0.2$,
-RandAugment $m15$ at $p\,0.7$, drop-path $0.075$ ramped over the 21 UIB
-blocks, $500$ epochs. Timed on four cards, the schedule is about $100$
-hours on either path: $2.3$--$2.4$\,s an optimizer step on the reference
-(JAX), $100$--$105$ hours, and $2.3$\,s on the verified path (PJRT), $100$
-hours. Both paths above score the EMA shadow, which the paper's Conv-M
-recipe does not carry; the tie stands, since both columns carry it, and the
-\texttt{full} pair drops it, scoring the live weights as the paper does. It
-trains at $224$ against the paper's $256$, and two smaller gaps stay open
-with it: the drop-path ramp runs over the 21 UIB blocks where
-\texttt{timm}'s runs over all 23, and the BatchNorm running statistics
-decay at $0.99$ against \texttt{timm}'s $0.9$.
+the length, and the paper's tier is the marker above. Both paths above
+score the EMA shadow, which the paper's Conv-M recipe does not carry; the
+tie stands, since both columns carry it, and the \texttt{full} pair drops
+it, scoring the live weights as the paper does.
 
 \chapter{EfficientNet}
 \label{chap:se}
