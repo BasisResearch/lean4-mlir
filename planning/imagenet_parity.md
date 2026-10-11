@@ -591,7 +591,11 @@ quest. Each of those launches now carries X1–X6.
 (f9b2f74b). R50-2018: JAX with the fp32 head and BN 0.9 at 76.796 / 93.360 (9917fb34), verified with
 zero-γ at 77.090 / 93.362 (2e725277). R50-A3: JAX at the BCE threshold 0.2, zero-γ, BN 0.9 and the fp32
 head at 77.742 / 93.650 (691ce4b4), verified at 77.914 / 93.712 (b955f62f). They carry X3, X4 and D14,
-plus the BN-decay row from §9.4. They do not carry F1, F3 or F4 (§10).
+plus the BN-decay row from §9.4. They do not carry F1, F4 or F5 (§10; A3 has no repeated augmentation, so F3
+does not apply). Ch 5 follows them (2026-10-11): both pair tables, every curve, the milestone rows, the
+A3-vs-timm "still out" list, the A2/A1 ledger (torchvision's crop moved to "in"), ch 8's and the Bestiary's
+cites. ⚠ The two verified RESULTS.md "only zero-γ / only two settings moved" readings miss that the shims
+also moved (`aa974a95`: torchvision's crop on 2018, crop + bicubic geometry on A3), so neither is an ablation.
 
 ## 10. Paper-faithful: what "faithful" means and the work left (planned 2026-10-11)
 

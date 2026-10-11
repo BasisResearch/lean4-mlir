@@ -143,7 +143,8 @@ def resnet50ImagenetConfigShort : TrainConfig :=
       testCropRatio := 0.95     -- A3: eval @224, center-crop ratio 0.95
       -- timm's A3 ran at 0.2 too: "you'll have to add --bce-target-thresh 0.2 as that was
       -- hardcoded when those runs were done" (rwightman, pytorch-image-models discussion #924).
-      -- The landed A3 pair (78.26 / 78.33) trained without it, on both paths.
+      -- The August/September A3 pair (78.26 / 78.33) trained without it, on both paths; the
+      -- 2026-10 rerun pair (77.74 / 77.91, the book's) carries it.
       bceTargetThresh := some 0.2 }
 
 /-- **The 2018 recipe** — the ResNet-50 side of the blueprint's A3-vs-2018 recipe diff

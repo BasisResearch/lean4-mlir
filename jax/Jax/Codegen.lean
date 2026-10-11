@@ -1710,7 +1710,7 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
       -- U(±1/sqrt(fan_in)), so R50's 2048→1000 head is emitted at 0.0444
       -- against 0.0221 — 2× too wide, on every ResNet/MobileNet/EfficientNet.
       -- Fixing it moves the training distribution for nets that have LANDED
-      -- numbers (R50 78.26/77.91/77.07, R34 74.16), so it needs its own A/B
+      -- numbers (R50 77.74/77.91/77.09, R34 74.14), so it needs its own A/B
       -- and its own re-run, not a silent ride-along.
       if cfg.vitInit || cfg.cnxInit then
         code := code ++ emitDenseInitTimm s!"Dense {fi}→{fo} (head)" fi fo
