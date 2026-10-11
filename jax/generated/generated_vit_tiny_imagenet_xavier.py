@@ -433,20 +433,20 @@ def prefetch_to_device(it, sharding, depth=2):
 # returns fp32; master weights / LayerNorm / softmax stay fp32.
 # Helps matmul-bound nets (ViT/transformers ~2.7-3.6x on gfx1100).
 DT = jnp.bfloat16
-# evalF32: `evaluate()` scores in f32. `mm` / `convdt` read these one-element lists at TRACE
-# time; `eval_batch` is traced once, on its first call, inside `evaluate()` while they hold
-# float32, and `train_step` under DT. Neither retraces: fixed shapes, and `take` is traced.
-_DT_CUR = [DT]
+# evalF32: `evaluate()` and the validation loop score in f32 by rebinding the module globals
+# DT / CONV_DT around the eval forward. `mm` / `convdt` read them at TRACE time; `eval_batch` is
+# traced once, on its first call, while they hold float32, and `train_step` under DT. Neither
+# retraces: fixed shapes, and `take` is traced. The names stay the module's, so a script that
+# sets `mod.DT = jnp.float32` (scripts/parity/vit_timm_parity.py) still gets the f32 forward.
 def mm(a, b):
-    return (a.astype(_DT_CUR[0]) @ b.astype(_DT_CUR[0])).astype(jnp.float32)
+    return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)
 
 # Conv compute dtype. Independent of DT: convs stay fp32 on MIOpen/gfx1100
 # (bf16 conv is slower there), but opt into bf16 on cuDNN/CUDA where tensor
 # cores make bf16 conv ~1.6x faster. CONV_DT=float32 -> casts are no-ops.
 CONV_DT = jnp.float32
-_CONV_DT_CUR = [CONV_DT]
 def convdt(x):
-    return x.astype(_CONV_DT_CUR[0])
+    return x.astype(CONV_DT)
 
 # ═══════════════════════════════════════════════════════════════════════
 #  Conv / Pool helpers
@@ -1859,8 +1859,10 @@ def eval_batch(params, x, y, take):
     return correct1, correct5, loss
 
 def evaluate(params, images, labels, batch_size=512):
+    global DT, CONV_DT
     batch_size = (batch_size // n_devices) * n_devices or n_devices
-    _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32   # evalF32: see mm
+    _dt_saved = (DT, CONV_DT)
+    DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
     print('  eval: f32 forward (evalF32)')
     _p = np.random.default_rng(12345).permutation(len(labels))
     images, labels = images[_p], labels[_p]
@@ -1884,7 +1886,7 @@ def evaluate(params, images, labels, batch_size=512):
         total_loss += float(l)
         n_batches += 1
     evaluated = len(labels)
-    _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT
+    DT, CONV_DT = _dt_saved
     return correct1, correct5, evaluated, total_loss / max(n_batches, 1)
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -2072,7 +2074,8 @@ if __name__ == "__main__":
             if not getattr(eval_batch, '_f32_traced', False):
                 assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'
                 eval_batch._f32_traced = True
-            _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32
+            _dt_saved = (DT, CONV_DT)
+            DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
             print('  eval: f32 forward (evalF32)')
             v_iter = prefetch_to_device(
                 iter(build_imagenet_iter('validation', BATCH_SIZE, training=False, augment=False)),
@@ -2084,7 +2087,7 @@ if __name__ == "__main__":
                 total   += y.shape[0]
                 total_eval_loss += float(l)
                 v_batches += 1
-            _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT
+            DT, CONV_DT = _dt_saved
         acc1 = correct1 / max(total, 1)
         acc5 = correct5 / max(total, 1)
         val_secs = time.time() - ev_t0

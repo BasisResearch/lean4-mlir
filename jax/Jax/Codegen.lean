@@ -3042,9 +3042,11 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
   "    correct5 = jnp.sum((jnp.sum(logits > true_logit, axis=1) < 5) & keep)\n" ++
   "    return correct1, correct5, loss\n\n" ++
   "def evaluate(params, images, labels, batch_size=512):\n" ++
+  (if cfg.evalF32 then "    global DT, CONV_DT\n" else "") ++
   "    batch_size = (batch_size // n_devices) * n_devices or n_devices\n" ++
   (if cfg.evalF32 then
-    "    _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32   # evalF32: see mm\n" ++
+    "    _dt_saved = (DT, CONV_DT)\n" ++
+    "    DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm\n" ++
     "    print('  eval: f32 forward (evalF32)')\n" else "") ++
   -- TWO EVAL HAZARDS, both invisible in the reported number and both handled here.
   --
@@ -3084,7 +3086,7 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
   "        total_loss += float(l)\n" ++
   "        n_batches += 1\n" ++
   "    evaluated = len(labels)\n" ++
-  (if cfg.evalF32 then "    _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT\n" else "") ++
+  (if cfg.evalF32 then "    DT, CONV_DT = _dt_saved\n" else "") ++
   "    return correct1, correct5, evaluated, total_loss / max(n_batches, 1)\n\n"
 
 private def emitDataLoadCalls (ds : DatasetKind) (dataDir : String) (spec : NetSpec) : String :=
@@ -3436,7 +3438,8 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
       "            if not getattr(eval_batch, '_f32_traced', False):\n" ++
       "                assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'\n" ++
       "                eval_batch._f32_traced = True\n" ++
-      "            _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32\n" ++
+      "            _dt_saved = (DT, CONV_DT)\n" ++
+      "            DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm\n" ++
       "            print('  eval: f32 forward (evalF32)')\n" else "") ++
     "            v_iter = prefetch_to_device(\n" ++
     "                iter(build_imagenet_iter('validation', " ++ valBatch ++ ", training=False, augment=False)),\n" ++
@@ -3448,7 +3451,7 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
     "                total   += y.shape[0]\n" ++
     "                total_eval_loss += float(l)\n" ++
     "                v_batches += 1\n" ++
-    (if cfg.evalF32 then "            _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT\n" else "") ++
+    (if cfg.evalF32 then "            DT, CONV_DT = _dt_saved\n" else "") ++
     "        acc1 = correct1 / max(total, 1)\n" ++
     "        acc5 = correct5 / max(total, 1)\n" ++
     "        val_secs = time.time() - ev_t0\n" ++
@@ -3474,7 +3477,8 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
       "        if not getattr(eval_batch, '_f32_traced', False):\n" ++
       "            assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'\n" ++
       "            eval_batch._f32_traced = True\n" ++
-      "        _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32\n" ++
+      "        _dt_saved = (DT, CONV_DT)\n" ++
+      "        DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm\n" ++
       "        print('  eval: f32 forward (evalF32)')\n" else "") ++
     "        ev_t0 = time.time()\n" ++
     "        v_iter = prefetch_to_device(\n" ++
@@ -3492,7 +3496,7 @@ private def emitMainImagenet (spec : NetSpec) (cfg : TrainConfig) (dataDir : Str
     "            total   += y.shape[0]\n" ++
     "            total_eval_loss += float(l)\n" ++
     "            v_batches += 1\n" ++
-    (if cfg.evalF32 then "        _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT\n" else "") ++
+    (if cfg.evalF32 then "        DT, CONV_DT = _dt_saved\n" else "") ++
     "        acc1 = correct1 / max(total, 1)\n" ++
     "        acc5 = correct5 / max(total, 1)\n" ++
     "        print(\"[Epoch \" + str(epoch+1) + \"] lr=\" + str(round(float(lr), 6)) +\n" ++
@@ -3709,26 +3713,20 @@ private def emitDtype (cfg : TrainConfig) : String :=
   "# Helps matmul-bound nets (ViT/transformers ~2.7-3.6x on gfx1100).\n" ++
   "DT = " ++ dt ++ "\n" ++
   (if cfg.evalF32 then
-    "# evalF32: `evaluate()` scores in f32. `mm` / `convdt` read these one-element lists at TRACE\n" ++
-    "# time; `eval_batch` is traced once, on its first call, inside `evaluate()` while they hold\n" ++
-    "# float32, and `train_step` under DT. Neither retraces: fixed shapes, and `take` is traced.\n" ++
-    "_DT_CUR = [DT]\n" ++
-    "def mm(a, b):\n" ++
-    "    return (a.astype(_DT_CUR[0]) @ b.astype(_DT_CUR[0])).astype(jnp.float32)\n\n"
-   else
-    "def mm(a, b):\n" ++
-    "    return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)\n\n") ++
+    "# evalF32: `evaluate()` and the validation loop score in f32 by rebinding the module globals\n" ++
+    "# DT / CONV_DT around the eval forward. `mm` / `convdt` read them at TRACE time; `eval_batch` is\n" ++
+    "# traced once, on its first call, while they hold float32, and `train_step` under DT. Neither\n" ++
+    "# retraces: fixed shapes, and `take` is traced. The names stay the module's, so a script that\n" ++
+    "# sets `mod.DT = jnp.float32` (scripts/parity/vit_timm_parity.py) still gets the f32 forward.\n"
+   else "") ++
+  "def mm(a, b):\n" ++
+  "    return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)\n\n" ++
   "# Conv compute dtype. Independent of DT: convs stay fp32 on MIOpen/gfx1100\n" ++
   "# (bf16 conv is slower there), but opt into bf16 on cuDNN/CUDA where tensor\n" ++
   "# cores make bf16 conv ~1.6x faster. CONV_DT=float32 -> casts are no-ops.\n" ++
   "CONV_DT = " ++ convDt ++ "\n" ++
-  (if cfg.evalF32 then
-    "_CONV_DT_CUR = [CONV_DT]\n" ++
-    "def convdt(x):\n" ++
-    "    return x.astype(_CONV_DT_CUR[0])\n\n"
-   else
-    "def convdt(x):\n" ++
-    "    return x.astype(CONV_DT)\n\n")
+  "def convdt(x):\n" ++
+  "    return x.astype(CONV_DT)\n\n"
 
 /-- Generate a complete, self-contained JAX training script from a Lean spec. -/
 def generate (spec : NetSpec) (cfg : TrainConfig) (ds : DatasetKind) (dataDir : String) : String :=

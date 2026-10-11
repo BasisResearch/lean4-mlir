@@ -1,0 +1,73 @@
+ViT-Tiny (ImageNet, bf16) · Lean 4 → JAX
+  Patch(3→192,16x16) → Trans(12x[3h,192]) → 192→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.001000  batch_size=1024 (4 devices x 256)  epochs=300  params=5717416
+steps_per_epoch=40  total_steps=12000
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+repeated-aug=3x (timm RASampler placement: the copies adjacent, in one optimizer step)
+Starting training...
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 1] lr=1e-06 loss(train_avg)=6.9441 val_top1=45/50000 (0.0009) val_top5=0.0047 val_loss=6.9459  [24.4s train, 21.4s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.000201 loss(train_avg)=6.9267 val_top1=48/50000 (0.001) val_top5=0.0047 val_loss=6.9456  [15.4s train, 18.7s val]
+  step 100/12000  loss=6.8888  lr=0.0004  (863.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 3] lr=0.000401 loss(train_avg)=6.8996 val_top1=51/50000 (0.001) val_top5=0.0047 val_loss=6.945  [13.9s train, 21.8s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 4] lr=0.0006 loss(train_avg)=6.8841 val_top1=51/50000 (0.001) val_top5=0.0048 val_loss=6.9444  [12.5s train, 20.6s val]
+  step 200/12000  loss=6.8393  lr=0.0008  (807.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 5] lr=0.0008 loss(train_avg)=6.8834 val_top1=50/50000 (0.001) val_top5=0.0048 val_loss=6.9436  [12.7s train, 19.8s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 6] lr=0.000999 loss(train_avg)=6.8763 val_top1=51/50000 (0.001) val_top5=0.0049 val_loss=6.9427  [12.5s train, 20.2s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 7] lr=0.000999 loss(train_avg)=6.8709 val_top1=53/50000 (0.0011) val_top5=0.0049 val_loss=6.9416  [12.5s train, 20.2s val]
+  step 300/12000  loss=6.8381  lr=0.001  (844.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 8] lr=0.000999 loss(train_avg)=6.8619 val_top1=55/50000 (0.0011) val_top5=0.005 val_loss=6.9405  [12.6s train, 19.9s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 9] lr=0.000998 loss(train_avg)=6.8351 val_top1=56/50000 (0.0011) val_top5=0.0051 val_loss=6.9393  [12.4s train, 20.1s val]
+  step 400/12000  loss=6.8366  lr=0.001  (811.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 10] lr=0.000998 loss(train_avg)=6.8382 val_top1=59/50000 (0.0012) val_top5=0.005 val_loss=6.9381  [12.6s train, 19.5s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 11] lr=0.000997 loss(train_avg)=6.8192 val_top1=61/50000 (0.0012) val_top5=0.0051 val_loss=6.9368  [12.6s train, 20.0s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 12] lr=0.000997 loss(train_avg)=6.8185 val_top1=58/50000 (0.0012) val_top5=0.0051 val_loss=6.9354  [12.5s train, 20.0s val]
+  step 500/12000  loss=6.8519  lr=0.001  (831.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 13] lr=0.000996 loss(train_avg)=6.8065 val_top1=58/50000 (0.0012) val_top5=0.0054 val_loss=6.934  [12.6s train, 19.6s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 14] lr=0.000995 loss(train_avg)=6.7907 val_top1=60/50000 (0.0012) val_top5=0.0054 val_loss=6.9325  [12.5s train, 19.8s val]
+  step 600/12000  loss=6.8326  lr=0.00099  (810.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 15] lr=0.000995 loss(train_avg)=6.7892 val_top1=58/50000 (0.0012) val_top5=0.0054 val_loss=6.931  [12.6s train, 19.6s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 16] lr=0.000994 loss(train_avg)=6.7893 val_top1=59/50000 (0.0012) val_top5=0.0055 val_loss=6.9294  [12.4s train, 19.7s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 17] lr=0.000993 loss(train_avg)=6.7671 val_top1=63/50000 (0.0013) val_top5=0.0055 val_loss=6.9278  [12.4s train, 19.8s val]
+  step 700/12000  loss=6.6717  lr=0.00099  (823.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 18] lr=0.000992 loss(train_avg)=6.7376 val_top1=61/50000 (0.0012) val_top5=0.0056 val_loss=6.9262  [12.5s train, 20.1s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 19] lr=0.000991 loss(train_avg)=6.7561 val_top1=61/50000 (0.0012) val_top5=0.0057 val_loss=6.9245  [12.4s train, 19.6s val]

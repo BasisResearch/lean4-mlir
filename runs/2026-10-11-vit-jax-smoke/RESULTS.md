@@ -31,3 +31,17 @@ The swap precedes the first `eval_batch` trace (the emitted assertion did not fi
 validation reuses the f32 trace (no retrace), and epoch 2's rate is timm's second warmup value,
 1e-6 + (1e-3 − 1e-6)/5. Killed after epoch 2. `trainer_smoke.patch` / `trainer_evalpath.patch` are
 against the committed `jax/generated/generated_vit_tiny_imagenet.py` (this recipe's emit).
+
+## Eval-path smoke, second emit (`evalpath2.log`)
+The first emit held the eval dtype in one-element lists (`_DT_CUR`) that `mm` / `convdt` read, which
+broke `scripts/parity/vit_timm_parity.py` in CI (it forces f32 by rebinding the module's `DT`; the
+parity forward ran in bf16, 1.6e-3 against timm). The emit now rebinds the module globals `DT` /
+`CONV_DT` around the eval forward instead. Same patch, same reading, run to epoch 4 and killed:
+
+    eval: f32 forward (evalF32)
+    [Epoch 1] lr=1e-06 loss(train_avg)=6.9441 val_top1=45/50000 (0.0009) ...  [24.4s train, 21.4s val]
+    eval: f32 forward (evalF32)
+    [Epoch 2] lr=0.000201 loss(train_avg)=6.9267 val_top1=48/50000 (0.001) ...  [15.4s train, 18.7s val]
+
+The same 45 / 48 correct as the first emit, so the f32 scoring forward is the one the first smoke
+scored through; the assertion did not fire; parity is back at 5.7e-7.
