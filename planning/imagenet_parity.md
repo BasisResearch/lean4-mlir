@@ -405,7 +405,7 @@ the 100-epoch pair (76.57 / 92.98 JAX, 76.68 / 93.14 verified, +0.11); `\imagene
 row added; MNv4 in the Track-4 table; the 500-epoch TODO stays. §5.2 decision (a), the user,
 2026-09-27: EMA goes — the book carries `[TODO: remove EMA]` next to it; the next pair scores live weights.
 
-## 7. Runs (schedule once the net's code is closed; each needs the user's word)
+## 7. Runs (schedule once the net's code is closed; each needs the user's word) — superseded by §10.4 (2026-10-11)
 
 | # | run | absorbs | est. | box |
 |---|---|---|---|---|
@@ -586,3 +586,78 @@ closed a row the table is followed by a `[TODO: …]` marker, not prose. Listing
 Not run on this box: the 10-01 ViT-Ti rerun (may have run on the 3060 box), the B0 TF-recipe pair (R5),
 the ConvNeXt-T EMA verified run (R2; its smoke + resume passed 09-25), and every S/B and A2/A1 side
 quest. Each of those launches now carries X1–X6.
+
+**2026-10-11: the five ResNet reruns have landed** (all ties). R34 JAX with the fp32 head: 74.140 / 91.820
+(f9b2f74b). R50-2018: JAX with the fp32 head and BN 0.9 at 76.796 / 93.360 (9917fb34), verified with
+zero-γ at 77.090 / 93.362 (2e725277). R50-A3: JAX at the BCE threshold 0.2, zero-γ, BN 0.9 and the fp32
+head at 77.742 / 93.650 (691ce4b4), verified at 77.914 / 93.712 (b955f62f). They carry X3, X4 and D14,
+plus the BN-decay row from §9.4. They do not carry F1, F3 or F4 (§10).
+
+## 10. Paper-faithful: what "faithful" means and the work left (planned 2026-10-11)
+
+The goal: every book entry can say its recipe is the paper's. Some deviations are forced by four
+cards and can only be disclosed. So the standard is **every recipe item matches the paper (or the
+named reference implementation where the paper is silent), apart from a short named list of scale
+deviations, and a gate checks this**, not prose. §7's run table is superseded by §10.4.
+
+### 10.1 Phase 0: the standard for each net (decisions, no code)
+
+| net | source of truth | accepted, disclosed deviations (draft) |
+|---|---|---|
+| R34, R50-2018 | torchvision reference recipe | — |
+| R50-A3 | RSB (arXiv 2110.00476) + timm | the landed pair predates F1/F3/F4 (§10.3) |
+| MNv2 | Sandler et al. 2018 + TF-slim (`models/research/slim`) | 16×96 async → 4×64 sync |
+| MNv4-Conv-M | paper Tables 9–10; timm where the paper is silent | — (500 ep is affordable: ~95 h verified, ~112 h JAX) |
+| B0 | TF EfficientNet | — |
+| ConvNeXt-T | official repo | batch 4096 by accumulation k16 (no BN, so exact), not a deviation |
+| ViT-Ti | DeiT | batch 1024 by accumulation k2 (LN only, exact), not a deviation |
+
+### 10.2 Phase 1: a recipe manifest + gate (code; makes the claim checkable)
+
+One file per net with these columns: item, paper value, citation, our value per path, and `match` or
+`disclosed`. A gate reads the emitted shim, the `TrainConfig` and the render constants, and fails on any
+row that is neither. The manifest replaces §2 and §9 as the source of truth, and the book's "differs"
+tables are generated from it (this ends the "held equal by construction" drift §9.4–§9.5 found).
+Write it together with Phase 0. Expect a few rows §2/§9 do not list (e.g. MNv2's TF truncated-normal
+σ .09 init against our He-uniform).
+
+### 10.3 Phase 2: the F-items, one serial thread (host and shim side, no proof work)
+
+F1 mixup/cutmix p 0.5 switch; F3 `RASampler`-style repeats; F4 timm's per-epoch schedule with warmup
+from 1e-6 (timm-recipe nets only); F5 RandAugment fill + 0-bit Posterize; F6 `floor` in the
+timm-protocol resize; F7 ConvNeXt min lr 1e-6; F8 JAX scores in f32. Each lands with a differential gate
+against timm or torchvision, as `crop_sampler_gate.py` did for F2. All of them sit in the shared
+emitter (`Jax/Codegen.lean`) and the shims, so they go in one pass before any per-net code.
+
+### 10.4 Phase 3 (per-net code) and Phase 4 (runs)
+
+| order | net | code left | size | rerun (JAX + verified, conf ETAs) |
+|---|---|---|---|---|
+| 1 | MNv2 | D11 depthwise wd exclusion (new variant), D12 slim colour distortion (shim), D13 lr inside momentum (render), TF init if the manifest says so; F8 only | M | ~38 + ~66 h. ⚠ `mnv2-default-4gpu.conf` needs a `CKPT_TAG` first, or it resumes the epoch-350 checkpoint on the 3060 box |
+| 2 | ViT-Ti | D2 clip off, D19 live-weight scoring, k2 accumulation; Phase 2 | S | ~46 + ~65 h |
+| 3 | MNv4 `full` | D7–D10, EMA off; Phase 2 | S each | ~112 + ~95 h |
+| 4 | ConvNeXt-T | D2 clip off, k16 accumulation, D15 (rerun JAX too); Phase 2 | S–M | ~77 + ~107 h |
+| 5 | B0 | **D3 SAME padding on strided depthwise moves the T2/T3 ties**; D6 classifier init; D13 | M–L, the only proof work | ~47 + ~80 h |
+| — | R34 / R50 | heavy-ball `opt_step_tie` row (§9.4); D16 Imagenette zero-γ | S | none; A3 discloses F1/F3/F4 |
+
+About 750 box-hours of runs, roughly 2.5 weeks across both boxes if nothing fails. Put the long ones
+(MNv4 `full`, ConvNeXt) at the front of the queue once their code is green.
+
+**Why MNv2 first.** It is a TF-slim recipe (inception crop, no mixup, no RandAugment, no torchvision
+crop), so Phase 2 touches only its scoring (F8). Its rerun also settles §6.5's open −0.51: the head
+(X3) and the depthwise init (D4) are already matched at HEAD. The alternative is to launch the MNv2
+pair at HEAD now, which answers the −0.51 question but is not faithful (D11–D13), so a second ~100 h
+rerun would follow. The plan is to wait the couple of days for D11–D13 and run once.
+
+### 10.5 Phase 5: book
+
+Each chapter's pair table is generated from the manifest and reads "paper recipe, except: …". Ch 5 goes
+first (the five reruns above) as the template. Scores use timm's protocol (D18), and Appendix A follows.
+
+### 10.6 Splitting the work
+
+* Phase 0 + 1 together, first: no GPU, and writing the manifest finds the real remaining list.
+* Phase 2 is one serial thread (shared emitter).
+* Phase 3 runs in parallel by net. Apart from `Train.lean` the files are mostly disjoint (shared-tree
+  claims pattern). B0's D3 starts early because it is the long pole.
+* Phase 4 launches per net as soon as its manifest is green. No waiting for the whole fleet.
