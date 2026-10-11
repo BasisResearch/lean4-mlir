@@ -11045,11 +11045,9 @@ The elements of the paper recipe, wired and on:
 $4\mathrm{e}{-}3$@4096 official value linearly scaled to batch 256)
 over a 20-epoch warmup. No deviation from the paper's architecture remains
 but the GELU, which is the tanh approximation on both paths
-(Definition~\ref{ax:geluScalar}). The recipe departs from the paper's in
-four places: it runs at batch $256$ rather than $4096$, adds a global-norm
-clip at $1.0$, alternates Mixup and CutMix step by step where the official
-code draws which one per batch, and crops through TensorFlow's sampler
-rather than torchvision's. The run below is the full 300-epoch tier,
+(Definition~\ref{ax:geluScalar}); where the recipe departs from the
+paper's is the marker after the side-by-side table. The run below is the
+full 300-epoch tier,
 trained and evaluated on an antialiased bicubic resize and scored at the
 paper's protocol, $224$ with a $0.875$ centre crop.
 
@@ -11242,7 +11240,14 @@ on the same four RTX 3060 cards, scored over the same $50{,}000$
 validation images. Rows above the first rule differ; rows between the
 rules are held equal by construction. The reference's headline earlier
 is its EMA; its row here is its raw weights, because that is the arm the
-verified path has.
+verified path has. \textbf{[TODO: the official recipe in four places, on
+both paths: batch $4096$ (accumulated $16\times$ at $256$, exact without
+BatchNorm), no gradient clip, Mixup or CutMix drawn per batch,
+torchvision's crop; plus the exact erf GELU, the cosine floor at
+$10^{-6}$, RandAugment's fill at the image mean, and scoring at
+\texttt{timm}'s $288$ / $1.0$. The EMA pair has not run; one rerun of both
+halves takes all of it --- \texttt{cnx-default-jax-4gpu} /
+\texttt{cnx-default-emabf16-4gpu}, ${\sim}77 + 107$\,h.]}
 
 \medskip\noindent\textbf{The two paths agree to $0.21$ points on top-1
 and $0.11$ on top-5}, inside the 95\% Wilson interval ($\pm0.34$ at $81\%$ on $50{,}000$ images), at one seed each. This is
@@ -11445,9 +11450,11 @@ reference's global $256$, with drop-path at the paper's $0.4$ for S and
 $0.5$ for B, EMA scored, \texttt{cnxInit} on both paths, and
 \texttt{\_fwd\_s288} forwards for \texttt{timm}'s test protocol. At $64$ per
 replica S peaks at $6.80$\,GiB and B at $9.53$ of the $11.68$\,GiB arena, so
-B needs no accumulation render. Still out, as for ConvNeXt-T: the paper's
-batch of $4096$, the exact erf GELU, the per-batch Mixup/CutMix switch and
-torchvision's crop sampler; the clip at $1.0$ stays in. Neither has run.
+B needs no accumulation render.
+
+\noindent\textbf{[TODO: as T's; neither has run ---\\
+\texttt{cnxs-default-jax-4gpu} / \texttt{cnxs-default-emabf16-4gpu},\\
+\texttt{cnxb-default-jax-4gpu} / \texttt{cnxb-default-emabf16-4gpu}.]}
 
 \chapter{Vision Transformer}
 \label{chap:attention}
