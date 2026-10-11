@@ -6415,13 +6415,15 @@ two below.
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
-4$\times$ 3060 (CUDA) & bf16 & $\sim$9.9 min & 90 & $\sim$14.8 hr & $\mathbf{74.14\%}$ & $\mathbf{91.82\%}$ \\
+4$\times$ 3060 (CUDA) & bf16 & $\sim$9.9 min & 90 & $\sim$14.8 hr & $\mathbf{74.14\%}$ & $\mathbf{91.83\%}$ \\
 \hline
 \end{tabular}
 \end{center}
 
-\noindent Global batch 256 as $4 \times 64$ replicas, scored over all
-$50{,}000$ validation images.
+\noindent Global batch 256 as $4 \times 64$ replicas; the final checkpoint
+scored over all $50{,}000$ validation images through an fp32 forward, as
+the verified path and \texttt{timm} score, and the run's own bf16
+evaluation lands within $0.01$ of it.
 
 \begin{center}
 \begin{tikzpicture}
@@ -6592,7 +6594,7 @@ optimizer           & SGD, momentum $0.9$      & SGD, momentum $0.9$ \\
 schedule            & cosine, 5-epoch warmup   & cosine, 5-epoch warmup \\
 \hline
 \textbf{val top-1}  & $\mathbf{74.14\%}$       & $\mathbf{74.17\%}$ \\
-\textbf{val top-5}  & $\mathbf{91.82\%}$       & $\mathbf{91.89\%}$ \\
+\textbf{val top-5}  & $\mathbf{91.83\%}$       & $\mathbf{91.89\%}$ \\
 \hline
 \end{tabular}
 \end{center}
@@ -6600,17 +6602,18 @@ schedule            & cosine, 5-epoch warmup   & cosine, 5-epoch warmup \\
 \noindent Both columns are ResNet-34 on the 2018 recipe, 90 epochs, scored
 over the same $50{,}000$ validation images under the same protocol. Rows
 above the first rule differ; rows between the rules are held equal by
-construction. \textbf{[TODO: score the reference through an fp32 forward,
-as the verified path does; the recipe is torchvision's and nothing else is
-owed.]}
+construction.
 
 \medskip\noindent\textbf{The two paths agree to $0.03$ points on top-1 and
-$0.07$ on top-5}, and that is well inside what one run can resolve. At $n = 50{,}000$ the 95\% Wilson interval is $\pm0.38$ points on either top-1
+$0.06$ on top-5}, and that is well inside what one run can resolve. At $n = 50{,}000$ the 95\% Wilson interval is $\pm0.38$ points on either top-1
 --- $[73.75, 74.52]$ for the reference, $[73.78, 74.55]$ for the verified
 path --- so the gap in the table is a fraction of the interval, and
 at this scale a gap under about $0.4$ points is not yet a result in either
 direction. That is the floor every side-by-side table in this book is read
-against.
+against. Paired on the same images the reading is the same: the two
+checkpoints disagree on $5{,}398$ of them, $2{,}692$ one way and $2{,}706$
+the other, and McNemar's exact test puts $p = 0.86$ on the $14$ images
+between them.
 
 \medskip\noindent Both paths normalize over the global $256$: the
 reference's \texttt{@jit} mesh reduces the batch statistics across its
@@ -6732,13 +6735,16 @@ at \texttt{timm}'s $0.2$ threshold, RandAugment, and train@160 / eval@224.
 \hline
 GPU & Recipe & BN group & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
-4$\times$ 3060 (bf16) & 2018   & 256 (global)   & $\sim$17.2 min & 90  & $\sim$25.8 hr & $\mathbf{76.80\%}$ & $\mathbf{93.36\%}$ \\
-4$\times$ 3060 (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$8.9 min  & 100 & $\sim$14.8 hr & $\mathbf{77.74\%}$ & $\mathbf{93.65\%}$ \\
+4$\times$ 3060 (bf16) & 2018   & 256 (global)   & $\sim$17.2 min & 90  & $\sim$25.8 hr & $\mathbf{76.76\%}$ & $\mathbf{93.39\%}$ \\
+4$\times$ 3060 (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$8.9 min  & 100 & $\sim$14.8 hr & $\mathbf{77.75\%}$ & $\mathbf{93.65\%}$ \\
 \hline
 \end{tabular}
 \end{center}
 
-\noindent Both rows scored over all $50{,}000$ validation images. A3
+\noindent Both rows are the final checkpoints scored over all $50{,}000$
+validation images through an fp32 forward, as the verified path and
+\texttt{timm} score; the trainers' own bf16 evaluation lands within $0.04$
+of them. A3
 normalizes per $512$-image micro-batch because it accumulates
 $4 \times 512$ to reach $2048$; the 2018 row is a true global batch of
 $256$. That is \emph{ghost} batch norm (Hoffer, Hubara \& Soudry 2017,
@@ -6747,9 +6753,9 @@ statistics come from a fixed sub-batch rather than the whole batch, here
 as a side effect of accumulation rather than a choice, and the A3 render
 below reproduces it by accumulating the same way. The
 architecture lever: against ResNet-34's $74.14\%$ on the same
-recipe, the bottleneck is worth $+2.66$ points. The recipe lever: A3 adds
-$+0.95$ on the same network, in less wall clock, because it trains at
-$160^2$. It lands $0.36$ under the paper's $78.1\%$ and $0.31$ under the
+recipe, the bottleneck is worth $+2.62$ points. The recipe lever: A3 adds
+$+0.99$ on the same network, in less wall clock, because it trains at
+$160^2$. It lands $0.35$ under the paper's $78.1\%$ and $0.30$ under the
 $78.05\%$ that \texttt{timm}'s own \texttt{resnet50.a3\_in1k} weights
 score under this protocol, both within one run's $\pm0.36$; what still
 separates this A3 from \texttt{timm}'s is the marker after the
@@ -6791,7 +6797,7 @@ epoch~35 the two trade the lead, and A3 holds it outright only from
 epoch~88. At the matched epoch~90 it leads by $0.45$ ($77.25$ against
 $76.80$), and its last ten epochs of anneal add the rest. The schedules are
 different lengths, so at a shared epoch the two cosines are at different
-points in their decay; the endpoints are what the $+0.95$ is measured from.
+points in their decay; the endpoints are what the $+0.99$ is measured from.
 
 \prosesection{The verified path (PJRT)}
 \label{sec:r50_pjrt}
@@ -6863,8 +6869,8 @@ BN statistic group  & 256 (global)             & 256 (global) \\
 steps/epoch         & 5{,}004                  & 5{,}004 \\
 optimizer           & SGD, momentum $0.9$      & SGD, momentum $0.9$ \\
 train / eval res    & 224 / 224                & 224 / 224 \\
-\textbf{val top-1}  & $\mathbf{76.80\%}$       & $\mathbf{77.09\%}$ \\
-\textbf{val top-5}  & $\mathbf{93.36\%}$       & $\mathbf{93.36\%}$ \\
+\textbf{val top-1}  & $\mathbf{76.76\%}$       & $\mathbf{77.09\%}$ \\
+\textbf{val top-5}  & $\mathbf{93.39\%}$       & $\mathbf{93.36\%}$ \\
 \hline
 \multicolumn{3}{@{}l}{\textbf{RSB-A3} (100 ep)} \\
 effective batch     & 2048                     & 2048 \\
@@ -6873,7 +6879,7 @@ BN statistic group  & 512 (Ghost-BN)           & 512 (Ghost-BN) \\
 steps/epoch         & 625                      & 625 \\
 optimizer           & LAMB                     & LAMB \\
 train / eval res    & 160 / 224                & 160 / 224 \\
-\textbf{val top-1}  & $\mathbf{77.74\%}$       & $\mathbf{77.91\%}$ \\
+\textbf{val top-1}  & $\mathbf{77.75\%}$       & $\mathbf{77.91\%}$ \\
 \textbf{val top-5}  & $\mathbf{93.65\%}$       & $\mathbf{93.71\%}$ \\
 \hline
 \end{tabular}
@@ -6886,17 +6892,27 @@ construction. The BatchNorm statistic group is the setting that changes
 between the blocks, on both paths at once: the 2018 recipe normalizes over
 the global $256$, and A3 over the $512$-image micro-batch its accumulation
 hands each step --- ghost batch norm, on the reference and the verified
-path alike. \textbf{[TODO: on both recipes the reference scores through
-its bf16 forward where the verified path scores in fp32; and A3 is
+path alike. \textbf{[TODO: A3 is
 \texttt{timm}'s in all but three places, on both paths: Mixup or CutMix
 drawn per batch at $p = 0.5$ (ours alternate by step), the schedule stepped
 once an epoch from $10^{-6}$ (ours per step from zero), RandAugment's fill
-at the image mean (ours grey $128$). The $0.36$ and $0.19$ to the paper's
+at the image mean (ours grey $128$). The $0.35$ and $0.19$ to the paper's
 $78.1$ are inside one run's interval.]}
 
-\medskip\noindent\textbf{The two paths agree within $0.29$ points on top-1
-on both recipes}, and within $0.06$ on top-5 --- inside the 95\% Wilson interval, $\pm0.37$ at $77\%$ on $50{,}000$ images, at one seed per cell. \textbf{And the recipe delta replicates}: A3 beats 2018 by
-$+0.95$ on the reference and $+0.82$ on the verified path. Agreement at a
+\medskip\noindent\textbf{The two paths agree within $0.33$ points on top-1
+on both recipes}, and within $0.06$ on top-5 --- inside the 95\% Wilson
+interval, $\pm0.37$ at $77\%$ on $50{,}000$ images, at one seed per cell.
+Paired on the same images, the two recipes read differently. On A3 the two
+checkpoints disagree on $4{,}014$ images, $1{,}966$ one way and $2{,}048$
+the other, and McNemar's exact test puts $p = 0.20$ on the $82$ between
+them: not separable. On 2018 they disagree on $4{,}622$, $2{,}228$ against
+$2{,}394$, and the $166$-image lead is $p = 0.015$: the verified checkpoint
+is ahead on this validation set. With one seed per arm that is a statement
+about two trained models, not about the two paths --- the nine percent of
+images the two disagree on is what two runs of one recipe produce,
+whichever is ahead --- and whether the verified path's 2018 run is ahead by
+construction needs seeds per arm. \textbf{And the recipe delta replicates}:
+A3 beats 2018 by $+0.99$ on the reference and $+0.82$ on the verified path. Agreement at a
 single configuration can be a coincidence of that configuration; a
 difference that reproduces across two independent implementations is harder
 to arrange by accident, and it is what a one-row comparison cannot show. One
@@ -6917,7 +6933,9 @@ difference between its columns that 2018's do not share is where the
 Mixup/CutMix draw happens, once per $512$-image micro-batch on the
 verified path against once per accumulated step on the reference, and it
 is untested. It is why these pairs are read at their endpoints and nowhere
-else:
+else (the rows are the runs' own per-epoch evaluation through the
+trainers' bf16 forward; the headline numbers rescore the final checkpoints
+through fp32, within $0.04$ of the last column):
 
 \begin{center}
 \begin{tabular}{@{}l r r r r r r r r@{}}
@@ -11072,7 +11090,7 @@ The full 300-epoch tier (\texttt{convnext-tiny-imagenet full},
 \texttt{convNeXtTinyImagenetConfigFull}) reached $\mathbf{81.53\%}$ top-1
 and $\mathbf{95.50\%}$ top-5 on the held-out validation pass. That is the
 strongest result in this book's sweep by a wide margin, ahead of
-ResNet-50 RSB-A3 ($77.74\%$), EfficientNet-B0 ($77.15\%$) and ResNet-34
+ResNet-50 RSB-A3 ($77.75\%$), EfficientNet-B0 ($77.15\%$) and ResNet-34
 ($74.14\%$), and it lands within
 $\sim$0.6\% of ConvNeXt-T's $82.1\%$ paper headline from a from-scratch
 Lean$\to$JAX-codegen reimplementation. Two candidate explanations for
@@ -14382,8 +14400,8 @@ BCE loss, repeated augmentation --- which trains this exact network
 to ${\sim}79.8\%$ top-1. The JAX reference trainer
 (\texttt{jax/MainResnet50Imagenet.lean}) wires that recipe: running
 the cheaper 100-epoch A3 tier end-to-end through the
-Lean~$\to$~StableHLO~$\to$~JAX pipeline reaches \textbf{77.74\% top-1
-/ 93.65\% top-5} on ImageNet-1k, $0.36$ under the A3 paper's $78.1\%$;
+Lean~$\to$~StableHLO~$\to$~JAX pipeline reaches \textbf{77.75\% top-1
+/ 93.65\% top-5} on ImageNet-1k, $0.35$ under the A3 paper's $78.1\%$;
 the verified path's render of the same recipe scores $77.91\%$.
 
 \subsubsection*{WRN (Wide ResNet) (\texttt{Bestiary/WRN.lean})}

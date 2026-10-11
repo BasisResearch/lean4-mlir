@@ -597,6 +597,17 @@ A3-vs-timm "still out" list, the A2/A1 ledger (torchvision's crop moved to "in")
 cites. ⚠ The two verified RESULTS.md "only zero-γ / only two settings moved" readings miss that the shims
 also moved (`aa974a95`: torchvision's crop on 2018, crop + bicubic geometry on A3), so neither is an ablation.
 
+**2026-10-11, later: F8 paid on ResNet by a rescore, not a rerun** (`runs/2026-10-11-resnet-jax-f32-rescore/`,
+8a659b2f). The three references' final `.state.npz`, scored over the full 50k through an fp32 forward
+(`EVAL_DTYPE=f32` in `jax/scripts/eval_full50k.py`): R34 74.14 / 91.83, R50-2018 76.76 / 93.39, A3 77.75 / 93.65 —
+the bf16 eval forward is worth ≤ 0.03 on every pair (+6 / −17 / +5 images). Ch 5 quotes these; the R34 marker
+is gone and the R50 marker is A3's F1 / F4 / F5 only. McNemar over the per-image bitmaps (`DUMP_CORRECT`, the
+JAX twin of `LEAN_MLIR_DUMP_CORRECT`; both streams in tfds file order) against the verified halves: R34 p 0.86,
+A3 p 0.20, **R50-2018 p 0.015** (verified +166 net) — a statement about two checkpoints at one seed per arm,
+not about the paths; seeds per arm would settle it. The scorer's bf16 pass sits 6–8 images from each
+training log (bf16 rounding is not batch-shape invariant), which is why the curves and milestone rows keep the
+logged values and the headlines are the fp32 rescore.
+
 ## 10. Paper-faithful: what "faithful" means and the work left (planned 2026-10-11)
 
 The goal: every book entry can say its recipe is the paper's. Some deviations are forced by four
