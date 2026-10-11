@@ -62,7 +62,7 @@ The tail is flat: e97–100 averages 77.901 / 93.699, and e91–100 averages 77.
   through the middle of training and the two converge by the end.
 * Per image: this run's `bitmaps/a3_lambaccdp4x128wxclipbcebf16_e100.bin` (local only) can be paired by
   McNemar with a re-score of the JAX rerun's final `.state.npz` (template
-  `runs/2026-10-01-vit-jax-bf16-300ep/score_arms.py`). Not done.
+  `runs/2026-10-01-vit-jax-bf16-300ep/score_arms.py`). Done 2026-10-11 (`runs/2026-10-11-resnet-jax-f32-rescore/`): against the reference rescored through f32, 38,957 vs 38,875, +82 net, McNemar p = 0.20 — not separable.
 
 ## Pace and loader memory
 

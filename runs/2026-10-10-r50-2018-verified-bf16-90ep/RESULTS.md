@@ -63,7 +63,7 @@ The tail is flat: e87–90 averages 77.054 / 93.355.
 * Top-1 by 20-epoch window, verified minus JAX: +0.22, −0.52, −0.19, +0.07, then +0.24 over e81–90.
 * Per image: this run's `bitmaps/r50-2018_momdp64bf16_e90.bin` (local only) can be paired by McNemar
   with a re-score of the JAX rerun's final `.state.npz` (template
-  `runs/2026-10-01-vit-jax-bf16-300ep/score_arms.py`). Not done.
+  `runs/2026-10-01-vit-jax-bf16-300ep/score_arms.py`). Done 2026-10-11 (`runs/2026-10-11-resnet-jax-f32-rescore/`): against the reference rescored through f32, 38,545 vs 38,379, +166 net, McNemar p = 0.015 — these two checkpoints differ; one seed per arm says nothing about the paths.
 
 ## Pace and loader memory
 

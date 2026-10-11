@@ -1,0 +1,15 @@
+=== r34 jax 2610 module ===
+eval dtype: the module's own forward; the module's DT=bfloat16 CONV_DT=bfloat16
+backend=gpu devices=4
+gen=generated/generated_resnet34_imagenet.py
+state=/home/skoonce/resnet/mars_2610/r34_2018_jax_2610/resnet34_imagenet.state.npz
+eval protocol: 224px, crop_pct=0.875000 (timm resize-then-crop, antialiased)
+state tuple (from the module): (params, velocity, bn_state)
+  params=110 bn=72 opt=110 leaves -> 292 total (file has 292) ✓
+loaded step=450360
+scoring the live weights + running BN buffers
+── scoring at 224px, crop_pct 0.875 — train (the module's own)
+   per-image top-1 bitmap -> ../runs/2026-10-11-resnet-jax-f32-rescore/bitmaps/r34_jax_module.bin (50000 bytes, 37064 set) — pair with scripts/demos/mcnemar.py
+   top-1: 37064/50000 = 74.13%   top-5: 45913/50000 = 91.83%
+=== FULL VAL (the module's own forward) ===
+224px crop 0.875  top-1  74.13%  top-5  91.83%  (50000 images)  train (the module's own)

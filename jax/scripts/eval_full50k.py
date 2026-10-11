@@ -16,6 +16,10 @@ This is the one writer.
                      # from jax/timm_eval_protocols.json (scripts/parity/timm_eval_protocols.py)
     PROTOCOL=both    # both, one pass each, printed side by side
     EVAL_SIZE=256 EVAL_CROP=1.0   # an explicit protocol; overrides PROTOCOL
+    EVAL_DTYPE=f32   # score through an f32 forward (the module's DT / CONV_DT rebound before the
+                     # first trace); default `module` = the trainer's own dtype, the logged number
+    DUMP_CORRECT=<prefix>   # also write <prefix>.bin, one byte per image in stream order, 1 = top-1
+                            # correct — the JAX twin of `LEAN_MLIR_DUMP_CORRECT`, for mcnemar.py
 
 ## The timm protocol
 
@@ -49,7 +53,7 @@ optimizer's leaf count is DERIVED from the file rather than assumed, and the tot
 against the array count in the `.npz`. A mismatch means the checkpoint predates the module;
 this refuses rather than falling back, because the fallback scores garbage.
 """
-import os, re, sys, importlib.util
+import os, re, sys, importlib.util, inspect
 import numpy as np
 import jax, jax.numpy as jnp
 import tensorflow as tf
@@ -64,12 +68,28 @@ BATCH  = int(os.environ.get("BATCH", "250"))
 REGION = os.environ.get("REGION", "auto")     # auto | live | ema
 LABEL  = os.environ.get("LABEL", os.path.basename(CKPT))
 PROTOCOL = os.environ.get("PROTOCOL", "train")   # train | timm | both
+EVAL_DTYPE = os.environ.get("EVAL_DTYPE", "module")   # module | f32 — see the block after the module loads
+DUMP_CORRECT = os.environ.get("DUMP_CORRECT")         # <prefix> -> <prefix>.bin: one byte per image, 1 = top-1 correct
 
 spec = importlib.util.spec_from_file_location("gen", GEN)
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 
+# EVAL_DTYPE=f32: score through an f32 forward. `mm` / `convdt` read the module globals `DT` /
+# `CONV_DT` at TRACE time, so rebinding them here, before anything is traced, runs every matmul
+# and conv in f32 — the verified path's eval forward and timm's validate.py. The default is the
+# module's own dtype (bf16 on the bf16 trainers): the number the training log printed.
+_own = (getattr(m, "DT", None), getattr(m, "CONV_DT", None))
+if EVAL_DTYPE == "f32":
+    if hasattr(m, "DT"):      m.DT = jnp.float32
+    if hasattr(m, "CONV_DT"): m.CONV_DT = jnp.float32
+elif EVAL_DTYPE != "module":
+    sys.exit(f"EVAL_DTYPE={EVAL_DTYPE}: expected module | f32")
+_dn = lambda d: getattr(d, "__name__", str(d))
+EVAL_DTYPE_NAME = "f32 forward (EVAL_DTYPE=f32)" if EVAL_DTYPE == "f32" else "the module's own forward"
+
 print(f"=== {LABEL} ===")
+print(f"eval dtype: {EVAL_DTYPE_NAME}; the module's DT={_dn(_own[0])} CONV_DT={_dn(_own[1])}")
 print(f"backend={jax.default_backend()} devices={len(jax.devices())}")
 # The batch is sharded over the device mesh, so it has to divide evenly. Refusing here beats
 # the shape error 200 lines later, and beats silently dropping to one device.
@@ -120,7 +140,13 @@ else:
              f"⚠ the checkpoint was written by a different module version than {GEN}")
 print(f"  params={P} bn={B} opt={opt_leaves} leaves -> {N} total (file has {N}) ✓")
 
-slot = {"params": _p, "ema_params": _p, "bn_state": _bn, "ema_bn": _bn, "opt_state": opt}
+# The one slot that is neither parameters nor BN is the optimizer's, whatever the trainer calls it:
+# `opt_state` (Adam / LAMB), `velocity` (the momentum trainers: R34, R50-2018). Only its leaf COUNT
+# matters here — it is skipped on load — so a tuple of zero trees with that many leaves stands in.
+_opt_name = [k for k in names if k not in PARAM_SLOTS | BN_SLOTS]
+if len(_opt_name) != 1:
+    sys.exit(f"expected exactly one optimizer slot in {names}, found {_opt_name}")
+slot = {"params": _p, "ema_params": _p, "bn_state": _bn, "ema_bn": _bn, _opt_name[0]: opt}
 template = tuple(slot[k] for k in names)
 assert len(jax.tree.leaves(template)) == N, "template/file leaf-count mismatch"
 
@@ -205,6 +231,19 @@ def _score(size, crop):
       sys.exit(f"{GEN} predates `take`, so the tail cannot be masked, and BATCH={BATCH} leaves "
                f"{50000 % BATCH} images over. Pick a BATCH dividing 50000 (e.g. 250 on 5 devices).")
 
+  # DUMP_CORRECT: the per-image top-1 bitmap in STREAM order — the validation split as tfds lays its
+  # files out, unshuffled, which is also the verified path's eval order (`LEAN_MLIR_DUMP_CORRECT`),
+  # so the two files pair image-for-image for scripts/demos/mcnemar.py. The counts then come from
+  # the same forward the bitmap does (`eval_batch` is not called on this path).
+  if DUMP_CORRECT:
+      _fwd_bn = "bn" in inspect.signature(m.forward).parameters
+      @jax.jit
+      def _per_image(params, bn, x, y):
+          logits = m.forward(params, x, bn, False)[0] if _fwd_bn else m.forward(params, x)
+          preds = jnp.argmax(logits, axis=-1)
+          true_logit = jnp.take_along_axis(logits, y[:, None], axis=1)
+          return preds == y, jnp.sum(logits > true_logit, axis=1) < 5
+  bits = []
   c1 = c5 = total = 0
   for x, y in tfds.as_numpy(ds):
       n = int(y.shape[0])
@@ -213,9 +252,22 @@ def _score(size, crop):
           y = np.concatenate([y, np.zeros((BATCH - n,), y.dtype)])
       xs = jax.device_put(jnp.asarray(x), m.data_sharding)
       ys = jax.device_put(jnp.asarray(y), m.data_sharding)
+      if DUMP_CORRECT:
+          v1, v5 = _per_image(params, bn, xs, ys)
+          v1 = np.asarray(v1)[:n]; v5 = np.asarray(v5)[:n]
+          bits.append(v1.astype(np.uint8))
+          c1 += int(v1.sum()); c5 += int(v5.sum()); total += n
+          continue
       b1, b5, _loss = m.eval_batch(params, bn, xs, ys, n) if _HAS_TAKE \
                  else m.eval_batch(params, bn, xs, ys)
       c1 += int(b1); c5 += int(b5); total += n
+  if DUMP_CORRECT:
+      arr = np.concatenate(bits)
+      assert arr.size == total and int(arr.sum()) == c1, (arr.size, total, int(arr.sum()), c1)
+      path = f"{DUMP_CORRECT}.bin" if len(protocols) == 1 else f"{DUMP_CORRECT}_s{size}.bin"
+      os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+      arr.tofile(path)
+      print(f"   per-image top-1 bitmap -> {path} ({arr.size} bytes, {c1} set) — pair with scripts/demos/mcnemar.py")
 
   return c1, c5, total
 
@@ -227,7 +279,7 @@ for size, crop, name in protocols:
     results.append((name, size, crop, c1, c5, total))
     print(f"   top-1: {c1}/{total} = {100.0 * c1 / total:.2f}%   top-5: {c5}/{total} = {100.0 * c5 / total:.2f}%")
 
-print(f"\n=== FULL VAL ===")
+print(f"\n=== FULL VAL ({EVAL_DTYPE_NAME}) ===")
 for name, size, crop, c1, c5, total in results:
     print(f"{size}px crop {crop:<6} top-1 {100.0 * c1 / total:6.2f}%  top-5 {100.0 * c5 / total:6.2f}%  "
           f"({total} images)  {name}")
