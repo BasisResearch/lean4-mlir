@@ -3788,7 +3788,11 @@ def generateShim (spec : NetSpec) (cfg : TrainConfig) : String :=
   "#       SHIM_HASH=<n>  -> hash n batches to stderr and exit, streaming nothing\n" ++
   "#       SHIM_NCLASSES=K -> wire v2: float32[B,K] target distributions instead of int32[B]\n" ++
   "#       SHIM_MIX=off|mixup|cutmix|both  -> mixup/cutmix on the PRODUCER side (needs v2).\n" ++
-  "#                       'both' alternates per step, as the reference does. Default is this\n" ++
+  (if cfg.mixSwitchProb > 0.0 then
+    "#                       'both' draws CutMix with p " ++ toString cfg.mixSwitchProb ++ " per batch, else Mixup\n" ++
+    "#                       (timm Mixup's switch_prob), as the reference does. Default is this\n"
+   else
+    "#                       'both' alternates per step, as the reference does. Default is this\n") ++
   "#                       config's own useMixup/useCutmix. SHIM_MIXUP_ALPHA / SHIM_CUTMIX_ALPHA\n" ++
   "#                       override the Beta shapes. The lambda stream is numpy's, NOT the\n" ++
   "#                       reference's jax.random one — same distribution, different numbers.\n" ++

@@ -53,6 +53,12 @@ def resnet50ImagenetConfig : TrainConfig where
   weightDecay    := 0.02
   cosineDecay    := true
   warmupEpochs   := 5
+  -- timm's cosine as the RSB runs stepped it: once an epoch, warmup from `warmup_lr` 1e-4 over the
+  -- 5 epochs, floor `min_lr` 1e-6. The values are A3's args files (discussion #924) and the era's
+  -- train.py defaults; no A1 / A2 args file was published, so A1 / A2 take the same two.
+  schedPerEpoch  := true
+  warmupLRInit   := 0.0001
+  minLR          := 0.000001
   augment        := true     -- random-resized-crop + hflip (the base aug under RA)
   cropTorchvision := true    -- torchvision RandomResizedCrop (timm's), not TF's sampler
   trainResize    := .random  -- timm train.py's default interpolation: bilinear or bicubic per image (every RSB tier)
@@ -60,22 +66,26 @@ def resnet50ImagenetConfig : TrainConfig where
   lossKind       := some .bce     -- BCE-with-logits, multi-hot (timm --bce-loss)
   useMixup       := true     -- RSB aug pack: Mixup α0.1...
   mixupAlpha     := 0.1
-  useCutmix      := true     -- ...+ CutMix α1.0 (alternates per step)...
+  useCutmix      := true     -- ...+ CutMix α1.0, one of the two drawn per batch...
   cutmixAlpha    := 1.0
+  mixSwitchProb  := 0.5      -- timm Mixup(mixup_mode batch, switch_prob 0.5): CutMix with p 0.5, else Mixup
   useRandAugment := true     -- ...+ full RandAugment (color+geometric)...
   randAugmentGeometric := true
   randAugmentN   := 2
   randAugmentM   := 7.0      -- RSB rand-m7-...
   randAugmentMstd := 0.5     -- ...-mstd0.5-...
   randAugmentInc := true     -- ...-inc1 increasing-severity mappings
+  randAugmentFillMean := true -- the geometric ops fill with timm's img_mean (124, 116, 104), not grey
   augBicubic     := true     -- PIL-bicubic RandAugment geometry, as timm (every RSB tier, A3 included)
   repeatedAug    := 3        -- RSB Repeated Augmentation 3×
+  repeatedAugAdjacent := true -- the 3 copies adjacent, in one optimizer step, as timm's RASampler places them
   dropPath       := 0.05     -- stochastic depth, RSB-A2 value
   useEMA         := true     -- model EMA; eval + checkpoints use the shadow
   emaDecay       := 0.9999
   bf16           := true
   bf16Conv       := true     -- CUDA/cuDNN: bf16 conv markedly faster (R50 is conv-bound, ares is its home); slower-but-correct on ROCm
   f32StemHead    := true    -- classifier head in fp32, as every verified render keeps it
+  evalF32        := true    -- the logged number is the f32 score, as the verified path's and timm's
   runningBN      := true     -- paper-faithful eval + bottleneck running-BN
   -- **0.9, NOT the emitter's 0.99 default, and it applies to the WHOLE FAMILY.**
   -- `Jax/Codegen.lean`'s `_bn` defaults to 0.99 for every net. That is TF's EfficientNet value; the
@@ -145,7 +155,21 @@ def resnet50ImagenetConfigShort : TrainConfig :=
       -- hardcoded when those runs were done" (rwightman, pytorch-image-models discussion #924).
       -- The August/September A3 pair (78.26 / 78.33) trained without it, on both paths; the
       -- 2026-10 rerun pair (77.74 / 77.91, the book's) carries it.
-      bceTargetThresh := some 0.2 }
+      bceTargetThresh := some 0.2
+      -- timm's A3 as it was run — the two args files rwightman attached to discussion #924
+      -- (`…-fusedlamb-cosine-lr0.00800-wd0.020000-n0-rand-m6-mstd0.5-inc1-m0.1-sd0.0-d0.0-ls0.0-
+      -- 10{0,1}-100-resnet50-args.yaml.txt`, seeds 0 and 21): `mixup_mode batch`,
+      -- `mixup_switch_prob 0.5`, `sched cosine` stepped per epoch with `warmup_lr 0.0001` over
+      -- `warmup_epochs 5` and `min_lr 1.0e-06`, RandAugment's fill at img_mean. Not taken from
+      -- them: `cooldown_epochs 10` (timm's default then: ten more epochs at min_lr after the
+      -- cosine, which the paper does not count and which moves nothing at 1e-6) and
+      -- `train_interpolation random` / `bicubic` (one run each; `trainResize := .random` here).
+      mixSwitchProb       := 0.5
+      schedPerEpoch       := true
+      warmupLRInit        := 0.0001
+      minLR               := 0.000001
+      randAugmentFillMean := true
+      evalF32             := true }  -- the logged number is the f32 score, as the verified path's
 
 /-- **The 2018 recipe** — the ResNet-50 side of the blueprint's A3-vs-2018 recipe diff
     (`sec:r50_a3_vs_2018`), and the JAX peer of the verified `momdp64` run. It is the
@@ -178,6 +202,15 @@ def resnet50ImagenetConfig2018 : TrainConfig :=
       labelSmoothing := 0.1
       useMixup       := false
       useCutmix      := false
+      -- The timm-recipe flags the base turned on for RSB (2026-10-11), each back off: torchvision's
+      -- 2018 recipe is the landed pair's, and its trainer stays byte-identical to the one that ran it.
+      mixSwitchProb  := 0.0
+      schedPerEpoch  := false
+      warmupLRInit   := 0.0
+      minLR          := 0.0
+      randAugmentFillMean := false
+      repeatedAugAdjacent := false
+      evalF32        := false
       useRandAugment := false
       repeatedAug    := 1
       dropPath       := 0.0

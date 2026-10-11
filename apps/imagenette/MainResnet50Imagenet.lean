@@ -134,8 +134,14 @@ def runResnet50Imagenet (argv : List String) : IO Unit := do
   -- The 160 net is EVALUABLE. Its shim emits A3's split — 76,800 floats/img on train, 150,528 on
   -- val — and the driver reads the eval width off `@<slug>_fwd_eval` rather than reusing `net.d0`
   -- (`fwdRenderedShape`/`evalD0` in `Verified.Train`); the run announces "EVAL RES SPLIT".
+  -- The RSB tiers — A3 (the 160² render), A2 and A1 (their 224² recipes) — step the cosine once
+  -- an epoch as timm ran them, warming up from 1e-4 over 5 epochs to a floor of 1e-6 (A3's args
+  -- files on discussion #924, the era's defaults for A1 / A2; the JAX peers' configs carry the same
+  -- three). The 2018 recipe keeps the per-step schedule its reference trainer has.
+  let rsb := (← IO.getEnv "LEAN_MLIR_RES") == some "160" || recipe == "a2" || recipe == "a1"
   net.toNet.trainAdamSched
     { resnet50ImagenetConfig with batchSize := bs, epochs := epochs }
     (argv.head?.getD "data") baseLR 0.9 0.999 5 variant
+    (minLR := if rsb then 0.000001 else 0.0) (schedPerEpoch := rsb) (warmupLRInit := if rsb then 0.0001 else 0.0)
 
 def main (argv : List String) : IO Unit := runResnet50Imagenet argv

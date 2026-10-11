@@ -19,7 +19,8 @@
 #       SHIM_HASH=<n>  -> hash n batches to stderr and exit, streaming nothing
 #       SHIM_NCLASSES=K -> wire v2: float32[B,K] target distributions instead of int32[B]
 #       SHIM_MIX=off|mixup|cutmix|both  -> mixup/cutmix on the PRODUCER side (needs v2).
-#                       'both' alternates per step, as the reference does. Default is this
+#                       'both' draws CutMix with p 0.500000 per batch, else Mixup
+#                       (timm Mixup's switch_prob), as the reference does. Default is this
 #                       config's own useMixup/useCutmix. SHIM_MIXUP_ALPHA / SHIM_CUTMIX_ALPHA
 #                       override the Beta shapes. The lambda stream is numpy's, NOT the
 #                       reference's jax.random one — same distribution, different numbers.

@@ -6895,7 +6895,8 @@ hands each step --- ghost batch norm, on the reference and the verified
 path alike. \textbf{[TODO: A3 is
 \texttt{timm}'s in all but three places, on both paths: Mixup or CutMix
 drawn per batch at $p = 0.5$ (ours alternate by step), the schedule stepped
-once an epoch from $10^{-6}$ (ours per step from zero), RandAugment's fill
+once an epoch from $10^{-4}$ to a floor of $10^{-6}$ (ours per step from
+zero), RandAugment's fill
 at the image mean (ours grey $128$). The $0.35$ and $0.19$ to the paper's
 $78.1$ are inside one run's interval.]}
 

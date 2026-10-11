@@ -2042,6 +2042,11 @@ differentiates (see r50FwdChainB for the pattern), or drop the env var and score
   let schedDesc := if expDecayRate == 1.0 then s!"constant lr {baseLR}"
     else s!"{schedName}+warmup {warmupEpochs}ep, baseLR {baseLR}"
   IO.println s!"  train {nTrain}, {evalName} {nEval}; bs {bs}, {net.name} {variant} ({schedDesc}), He init"
+  -- The per-epoch form gets its own line rather than a new spelling of the one above, which the
+  -- book's transcripts quote: a run log must show WHICH schedule stepped the rate.
+  if schedPerEpoch then
+    IO.println s!"  ▸ LR SCHEDULE: per epoch (timm CosineLRScheduler, t_in_epochs) — warmup {warmupLRInit}→{baseLR} \
+over {warmupEpochs} epochs, then cosine over all {cfg.epochs} epochs to the floor {minLR}; the rate is constant within an epoch"
   if rmsprop then
     IO.println s!"  ▸ RMSPROP: m = momentum buffer (init 0), v = running MEAN-SQUARE (init 1.0, \
 TF convention — this optimizer is not bias-corrected)"

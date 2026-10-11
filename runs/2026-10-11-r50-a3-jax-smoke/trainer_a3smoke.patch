@@ -1,0 +1,4 @@
+1650c1650
+<     steps_per_epoch = train_examples // BATCH_SIZE
+---
+>     steps_per_epoch = 40   # SMOKE: 40 micro-batches (10 optimizer steps) an epoch, so two validations land within minutes

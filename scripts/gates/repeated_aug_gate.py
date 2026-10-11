@@ -9,17 +9,20 @@ row pairs with equal labels. With K adjacent copies that fraction is (K−1)/K �
 (batch boundaries cost a little); a spread-across-batches stream reads ≈ 1/1000. Also holds that
 adjacent equal-label rows are DIFFERENT images (independently augmented views, not one tensor
 repeated), on every such pair.
-CONTROL: a shim emitted WITHOUT the flag (`--control`, e.g. R50-A2's: RA 3× then the re-shuffle)
-must read below 0.05, or the gate could not see the shuffle creeping back.
+CONTROL: the same shim with the re-shuffle put back — `--control synth` (the default) rewrites the
+two `repeatedAugAdjacent` comment lines into the `ds.shuffle(…)` they replaced, in a temp copy — or
+a shim emitted without the flag (`--control <path>`); it must read below 0.05, or the gate could not
+see the shuffle creeping back. (Every RSB shim carries the flag since 2026-10-11, hence `synth`.)
 Needs the tfds ImageNet under TFDS_DATA_DIR (the shim's own requirement); ~1 min a shim.
 """
-import argparse, os, subprocess, sys
+import argparse, os, subprocess, sys, tempfile
 import numpy as np
 
 AP = argparse.ArgumentParser()
 AP.add_argument("--script", default="jax/generated/generated_vit_tiny_imagenet_shim.py")
-AP.add_argument("--control", default="jax/generated/generated_resnet50_imagenet_a2accum_shim.py",
-                help="a shim with repeatedAug > 1 and the flag OFF; '' skips the control")
+AP.add_argument("--control", default="synth",
+                help="'synth': --script with its re-shuffle put back (default); a path: a shim with "
+                     "repeatedAug > 1 and the flag OFF; '': skip the control")
 AP.add_argument("--python", default=os.environ.get("SHIM_PY", ".venv/bin/python3"))
 AP.add_argument("--batch", type=int, default=48)
 AP.add_argument("--batches", type=int, default=3)
@@ -72,7 +75,23 @@ print(f"{'✓' if ok else '⛔'} {os.path.basename(A.script)}: adjacent equal-la
       f"(want ≥ {want - 0.1:.2f} for K={A.k}); identical adjacent tensors: {same} (want 0)")
 cok = True
 if A.control:
-    cfrac, _ = adjacency(stream(A.control))
+    cpath, tmp = A.control, None
+    if A.control == "synth":
+        src = open(A.script).read()
+        marker = "        # repeatedAugAdjacent: no re-shuffle"
+        i = src.find(marker)
+        if i < 0:
+            sys.exit(f"⛔ {A.script} has no repeatedAugAdjacent block to put the shuffle back into")
+        j = src.index("\n", src.index("\n", i) + 1) + 1          # the two comment lines
+        src = src[:i] + "        ds = ds.shuffle(8192, seed=43, reshuffle_each_iteration=True)\n" + src[j:]
+        tmp = tempfile.NamedTemporaryFile("w", dir=os.path.dirname(os.path.abspath(A.script)),
+                                          prefix=".control_", suffix=".py", delete=False)
+        tmp.write(src); tmp.close(); cpath = tmp.name
+    try:
+        cfrac, _ = adjacency(stream(cpath))
+    finally:
+        if tmp: os.unlink(tmp.name)
     cok = cfrac < 0.05
-    print(f"{'✓' if cok else '⛔'} control {os.path.basename(A.control)}: {cfrac:.3f} (want < 0.05)")
+    label = "synth (the shim with its re-shuffle back)" if tmp else os.path.basename(A.control)
+    print(f"{'✓' if cok else '⛔'} control {label}: {cfrac:.3f} (want < 0.05)")
 sys.exit(0 if ok and cok else 1)

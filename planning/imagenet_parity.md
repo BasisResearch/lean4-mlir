@@ -502,7 +502,7 @@ did not move).
 | F1 | mixup/cutmix switch | random, p 0.5 | strict alternation by step (P-E) |
 | F2 | random resized crop | torchvision RRC (log-uniform aspect, centre-crop fallback) | TF `sample_distorted_bounding_box`, `min_object_covered` 0.1 (effective 10% floor), uniform aspect, whole-image fallback (P-G). For B0 TF's sampler is the right one, minus the fallback. Plan: `gelu_erf_and_torchvision_crop.md` §2 (per-recipe flag, off for MNv2 / B0). In the code 2026-10-06 (`cropTorchvision`, `trainResize`, B0's `cropFallbackCenter`); closes per net when its rerun lands |
 | F3 | repeated aug | index-level `RASampler` | stream repeat + shuffle window (P-F) |
-| F4 | LR schedule | per epoch, warmup from 1e-6, cosine over the whole span | per step, from ~0, cosine after warmup (P-D) |
+| F4 | LR schedule | per epoch, warmup from `warmup_lr`, cosine over the whole span to `min_lr` — DeiT 1e-6 / 1e-5; RSB-A3 **1e-4 / 1e-6** with timm's then-default `cooldown_epochs 10` at the floor (the args files on pytorch-image-models discussion #924; the paper counts 100) | per step, from ~0, cosine after warmup (P-D) |
 | F5 | RandAugment fill and 0-bit Posterize | img_mean; PIL black | 128; TF keeps the top bit (X1 fixed both for B0's AutoAugment only) |
 | F6 | timm-protocol resize | `floor(224/crop)` | `round` (P-J) |
 | F7 | ConvNeXt min lr | 1e-6 (official) | 0 |
@@ -663,6 +663,30 @@ crop), so Phase 2 touches only its scoring (F8). Its rerun also settles §6.5's 
 (X3) and the depthwise init (D4) are already matched at HEAD. The alternative is to launch the MNv2
 pair at HEAD now, which answers the −0.51 question but is not faithful (D11–D13), so a second ~100 h
 rerun would follow. The plan is to wait the couple of days for D11–D13 and run once.
+
+**ResNet RSB status (2026-10-11, later): A3, A2 and A1 wired as timm ran them, on both paths; no run yet.**
+The values are rwightman's own A3 args files (pytorch-image-models discussion #924, the two
+`…-fusedlamb-cosine-lr0.00800-…-args.yaml.txt` attachments): `sched cosine` stepped per epoch with
+`warmup_lr 0.0001` over `warmup_epochs 5` to `min_lr 1.0e-06` (NOT DeiT's 1e-6 start, which ch 5's marker
+had said — corrected), `mixup_mode batch` with `mixup_switch_prob 0.5`, `aa rand-m6-mstd0.5-inc1`,
+`crop_pct 0.95`, `clip_grad null`, `model_ema false`, `bce_target_thresh` hardcoded 0.2 (D14), and
+`cooldown_epochs 10` — timm's then-default, ten more epochs at the floor after the 100 that the paper does
+not count; not taken (1e-6 moves nothing). No A1 / A2 args file was published; they take A3's two rates,
+which were also the era's train.py defaults. Code: `resnet50ImagenetConfig` (the A2 base: `schedPerEpoch`,
+`warmupLRInit`, `minLR`, `mixSwitchProb`, `randAugmentFillMean`, `repeatedAugAdjacent`, `evalF32`) with the
+2018 recipe resetting every one so its landed trainer stays byte-identical; `resnet50ImagenetConfigShort`
+(A3) carries the same minus adjacency; the verified app passes the schedule on the 160² render and the
+a2 / a1 recipes (`rsb` in `apps/imagenette/MainResnet50Imagenet.lean`), the shims carry the draw, fill and
+adjacency. Gates: `sched_timm_gate.py` on the rsbfaithful / a2accum / a1 trainers (1e-16 / 0 / 0 against
+timm 1.0.28), `repeated_aug_gate.py` on the a2accum shim (0.681; its control is now synthesized from the
+flagged shim by putting the re-shuffle back, since every RSB shim carries the flag), the fill check,
+mixing reproducible under `SHIM_DETERMINISM=1` and seed-distinct, every conf's prechecks (new greps, fresh
+checkpoint lineages, `LEAN_MLIR_DUMP_CORRECT` appended in PRECHECK so the verified runs write bitmaps).
+Smokes (`runs/2026-10-11-r50-a3-jax-smoke/`, `runs/2026-10-11-r50-a3-verified-smoke/`): JAX A3 epochs 1–3 at
+lr 1e-4 / 1.68e-3 / 3.26e-3 under GRAD_ACCUM 4 with the f32 eval line before every validation; verified A3
+307 ms/step (~24 h) with the new schedule banner. Runs: A3 pair first as the canary (JAX ~13.5 h, verified
+~24 h), then A2 (~75 h + ~99 h); A1 (2×) after A2 ties. The ch 5 R50 marker is deleted when the A3 pair lands;
+the A2/A1 marker when theirs do.
 
 **ViT-Ti status (2026-10-11, the user's order: resnet → vit → mnv2 → enet → convnext).** Phase 2's F1 /
 F4 / F5 / F8 and the EMA ramp are `TrainConfig` flags in the shared emitter now (`mixSwitchProb`,

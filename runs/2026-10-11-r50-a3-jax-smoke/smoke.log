@@ -1,0 +1,36 @@
+ResNet-50 (ImageNet) · Lean 4 → JAX
+  Conv(3→64,7x7/2)+BN → Pool(3x3) → BN3(64→256,s1) → BN4(256→512,s2) → BN6(512→1024,s2) → BN3(1024→2048,s2) → GAP → 2048→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.008000  batch_size=2048 (4 devices x 512)  epochs=100  params=25557032
+steps_per_epoch=40  total_steps=4000
+grad-accum=4x  micro_batch=512 (4 devices x 128)  -> effective_batch=2048  (LR targets effective)
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+E1011 22:43:50.345196 2757375 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1011 22:43:51.540155 2757373 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1011 22:43:52.241527 2757373 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 1] lr=0.0001 loss(train_avg)=0.7058 val_top1=38/50000 (0.0008) val_top5=0.0052 val_loss=6.9916  [69.4s train, 31.0s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.00168 loss(train_avg)=0.3447 val_top1=47/50000 (0.0009) val_top5=0.0053 val_loss=7.0394  [29.6s train, 17.3s val]
+  step 100/4000  loss=0.0087  lr=0.00326  (1621.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 3] lr=0.00326 loss(train_avg)=0.0221 val_top1=64/50000 (0.0013) val_top5=0.005 val_loss=7.0691  [29.7s train, 17.1s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 4] lr=0.00484 loss(train_avg)=0.0113 val_top1=79/50000 (0.0016) val_top5=0.0071 val_loss=7.0876  [29.6s train, 17.1s val]
+  step 200/4000  loss=0.008  lr=0.00642  (1352.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 5] lr=0.00642 loss(train_avg)=0.0103 val_top1=85/50000 (0.0017) val_top5=0.0086 val_loss=7.0759  [29.7s train, 17.2s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 6] lr=0.007951 loss(train_avg)=0.0107 val_top1=132/50000 (0.0026) val_top5=0.0121 val_loss=6.9971  [29.6s train, 17.1s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 7] lr=0.007929 loss(train_avg)=0.0113 val_top1=176/50000 (0.0035) val_top5=0.016 val_loss=6.8598  [29.6s train, 17.1s val]
+  step 300/4000  loss=0.0081  lr=0.0079  (1319.0ms/step avg)
