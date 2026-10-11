@@ -1,0 +1,15 @@
+ViT-Tiny (ImageNet, bf16) · Lean 4 → JAX
+  Patch(3→192,16x16) → Trans(12x[3h,192]) → 192→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.001000  batch_size=1024 (4 devices x 256)  epochs=300  params=5717416
+steps_per_epoch=40  total_steps=12000
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+repeated-aug=3x (timm RASampler placement: the copies adjacent, in one optimizer step)
+Starting training...
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 1] lr=1e-06 loss(train_avg)=6.9437 val_top1=45/50000 (0.0009) val_top5=0.0047 val_loss=6.9459  [71.3s train, 24.8s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.000201 loss(train_avg)=6.9267 val_top1=48/50000 (0.001) val_top5=0.0047 val_loss=6.9456  [15.6s train, 18.8s val]

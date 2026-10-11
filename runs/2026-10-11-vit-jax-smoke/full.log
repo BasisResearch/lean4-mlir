@@ -1,0 +1,25 @@
+ViT-Tiny (ImageNet, bf16) · Lean 4 → JAX
+  Patch(3→192,16x16) → Trans(12x[3h,192]) → 192→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.001000  batch_size=1024 (4 devices x 256)  epochs=300  params=5717416
+steps_per_epoch=1251  total_steps=375300
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+repeated-aug=3x (RSB / timm RASampler approximation: stream-level repeat+shuffle)
+Starting training...
+  step 100/375300  loss=6.9574  lr=0.0  (524.0ms/step avg)
+  step 200/375300  loss=6.951  lr=0.0  (482.0ms/step avg)
+  step 300/375300  loss=6.9346  lr=0.0  (469.0ms/step avg)
+  step 400/375300  loss=6.9234  lr=0.0  (462.0ms/step avg)
+  step 500/375300  loss=6.9325  lr=0.0  (458.0ms/step avg)
+  step 600/375300  loss=6.9111  lr=0.0  (455.0ms/step avg)
+  step 700/375300  loss=6.9181  lr=0.0  (453.0ms/step avg)
+  step 800/375300  loss=6.9374  lr=0.0  (451.0ms/step avg)
+  step 900/375300  loss=6.9183  lr=0.0  (450.0ms/step avg)
+  step 1000/375300  loss=6.9154  lr=0.0  (449.0ms/step avg)
+  step 1100/375300  loss=6.9185  lr=0.0  (448.0ms/step avg)
+  step 1200/375300  loss=6.9264  lr=0.0  (448.0ms/step avg)
+  Running validation ...
+[Epoch 1] lr=1e-06 loss(train_avg)=6.9276 val_top1=49/50000 (0.001) val_top5=0.0047 val_loss=6.9442  [559.7s train, 17.5s val]
+  step 1300/375300  loss=6.8909  lr=0.0002  (459.0ms/step avg)
+  step 1400/375300  loss=6.8786  lr=0.0002  (458.0ms/step avg)

@@ -35,7 +35,7 @@ trusted lowerer `$LEAN_MLIR_LOWERER` selects -- XLA/PJRT by default, IREE with
     since it is baked into the graph). -/
 def vitImagenetConfig : VerifiedConfig where
   epochs    := 300
-  batchSize := 128
+  batchSize := 256   -- PER REPLICA: 4 × 256 = DeiT-Ti's global 1024 (`vitTinyImagenetConfig.batchSize`)
   -- timm/DeiT init, matching the reference run's `deit-init` recipe (blueprint §9.6).
   -- Without it every transformer Linear is Glorot, which at ViT-Ti's d=192 is 3.6× wider than
   -- timm's fixed 0.02, and the CLS token is 5× wider — the one axis §9.6 credits for reaching
@@ -56,9 +56,9 @@ def runViTImagenet (argv : List String) : IO Unit := do
   let bs := ((← IO.getEnv "LEAN_MLIR_BATCH").bind (·.toNat?)).getD vitImagenetConfig.batchSize
   let baseLR := match (← IO.getEnv "LEAN_MLIR_BASE_LR_U").bind (·.toNat?) with
     | some u => u.toFloat * 1e-6
-    | none   => 0.0005   -- `vitTinyImagenetConfig.learningRate`, the DeiT batch-512 rate. The
-                         -- Imagenette ViT driver's 3e-4 is tuned for global batch 32 and would
-                         -- under-step this by ~1.7x.
+    | none   => 0.001    -- `vitTinyImagenetConfig.learningRate`: DeiT's 5e-4 · B/512 at its batch
+                         -- of 1024 (4 × 256 here). The Imagenette ViT driver's 3e-4 is tuned for
+                         -- global batch 32 and would under-step this by ~3x.
   -- `LEAN_MLIR_EPOCHS` SETS the schedule where `LEAN_MLIR_MAX_EPOCHS` only CAPS it
   -- (`min n cfg.epochs`). `totalSteps := cfg.epochs * nb / accK` is what the cosine anneals over,
   -- so `EPOCHS=30` is a complete 30-epoch experiment while `MAX_EPOCHS=30` is a PREFIX of the
@@ -78,5 +78,9 @@ def runViTImagenet (argv : List String) : IO Unit := do
     (argv.head?.getD "data") baseLR 0.9 0.999 5 variant (emaDecay := 0.99996)
     -- DeiT `--min-lr 1e-5`, the reference's `vitTinyImagenetConfig.minLR` (2026-10-01).
     (minLR := 0.00001)
+    -- DeiT's ModelEma holds its decay from step 0 (`vitTinyImagenetConfig.emaWarmup := false`), and
+    -- its scheduler is timm's, stepped once an epoch from `--warmup-lr 1e-6` with the cosine over all
+    -- 300 epochs (`schedPerEpoch` / `warmupLRInit`, 2026-10-11). Both are host-side: no re-render.
+    (emaWarmup := false) (schedPerEpoch := true) (warmupLRInit := 0.000001)
 
 def main (argv : List String) : IO Unit := runViTImagenet argv

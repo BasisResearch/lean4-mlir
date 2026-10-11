@@ -1,0 +1,39 @@
+--- jax/generated/generated_vit_tiny_imagenet.py (committed emit / the smoke copy)
++++ jax/generated/generated_vit_tiny_imagenet.py (committed emit / the smoke copy)
+@@ -1891,7 +1891,7 @@
+           "  epochs=" + str(EPOCHS) + "  params=5717416")
+     print("steps_per_epoch=" + str(steps_per_epoch) + "  total_steps=" + str(total_steps))
+     print("backend=" + str(jax.default_backend()) + "  devices=" + str(jax.devices()))
+-    print("repeated-aug=3x (timm RASampler placement: the copies adjacent, in one optimizer step)")
++    print("repeated-aug=3x (RSB / timm RASampler approximation: stream-level repeat+shuffle)")
+     print("Starting training...")
+ 
+     _init_load = os.environ.get('LEAN_MLIR_INIT_LOAD')
+@@ -1989,18 +1989,11 @@
+ 
+         train_secs = time.time() - ep_t0  # train-only wall time (measured before validation)
+         # Validate every 5 epochs (+ always the final epoch); ImageNet val is data-loading-bound.
+-        _do_val = ((epoch + 1) % 5 == 0) or ((epoch + 1) == EPOCHS)
++        _do_val = True   # SMOKE: evaluate after every epoch (the committed trainer: every 5)
+         correct1 = 0; correct5 = 0; total = 0; total_eval_loss = 0.0; v_batches = 0
+         ev_t0 = time.time()
+         if _do_val:
+             print("  Running validation ...")
+-            # evalF32: score through an f32 forward. `eval_batch` is traced HERE, on its first call, so
+-            # the swap must precede any trace of it — asserted, not assumed.
+-            if not getattr(eval_batch, '_f32_traced', False):
+-                assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'
+-                eval_batch._f32_traced = True
+-            _DT_CUR[0] = jnp.float32; _CONV_DT_CUR[0] = jnp.float32
+-            print('  eval: f32 forward (evalF32)')
+             v_iter = prefetch_to_device(
+                 iter(build_imagenet_iter('validation', BATCH_SIZE, training=False, augment=False)),
+                 data_sharding)
+@@ -2011,7 +2004,6 @@
+                 total   += y.shape[0]
+                 total_eval_loss += float(l)
+                 v_batches += 1
+-            _DT_CUR[0] = DT; _CONV_DT_CUR[0] = CONV_DT
+         acc1 = correct1 / max(total, 1)
+         acc5 = correct5 / max(total, 1)
+         val_secs = time.time() - ev_t0

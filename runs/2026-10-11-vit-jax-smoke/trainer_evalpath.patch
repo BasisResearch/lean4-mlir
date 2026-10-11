@@ -1,0 +1,20 @@
+--- jax/generated/generated_vit_tiny_imagenet.py (committed emit / the evalpath copy)
++++ jax/generated/generated_vit_tiny_imagenet.py (committed emit / the evalpath copy)
+@@ -1884,7 +1884,7 @@
+     BATCH_SIZE = (1024 // n_devices) * n_devices or n_devices
+     EPOCHS = 300
+     LR = 0.001000
+-    steps_per_epoch = train_examples // BATCH_SIZE
++    steps_per_epoch = 40   # EVAL-PATH SMOKE: 40 steps an epoch, so validation runs within a minute
+     total_steps = steps_per_epoch * EPOCHS
+     print("lr=0.001000  batch_size=" + str(BATCH_SIZE) +
+           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +
+@@ -1989,7 +1989,7 @@
+ 
+         train_secs = time.time() - ep_t0  # train-only wall time (measured before validation)
+         # Validate every 5 epochs (+ always the final epoch); ImageNet val is data-loading-bound.
+-        _do_val = ((epoch + 1) % 5 == 0) or ((epoch + 1) == EPOCHS)
++        _do_val = True   # EVAL-PATH SMOKE: validate after every (short) epoch
+         correct1 = 0; correct5 = 0; total = 0; total_eval_loss = 0.0; v_batches = 0
+         ev_t0 = time.time()
+         if _do_val:

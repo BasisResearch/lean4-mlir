@@ -653,6 +653,18 @@ crop), so Phase 2 touches only its scoring (F8). Its rerun also settles §6.5's 
 pair at HEAD now, which answers the −0.51 question but is not faithful (D11–D13), so a second ~100 h
 rerun would follow. The plan is to wait the couple of days for D11–D13 and run once.
 
+**ViT-Ti status (2026-10-11, the user's order: resnet → vit → mnv2 → enet → convnext).** Phase 2's F1 /
+F4 / F5 / F8 and the EMA ramp are `TrainConfig` flags in the shared emitter now (`mixSwitchProb`,
+`schedPerEpoch` + `warmupLRInit`, `randAugmentFillMean`, `evalF32`, `emaWarmup`), F3 is
+`repeatedAugAdjacent` (no re-shuffle after the ×3 repeat, so the copies share one optimizer step — the
+RASampler's placement without an index-level reader), each default-off and byte-identical for every
+other trainer; gates: `sched_timm_gate.py --lean` (both paths against timm's `CosineLRScheduler`),
+`repeated_aug_gate.py` (adjacency, A2 control), `aug_bicubic_pil_check.py` (`_RA_FILL`), shim
+determinism. ViT-Ti's config carries all of them plus DeiT's batch 1024 (4 × 256, no accumulation) and
+lr 1e-3; the verified render is `vitin_emadp256x4wxdropeps0000001erfbf16` (+ its tanh twin), with the
+clip decided by `runs/2026-10-11-vit-clipoff-probe/` (D2). Not done: the patch-embed bias at PyTorch's
+default (disclosed). Both confs rewritten; smokes and ETAs next, then mars = JAX, ares = verified.
+
 ### 10.5 Phase 5: book
 
 Each chapter's pair table is generated from the manifest and reads "paper recipe, except: …". Ch 5 goes

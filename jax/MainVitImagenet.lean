@@ -32,8 +32,8 @@ def vitTinyImagenet : NetSpec where
     ~72% DeiT-Ti headline (no distillation). -/
 def vitTinyImagenetConfig : TrainConfig where
   vitInit        := true            -- timm/DeiT trunc_normal(0.02) init, not the emitter's Xavier-uniform
-  learningRate   := 0.0005          -- proper DeiT batch-512 LR
-  batchSize      := 512
+  learningRate   := 0.001           -- DeiT's 5e-4 · 1024/512: its `lr = 5e-4 · B/512` at ITS batch
+  batchSize      := 1024            -- DeiT-Ti's batch (8 × 128 there; 4 × 256 here, exact under LayerNorm)
   epochs         := 300             -- full DeiT-Ti schedule
   optimizer      := .adam
   weightDecay    := 0.05            -- applied as AdamW decoupled decay
@@ -43,15 +43,23 @@ def vitTinyImagenetConfig : TrainConfig where
   warmupEpochs   := 5
   minLR          := 0.00001         -- DeiT `--min-lr 1e-5` (its `--cooldown-epochs 10` is dead: DeiT's
                                     -- main.py discards create_scheduler's epoch count and stops at 300)
+  schedPerEpoch  := true            -- timm's CosineLRScheduler as DeiT steps it: once per epoch, the
+  warmupLRInit   := 0.000001        -- warmup from `--warmup-lr 1e-6`, the cosine over all 300 from epoch 0
   augment        := true
   labelSmoothing := 0.1
-  gradClipNorm   := 1.0             -- DeiT default; the unlock for the 5e-4 LR
-  useMixup       := true            -- DeiT aug suite (mixup + cutmix alternate per step)
+  gradClipNorm   := 0.0             -- DeiT does NOT clip (`--clip-grad` None); the 1.0 was ours, against a
+                                    -- collapse seen on Xavier init — gone under vitInit at 1024 / 1e-3
+                                    -- (runs/2026-10-11-vit-clipoff-probe/, D2)
+  useMixup       := true            -- DeiT aug suite (mixup + cutmix, one of them per batch)
   mixupAlpha     := 0.8
   useCutmix      := true
   cutmixAlpha    := 1.0
+  mixSwitchProb  := 0.5             -- timm Mixup(switch_prob 0.5): CutMix with p 0.5 per batch, else Mixup
   useRandAugment := true            -- full DeiT RandAugment (color + geometric, below)
   augBicubic     := true    -- PIL-bicubic geometry, as timm
+  randAugmentFillMean := true   -- the geometric ops fill with timm's img_mean (124, 116, 104), not 128
+  evalF32        := true    -- score through an f32 forward, as the verified path and timm do
+  repeatedAugAdjacent := true   -- the 3 RA copies of an image in one optimizer step (timm RASampler)
   cropTorchvision := true   -- torchvision RandomResizedCrop, not TF's sampler (bicubic resize, the recipe's)
   geluExact      := true    -- nn.GELU's exact x·Φ(x), not jax.nn.gelu's tanh default
   randAugmentGeometric := true      -- shear/rotate/translate via ImageProjectiveTransformV3
@@ -64,6 +72,7 @@ def vitTinyImagenetConfig : TrainConfig where
   dropPath       := 0.1             -- DeiT-Ti stochastic depth (linear ramp 0→0.1 over blocks)
   useEMA         := true            -- DeiT model EMA; eval + checkpoints use the shadow weights
   emaDecay       := 0.99996         -- DeiT default
+  emaWarmup      := false           -- DeiT's ModelEma: a constant decay from step 0, no ramp-in
   bf16           := true            -- fp32 collapsed identically, so bf16 stays on for speed
   lnEps          := 0.000001        -- DeiT `partial(nn.LayerNorm, eps=1e-6)` (the render's `eps0000001`)
   f32StemHead    := true            -- patch embed + head in fp32: the verified render's carve-out,

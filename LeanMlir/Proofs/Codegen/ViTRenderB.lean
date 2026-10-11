@@ -1368,6 +1368,39 @@ end Proofs.StableHLO
   (Proofs.StableHLO.vitFwdRenderB .erf "vitin_emadp128x4wxclipdropeps0000001erfbf16_fwd" 1000 (vbB := 256)
     (eps := "1.0e-6"))
 
+-- **DeiT-Ti's own batch, and no clip (2026-10-11; `planning/imagenet_parity.md` §10.4, ch 9's marker).**
+-- Four replicas of 256 = DeiT's global 1024 (exact under LayerNorm, no accumulation needed at this
+-- size), and no gradient clipping: DeiT's `--clip-grad` defaults to None, and the clip-off probe at
+-- this batch and rate (`runs/2026-10-11-vit-clipoff-probe/`) held through warmup to the 1e-3 peak.
+-- Everything else is the render above: EMA, wx, drop-path, LN ε 1e-6, the exact GELU, bf16. The
+-- structural signature of the clip — 200 `stablehlo.minimum` — is absent here, and the conf's
+-- precheck asserts 0. Its own eval forward at B=256, as the eps0000001 render has.
+#eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001erfbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitin_emadp256x4wxdropeps0000001erfbf16_train_step"
+    "256.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 256) (bf16 := true) (eps := "1.0e-6"))
+#guard "vitin_emadp256x4wxdropeps0000001erfbf16_train_step" ==
+  "vitin_" ++ Proofs.StableHLO.vitAdamVariant 256 4 true true false true ++
+    Proofs.StableHLO.bnEpsMarker "1.0e-6" ++ "erf" ++ "bf16" ++ "_train_step"
+#guard "emadp256x4wxdropeps0000001erfbf16".startsWith "ema"
+#guard !"emadp256x4wxdropeps0000001erfbf16".contains "do"
+#guard !"emadp256x4wxdropeps0000001erfbf16".contains "acc"
+#guard ("emadp256x4wxdropeps0000001erfbf16".splitOn "drop").length == 2
+
+#eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001erfbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .erf "vitin_emadp256x4wxdropeps0000001erfbf16_fwd" 1000 (vbB := 256)
+    (eps := "1.0e-6"))
+
+-- Its tanh twin, as every exact-GELU render has one (`regen_verified_mlir.sh`'s GELU-form twin audit
+-- holds the pair equal outside the GELU sites); not run.
+#eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001bf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .tanh "vitin_emadp256x4wxdropeps0000001bf16_train_step"
+    "256.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 256) (bf16 := true) (eps := "1.0e-6"))
+#eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001bf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .tanh "vitin_emadp256x4wxdropeps0000001bf16_fwd" 1000 (vbB := 256)
+    (eps := "1.0e-6"))
+
 #eval IO.FS.writeFile "verified_mlir/vitin_adamdp256x2wxclipdroperf_train_step.mlir"
   (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitin_adamdp256x2wxclipdroperf_train_step" "256.0" 2 1000
     0.1 (ema := false) (wdExclude := true) (wdStr := "0.05") (clip := true) (clipStr := "1.0")

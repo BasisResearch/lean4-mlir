@@ -1,0 +1,37 @@
+--- jax/generated/generated_vit_tiny_imagenet.py (at 178fe4c2 / the probe copy)
++++ jax/generated/generated_vit_tiny_imagenet.py (at 178fe4c2 / the probe copy)
+@@ -1682,7 +1682,7 @@
+ #  Training  (Adam + cosine LR)
+ # ═══════════════════════════════════════════════════════════════════════
+ 
+-LR = 0.000500
++LR = 0.001000   # PROBE: DeiT's 5e-4 x (1024/512)
+ WD = 0.050000
+ _WD_POS_SHAPE = (197, 192)
+ def _wd_mask(params):
+@@ -1697,8 +1697,7 @@
+ @jit
+ def train_step(params, opt_state, x, y, lr, drop_key=None):
+     loss, grads = value_and_grad(loss_fn)(params, x, y, drop_key)
+-    gn = jnp.sqrt(sum(jnp.sum(g * g) for g in jax.tree.leaves(grads)))
+-    grads = jax.tree.map(lambda g: g * jnp.minimum(1.0, 1.000000 / (gn + 1e-6)), grads)
++    # PROBE: no gradient clip (D2) — DeiT's --clip-grad defaults to None
+     m, v, t = opt_state
+     t = t + 1
+     m = jax.tree.map(lambda mi, g: 0.9 * mi + 0.1 * g, m, grads)
+@@ -1871,12 +1870,12 @@
+     train_examples = 1281167
+     val_examples   = 50000
+ 
+-    BATCH_SIZE = (512 // n_devices) * n_devices or n_devices
++    BATCH_SIZE = (1024 // n_devices) * n_devices or n_devices   # PROBE: DeiT's 1024 as 4 x 256
+     EPOCHS = 300
+-    LR = 0.000500
++    LR = 0.001000   # PROBE: DeiT's 5e-4 x (1024/512)
+     steps_per_epoch = train_examples // BATCH_SIZE
+     total_steps = steps_per_epoch * EPOCHS
+-    print("lr=0.000500  batch_size=" + str(BATCH_SIZE) +
++    print("lr=0.001000 (PROBE: no clip, 1024)  batch_size=" + str(BATCH_SIZE) +
+           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +
+           "  epochs=" + str(EPOCHS) + "  params=5717416")
+     print("steps_per_epoch=" + str(steps_per_epoch) + "  total_steps=" + str(total_steps))
