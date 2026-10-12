@@ -27,10 +27,10 @@ name: Comparator (independent kernel re-check)
 # not as a failure diagnostic.
 #
 # Tool pinning: lean4export reads the project's `.olean`s, so its build
-# must stay olean-compatible with the project's Lean (v4.34.0). LEAN4EXPORT_REF
+# must stay olean-compatible with the project's Lean (v4.34.1). LEAN4EXPORT_REF
 # is upstream's `v4.34.0` release tag, and the `cp lean-toolchain` in the
 # build step below is what keeps that safe across a patch bump with no tag
-# (as 4.32.2 was, built from the v4.32.0 tag): the tagged *source* is rebuilt
+# (as 4.32.2 was, built from the v4.32.0 tag, and 4.34.1 is, from v4.34.0): the tagged *source* is rebuilt
 # with the project's exact Lean, and the cache key hashes lean-toolchain so a
 # bump busts it. What matters is the Lean the
 # exporter is BUILT with, not the tag it is built FROM; a mismatch shows up as
@@ -183,7 +183,7 @@ jobs:
           git clone https://github.com/leanprover/lean4export ~/lean4export
           git -C ~/lean4export checkout "$LEAN4EXPORT_REF"
           # lean4export reads the project's .oleans, so it must be built with
-          # the project's exact Lean (v4.34.0) — the `cp lean-toolchain` below
+          # the project's exact Lean (v4.34.1) — the `cp lean-toolchain` below
           # forces that; a mismatched build rejects our headers ("incompatible
           # header").
           cp lean-toolchain ~/lean4export/lean-toolchain
