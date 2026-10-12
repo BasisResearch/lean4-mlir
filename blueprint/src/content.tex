@@ -8458,15 +8458,20 @@ epochs, on the same four RTX 3060 cards, scored over the same $50{,}000$
 validation images. Rows above the first rule differ; rows between the
 rules are held equal by construction, the BatchNorm group included: the
 reference normalizes over the global $256$ under its mesh, and the
-verified render all-reduces to the same $256$. \textbf{[TODO: TF-slim in
-three places, on both paths: weight decay off the depthwise kernels,
-slim's Inception colour distortion, RMSProp's learning rate inside the
-momentum term; slim's truncated-normal initialization ($\sigma = 0.09$)
-against He-uniform; and the pair above predates the depthwise fan-in init
-($2/k^2$) on the verified path, the suspect for its $-0.51$. One rerun of
-both halves takes all of it --- \texttt{mnv2-full-jax-4gpu} /
-\texttt{mnv2-default-4gpu}, ${\sim}38 + 66$\,h. The sixteen workers of
-$96$ stay four replicas of $64$.]}
+verified render all-reduces to the same $256$. \textbf{[TODO: TF-slim's own
+reproduction command (\texttt{research/slim/nets/mobilenet/README.md}),
+on both paths, in code since 2026-10-12 and not yet run: $0.045$ per $96$
+images, so $0.12$ at $256$, stepped $\times0.98$ every $2.5$ epochs rather
+than every epoch; RMSProp's learning rate inside the momentum term; weight
+decay off the depthwise kernels; slim's truncated-normal initialization
+($\sigma = 0.09$) on every kernel; label smoothing $0.1$; the weight
+average at $0.9999$, scored; slim's colour distortion (brightness, then
+saturation), its crop ranges, bilinear resizes and $(x-0.5)\times 2$
+inputs; about $420$ epochs; and the depthwise fan-in init ($2/k^2$) on the
+verified path, the suspect for the $-0.51$ above. One rerun of both halves
+takes all of it --- \texttt{mnv2-full-jax-4gpu} /
+\texttt{mnv2-default-4gpu}. The sixteen asynchronous workers of $96$ stay
+four replicas of $64$, and slim's own validation crop stays disclosed.]}
 
 \medskip\noindent\textbf{The two paths differ by $0.51$ points on top-1
 and $0.42$ on top-5}, outside the 95\% Wilson interval ($\pm0.40$ at

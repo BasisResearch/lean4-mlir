@@ -40,61 +40,99 @@ def mobilenetV2Imagenet : NetSpec where
     .dense 1280 1000 .identity                  -- 1000-class head
   ]
 
-/-- MobileNetV2 90-epoch tier (`default`); the published reference is the 350-epoch `full`
-    recipe below, which is this config with only `epochs` changed.
+/-- MobileNetV2 as TF-slim trained it — `research/slim/nets/mobilenet/README.md`'s own
+    reproduction command (the README's own "roughly 72.0" top-1), read line for line with the sources it runs
+    (`train_image_classifier.py`, `mobilenet.training_scope`, `conv_blocks.expanded_conv`,
+    `inception_preprocessing.py`, TF's `training_ops.cc`), on 2026-10-12 (planning/recipe_prep.md §6).
+    The README's line is named beside each value; the book's landed pair (§6.5) ran the paper's
+    sentence instead (0.045 unscaled at 256, ×0.98 per epoch, 350 epochs, no smoothing, no EMA,
+    mean/std inputs, timm's init and decay set). `default` is this recipe at 90 epochs, a
+    validation tier; `full` below is the run.
 
-    RMSProp + momentum 0.9, base lr 0.045 at batch 256, and the paper's schedule: ×0.98 per
-    epoch as a staircase from step 0, with no warmup (TF-slim's `exponential_decay(staircase=True)`).
-    Two MobileNet-specific choices:
-      * weight decay 4e-5 (not 1e-4): large wd hurts the tiny depthwise
-        weights; 4e-5 is the standard MobileNet value. Coupled L2, off BN γ/β and biases
-        (`wdExcludeNormBias`); depthwise kernels still decay, where TF-slim skips them.
-      * no mixup/cutmix: not standard for MobileNetV2.
-    RMSProp knobs: ρ=0.9 (rmspropDecay), μ=0.9 (momentum), ε=1.0 (rmspropEps —
-    MobileNetV2's value, NOT 1e-8). BatchNorm is TF-slim's: decay 0.997, ε 1e-3.
-    Aug is crop/flip only (MobileNetV2 used no AutoAugment).
-    Label smoothing 0.0 and classifier dropout 0.2, as the paper. -/
+    * Optimizer — `--optimizer rmsprop` (the flag's default), `rmsprop_decay 0.9`,
+      `rmsprop_momentum 0.9`, `opt_epsilon 1.0`; TF1's `ApplyRMSProp` puts the rate inside the
+      momentum term (`rmspropTf`) and starts the mean-square at 1.
+    * Rate and schedule — `--learning_rate=0.045 * NUM_GPUS` on `--batch_size=96` per clone, i.e.
+      0.045 per 96 images: **0.12 at this pair's 256**; `exponential_decay(staircase=True)` from
+      step 0, `--learning_rate_decay_factor=0.98` every `--num_epochs_per_decay=2.5 / NUM_GPUS`
+      per-clone epochs = every 2.5 epochs of data; no warmup (`warmup_epochs` unset).
+    * Decay — `weight_decay 4e-5` as `l2_regularizer` on `slim.conv2d` only: not BN, not biases,
+      not the depthwise (`separable_conv2d`, `weights_regularizer=None`): `wdExcludeNormBias` +
+      `wdExcludeDepthwise`. Coupled, through the regularization loss.
+    * Init — `training_scope(stddev=0.09)`: `truncated_normal_initializer` on every kernel and the
+      logits (`initTruncNormal`), biases 0.
+    * `--label_smoothing=0.1`; `dropout_keep_prob 0.8`; `--moving_average_decay=0.9999` as
+      `tf.train.ExponentialMovingAverage(decay, global_step)` — the warmup-corrected form
+      (`emaWarmup`), and `eval_image_classifier` restores the averages, so the shadow is scored.
+    * BN — `bn_decay 0.997`, slim's `batch_norm` ε 1e-3.
+    * Pipeline — `--preprocessing_name="inception_v2"` = `inception_preprocessing` in `fast_mode`:
+      `distorted_bounding_box_crop` at `min_object_covered 0.1`, aspect `(0.75, 1.33)`, area
+      `(0.05, 1.0)`, 100 attempts, the whole image on exhaustion; `resize_images` bilinear, no
+      antialias; flip; `distort_color` fast = brightness ±32/255 then saturation 0.5–1.5, clipped
+      (`colorDistortSlim`); `(x − 0.5) × 2` (`inputScalePm1`). No AutoAugment, no Mixup.
+    * Length — "about 700K steps" on 8 clones of 96: 700,000 × 768 / 1,281,167 ≈ 420 epochs.
+    * The reference number is scored through an f32 forward (`evalF32`), F8.
+
+    Disclosed, not reproduced: slim's eval (`central_crop(0.875)` on both sides, then a
+    non-aspect-preserving bilinear resize to 224) — the in-training and post-hoc scores use timm's
+    224 / 0.875 protocol, as every pair in the book; and the sixteen asynchronous workers of 96,
+    which are four synchronous replicas of 64 here. -/
 def mobilenetV2ImagenetConfig : TrainConfig where
-  learningRate   := 0.045   -- MobileNetV2-native RMSProp peak
+  learningRate   := 0.12    -- README: learning_rate 0.045*NUM_GPUS on batch_size 96*NUM_GPUS, so 0.045 per 96 images: 0.12 at 256
   batchSize      := 256
-  epochs         := 90      -- near-paper run
-  optimizer      := .rmsprop  -- MobileNetV2's original optimizer
-  momentum       := 0.9       -- μ for the RMSprop momentum buffer
-  rmspropDecay   := 0.9       -- ρ, the running mean-square decay
-  rmspropEps     := 1.0       -- MobileNetV2 uses ε=1.0
-  weightDecay    := 4e-5
-  wdExcludeNormBias := true   -- no decay on BN γ/β or biases (slim's rule for BN; the verified `wx`)
-  cosineDecay      := false   -- the paper exp-decay schedule instead
-  expLRDecayRate   := 0.98    -- MobileNetV2: ×0.98 per epoch
-  expLRDecayEpochs := 1.0
-  expLRStaircase   := true    -- the paper's staircase, counted from step 0
-  dropout          := 0.2     -- MobileNetV2 classifier dropout
-  warmupEpochs   := 0         -- the paper has no warmup
-  augment        := true    -- random-crop + horizontal flip (MNv2 paper aug)
-  useAutoAugment := false   -- MNv2 paper used crop/flip only; AA is beyond the paper
-  labelSmoothing := 0.0     -- MNv2 paper (Sandler 2018) used none
+  epochs         := 90      -- the validation tier; `full` is the README's ~420
+  optimizer      := .rmsprop  -- train_image_classifier.py: `optimizer` defaults to rmsprop
+  momentum       := 0.9       -- rmsprop_momentum 0.9
+  rmspropDecay   := 0.9       -- rmsprop_decay 0.9
+  rmspropEps     := 1.0       -- opt_epsilon 1.0 (NOT 1e-8)
+  rmspropTf      := true      -- TF1 ApplyRMSProp: the rate inside the momentum term (D13)
+  weightDecay    := 4e-5      -- weight_decay 4e-5, coupled (the regularization loss)
+  wdExcludeNormBias := true   -- l2_regularizer on slim.conv2d only: no BN γ/β, no biases
+  wdExcludeDepthwise := true  -- …and separable_conv2d (the depthwise) has weights_regularizer=None (D11)
+  initTruncNormal := 0.09     -- training_scope(stddev=0.09): truncated_normal on every kernel + the logits
+  cosineDecay      := false   -- exponential_decay instead
+  expLRDecayRate   := 0.98    -- learning_rate_decay_factor 0.98
+  expLRDecayEpochs := 2.5     -- num_epochs_per_decay = 2.5 / NUM_GPUS per-clone epochs = 2.5 epochs of data
+  expLRStaircase   := true    -- staircase=True, counted from step 0
+  dropout          := 0.2     -- dropout_keep_prob 0.8
+  warmupEpochs   := 0         -- warmup_epochs unset
+  augment        := true      -- inception_preprocessing: distorted crop + flip
+  cropAreaMin    := 0.05      -- distorted_bounding_box_crop area_range (0.05, 1.0)
+  cropMaxAttempts := 100      -- …max_attempts 100 (then the whole image)
+  cropAspectLo   := 0.75      -- …aspect_ratio_range (0.75, 1.33)
+  cropAspectHi   := 1.33
+  trainResize    := .bilinear -- resize_images, fast_mode: bilinear
+  resizeAntialias := false    -- tf.image.resize_images: no antialias
+  colorDistortSlim := true    -- distort_color fast_mode: brightness ±32/255 then saturation 0.5–1.5 (D12)
+  inputScalePm1  := true      -- (x − 0.5) × 2
+  useAutoAugment := false     -- none in slim's pipeline
+  labelSmoothing := 0.1       -- README: --label_smoothing=0.1
+  useEMA         := true      -- README: --moving_average_decay=0.9999
+  emaDecay       := 0.9999
+  emaWarmup      := true      -- tf.train.ExponentialMovingAverage(decay, num_updates=global_step)
+  evalF32        := true      -- the reference number from an f32 forward (F8)
   bf16           := true
-  bf16Conv       := true    -- reaches the inverted-residual blocks
-  f32StemHead    := true    -- classifier head in fp32, as every verified render keeps it
-  runningBN      := true    -- paper-faithful eval: running BN stats, not eval-batch stats
-  bnMomentum     := 0.997   -- TF-slim's BN decay (PyTorch momentum 0.003)
-  bnEps          := 1e-3    -- TF-slim's BN ε
+  bf16Conv       := true      -- reaches the inverted-residual blocks
+  f32StemHead    := true      -- classifier head in fp32, as every verified render keeps it
+  runningBN      := true      -- paper-faithful eval: running BN stats, not eval-batch stats
+  bnMomentum     := 0.997     -- training_scope bn_decay 0.997 (PyTorch momentum 0.003)
+  bnEps          := 1e-3      -- slim.batch_norm's ε
 
 #eval mobilenetV2Imagenet.validate!
 
-/-- Paper-faithful full run: identical recipe, the long (350-epoch) schedule.
-    Selected with the `full` recipe arg; writes a separate `_full.py` so a quick
+/-- The run: the README's "about 700K steps" on 8 clones of 96 = 700,000 × 768 / 1,281,167 ≈ 420
+    epochs of data. Selected with the `full` recipe arg; writes a separate `_full.py` so a quick
     validation subrun and the multi-day run never clobber each other. -/
 def mobilenetV2ImagenetConfigFull : TrainConfig :=
-  { mobilenetV2ImagenetConfig with epochs := 350 }
+  { mobilenetV2ImagenetConfig with epochs := 420 }
 
 def mobilenetV2ImagenetRecipes : List Recipe := [
   { name := "default", cfg := mobilenetV2ImagenetConfig,
     out := "generated_mobilenet_v2_imagenet.py",
-    desc := "90-epoch validation tier (RMSProp, crop/flip only)" },
+    desc := "90-epoch validation tier (TF-slim's README recipe, short)" },
   { name := "full",    cfg := mobilenetV2ImagenetConfigFull,
     out := "generated_mobilenet_v2_imagenet_full.py",
-    desc := "paper-faithful 350-epoch run" }
+    desc := "TF-slim's README recipe, 420 epochs" }
 ]
 
 def main (args : List String) : IO Unit :=

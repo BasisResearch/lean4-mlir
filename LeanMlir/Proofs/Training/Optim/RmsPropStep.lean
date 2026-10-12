@@ -148,4 +148,73 @@ theorem rmsBufNext_buf_zero (ρ μ ε : ℝ) (sq g : Vec n) :
     rmsBufNext ρ μ ε sq (fun _ => 0) g = fun i => g i / Real.sqrt (adamVNext ρ sq g i + ε) := by
   funext i; simp [rmsBufNext]
 
+-- ════════════════════════════════════════════════════════════════
+-- § TF1's placement of the learning rate — `ApplyRMSProp`, the optimizer TF-slim actually ran
+-- ════════════════════════════════════════════════════════════════
+
+/-- **TensorFlow 1's `ApplyRMSProp` buffer: `b' = μ·b + lr·g/√(s' + ε)` — THE LEARNING RATE IS
+    INSIDE THE MOMENTUM TERM**, and the parameter step is `θ' = θ − b'` with no rate of its own
+    (`training_ops.cc`: `mom <- momentum * mom + lr * grad / sqrt(ms + epsilon); var <- var - mom`).
+    This is what `tf.train.RMSPropOptimizer` — TF-slim's `train_image_classifier.py`, hence the
+    MobileNetV2 and EfficientNet references' own runs — computes. `rmsBufNext` above (the JAX
+    reference's spelling and the committed `rms*` renders) applies the rate OUTSIDE:
+    `θ' = θ − lr·(μ·b + g/√(s' + ε))`.
+
+    The two are the same optimizer only while the rate is constant: `rmsBufNextTf_smul` says the
+    TF buffer is the other buffer scaled by `lr`, `rmsPropTfStep_theta_at_const` that the
+    parameters then agree, and `rmsPropTfStep_theta_lr_change` that under a CHANGING rate they
+    differ by exactly `μ·b·(lr₁ − lr₀)` per coordinate — MobileNetV2's ×0.98 staircase moves the
+    rate 168 times, so this is `imagenet_parity.md` D13 and not a cosmetic difference. A constant-rate
+    twin cannot distinguish the placements; the one-step tie from a non-zero buffer
+    (`scripts/parity/opt_step_tie.py`, the `rmstf…` rows) can and does. -/
+noncomputable def rmsBufNextTf (ρ μ ε lr : ℝ) (sq buf g : Vec n) : Vec n :=
+  fun i => μ * buf i + lr * (g i / Real.sqrt (adamVNext ρ sq g i + ε))
+
+/-- One TF1 RMSProp step `(θ', b', s')` on the packed `[θ|m|v]` signature, `m` the buffer and `v`
+    the mean-square as in `rmsPropStep`. `θ'` is spelled `sgdParam 1 θ b'` — `θ − 1·b'` — because
+    the render reuses `sgdParamF` at a baked `%one` rather than adding a subtract-at-parameter-shape
+    op, and the faithfulness theorem (`rmsPropTf_triple_faithful`) is `rfl` against this exact form.
+    `g` is the weight-decayed gradient, as for `rmsPropStep` (slim's L2 is a regularisation loss,
+    so it reaches the optimizer inside the gradient). -/
+noncomputable def rmsPropTfStep (ρ μ ε lr : ℝ) (θ sq buf g : Vec n) : Vec n × Vec n × Vec n :=
+  (sgdParam 1 θ (rmsBufNextTf ρ μ ε lr sq buf g), rmsBufNextTf ρ μ ε lr sq buf g, adamVNext ρ sq g)
+
+/-- Coordinate closed form of the TF buffer. -/
+theorem rmsBufNextTf_apply (ρ μ ε lr : ℝ) (sq buf g : Vec n) (i : Fin n) :
+    rmsBufNextTf ρ μ ε lr sq buf g i =
+      μ * buf i + lr * (g i / Real.sqrt (ρ * sq i + (1 - ρ) * (g i) ^ 2 + ε)) := rfl
+
+/-- **The TF buffer is the reference buffer scaled by the rate**: fed `lr·b`, it returns
+    `lr·rmsBufNext … b`. The whole relation between the two placements, in one line. -/
+theorem rmsBufNextTf_smul (ρ μ ε lr : ℝ) (sq buf g : Vec n) :
+    rmsBufNextTf ρ μ ε lr sq (fun i => lr * buf i) g
+      = fun i => lr * rmsBufNext ρ μ ε sq buf g i := by
+  funext i; simp only [rmsBufNextTf, rmsBufNext]; ring
+
+/-- **At a constant rate the parameters agree**: the TF step from the scaled buffer `lr·b` lands
+    where the reference step from `b` lands. This is why a constant-`lr` run (the Imagenette twin,
+    a probe at one rate) cannot tell the placements apart. -/
+theorem rmsPropTfStep_theta_at_const (ρ μ ε lr : ℝ) (θ sq buf g : Vec n) :
+    (rmsPropTfStep ρ μ ε lr θ sq (fun i => lr * buf i) g).1
+      = (rmsPropStep ρ μ ε lr θ sq buf g).1 := by
+  funext i; simp only [rmsPropTfStep, rmsPropStep, sgdParam, rmsBufNextTf, rmsBufNext]; ring
+
+/-- **When the rate moves they differ, and by exactly this much**: a buffer built at `lr₀` and
+    stepped at `lr₁` lands `μ·b·(lr₁ − lr₀)` away from the reference's step, per coordinate. Under
+    a decaying schedule (`lr₁ < lr₀`) the TF form's momentum carries the OLD, larger rate forward —
+    the reference's momentum is rescaled at once. Nonzero whenever `μ ≠ 0`, `b ≠ 0` and the rate
+    changed, so a one-step tie from a non-zero buffer at two rates separates the two spellings. -/
+theorem rmsPropTfStep_theta_lr_change (ρ μ ε lr₀ lr₁ : ℝ) (θ sq buf g : Vec n) (i : Fin n) :
+    (rmsPropTfStep ρ μ ε lr₁ θ sq (fun i => lr₀ * buf i) g).1 i
+      - (rmsPropStep ρ μ ε lr₁ θ sq buf g).1 i = μ * buf i * (lr₁ - lr₀) := by
+  simp only [rmsPropTfStep, rmsPropStep, sgdParam, rmsBufNextTf, rmsBufNext]; ring
+
+/-- From a zero buffer the TF buffer is `lr·g/√(s' + ε)` — the reference's `rmsBufNext_buf_zero`
+    scaled by the rate, which is what `rms-tie`'s claim ② reads on a TF render. Like the reference
+    form it is not affine in `g`, so the shard-check construction does not transfer either. -/
+theorem rmsBufNextTf_buf_zero (ρ μ ε lr : ℝ) (sq g : Vec n) :
+    rmsBufNextTf ρ μ ε lr sq (fun _ => 0) g
+      = fun i => lr * (g i / Real.sqrt (adamVNext ρ sq g i + ε)) := by
+  funext i; simp [rmsBufNextTf]
+
 end Proofs

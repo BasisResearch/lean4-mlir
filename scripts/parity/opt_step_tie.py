@@ -113,7 +113,8 @@ FIX_DIR = ".lake/build"
 # tests/TestOptStepFixtures.lean. ⚠ Three of them, two decaying and one rank-1: with a single leaf
 # the GLOBAL norm and the PER-TENSOR norm coincide, so a per-parameter clip would pass every check
 # below (`Proofs.clipFactor_shared` against `Proofs.lambScale_not_shared`).
-SHAPES = [(4, 3, 2, 2), (5,), (6, 4)]
+SHAPES = [(4, 3, 2, 2), (5,), (6, 4), (7, 1, 2, 2)]
+P = len(SHAPES)   # every region is P arrays wide; the offsets below are multiples of it
 
 # (fixture slug, reference file, _K, accum, ema). See TestOptStepFixtures.lean's `variants`
 # docstring for why each row maps onto the reference it does.
@@ -150,6 +151,20 @@ VARIANTS = [
     # decay — lands 5.0e-3 off. See `run_ref_ema`.
     ("emalambacc8wxclip", "generated_resnet50_imagenet_a2accum.py", 8, True, True,
      "generated_resnet50_imagenet.py"),
+    # ⭐⭐ RMSProp, BOTH RATE PLACEMENTS (2026-10-12, planning/recipe_prep.md §6; imagenet_parity.md
+    # D11 / D13). `rmswx` is the committed `.rmsprop` arm against EfficientNet-B0's trainer (the rate
+    # OUTSIDE the momentum term, `p - lr * b`); `rmstfwxdw` is TF1's `ApplyRMSProp` (`.rmspropTf`,
+    # the rate INSIDE, `p - b`) with TF-slim's decay set — no 1-D params AND no depthwise kernel —
+    # against MobileNetV2's `full` trainer, whose `rmspropTf` + `wdExcludeDepthwise` it must match.
+    # The fixture's `p3 = (7,1,2,2)` is a depthwise shape: under `rmswx` it decays on both sides,
+    # under `rmstfwxdw` neither side decays it. ⚠ The buffers come in NON-ZERO (`m0`), which is what
+    # separates the two placements at one step: `Proofs.rmsPropTfStep_theta_lr_change`.
+    # Counterfactuals, run by hand 2026-10-12 (each fixture against the OTHER placement's trainer):
+    # `rmstfwxdw` vs B0's, worst rel 9.8e-01; `rmswx` vs MNv2's, 5.4e+01 (the buffer rows, which
+    # carry `lr` on one side only). Six to eight orders above the floor; the gate has teeth.
+    ("rmswx",        "generated_efficientnet_b0_imagenet.py",   1, False, False),
+    ("rmstfwxdw",    "generated_mobilenet_v2_imagenet_full.py", 1, False, False),
+    ("emarmstfwxdw", "generated_mobilenet_v2_imagenet_full.py", 1, False, True),
 ]
 
 # Tolerance. The two sides run the SAME arithmetic in the same f32 order for the most part, but not
@@ -168,7 +183,8 @@ def assert_references_fresh(paths):
     and only failed once CI regenerated and found the reference had gained D1's clip. A comment is
     not a gate — so this is the gate.
     """
-    srcs = ["jax/MainResnet50Imagenet.lean", "jax/Jax/Codegen.lean"]
+    srcs = ["jax/MainResnet50Imagenet.lean", "jax/MainEfficientNetImagenet.lean",
+            "jax/MainMobilenetV2Imagenet.lean", "jax/Jax/Codegen.lean"]
     newest = max(os.path.getmtime(s) for s in srcs if os.path.exists(s))
     stale = [p for p in paths
              if os.path.exists(os.path.join(REF_DIR, p))
@@ -179,7 +195,9 @@ def assert_references_fresh(paths):
                  "\n\nRegenerate, then re-run:\n"
                  "  (cd jax && lake build resnet50-imagenet &&\n"
                  "   for r in default a2-accum a1 adam-probe; do\n"
-                 "     lake exe resnet50-imagenet $r /nonexistent >/dev/null 2>&1 || true; done)")
+                 "     lake exe resnet50-imagenet $r /nonexistent >/dev/null 2>&1 || true; done)\n"
+                 "  or scripts/regen_jax_generated.sh write && scripts/regen_jax_generated.sh sync\n"
+                 "  (the B0 and MNv2 rows read their trainers too)")
 
 
 def extract_ref_optimizer(path):
@@ -201,7 +219,8 @@ def extract_ref_optimizer(path):
     # looking mismatch, which is §3.1's shape one file over.
     starts = ["grads = jax.tree.map(lambda _a: _a / _K",   # accumulation: the mean, then the clip
               "gn = jnp.sqrt(",                            # clip, no accumulation
-              "m, v, t = opt_state"]                       # neither
+              "grads = jax.tree.map(lambda g, p",          # RMSProp: the COUPLED L2 comes first
+              "m, v, t = opt_state"]                       # Adam / LAMB, neither
     i0 = None
     for pat in starts:
         hit = [i for i, l in enumerate(src) if l.strip().startswith(pat)]
@@ -223,7 +242,7 @@ def extract_ref_optimizer(path):
     body = "\n".join(l[pad:] if l.strip() else "" for l in span)
     # constants live at module level in the generated file; take them from the same source
     consts = {}
-    for name in ("BETA1", "BETA2", "EPS", "WD", "_WD_POS_SHAPE"):
+    for name in ("BETA1", "BETA2", "EPS", "WD", "_WD_POS_SHAPE", "RHO", "MOMENTUM"):
         for l in src:
             if l.startswith(name + " "):
                 consts[name] = eval(l.split("=", 1)[1].strip(), {"None": None})
@@ -238,13 +257,23 @@ def extract_ref_optimizer(path):
 
 
 def run_ref(path, K, theta, m, v, gsum, lr, t):
-    """Execute the extracted reference optimizer. Returns (θ', m', v')."""
+    """Execute the extracted reference optimizer. Returns (θ', m', v').
+
+    An RMSProp span (`sq, buf = opt_state`) reads the state as `(sq, buf)` — the mean-square in the
+    render's `v` slot and the momentum buffer in its `m` slot, the `[θ|m|v]` reinterpretation
+    `RmsPropStep.lean` describes — and hands `(params, buf, sq)` back in the same `(θ', m', v')`
+    order, so the comparison below is slot-for-slot without a special case.
+    """
     import jax, jax.numpy as jnp
     body, consts, wd_mask_src = extract_ref_optimizer(path)
     ns = dict(jax=jax, jnp=jnp, np=np, **consts)
     ns["params"] = [jnp.asarray(a) for a in theta]
-    ns["opt_state"] = ([jnp.asarray(a) for a in m], [jnp.asarray(a) for a in v],
-                       jnp.float32(t - 1))          # the span does `t = t + 1` itself
+    rms = "sq, buf = opt_state" in body
+    if rms:
+        ns["opt_state"] = ([jnp.asarray(a) for a in v], [jnp.asarray(a) for a in m])
+    else:
+        ns["opt_state"] = ([jnp.asarray(a) for a in m], [jnp.asarray(a) for a in v],
+                           jnp.float32(t - 1))      # the span does `t = t + 1` itself
     ns["_gsum"] = [jnp.asarray(a) for a in gsum]
     ns["grads"] = [jnp.asarray(a) for a in gsum]    # the no-accumulation span reads `grads`
     ns["_K"] = K
@@ -254,6 +283,9 @@ def run_ref(path, K, theta, m, v, gsum, lr, t):
         exec(wd_mask_src, ns)
         ns["WD_MASK"] = ns["_wd_mask"](ns["params"])
     exec(body, ns)
+    if rms:
+        return ([np.asarray(a) for a in ns["params"]],
+                [np.asarray(a) for a in ns["buf"]], [np.asarray(a) for a in ns["sq"]])
     return ([np.asarray(a) for a in ns["params"]],
             [np.asarray(a) for a in ns["m"]], [np.asarray(a) for a in ns["v"]])
 
@@ -370,11 +402,13 @@ def main():
                        np.float32(1.0), np.float32(1.0)] +  # %aup, %akeep on the APPLY micro-batch
                       ([np.float32(d), np.float32(1.0 - d)] if ema else []) +
                       [*dg])
-            n_out = 15 if ema else 12
+            n_out = 5 * P if ema else 4 * P
         else:
             gsum = dg
-            arrays = [*theta, *m0, *v0, np.float32(LR), bc1, bc2, *dg]
-            n_out = 9
+            arrays = ([*theta, *m0, *v0] + ([*e0] if ema else []) +
+                      [np.float32(LR), bc1, bc2] +
+                      ([np.float32(d), np.float32(1.0 - d)] if ema else []) + [*dg])
+            n_out = 4 * P if ema else 3 * P
 
         outs = run_render(slug, arrays, n_out)
         rt, rm, rv = run_ref(ref, K, theta, m0, v0, gsum, LR, T)
@@ -386,22 +420,24 @@ def main():
             ref_e, _ = run_ref_ema(ema_ref, e0, rt, T - 1)
 
         rels = []
-        for i in range(3):
+        for i in range(P):
             rels.append(cmp(f"{slug}/θ'[{i}]", outs[i], rt[i], worst))
-            rels.append(cmp(f"{slug}/m'[{i}]", outs[3 + i], rm[i], worst))
-            rels.append(cmp(f"{slug}/v'[{i}]", outs[6 + i], rv[i], worst))
+            rels.append(cmp(f"{slug}/m'[{i}]", outs[P + i], rm[i], worst))
+            rels.append(cmp(f"{slug}/v'[{i}]", outs[2 * P + i], rv[i], worst))
+        off = 3 * P
         if accum:
             # ⭐ THE ROW THAT CATCHES A COMPOUNDING CLIP. The fourth region must be the RAW `Gt` —
             # the reference's `_gsum`, before its clip line — not the clipped total the optimizer
             # tail consumed. See this file's header.
-            for i in range(3):
-                rels.append(cmp(f"{slug}/G'[{i}] (RAW)", outs[9 + i], gsum[i], worst))
+            for i in range(P):
+                rels.append(cmp(f"{slug}/G'[{i}] (RAW)", outs[off + i], gsum[i], worst))
+            off += P
         if ema:
             # ⭐⭐ THE FIFTH REGION, against the reference's own `ema_update` applied to the
-            # reference's own θ′. ⚠ It sits at offset 12 and not 9 — `G` before `E` — which is the
+            # reference's own θ′. ⚠ It sits AFTER `G` when there is one — `[θ|m|v|G|E]` is the
             # region ORDER the driver packs. Swap the two and this is the check that goes red.
-            for i in range(3):
-                rels.append(cmp(f"{slug}/E'[{i}] (shadow)", outs[12 + i], ref_e[i], worst))
+            for i in range(P):
+                rels.append(cmp(f"{slug}/E'[{i}] (shadow)", outs[off + i], ref_e[i], worst))
         bad = max(rels)
         ok = bad <= RTOL
         failures += 0 if ok else 1

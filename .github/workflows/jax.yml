@@ -63,6 +63,7 @@ on:
       - 'scripts/parity/_*_timm_dump.py'
       - 'scripts/gates/aug_bicubic_pil_check.py'
       - 'scripts/gates/crop_sampler_gate.py'
+      - 'scripts/gates/color_distort_gate.py'
       - 'requirements-timm-lock.txt'
   pull_request:
     paths:
@@ -100,6 +101,7 @@ on:
       - 'scripts/parity/_*_timm_dump.py'
       - 'scripts/gates/aug_bicubic_pil_check.py'
       - 'scripts/gates/crop_sampler_gate.py'
+      - 'scripts/gates/color_distort_gate.py'
       - 'requirements-timm-lock.txt'
   workflow_dispatch:
 
@@ -476,18 +478,24 @@ jobs:
         run: |
           set -e
           lake exe cache get || true
-          lake build resnet50-imagenet
+          lake build resnet50-imagenet efficientnet-b0-imagenet mobilenet-v2-imagenet
           # One recipe per optimizer shape the tie compares against, and each row needs its own:
           #   default     LAMB, no mask, no clip, no accumulation
           #   a2-accum    LAMB + no_weight_decay + global-norm clip + accumulation (wd 0.02)
           #   a1          the same at RSB-A1's wd 0.01 — the `wdStr` row
           #   adam-probe  AdamW + no_weight_decay + clip at eps 1e-8, wd 0.02 — the `.adamw` row
+          # and the RMSProp rows (2026-10-12): EfficientNet-B0's `default` (the rate OUTSIDE the
+          # momentum term, timm's mask) and MobileNetV2's `full` (TF1's placement, TF-slim's mask
+          # with the depthwise excluded, the EMA shadow).
           for r in default a2-accum a1 adam-probe; do
             lake exe resnet50-imagenet "$r" /nonexistent-so-training-cannot-start >/dev/null 2>&1 || true
           done
+          lake exe efficientnet-b0-imagenet default /nonexistent-so-training-cannot-start >/dev/null 2>&1 || true
+          lake exe mobilenet-v2-imagenet full /nonexistent-so-training-cannot-start >/dev/null 2>&1 || true
           missing=0
           for f in generated_resnet50_imagenet.py generated_resnet50_imagenet_a2accum.py \
-                   generated_resnet50_imagenet_a1.py generated_resnet50_imagenet_adamprobe.py; do
+                   generated_resnet50_imagenet_a1.py generated_resnet50_imagenet_adamprobe.py \
+                   generated_efficientnet_b0_imagenet.py generated_mobilenet_v2_imagenet_full.py; do
             if [ ! -s ".lake/build/$f" ]; then echo "::error::$f was not emitted"; missing=1; fi
           done
           [ "$missing" -eq 0 ]
@@ -623,6 +631,13 @@ jobs:
         run: |
           set -o pipefail
           python3 scripts/gates/crop_sampler_gate.py 2>&1 | tee -a /tmp/parity.log
+
+      - name: TF-slim's distort_color (fast mode) against its numpy twin, on the emitted MobileNetV2 pipeline
+        # D12 (planning/recipe_prep.md §6): the twin is tied to tf.image.adjust_saturation first, then
+        # the EMITTED `_imagenet_decode_random_crop_flip` is run verbatim with its draws pinned.
+        run: |
+          set -o pipefail
+          python3 scripts/gates/color_distort_gate.py jax/generated/generated_mobilenet_v2_imagenet_full.py 2>&1 | tee -a /tmp/parity.log
 
       - name: Summary
         if: always()

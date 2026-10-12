@@ -45,8 +45,8 @@ import tensorflow_datasets as tfds
 _IMG_SIZE = 224
 _CROP_PADDING = 32
 _CROP_PCT = _IMG_SIZE / (_IMG_SIZE + _CROP_PADDING)   # 224/256 = 0.875, timm's default
-_MEAN_RGB = tf.constant([0.485 * 255, 0.456 * 255, 0.406 * 255], dtype=tf.float32)
-_STD_RGB  = tf.constant([0.229 * 255, 0.224 * 255, 0.225 * 255], dtype=tf.float32)
+_MEAN_RGB = tf.constant([127.5, 127.5, 127.5], dtype=tf.float32)   # TF-slim: (x/255 - 0.5) * 2 (inputScalePm1)
+_STD_RGB  = tf.constant([127.5, 127.5, 127.5], dtype=tf.float32)
 _AUG_SEED = os.environ.get('AUG_SEED')
 _AUG_SEED = int(_AUG_SEED) if _AUG_SEED else None
 
@@ -55,8 +55,8 @@ def _imagenet_decode_random_crop_flip(image_bytes):
     bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
     bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
         shape, bounding_boxes=bbox,
-        min_object_covered=0.1, aspect_ratio_range=(3./4, 4./3.),
-        area_range=(0.08, 1.0), max_attempts=10,
+        min_object_covered=0.1, aspect_ratio_range=(0.75, 1.33),
+        area_range=(0.05, 1.0), max_attempts=100,
         seed=_AUG_SEED,
         use_image_if_no_bounding_boxes=True)
     oy, ox, _ = tf.unstack(bbox_begin)
@@ -64,8 +64,14 @@ def _imagenet_decode_random_crop_flip(image_bytes):
     window = tf.stack([oy, ox, th, tw])
     img = tf.io.decode_and_crop_jpeg(image_bytes, window, channels=3)
     img = tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                          method=tf.image.ResizeMethod.BICUBIC, antialias=True)[0]
+                          method=tf.image.ResizeMethod.BILINEAR, antialias=False)[0]
     img = tf.image.random_flip_left_right(img, seed=_AUG_SEED)
+    # TF-slim inception_preprocessing.distort_color, fast_mode (colorDistortSlim): on [0, 1],
+    # brightness ±32/255 then saturation ×U(0.5, 1.5), one order, clipped; back to 0..255.
+    img = img / 255.0
+    img = tf.image.random_brightness(img, 32. / 255.)
+    img = tf.image.random_saturation(img, 0.5, 1.5)
+    img = tf.clip_by_value(img, 0.0, 1.0) * 255.0
     return img
 
 def _imagenet_decode_center_crop(image_bytes):

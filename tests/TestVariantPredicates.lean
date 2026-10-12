@@ -160,6 +160,11 @@ private def table : List (String × Bool × Bool × Bool) :=
     -- EfficientNet-B0's TF recipe: `do` ++ `wx` ++ `eps0001` — `dowx` must still
     -- read as dropout exactly once, and `drop` stays the one stochastic-depth marker.
   , ("emarmsdp64dropdowxeps0001bf16", true, true, true)
+    -- MobileNetV2 as TF-slim's README runs it (2026-10-12, planning/recipe_prep.md §6): the EMA
+    -- prefix on `rmstf` (`OptRecipe.rmspropTf`, TF1's rate placement — `tf` ++ `dp` spells `tfdp`,
+    -- which is no marker), then `wx` ++ `dw` ++ `do` — `dwdo` must read as dropout exactly once
+    -- and as nothing else (`dw` ++ `do` spells `wd`, which no predicate reads), no `drop`, no `sd`.
+  , ("emarmstfdp64wxdwdoeps0001bf16", true, true, false)
     -- **EMA × ACCUMULATION — the FIVE-region spellings** (RSB-A2/A1). A partition guard that has
     -- only ever seen a two-way split goes green on a graph it has never seen, and this is the axis
     -- where "green" means "every parameter aligned".
@@ -297,6 +302,7 @@ private def table : List (String × Bool × Bool × Bool) :=
 private def dropoutSpellings : List String := ["adamdo", "emarms64dropdo", "rmsdo64",
   "emaaccdp8x128wxdowd005bf16", "emaacc8x128wxdowd005bf16",
   "rmsdp64wxdols0bf16", "rmsdp64wxdols0eps0001bf16", "emarmsdp64dropdowxeps0001bf16",
+  "emarmstfdp64wxdwdoeps0001bf16",
   "accdp8x128wxdropdowd01bf16", "acc8x128wxdropdowd01bf16"]
 #guard table.all (fun (v, _, _, _) => cdOn v == dropoutSpellings.contains v)
 #guard dropoutSpellings.all (fun v => table.any (fun (t, _, _, _) => t == v))
@@ -316,6 +322,12 @@ private def dropoutSpellings : List String := ["adamdo", "emarms64dropdo", "rmsd
 -- The `"sd"` collision, pinned directly: an `"sd"` marker fires on `rmsdp64`, `"drop"` does not.
 #guard ("rmsdp64".contains "sd") == true
 #guard sdOn "rmsdp64" == false
+-- `rmstf` ++ `dp` and `wx` ++ `dw` ++ `do`, the two new concatenations of 2026-10-12: `rmsOn`
+-- is a SUBSTRING test, so the TF-placement slug keeps the mean-square-at-1.0 path; `tfdp` and
+-- `dwdo` spell no `sd`, no `drop`, no `acc`; and `accK` is not disturbed by the `64` after `dp`.
+#guard rmsOn "emarmstfdp64wxdwdoeps0001bf16" == true
+#guard (!"rmstfdp64".contains "sd") && (!"wxdwdo".contains "drop") && (!"emarmstfdp64wxdwdoeps0001bf16".contains "acc")
+#guard accK "emarmstfdp64wxdwdoeps0001bf16" == 1
 
 -- And why the drop marker must TRAIL: a leading one breaks the EMA test, which is the `emarms`
 -- shape. `dropema` is not a name anything produces today — that is the point of checking it here.
@@ -633,7 +645,8 @@ private def accumSpellings : List String :=
 #guard VerifiedVariant.evalTag "emarmsdp64dropdowxeps0001bf16" == "_eps0001"
 #guard table.all (fun (v, _, _, _) =>
   VerifiedVariant.evalTag v == (if v.contains "eps0001" then "_eps0001" else ""))
-#guard (table.filter (fun (v, _, _, _) => v.contains "eps")).length == 2
+#guard VerifiedVariant.evalTag "emarmstfdp64wxdwdoeps0001bf16" == "_eps0001"
+#guard (table.filter (fun (v, _, _, _) => v.contains "eps")).length == 3
 
 -- THE `erf` MARKER, the exact GELU, against every concatenation in the table, as a partition:
 -- it reads as exact on the spellings that carry it and on no other. `erf` is three characters no

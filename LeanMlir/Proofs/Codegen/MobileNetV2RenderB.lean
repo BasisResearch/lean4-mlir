@@ -457,10 +457,19 @@ def mnv2AdamVariant (B replicas : Nat) (opt : OptRecipe := .adamw)
     -- α is spelled `ls<100α>` only when it is not the default 0.1, so `ls0` is α = 0.
     (wx : Bool := false) (cd : Bool := false) (alpha : Float := 0.1)
     -- BatchNorm ε, as `bnEpsMarker` spells it: empty at the committed 1e-5.
-    (epsMarker : String := "") : String :=
+    (epsMarker : String := "")
+    -- `ema` (the model-EMA shadow, the FIFTH region) and `dw` (no decay on the depthwise kernels
+    -- either, `rankWdDecaysNoDw`) — TF-slim's recipe as its README runs it (2026-10-12,
+    -- planning/recipe_prep.md §6). TRAILING and defaulted, so every committed spelling is untouched.
+    -- `ema` LEADS in the string, as on EfficientNet: the driver's `emaOn` is a PREFIX test. `dw`
+    -- follows `wx` (it narrows the same rule) and precedes `do`: `wxdwdo` reads as dropout exactly
+    -- once and spells no `drop`, no `acc`, no `sd` (`tests/TestVariantPredicates.lean`).
+    (ema : Bool := false) (dw : Bool := false) : String :=
+  (if ema then "ema" else "") ++
   opt.slug replicas ++
   (if B == 32 then "" else toString B) ++
   (if wx then "wx" else "") ++
+  (if dw then "dw" else "") ++
   (if cd then "do" else "") ++
   (if alpha == 0.1 then "" else s!"ls{(alpha * 100.0).round.toUInt64}") ++
   epsMarker ++
@@ -648,7 +657,13 @@ def mobilenetv2AdamTrainStepText (B nClasses : Nat) (epsStr : String)
     --   `wdExclude` — `wx`, no decay on the 1-D parameters (BN γ/β, biases): `wdNameBy`'s rule;
     --   `cd` — classifier dropout at the driver's `%do` mask (EfficientNet's and MNv4's slot);
     --   `alpha` — the label-smoothing mass. At α = 0 the smoothing ops are not emitted at all.
-    (wdExclude : Bool := false) (cd : Bool := false) (alpha : Float := 0.1) : String :=
+    (wdExclude : Bool := false) (cd : Bool := false) (alpha : Float := 0.1)
+    -- `ema` — the model-EMA shadow as the FIFTH region `[θ|m|v|E]`, EfficientNet's threading
+    --   (`optOne`'s `emaTail` after either tail; `%emad`/`%oemad` ride through); TF-slim's
+    --   `moving_average_decay 0.9999`.
+    -- `dw` — `wx` narrowed by `rankWdDecaysNoDw`: the depthwise kernels take `%wdz` as well,
+    --   slim's `separable_conv2d` without a regularizer (D11). Both TRAILING and defaulted.
+    (ema : Bool := false) (dw : Bool := false) : String :=
   let sync : Bool := replicas > 1 || forceSync
   -- α and K are spelled ONCE here, for the cotangent AND the report-only loss — never as inline
   -- K=10 literals, because one of them is on the GRADIENT path. At K=10 they render
@@ -819,13 +834,17 @@ def mobilenetv2AdamTrainStepText (B nClasses : Nat) (epsStr : String)
     let mut thetaN : List String := []
     let mut mNames : List String := []
     let mut vNames : List String := []
+    let mut eNames : List String := []
     for g in allPs do
-      let wdN := wdNameBy wdExclude g.nm g.ds
-      let (c, nT, nM, nV, _, _) ← optOne opt B replicas g wdN
+      -- `dw` narrows the rank rule to TF-slim's: the `[C,1,3,3]` depthwise kernels bind `%wdz`.
+      let wdN := wdNameBy wdExclude g.nm g.ds (if dw then rankWdDecaysNoDw else rankWdDecays)
+      -- The shadow `%{nm}e` is `optOne`'s, after either tail, reading the UPDATED parameter.
+      let (c, nT, nM, nV, _, nE) ← optOne opt B replicas g wdN (ema := ema)
       adamCode := adamCode ++ c
       thetaN := thetaN ++ [nT]
       mNames := mNames ++ [nM]
       vNames := vNames ++ [nV]
+      match nE with | some e => eNames := eNames ++ [e] | none => pure ()
     -- ═══ assemble ═══
     let statCode := cQ0 ++ cQ1d ++ cQ1p ++ cQ2 ++ cQ3 ++ cQ4 ++ cQ5 ++ cQ6 ++ cQ7 ++ cQ8 ++
       cQ9 ++ cQ10 ++ cQ11 ++ cQ12 ++ cQ13 ++ cQ14 ++ cQ15 ++ cQ16 ++ cQ17 ++ cQh
@@ -843,10 +862,13 @@ def mobilenetv2AdamTrainStepText (B nClasses : Nat) (epsStr : String)
     let pTypes : List String := allPs.map (fun g => ty g.ds)
     let statTypes : List String := mnv2StatSigList.map (·.2)
     -- The dropout mask goes LAST, handed back as a passthrough (EfficientNet's and MNv4's slot).
-    let retVals := thetaN ++ mNames ++ vNames ++ ["%loss", "%bc1", "%bc2"] ++ statNames ++
+    -- `E` after `v`, then the scalars, with `%emad`/`%oemad` handed back after `%bc2` — the
+    -- `packedTrainRetTys` order the driver's five-region blob walks. At `ema := false` this is
+    -- the committed three-region list, byte for byte.
+    let retVals := thetaN ++ mNames ++ vNames ++ eNames ++ ["%loss", "%bc1", "%bc2"] ++
+      (if ema then ["%emad", "%oemad"] else []) ++ statNames ++
       (if cd then [doName] else [])
-    let retTys  := pTypes ++ pTypes ++ pTypes ++
-      ["tensor<f32>", "tensor<f32>", "tensor<f32>"] ++ statTypes ++
+    let retTys  := packedTrainRetTys pTypes (ema := ema) ++ statTypes ++
       (if cd then [ty [B, 1280]] else [])
     pure <|
       (match opt with
@@ -862,6 +884,19 @@ def mobilenetv2AdamTrainStepText (B nClasses : Nat) (epsStr : String)
          "    //    %bc1/%bc2 are Adam bias corrections: unused here, passed through unchanged.\n" ++
          "    //    The mean-square must be INITIALISED TO 1.0, not 0 — part of the recipe, not\n" ++
          "    //    an implementation detail, since this optimizer is not bias-corrected.\n"
+       | .rmspropTf =>
+         "    // ── OPTIMIZER: RMSProp + momentum, TENSORFLOW 1's ApplyRMSProp (tf.train.RMSPropOptimizer,\n" ++
+         "    //    what TF-slim's train_image_classifier.py ran MobileNetV2 under). Per parameter:\n" ++
+         "    //      g  <- g + wd*θ        COUPLED L2, BEFORE the accumulator  (momVNextF)\n" ++
+         "    //      s' <- ρ*s + (1-ρ)*g²                                      (adamVNextF at ρ)\n" ++
+         "    //      b' <- μ*b + lr*g/sqrt(s' + ε)   THE RATE INSIDE THE MOMENTUM TERM, ε INSIDE\n" ++
+         "    //                                      the sqrt                  (rmsBufNextTfF)\n" ++
+         "    //      θ' <- θ - b'          no rate at the parameter: sgdParamF at %one\n" ++
+         "    //    The rms* renders apply lr OUTSIDE (θ' <- θ - lr*b'); the two agree only while lr\n" ++
+         "    //    is constant (Proofs.rmsPropTfStep_theta_lr_change) — under the ×0.98 staircase\n" ++
+         "    //    they are different optimizers (imagenet_parity.md D13).\n" ++
+         "    //    Packed [θ|m|v] is reused with m = momentum buffer, v = mean-square; %bc1/%bc2 are\n" ++
+         "    //    passed through; the mean-square is INITIALISED TO 1.0 by the driver.\n"
        | _ => "") ++
       (if replicas ≤ 1 then
         s!"    // ── MobileNetV2 batch-BN {opt.label} train step: {trainStepHandNote} ──\n"
@@ -872,19 +907,20 @@ def mobilenetv2AdamTrainStepText (B nClasses : Nat) (epsStr : String)
         (if bf16 then syncBnBf16TwinsNote else "")) ++
       zeroBiasPrelude convBias [16, 24, 32, 64, 96, 128, 144, 160, 192, 256, 320, 384, 576, 960, 1280] ++ body ++
       optConstsB opt (rms := some mnv2RmsHyper) ++
-      wdzConst wdExclude ++ adamCode ++ lossCode ++
+      wdzConst wdExclude (if dw then "1-D params and the depthwise kernels (TF-slim: no \
+regularizer on separable_conv2d)" else "1-D params") ++ adamCode ++ lossCode ++
       s!"    return {String.intercalate ", " retVals} : {String.intercalate ", " retTys}\n"
   let sigList : List (String × String) := mnv2SigList nClasses convBias
   let statSig := String.intercalate ", " (mnv2StatSigList.map (fun (n, t) => s!"{n}i: {t}"))
-  let inSig := s!"%x: {ty [B, 3*224*224]}, " ++ packedTrainSig sigList ++ ", " ++ statSig ++
+  let inSig := s!"%x: {ty [B, 3*224*224]}, " ++ packedTrainSig sigList (ema := ema) ++ ", " ++ statSig ++
     (if cd then s!", {doName}: {ty [B, 1280]}" else "") ++
     s!", %onehot: {ty [B, nClasses]}"
   let pTy := sigList.map (·.2)
   let outSig := String.intercalate ", "
-    (packedTrainRetTys pTy ++
+    (packedTrainRetTys pTy (ema := ema) ++
      (mnv2StatSigList.map (·.2)) ++ (if cd then [ty [B, 1280]] else []))
   let inner : String := go.run' (0, [])
-  let fname := s!"{slug}_{mnv2AdamVariant B replicas opt bf16 wdExclude cd alpha (bnEpsMarker epsStr)}_train_step"
+  let fname := s!"{slug}_{mnv2AdamVariant B replicas opt bf16 wdExclude cd alpha (bnEpsMarker epsStr) ema dw}_train_step"
   "module @m {\n" ++
   s!"  func.func @{fname}({inSig}) -> ({outSig}) " ++ "{\n" ++
   inner ++
@@ -1373,6 +1409,31 @@ end Proofs.StableHLO
 #guard !"rmsdp64wxdols0eps0001bf16".contains "drop" && !"rmsdp64wxdols0eps0001bf16".contains "acc"
 #guard !"rmsdp64wxdols0eps0001bf16".startsWith "ema" && !"rmsdp64wxdols0eps0001bf16".contains "lamb"
 #guard !"rmsdp64wxdols0eps0001bf16".contains "bce"
+-- **TF-slim's recipe as its README runs it, and the arm `mnv2-default-4gpu` runs since 2026-10-12**
+-- (planning/recipe_prep.md §6): `rmspropTf` (the rate inside the momentum term, D13), `wx` + `dw`
+-- (no decay on BN γ/β, biases, or the depthwise kernels, D11), classifier dropout 0.2, label
+-- smoothing at the README's 0.1 (the default α, so no `ls` marker), BN ε 1e-3, the model-EMA shadow
+-- (`moving_average_decay 0.9999`, the fifth region), bf16. The truncated-normal init, the colour
+-- distortion and the rest of the pipeline are host- and shim-side. Eval partner:
+-- `mobilenetv2in_fwd_eval_eps0001.mlir`, through `VerifiedVariant.evalTag`.
+#eval IO.FS.writeFile "verified_mlir/mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_train_step.mlir"
+  (Proofs.StableHLO.mobilenetv2AdamTrainStepText 64 1000 "1.0e-3" 4 false "mobilenetv2in"
+    Proofs.StableHLO.OptRecipe.rmspropTf true (wdExclude := true) (cd := true) (alpha := 0.1)
+    (ema := true) (dw := true))
+#guard Proofs.StableHLO.mnv2AdamVariant 64 4 .rmspropTf true (wx := true) (cd := true) (alpha := 0.1)
+    (epsMarker := Proofs.StableHLO.bnEpsMarker "1.0e-3") (ema := true) (dw := true)
+  == "emarmstfdp64wxdwdoeps0001bf16"
+-- The driver's reading of that string: five regions (`ema` prefix), RMSProp's 1.0 mean-square
+-- init (`rms` substring), the dropout mask slot (`do`), no stochastic depth, no accumulation, the
+-- ε-1e-3 eval graph.
+#guard "emarmstfdp64wxdwdoeps0001bf16".startsWith "ema" && "emarmstfdp64wxdwdoeps0001bf16".contains "rms"
+#guard "emarmstfdp64wxdwdoeps0001bf16".contains "do" && !"emarmstfdp64wxdwdoeps0001bf16".contains "drop"
+#guard !"emarmstfdp64wxdwdoeps0001bf16".contains "acc" && !"emarmstfdp64wxdwdoeps0001bf16".contains "lamb"
+#guard !"emarmstfdp64wxdwdoeps0001bf16".contains "bce" && !"emarmstfdp64wxdwdoeps0001bf16".contains "sd"
+-- `ls` is absent at the default α, and the committed spellings are untouched by the two new axes.
+#guard !"emarmstfdp64wxdwdoeps0001bf16".contains "ls"
+#guard Proofs.StableHLO.mnv2AdamVariant 64 4 .rmsprop true (wx := true) (cd := true) (alpha := 0.0)
+    (epsMarker := Proofs.StableHLO.bnEpsMarker "1.0e-3") == "rmsdp64wxdols0eps0001bf16"
 
 -- The entry name, the artifact path and `LEAN_MLIR_VARIANT` must agree or the shim refuses the
 -- call ("entry mismatch"). These pin the literal path above against `mnv2AdamVariant`, so a rename

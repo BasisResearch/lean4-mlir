@@ -1392,6 +1392,12 @@ inductive SHlo : Nat → Type where
   --    theorem). `sqName`/`bufName` ride as name+value like every other optimizer op here.
   | rmsBufNextF {n : Nat} (sqName bufName rhoName orhoName muName epsName : String)
       (ds : List Nat) (ρ μ ε : ℝ) (sq buf : Vec n)              : SHlo n → SHlo n
+  --    TF1's `ApplyRMSProp` placement of the RATE (`RmsPropStep.lean`'s `rmsBufNextTf`): the
+  --    learning rate multiplies the normalised gradient INSIDE the momentum term, and the parameter
+  --    step is then `sgdParamF` at a baked `%one`. The MobileNetV2 reference's own optimizer
+  --    (`tf.train.RMSPropOptimizer`); `imagenet_parity.md` D13. `lrName` is the runtime `%lr`.
+  | rmsBufNextTfF {n : Nat} (sqName bufName rhoName orhoName muName epsName lrName : String)
+      (ds : List Nat) (ρ μ ε lr : ℝ) (sq buf : Vec n)           : SHlo n → SHlo n
   -- ── GLOBAL-NORM GRADIENT CLIPPING (`GradClip.lean`), the ViT /
   --    ConvNeXt recipe's `gradClipNorm`. FOUR ops, all in this `ds : List Nat` parameter-shape
   --    family rather than the `n : Nat` batched-activation one — the distinction matters, because
@@ -1818,6 +1824,7 @@ noncomputable def den : {n : Nat} → SHlo n → Vec n
   | _, .momParamF _ _ _ _ _ μ lr θ v e => momParam μ lr θ v (den e)
   -- RMSProp: the proven ℝ optimizer (RmsPropStep.lean) on the child's gradient.
   | _, .rmsBufNextF _ _ _ _ _ _ _ ρ μ ε sq buf e => rmsBufNext ρ μ ε sq buf (den e)
+  | _, .rmsBufNextTfF _ _ _ _ _ _ _ _ ρ μ ε lr sq buf e => rmsBufNextTf ρ μ ε lr sq buf (den e)
   -- Global-norm gradient clipping (GradClip.lean). `gradSumSqAccF acc g` adds one parameter's
   -- ∑g² to the running rank-0 total `acc` (`SHlo 1`, the `lnBetaGrad` reading); `clipScaleF s g`
   -- forms `min(1, c/(√s+ε))` from the total `s`, which it takes as its FIRST CHILD, and scales `g`
@@ -3439,6 +3446,26 @@ theorem rmsProp_triple_faithful {n : Nat} (θN sqN bufN rhoN orhoN muN epsN lrN 
      den (.rmsBufNextF sqN bufN rhoN orhoN muN epsN ds ρ μ ε sq buf e),
      den (.adamVNextF sqN rhoN orhoN ds ρ sq e))
       = rmsPropStep ρ μ ε lr θ sq buf (den e) := by
+  subst hb; rfl
+
+/-- **Rendered TF1 RMSProp buffer is `Proofs.rmsBufNextTf`** — `b' = μ·b + lr·g/√(s' + ε)`, the
+    rate inside the momentum term. -/
+@[simp] theorem rmsBufNextTfF_faithful {n : Nat} (sqN bufN rhoN orhoN muN epsN lrN : String)
+    (ds : List Nat) (ρ μ ε lr : ℝ) (sq buf : Vec n) (e : SHlo n) :
+    den (.rmsBufNextTfF sqN bufN rhoN orhoN muN epsN lrN ds ρ μ ε lr sq buf e)
+      = rmsBufNextTf ρ μ ε lr sq buf (den e) := rfl
+
+/-- **The rendered TF1 RMSProp triple is `Proofs.rmsPropTfStep`.** `rmsProp_triple_faithful`'s
+    twin for the other rate placement: the parameter slot is `sgdParamF` at `lr = 1` (the render's
+    baked `%one`, so `θ' = θ − 1·b'`) applied to THIS op's SSA output, the buffer is the one new op,
+    and the mean-square is again `adamVNextF` at `β₂ := ρ`. -/
+theorem rmsPropTf_triple_faithful {n : Nat} (θN sqN bufN rhoN orhoN muN epsN lrN oneN : String)
+    (ds : List Nat) (ρ μ ε lr : ℝ) (θ sq buf : Vec n) (e : SHlo n) (b' : Vec n)
+    (hb : b' = rmsBufNextTf ρ μ ε lr sq buf (den e)) :
+    (den (.sgdParamF θN oneN ds 1 θ (.operand "%buf" b')),
+     den (.rmsBufNextTfF sqN bufN rhoN orhoN muN epsN lrN ds ρ μ ε lr sq buf e),
+     den (.adamVNextF sqN rhoN orhoN ds ρ sq e))
+      = rmsPropTfStep ρ μ ε lr θ sq buf (den e) := by
   subst hb; rfl
 
 /-- **`μ = 0` makes the rendered RMSProp buffer the bare normalised gradient.** The `mu_zero`

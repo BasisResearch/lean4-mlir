@@ -21,8 +21,8 @@ import tensorflow_datasets as tfds
 _IMG_SIZE = 224
 _CROP_PADDING = 32
 _CROP_PCT = _IMG_SIZE / (_IMG_SIZE + _CROP_PADDING)   # 224/256 = 0.875, timm's default
-_MEAN_RGB = tf.constant([0.485 * 255, 0.456 * 255, 0.406 * 255], dtype=tf.float32)
-_STD_RGB  = tf.constant([0.229 * 255, 0.224 * 255, 0.225 * 255], dtype=tf.float32)
+_MEAN_RGB = tf.constant([127.5, 127.5, 127.5], dtype=tf.float32)   # TF-slim: (x/255 - 0.5) * 2 (inputScalePm1)
+_STD_RGB  = tf.constant([127.5, 127.5, 127.5], dtype=tf.float32)
 _AUG_SEED = os.environ.get('AUG_SEED')
 _AUG_SEED = int(_AUG_SEED) if _AUG_SEED else None
 
@@ -31,8 +31,8 @@ def _imagenet_decode_random_crop_flip(image_bytes):
     bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
     bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
         shape, bounding_boxes=bbox,
-        min_object_covered=0.1, aspect_ratio_range=(3./4, 4./3.),
-        area_range=(0.08, 1.0), max_attempts=10,
+        min_object_covered=0.1, aspect_ratio_range=(0.75, 1.33),
+        area_range=(0.05, 1.0), max_attempts=100,
         seed=_AUG_SEED,
         use_image_if_no_bounding_boxes=True)
     oy, ox, _ = tf.unstack(bbox_begin)
@@ -40,8 +40,14 @@ def _imagenet_decode_random_crop_flip(image_bytes):
     window = tf.stack([oy, ox, th, tw])
     img = tf.io.decode_and_crop_jpeg(image_bytes, window, channels=3)
     img = tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                          method=tf.image.ResizeMethod.BICUBIC, antialias=True)[0]
+                          method=tf.image.ResizeMethod.BILINEAR, antialias=False)[0]
     img = tf.image.random_flip_left_right(img, seed=_AUG_SEED)
+    # TF-slim inception_preprocessing.distort_color, fast_mode (colorDistortSlim): on [0, 1],
+    # brightness ±32/255 then saturation ×U(0.5, 1.5), one order, clipped; back to 0..255.
+    img = img / 255.0
+    img = tf.image.random_brightness(img, 32. / 255.)
+    img = tf.image.random_saturation(img, 0.5, 1.5)
+    img = tf.clip_by_value(img, 0.0, 1.0) * 255.0
     return img
 
 def _imagenet_decode_center_crop(image_bytes):
@@ -98,6 +104,11 @@ def prefetch_to_device(it, sharding, depth=2):
 # returns fp32; master weights / LayerNorm / softmax stay fp32.
 # Helps matmul-bound nets (ViT/transformers ~2.7-3.6x on gfx1100).
 DT = jnp.bfloat16
+# evalF32: `evaluate()` and the validation loop score in f32 by rebinding the module globals
+# DT / CONV_DT around the eval forward. `mm` / `convdt` read them at TRACE time; `eval_batch` is
+# traced once, on its first call, while they hold float32, and `train_step` under DT. Neither
+# retraces: fixed shapes, and `take` is traced. The names stay the module's, so a script that
+# sets `mod.DT = jnp.float32` (scripts/parity/vit_timm_parity.py) still gets the f32 forward.
 def mm(a, b):
     return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)
 
@@ -231,270 +242,217 @@ replicated_sharding = NamedSharding(mesh, P())
 def init_params(key):
     """Xavier/Kaiming uniform init."""
     params = []
-    # ConvBN 3→32, 3x3
+    # ConvBN 3→32, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 288)
-    params.append((random.uniform(k_, (32, 3, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (32, 3, 3, 3)) * 0.09,
                    jnp.ones(32), jnp.zeros(32)))
-    # IR DW 32ch, 3x3
+    # IR DW 32ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (32, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (32, 1, 3, 3)) * 0.09,
                    jnp.ones(32), jnp.zeros(32)))
-    # IR project 32→16
+    # IR project 32→16  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 16)
-    params.append((random.uniform(k_, (16, 32, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (16, 32, 1, 1)) * 0.09,
                    jnp.ones(16), jnp.zeros(16)))
-    # IR expand 16→96
+    # IR expand 16→96  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 96)
-    params.append((random.uniform(k_, (96, 16, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (96, 16, 1, 1)) * 0.09,
                    jnp.ones(96), jnp.zeros(96)))
-    # IR DW 96ch, 3x3
+    # IR DW 96ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (96, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (96, 1, 3, 3)) * 0.09,
                    jnp.ones(96), jnp.zeros(96)))
-    # IR project 96→24
+    # IR project 96→24  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 24)
-    params.append((random.uniform(k_, (24, 96, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (24, 96, 1, 1)) * 0.09,
                    jnp.ones(24), jnp.zeros(24)))
-    # IR expand 24→144
+    # IR expand 24→144  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 144)
-    params.append((random.uniform(k_, (144, 24, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (144, 24, 1, 1)) * 0.09,
                    jnp.ones(144), jnp.zeros(144)))
-    # IR DW 144ch, 3x3
+    # IR DW 144ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (144, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (144, 1, 3, 3)) * 0.09,
                    jnp.ones(144), jnp.zeros(144)))
-    # IR project 144→24
+    # IR project 144→24  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 24)
-    params.append((random.uniform(k_, (24, 144, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (24, 144, 1, 1)) * 0.09,
                    jnp.ones(24), jnp.zeros(24)))
-    # IR expand 24→144
+    # IR expand 24→144  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 144)
-    params.append((random.uniform(k_, (144, 24, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (144, 24, 1, 1)) * 0.09,
                    jnp.ones(144), jnp.zeros(144)))
-    # IR DW 144ch, 3x3
+    # IR DW 144ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (144, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (144, 1, 3, 3)) * 0.09,
                    jnp.ones(144), jnp.zeros(144)))
-    # IR project 144→32
+    # IR project 144→32  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 32)
-    params.append((random.uniform(k_, (32, 144, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (32, 144, 1, 1)) * 0.09,
                    jnp.ones(32), jnp.zeros(32)))
-    # IR expand 32→192
+    # IR expand 32→192  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 192)
-    params.append((random.uniform(k_, (192, 32, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (192, 32, 1, 1)) * 0.09,
                    jnp.ones(192), jnp.zeros(192)))
-    # IR DW 192ch, 3x3
+    # IR DW 192ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (192, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (192, 1, 3, 3)) * 0.09,
                    jnp.ones(192), jnp.zeros(192)))
-    # IR project 192→32
+    # IR project 192→32  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 32)
-    params.append((random.uniform(k_, (32, 192, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (32, 192, 1, 1)) * 0.09,
                    jnp.ones(32), jnp.zeros(32)))
-    # IR expand 32→192
+    # IR expand 32→192  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 192)
-    params.append((random.uniform(k_, (192, 32, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (192, 32, 1, 1)) * 0.09,
                    jnp.ones(192), jnp.zeros(192)))
-    # IR DW 192ch, 3x3
+    # IR DW 192ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (192, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (192, 1, 3, 3)) * 0.09,
                    jnp.ones(192), jnp.zeros(192)))
-    # IR project 192→32
+    # IR project 192→32  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 32)
-    params.append((random.uniform(k_, (32, 192, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (32, 192, 1, 1)) * 0.09,
                    jnp.ones(32), jnp.zeros(32)))
-    # IR expand 32→192
+    # IR expand 32→192  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 192)
-    params.append((random.uniform(k_, (192, 32, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (192, 32, 1, 1)) * 0.09,
                    jnp.ones(192), jnp.zeros(192)))
-    # IR DW 192ch, 3x3
+    # IR DW 192ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (192, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (192, 1, 3, 3)) * 0.09,
                    jnp.ones(192), jnp.zeros(192)))
-    # IR project 192→64
+    # IR project 192→64  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 64)
-    params.append((random.uniform(k_, (64, 192, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (64, 192, 1, 1)) * 0.09,
                    jnp.ones(64), jnp.zeros(64)))
-    # IR expand 64→384
+    # IR expand 64→384  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 384)
-    params.append((random.uniform(k_, (384, 64, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (384, 64, 1, 1)) * 0.09,
                    jnp.ones(384), jnp.zeros(384)))
-    # IR DW 384ch, 3x3
+    # IR DW 384ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (384, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (384, 1, 3, 3)) * 0.09,
                    jnp.ones(384), jnp.zeros(384)))
-    # IR project 384→64
+    # IR project 384→64  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 64)
-    params.append((random.uniform(k_, (64, 384, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (64, 384, 1, 1)) * 0.09,
                    jnp.ones(64), jnp.zeros(64)))
-    # IR expand 64→384
+    # IR expand 64→384  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 384)
-    params.append((random.uniform(k_, (384, 64, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (384, 64, 1, 1)) * 0.09,
                    jnp.ones(384), jnp.zeros(384)))
-    # IR DW 384ch, 3x3
+    # IR DW 384ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (384, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (384, 1, 3, 3)) * 0.09,
                    jnp.ones(384), jnp.zeros(384)))
-    # IR project 384→64
+    # IR project 384→64  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 64)
-    params.append((random.uniform(k_, (64, 384, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (64, 384, 1, 1)) * 0.09,
                    jnp.ones(64), jnp.zeros(64)))
-    # IR expand 64→384
+    # IR expand 64→384  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 384)
-    params.append((random.uniform(k_, (384, 64, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (384, 64, 1, 1)) * 0.09,
                    jnp.ones(384), jnp.zeros(384)))
-    # IR DW 384ch, 3x3
+    # IR DW 384ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (384, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (384, 1, 3, 3)) * 0.09,
                    jnp.ones(384), jnp.zeros(384)))
-    # IR project 384→64
+    # IR project 384→64  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 64)
-    params.append((random.uniform(k_, (64, 384, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (64, 384, 1, 1)) * 0.09,
                    jnp.ones(64), jnp.zeros(64)))
-    # IR expand 64→384
+    # IR expand 64→384  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 384)
-    params.append((random.uniform(k_, (384, 64, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (384, 64, 1, 1)) * 0.09,
                    jnp.ones(384), jnp.zeros(384)))
-    # IR DW 384ch, 3x3
+    # IR DW 384ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (384, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (384, 1, 3, 3)) * 0.09,
                    jnp.ones(384), jnp.zeros(384)))
-    # IR project 384→96
+    # IR project 384→96  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 96)
-    params.append((random.uniform(k_, (96, 384, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (96, 384, 1, 1)) * 0.09,
                    jnp.ones(96), jnp.zeros(96)))
-    # IR expand 96→576
+    # IR expand 96→576  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 576)
-    params.append((random.uniform(k_, (576, 96, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (576, 96, 1, 1)) * 0.09,
                    jnp.ones(576), jnp.zeros(576)))
-    # IR DW 576ch, 3x3
+    # IR DW 576ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (576, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (576, 1, 3, 3)) * 0.09,
                    jnp.ones(576), jnp.zeros(576)))
-    # IR project 576→96
+    # IR project 576→96  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 96)
-    params.append((random.uniform(k_, (96, 576, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (96, 576, 1, 1)) * 0.09,
                    jnp.ones(96), jnp.zeros(96)))
-    # IR expand 96→576
+    # IR expand 96→576  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 576)
-    params.append((random.uniform(k_, (576, 96, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (576, 96, 1, 1)) * 0.09,
                    jnp.ones(576), jnp.zeros(576)))
-    # IR DW 576ch, 3x3
+    # IR DW 576ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (576, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (576, 1, 3, 3)) * 0.09,
                    jnp.ones(576), jnp.zeros(576)))
-    # IR project 576→96
+    # IR project 576→96  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 96)
-    params.append((random.uniform(k_, (96, 576, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (96, 576, 1, 1)) * 0.09,
                    jnp.ones(96), jnp.zeros(96)))
-    # IR expand 96→576
+    # IR expand 96→576  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 576)
-    params.append((random.uniform(k_, (576, 96, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (576, 96, 1, 1)) * 0.09,
                    jnp.ones(576), jnp.zeros(576)))
-    # IR DW 576ch, 3x3
+    # IR DW 576ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (576, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (576, 1, 3, 3)) * 0.09,
                    jnp.ones(576), jnp.zeros(576)))
-    # IR project 576→160
+    # IR project 576→160  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 160)
-    params.append((random.uniform(k_, (160, 576, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (160, 576, 1, 1)) * 0.09,
                    jnp.ones(160), jnp.zeros(160)))
-    # IR expand 160→960
+    # IR expand 160→960  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 960)
-    params.append((random.uniform(k_, (960, 160, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (960, 160, 1, 1)) * 0.09,
                    jnp.ones(960), jnp.zeros(960)))
-    # IR DW 960ch, 3x3
+    # IR DW 960ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (960, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (960, 1, 3, 3)) * 0.09,
                    jnp.ones(960), jnp.zeros(960)))
-    # IR project 960→160
+    # IR project 960→160  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 160)
-    params.append((random.uniform(k_, (160, 960, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (160, 960, 1, 1)) * 0.09,
                    jnp.ones(160), jnp.zeros(160)))
-    # IR expand 160→960
+    # IR expand 160→960  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 960)
-    params.append((random.uniform(k_, (960, 160, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (960, 160, 1, 1)) * 0.09,
                    jnp.ones(960), jnp.zeros(960)))
-    # IR DW 960ch, 3x3
+    # IR DW 960ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (960, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (960, 1, 3, 3)) * 0.09,
                    jnp.ones(960), jnp.zeros(960)))
-    # IR project 960→160
+    # IR project 960→160  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 160)
-    params.append((random.uniform(k_, (160, 960, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (160, 960, 1, 1)) * 0.09,
                    jnp.ones(160), jnp.zeros(160)))
-    # IR expand 160→960
+    # IR expand 160→960  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 960)
-    params.append((random.uniform(k_, (960, 160, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (960, 160, 1, 1)) * 0.09,
                    jnp.ones(960), jnp.zeros(960)))
-    # IR DW 960ch, 3x3
+    # IR DW 960ch, 3x3  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 9)
-    params.append((random.uniform(k_, (960, 1, 3, 3), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (960, 1, 3, 3)) * 0.09,
                    jnp.ones(960), jnp.zeros(960)))
-    # IR project 960→320
+    # IR project 960→320  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 320)
-    params.append((random.uniform(k_, (320, 960, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (320, 960, 1, 1)) * 0.09,
                    jnp.ones(320), jnp.zeros(320)))
-    # ConvBN 320→1280, 1x1
+    # ConvBN 320→1280, 1x1  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 1280)
-    params.append((random.uniform(k_, (1280, 320, 1, 1), minval=-scale, maxval=scale),
+    params.append((random.truncated_normal(k_, -2., 2., (1280, 320, 1, 1)) * 0.09,
                    jnp.ones(1280), jnp.zeros(1280)))
-    # Dense 1280→1000
+    # Dense 1280→1000  (TF-slim truncated_normal std=0.09)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 2280)
-    params.append((random.uniform(k_, (1000, 1280), minval=-scale, maxval=scale), jnp.zeros(1000)))
+    params.append((random.truncated_normal(k_, -2., 2., (1000, 1280)) * 0.09, jnp.zeros(1000)))
     return params
 
 def init_params_from_file(path):
@@ -1100,6 +1058,7 @@ def loss_fn(params, bn, x, y, drop_key=None):
     # y.ndim is static at trace time, so this branch is jit-safe.
     if y.ndim == 1:
         tgt = jax.nn.one_hot(y, 1000)
+        tgt = tgt * (1.0 - 0.100000) + 0.100000 / 1000
     else:
         tgt = y
     return -jnp.mean(jnp.sum(log_probs * tgt, axis=-1)), _new_bn
@@ -1117,7 +1076,7 @@ def augment_batch(x, rng):
 #  Training  (RMSprop)
 # ═══════════════════════════════════════════════════════════════════════
 
-LR = 0.045000
+LR = 0.120000
 MOMENTUM = 0.900000
 RHO = 0.900000
 EPS = 1.000000
@@ -1128,6 +1087,7 @@ def _wd_mask(params):
     # CLS token) or the positional embedding (2-D but must not be decayed).
     def _leaf(p):
         if p.ndim <= 1: return jnp.zeros_like(p)
+        if p.ndim == 4 and p.shape[1] == 1 and p.shape[0] > 1: return jnp.zeros_like(p)   # depthwise [C,1,k,k]: TF-slim puts no regularizer on separable_conv2d (wdExcludeDepthwise)
         if p.shape == _WD_POS_SHAPE: return jnp.zeros_like(p)
         return jnp.ones_like(p)
     return jax.tree.map(_leaf, params)
@@ -1138,9 +1098,32 @@ def train_step(params, opt_state, bn, x, y, lr, drop_key=None):
     grads = jax.tree.map(lambda g, p, msk: g + WD * msk * p, grads, params, WD_MASK)
     sq, buf = opt_state
     sq = jax.tree.map(lambda s, g: RHO * s + (1.0 - RHO) * g * g, sq, grads)
-    buf = jax.tree.map(lambda b, g, s: MOMENTUM * b + g / jnp.sqrt(s + EPS), buf, grads, sq)
-    params = jax.tree.map(lambda p, b: p - lr * b, params, buf)
+    buf = jax.tree.map(lambda b, g, s: MOMENTUM * b + lr * g / jnp.sqrt(s + EPS), buf, grads, sq)   # TF1 ApplyRMSProp: the rate INSIDE the momentum term (rmspropTf)
+    params = jax.tree.map(lambda p, b: p - b, params, buf)
     return params, (sq, buf), _new_bn, loss
+
+EMA_DECAY = 0.999900
+# Warmup-corrected decay, matching TF's tf.train.ExponentialMovingAverage(decay,
+# num_updates) — the EMA this net family (MobileNet/EfficientNet, TF lineage) is
+# defined against. Without it the shadow starts AT THE RANDOM INIT and decays that
+# init away only as decay^t, so a run shorter than ~10 time constants evaluates a
+# weighted average of init and trained weights. Those two are not linearly
+# connected (there is a loss barrier between them), so the result is not merely
+# degraded — it sits at chance.
+#
+# Measured on MNv4-Conv-M 100ep: decay 0.9999 = tau 10k steps, but
+# gradAccum 8 leaves only 312 optimizer steps/epoch = 31.2k total = 3.1 tau. At
+# epoch 66 the shadow still held 12.8% init and scored 0.00% top-1, while the LIVE
+# weights scored 70.48% on full 50k. Eval and .bin checkpoints both read the EMA,
+# so the run looked like a total failure when only the shadow was broken.
+#
+# min(decay, (1+t)/(10+t)) ramps from 0.09 at t=0, so the shadow tracks the live
+# weights from the first step and reaches the nominal decay once t >> 10. Long runs
+# (ENet-B0 350ep = 175 tau) are unaffected either way; short/grad-accum tiers need it.
+@jit
+def ema_update(ema, params, step):
+    d = jnp.minimum(EMA_DECAY, (1.0 + step) / (10.0 + step))
+    return jax.tree.map(lambda e, p: d * e + (1.0 - d) * p, ema, params)
 
 @jit
 def eval_batch(params, bn, x, y, take):
@@ -1158,7 +1141,11 @@ def eval_batch(params, bn, x, y, take):
     return correct1, correct5, loss
 
 def evaluate(params, images, labels, batch_size=512):
+    global DT, CONV_DT
     batch_size = (batch_size // n_devices) * n_devices or n_devices
+    _dt_saved = (DT, CONV_DT)
+    DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
+    print('  eval: f32 forward (evalF32)')
     _p = np.random.default_rng(12345).permutation(len(labels))
     images, labels = images[_p], labels[_p]
     correct1 = 0
@@ -1181,6 +1168,7 @@ def evaluate(params, images, labels, batch_size=512):
         total_loss += float(l)
         n_batches += 1
     evaluated = len(labels)
+    DT, CONV_DT = _dt_saved
     return correct1, correct5, evaluated, total_loss / max(n_batches, 1)
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1251,11 +1239,11 @@ if __name__ == "__main__":
     val_examples   = 50000
 
     BATCH_SIZE = (256 // n_devices) * n_devices or n_devices
-    EPOCHS = 350
-    LR = 0.045000
+    EPOCHS = 420
+    LR = 0.120000
     steps_per_epoch = train_examples // BATCH_SIZE
     total_steps = steps_per_epoch * EPOCHS
-    print("lr=0.045000  batch_size=" + str(BATCH_SIZE) +
+    print("lr=0.120000  batch_size=" + str(BATCH_SIZE) +
           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +
           "  epochs=" + str(EPOCHS) + "  params=3504872")
     print("steps_per_epoch=" + str(steps_per_epoch) + "  total_steps=" + str(total_steps))
@@ -1283,13 +1271,13 @@ if __name__ == "__main__":
             'kind': 'header', 'phase': 'phase2',
             'netspec_name': "MobileNetV2 (ImageNet, bf16)",
             'config': {
-                'lr': 0.045000, 'batch_size': 256, 'epochs': 350,
+                'lr': 0.120000, 'batch_size': 256, 'epochs': 420,
                 'use_adam': False,
                 'weight_decay': 0.000040,
                 'cosine': False,
                 'warmup_epochs': 0,
                 'augment': True,
-                'label_smoothing': 0.000000,
+                'label_smoothing': 0.100000,
                 'seed': 314159,
             },
             'total_params': 3504872,
@@ -1314,11 +1302,13 @@ if __name__ == "__main__":
     if _global_step > 0:
         print(f'Resuming at global_step={_global_step} (= epoch {_start_epoch + 1}/{EPOCHS}); LR schedule continues from there')
     t0 = time.time()
+    ema_params = params  # EMA shadow starts at the (fresh or resumed) weights
+    ema_bn = bn_state  # EMA shadow of the BN running buffers — eval pairs EMA weights with EMA-lagged BN stats, avoiding the weights/stats mismatch that blows up early eval
     _drop_base = random.PRNGKey(314159 + 1)  # stochastic-depth + dropout RNG stream
     _resume = os.environ.get('LEAN_MLIR_RESUME')
     if _resume:
-        _rstate, _global_step = load_train_state(_resume, (params, opt_state, bn_state))
-        (params, opt_state, bn_state) = jax.device_put(_rstate, replicated_sharding)
+        _rstate, _global_step = load_train_state(_resume, (params, opt_state, ema_params, ema_bn, bn_state))
+        (params, opt_state, ema_params, ema_bn, bn_state) = jax.device_put(_rstate, replicated_sharding)
         _start_epoch = _global_step // steps_per_epoch
         print(f'Resumed full train state from {_resume}: step={_global_step} (epoch {_start_epoch + 1}/{EPOCHS})')
     for epoch in range(_start_epoch, EPOCHS):
@@ -1331,10 +1321,12 @@ if __name__ == "__main__":
             x, y = next(train_iter)
             # Per-step LR (warmup → exp-decay)
             _ep = _global_step / steps_per_epoch
-            lr = jnp.float32(LR * (0.980000 ** np.floor(_ep / 1.000000)))
+            lr = jnp.float32(LR * (0.980000 ** np.floor(_ep / 2.500000)))
             params, opt_state, bn_state, loss = train_step(params, opt_state, bn_state, x, y, lr, jax.random.fold_in(_drop_base, _global_step))
             epoch_loss += loss  # jax scalar: defer the device sync to epoch end
             n_batches += 1
+            ema_params = ema_update(ema_params, params, _global_step)
+            ema_bn = ema_update(ema_bn, bn_state, _global_step)
             _global_step += 1
             if _trace_f:
                 _trace_f.write(json.dumps({
@@ -1350,6 +1342,14 @@ if __name__ == "__main__":
         train_secs = time.time() - ep_t0  # train-only wall time (measured before validation)
         # Validation pass: rebuild iterator each epoch (non-repeating).
         print("  Running validation ...")
+        # evalF32: score through an f32 forward. `eval_batch` is traced HERE, on its first call, so
+        # the swap must precede any trace of it — asserted, not assumed.
+        if not getattr(eval_batch, '_f32_traced', False):
+            assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'
+            eval_batch._f32_traced = True
+        _dt_saved = (DT, CONV_DT)
+        DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
+        print('  eval: f32 forward (evalF32)')
         ev_t0 = time.time()
         v_iter = prefetch_to_device(
             iter(build_imagenet_iter('validation', BATCH_SIZE, training=False, augment=False)),
@@ -1360,12 +1360,13 @@ if __name__ == "__main__":
         total_eval_loss = 0.0
         v_batches = 0
         for x, y in v_iter:
-            c1, c5, l = eval_batch(params, bn_state, x, y, len(y))
+            c1, c5, l = eval_batch(ema_params, ema_bn, x, y, len(y))
             correct1 += int(c1)
             correct5 += int(c5)
             total   += y.shape[0]
             total_eval_loss += float(l)
             v_batches += 1
+        DT, CONV_DT = _dt_saved
         acc1 = correct1 / max(total, 1)
         acc5 = correct5 / max(total, 1)
         print("[Epoch " + str(epoch+1) + "] lr=" + str(round(float(lr), 6)) +
@@ -1386,16 +1387,16 @@ if __name__ == "__main__":
         _ckpt_every = int(os.environ.get('LEAN_MLIR_CKPT_EVERY', '10'))
         if _ckpt_base and _ckpt_every > 0 and (epoch + 1) % _ckpt_every == 0:
             _ckpt_path = f'{_ckpt_base}_e{epoch+1}.bin'
-            params_to_file(params, _ckpt_path)
-            save_train_state(f'{_ckpt_base}_e{epoch+1}.state.npz', (params, opt_state, bn_state), _global_step)
+            params_to_file(ema_params, _ckpt_path)
+            save_train_state(f'{_ckpt_base}_e{epoch+1}.state.npz', (params, opt_state, ema_params, ema_bn, bn_state), _global_step)
             _prune_state_ckpts(_ckpt_base)
             _prune_bin_ckpts(_ckpt_base)
 
     # Final save (always, if LEAN_MLIR_PARAMS_OUT was set).
     _ckpt_base = os.environ.get('LEAN_MLIR_PARAMS_OUT')
     if _ckpt_base:
-        params_to_file(params, f'{_ckpt_base}.bin')
-        save_train_state(f'{_ckpt_base}.state.npz', (params, opt_state, bn_state), _global_step)
+        params_to_file(ema_params, f'{_ckpt_base}.bin')
+        save_train_state(f'{_ckpt_base}.state.npz', (params, opt_state, ema_params, ema_bn, bn_state), _global_step)
 
     print("")
     print("Done. Total time: " + str(round(time.time() - t0, 1)) + "s")

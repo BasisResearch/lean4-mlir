@@ -1,0 +1,14 @@
+--- jax/generated/generated_mobilenet_v2_imagenet_full.py	2026-10-12 04:17:48.384550904 +0000
++++ runs/2026-10-12-mnv2-jax-smoke/trainer_smoke.py	2026-10-12 04:18:25.566274941 +0000
+@@ -1239,9 +1239,9 @@
+     val_examples   = 50000
+ 
+     BATCH_SIZE = (256 // n_devices) * n_devices or n_devices
+-    EPOCHS = 420
++    EPOCHS = 2   # SMOKE: two short epochs, then exit (both inside the first 2.5-epoch stair)
+     LR = 0.120000
+-    steps_per_epoch = train_examples // BATCH_SIZE
++    steps_per_epoch = 100   # SMOKE: 100 optimizer steps of 256 an epoch
+     total_steps = steps_per_epoch * EPOCHS
+     print("lr=0.120000  batch_size=" + str(BATCH_SIZE) +
+           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +

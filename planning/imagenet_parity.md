@@ -485,9 +485,9 @@ did not move).
 | D8 | MNv4 `full` | RandAugment mapping | timm inc1, or TF's set | timm's inc1 op list with NON-increasing mappings (`_RA_INC` off): at m15 Solarize is a no-op, Posterize keeps 6 bits | ⛔ withdrawn 2026-10-12: the paper's code uses TF's mappings (what is emitted); inc1 at m15 would be Posterize −2 bits and Solarize at −128. The yaml's other RA items landed instead: an identity branch in the draw, `translate_const 100`, nearest resampling, `exclude_ops [Cutout]` |
 | D9 | MNv4 | BN running-stat decay | timm 0.9 | 0.99, both paths (C4 value never chosen) | ✅ 2026-10-12 on `full`: the yaml's `norm_momentum 0.997`, `norm_epsilon 1e-3` (not timm's 0.9 / 1e-5), both paths (`mnv4in256` bakes the ε) |
 | D10 | MNv4 | drop-path ramp | timm idx/23 over all blocks | 0.075·i/20 over 21 UIBs, both paths | ✅ 2026-10-12 on `full`: tf-models' `rate·(block_idx+1)/25` over its 25-entry block list, UIB `i` at `(i+3)/25` (`dropPathAllBlocks`; `dropIdxOffset 3` / `dropDenom 25`) — not timm's /23 either |
-| D11 | MNv2 | depthwise weight decay | TF-slim skips it | decayed, both paths | M (variant + both arms) |
-| D12 | MNv2 | slim inception colour distortion | yes (unverified offline) | none | M |
-| D13 | MNv2, B0 | RMSProp lr placement | TF1: lr inside momentum | outside, both paths | JAX S, verified M; matters only while lr moves |
+| D11 | MNv2 | depthwise weight decay | TF-slim skips it (`training_scope`: `l2_regularizer` on `slim.conv2d`, `weights_regularizer=None` on `separable_conv2d`, which `expanded_conv` builds the depthwise from) | decayed, both paths | ✅ 2026-10-12 (`recipe_prep.md` §6): JAX `wdExcludeDepthwise` (the `_wd_mask` leaf test `[C,1,k,k]`), verified `rankWdDecaysNoDw` — the `dw` marker, 122 `%wdz` bindings = 105 one-dimensional + 17 depthwise; `opt_step_tie.py`'s `rmstfwxdw` row measures it on the fixture's `p3 = [7,1,2,2]` |
+| D12 | MNv2 | slim inception colour distortion | `distort_color` in **fast mode** (what `train_image_classifier.py` ran: brightness ±32/255 then saturation ×U(0.5, 1.5), ONE order, clipped — hue, contrast and the four orderings are the non-fast mode) | none | ✅ 2026-10-12: `colorDistortSlim` in the shared `emitDataLoading`, so the trainer and the shim get it together; gate `scripts/gates/color_distort_gate.py` — a numpy twin of TF's `adjust_saturation` kernel (RGB→HSV, S clamped, HSV→RGB) tied first to `tf.image.adjust_saturation` (4.8e-7) and then to the EMITTED function run verbatim with its draws pinned (4.8e-7 at five (δ, f)); found on the way: brightness and saturation commute exactly except through the clamp, so the order control runs at f = 1.5 |
+| D13 | MNv2, B0 | RMSProp lr placement | TF1 `ApplyRMSProp`: `mom <- μ·mom + lr·g/√(ms+ε)`, `var <- var − mom` | outside, both paths | ✅ 2026-10-12 on MNv2: JAX `rmspropTf`; verified `OptRecipe.rmspropTf` (`rmstf` slug) = the new op `rmsBufNextTfF` + `sgdParamF` at a baked `%one`, `Proofs.rmsBufNextTf` / `rmsPropTfStep` with `rmsPropTf_triple_faithful` (rfl), `rmsBufNextTf_smul` (the TF buffer is the other scaled by lr), `rmsPropTfStep_theta_at_const` (the parameters agree at a constant rate) and `rmsPropTfStep_theta_lr_change` (they differ by exactly `μ·b·(lr₁ − lr₀)` when it moves); `opt_step_tie.py` rows `rmswx` (B0's trainer, the rate outside), `rmstfwxdw` / `emarmstfwxdw` (MNv2's) — counterfactuals 9.8e-1 / 5.4e+1. B0 still carries the old placement (its §7 item) |
 | D14 | R50 A3 | BCE target threshold | 0.2: rwightman, pytorch-image-models discussion #924, "add `--bce-target-thresh 0.2` as that was hardcoded when those runs were done" | ✅ 2026-10-06: `bceTargetThresh := some 0.2` on `resnet50ImagenetConfigShort` (A3 `short` / `rsb-faithful` trainers + the `short` shim the verified A3 streams); `bce_target_gate.py` gained a `short` case | the landed A3 pair (78.26 / 78.33) trained without it, on both paths; the A3 rerun carries it |
 | D15 | ConvNeXt-T | the EMA pair | — | the 81.53 reference is pre-C6; a verified EMA run today is post-C6 | rerun the JAX T too, or disclose a two-axis pair |
 | D16 | R50 (Imagenette) | zero-γ on the Imagenette R50 | JAX twin zero-inits | verified γ = 1 (X4 left it off) | S; moves that net's landed number |
@@ -621,7 +621,7 @@ deviations, and a gate checks this**, not prose. §7's run table is superseded b
 |---|---|---|
 | R34, R50-2018 | torchvision reference recipe | — |
 | R50-A3 | RSB (arXiv 2110.00476) + timm | the landed pair predates F1/F3/F4 (§10.3) |
-| MNv2 | Sandler et al. 2018 + TF-slim (`models/research/slim`) | 16×96 async → 4×64 sync |
+| MNv2 | TF-slim's own reproduction command, `research/slim/nets/mobilenet/README.md` ("roughly 72.0"), with the sources it runs (`train_image_classifier.py`, `mobilenet.training_scope`, `conv_blocks.expanded_conv`, `inception_preprocessing.py`, TF's `training_ops.cc`) — read 2026-10-12, `recipe_prep.md` §6. The paper's sentence ("0.045, decay 0.98 per epoch, 16 async workers of 96") is what the landed pair ran; the README's command is ×0.98 every 2.5 epochs at 0.045 per 96 images, label smoothing 0.1, EMA 0.9999, ~420 epochs | 16×96 async → 4×64 sync; slim's eval (`central_crop(0.875)` on both sides, then a non-aspect-preserving bilinear resize) — scored at timm's 224 / 0.875 like every pair |
 | MNv4-Conv-M | paper Tables 9–10; timm where the paper is silent | — (500 ep is affordable: ~95 h verified, ~112 h JAX) |
 | B0 | TF EfficientNet | — |
 | ConvNeXt-T | official repo | batch 4096 by accumulation k16 (no BN, so exact), not a deviation |
@@ -648,7 +648,7 @@ emitter (`Jax/Codegen.lean`) and the shims, so they go in one pass before any pe
 
 | order | net | code left | size | rerun (JAX + verified, conf ETAs) |
 |---|---|---|---|---|
-| 1 | MNv2 | D11 depthwise wd exclusion (new variant), D12 slim colour distortion (shim), D13 lr inside momentum (render), TF init if the manifest says so; F8 only | M | ~38 + ~66 h. ⚠ `mnv2-default-4gpu.conf` needs a `CKPT_TAG` first, or it resumes the epoch-350 checkpoint on the 3060 box |
+| 1 | MNv2 | D11 depthwise wd exclusion (new variant), D12 slim colour distortion (shim), D13 lr inside momentum (render), TF init if the manifest says so; F8 only — ✅ 2026-10-12 as the README's command, every row (`recipe_prep.md` §6; the `emarmstfdp64wxdwdoeps0001bf16` render) | M | smoked 2026-10-12 (the confs' ETAs); the variant is in the checkpoint name, so the conf's lineage is fresh |
 | 2 | ViT-Ti | D2 clip off, D19 live-weight scoring, k2 accumulation; Phase 2 | S | ~46 + ~65 h |
 | 3 | MNv4 `full` | D7–D10, EMA off; Phase 2 — ✅ 2026-10-12 as the paper's own yaml at 256² (`recipe_prep.md` §5; the `mnv4in256` renders) | S each | smoked 2026-10-12 (the confs' ETAs) |
 | 4 | ConvNeXt-T | D2 clip off, k16 accumulation, D15 (rerun JAX too); Phase 2 | S–M | ~77 + ~107 h |
@@ -699,6 +699,25 @@ determinism. ViT-Ti's config carries all of them plus DeiT's batch 1024 (4 × 25
 lr 1e-3; the verified render is `vitin_emadp256x4wxdropeps0000001erfbf16` (+ its tanh twin), with the
 clip decided by `runs/2026-10-11-vit-clipoff-probe/` (D2). Not done: the patch-embed bias at PyTorch's
 default (disclosed). Both confs rewritten; smokes and ETAs next, then mars = JAX, ares = verified.
+
+**MobileNetV2 status (2026-10-12; `planning/recipe_prep.md` §6).** Wired on both paths as TF-slim's
+README runs it, every row (the user's call, as for MNv4): TF1's `ApplyRMSProp` (D13), the decay set
+`conv2d` only (D11), `distort_color` in fast mode (D12 — brightness then saturation, no hue, no contrast,
+one order; the marker's four-op description was the non-fast mode), truncated-normal σ 0.09 on every
+kernel and the logits, and the README's rows the marker did not name: `--label_smoothing=0.1`,
+`--moving_average_decay=0.9999` (TF's warmup-corrected form, scored), `--learning_rate=0.045 ×
+NUM_GPUS` on 96 × NUM_GPUS = 0.045 per 96 images → **0.12 at the pair's 256**,
+`--num_epochs_per_decay=2.5 / NUM_GPUS` = **×0.98 every 2.5 epochs of data** (not per epoch), ~700K
+steps of 768 = **420 epochs**, slim's crop (area ≥ 0.05, aspect 0.75–1.33, 100 attempts), bilinear
+without antialias, `(x − 0.5) × 2`. The verified render `mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16`
+(314 all-reduces as before; 744 operands = 5 regions + 104 stats + the dropout mask + 2 + 5) is the
+first `rmstf` and the first EMA MobileNetV2 render; its ℝ reference and faithfulness theorem are in
+`RmsPropStep.lean` / `StableHLO/Basic.lean`. Gates: `opt_step_tie.py` 10/10 (three RMSProp rows, both
+counterfactuals red), `color_distort_gate.py` on the trainer and the shim, the shim hash reproducible /
+seed-distinct, parse 372, arity 281, `regen_jax_generated check` (4 MNv2 files moved, 62 byte-identical),
+`regen_verified_mlir check` 76/76, `TestVariantPredicates`, comment_numbers, module_refs,
+docstring-checkrefs, both DRY_RUN prechecks. Disclosed, not reproduced: slim's eval protocol and the
+sixteen asynchronous workers. Smokes and ETAs in the confs; no run launched.
 
 **ViT-S / ViT-B status (2026-10-11, later; `planning/recipe_prep.md` §3).** Tiny's recipe at the two
 widths, on both paths: `vitSImagenetConfig` / `vitBImagenetConfig` carry Tiny's lines verbatim (batch

@@ -211,6 +211,16 @@ structure VerifiedConfig where
       Imagenette B0 driver and every gate are byte-identical; the ImageNet B0 driver sets it
       (2026-10-07), and `LEAN_MLIR_SE_FAN_OUT=0|1` overrides it at launch. -/
   seFanOutInit : Bool := false
+  /-- **TF-slim's truncated-normal init, σ on EVERY kernel** — the verified peer of
+      `TrainConfig.initTruncNormal`. `mobilenet.training_scope` gives `slim.conv2d`,
+      `slim.separable_conv2d` and `slim.fully_connected` one `truncated_normal_initializer(stddev)`
+      (0.09 for MobileNetV2), so the stem, the 1×1s, the depthwise kernels and the logits all start
+      at that width, biases at 0; it replaces the fan rules (`dwFanK2` included) on every kind-0
+      and kind-7 weight. TF redraws beyond ±2σ, so the drawn std is `0.8796·σ`; `mkParam` is
+      variance-matched to THAT (`F32.heInit` at `0.8796·σ`), as every other init here is. 0 keeps
+      the fan rules, byte for byte; `LEAN_MLIR_TRUNC_NORMAL=0|1` overrides at launch. The
+      ImageNet MobileNetV2 driver sets 0.09 (2026-10-12, planning/recipe_prep.md §6). -/
+  truncNormalSigma : Float := 0.0
   /-- BatchNorm running-statistic **decay** — the verified peer of `TrainConfig.bnMomentum`,
       and the same TF sense: the weight on the OLD estimate, so timm's PyTorch
       `momentum = 0.1` is `0.9` here. That field's docstring carries the per-net table and
@@ -494,6 +504,9 @@ def mkLabels (bs off nc : Nat) : ByteArray := Id.run do
       * SE FC (kind 7: EfficientNet's squeeze / excite dense `[in,out]`) → variance `2/out`
         under `seFanOut`, the reference's 1×1-conv fan-out; Glorot otherwise
         (`planning/init_parity.md` §2b)
+      * `truncNormal > 0` (TF-slim's `truncated_normal_initializer(stddev)`,
+        `VerifiedConfig.truncNormalSigma`) → every weight at std `0.8796·σ`, the std of a
+        normal truncated at ±2σ, before any fan rule; biases stay 0
 
     The weight variances are those of
     [`jax/Jax/Codegen.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/jax/Jax/Codegen.lean):
@@ -513,7 +526,7 @@ def mkLabels (bs off nc : Nat) : ByteArray := Id.run do
 def mkParam (seed : Nat) (dims : Array Nat) (kind : Nat)
     (vitInit : Bool := false) (biasSigma : Option Float := none)
     (heFanIn : Bool := false) (cnxInit : Bool := false) (dwFanK2 : Bool := false)
-    (zeroGamma : Bool := false) (seFanOut : Bool := false) :
+    (zeroGamma : Bool := false) (seFanOut : Bool := false) (truncNormal : Float := 0.0) :
     IO ByteArray := do
   let n := dims.foldl (· * ·) 1
   match kind with
@@ -558,7 +571,15 @@ def mkParam (seed : Nat) (dims : Array Nat) (kind : Nat)
     -- (Bates-3, ≈normal) where the JAX side draws `random.normal`. Same σ, different shape — the
     -- same deliberate gap every other net carries.
     let variance :=
+      -- **TF-slim's truncated normal, σ on EVERY weight — FIRST, above every fan rule**, because
+      -- slim's arg scope sets one initializer for conv2d, separable_conv2d (the depthwise) and
+      -- fully_connected alike. `tf.truncated_normal` redraws beyond ±2σ, and the std of that
+      -- distribution is σ·√(1 − 2·2·φ(2)/(2Φ(2) − 1)) = 0.87962·σ; the JAX reference draws
+      -- `truncated_normal(-2, 2)·σ` exactly, and this side matches its VARIANCE through
+      -- `F32.heInit`'s Bates-3 draw, as every init here does.
+      if truncNormal > 0.0 then (truncNormal * 0.87962) * (truncNormal * 0.87962)
       -- **ConvNeXt `_init_weights`: σ = 0.02 on EVERY weight, whatever its rank.** Simpler
+      else
       -- than `vitInit` below, which has to special-case the patch embed — ConvNeXt trunc-normals
       -- its convs and its head alike. Measured on this net's 183 specs: 58 rank-4 (stem, 7x7
       -- depthwise, the 1x1s, the 2x2 downsamples) + 1 rank-2 (head) land here; the other 124 are
@@ -2196,6 +2217,12 @@ new-batch weight {bnMomShown}{if accOn then s!" = 1 − {cfg.bnMomentum}^(1/{acc
     | _        => cfg.dwFanK2
   if dwFanK2 then
     IO.println "  ▸ INIT: depthwise fan = k² (the JAX reference's rule), not He fan-out C·k²"
+  let truncNormal := match (← IO.getEnv "LEAN_MLIR_TRUNC_NORMAL") with
+    | some "1" => if cfg.truncNormalSigma > 0.0 then cfg.truncNormalSigma else 0.09
+    | some "0" => 0.0
+    | _        => cfg.truncNormalSigma
+  if truncNormal > 0.0 then
+    IO.println s!"  ▸ INIT: truncated normal σ={truncNormal} on every conv kernel, depthwise and dense (TF-slim training_scope; std 0.8796σ as TF's ±2σ redraw gives), biases 0 — above the fan rules"
   let zeroGamma := match (← IO.getEnv "LEAN_MLIR_ZERO_GAMMA") with
     | some "1" => true
     | some "0" => false
@@ -2210,7 +2237,8 @@ new-batch weight {bnMomShown}{if accOn then s!" = 1 − {cfg.bnMomentum}^(1/{acc
     IO.println s!"  ▸ INIT: SE FC fan = out on {(net.specs.filter (·.2 == 7)).size} squeeze-excite denses (the JAX reference's 1×1-conv fan-out), not Glorot"
   for spec in net.specs do
     parts := parts.push (← mkParam seed spec.1 spec.2 cfg.vitInit (cnxInit := cfg.cnxInit)
-      (dwFanK2 := dwFanK2) (zeroGamma := zeroGamma) (seFanOut := seFanOut))
+      (dwFanK2 := dwFanK2) (zeroGamma := zeroGamma) (seFanOut := seFanOut)
+      (truncNormal := truncNormal))
     seed := seed + 1
   -- LEAN_MLIR_PERTURB_R: displace the initial parameters along a random unit vector of exact L2
   -- norm r, before any training. This is the CONDITIONING probe for gate G2: if an r that is

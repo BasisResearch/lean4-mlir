@@ -46,9 +46,14 @@ structure RmsSchedule where
     Imagenette peers train with. -/
 def mnv2RmsSchedule : RmsSchedule := { lr := 0.045, decayRate := 0.98 }
 
-/-- **MobileNetV2 on ImageNet** ([`jax/MainMobilenetV2Imagenet.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/jax/MainMobilenetV2Imagenet.lean)): the paper's TF-slim
-    schedule, ×0.98 per epoch as a staircase from step 0 with no warmup. -/
-def mnv2ImagenetRmsSchedule : RmsSchedule := { mnv2RmsSchedule with warmup := 0, staircase := true }
+/-- **MobileNetV2 on ImageNet** ([`jax/MainMobilenetV2Imagenet.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/jax/MainMobilenetV2Imagenet.lean)): TF-slim's schedule
+    as its `nets/mobilenet/README.md` runs it — `learning_rate 0.045*NUM_GPUS` on `batch_size 96`
+    per clone, i.e. 0.045 per 96 images and so **0.12 at this pair's 256**; `exponential_decay`
+    ×0.98 with `staircase=True` from step 0, no warmup, every `num_epochs_per_decay = 2.5 / NUM_GPUS`
+    per-clone epochs = **every 2.5 epochs of data**. (Until 2026-10-12 this read the paper's
+    sentence, 0.045 and "0.98 per epoch", unscaled to the batch.) -/
+def mnv2ImagenetRmsSchedule : RmsSchedule :=
+  { lr := 0.12, decayRate := 0.98, decayEpochs := 2.5, warmup := 0, staircase := true }
 
 /-- **EfficientNet-B0**: 0.016 peak, ×0.97 **every 2.4 epochs** — the paper's schedule, and the
     linear scaling of 0.256@4096 down to batch 256 ([`jax/MainEfficientNetImagenet.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/jax/MainEfficientNetImagenet.lean)). -/

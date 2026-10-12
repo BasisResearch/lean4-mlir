@@ -575,6 +575,14 @@ structure TrainConfig where
   /-- RMSprop denominator ε — NOT 1e-8: MobileNetV2 uses 1.0, EfficientNet 1e-3;
       the large value is part of those recipes. -/
   rmspropEps   : Float := 1e-3
+  /-- TensorFlow 1's `ApplyRMSProp` (`tf.train.RMSPropOptimizer`, what TF-slim's
+      `train_image_classifier.py` ran MobileNetV2 under): the learning rate multiplies the
+      normalised gradient INSIDE the momentum term, `buf = μ·buf + lr·g/√(s + ε)`, and the
+      parameter step is `p − buf` with no rate of its own. Off keeps the emitted
+      `buf = μ·buf + g/√(s + ε)`, `p − lr·buf`, byte for byte — the same optimizer only while the
+      rate is constant, a different one under a decaying schedule (`imagenet_parity.md` D13;
+      `Proofs.rmsPropTfStep_theta_lr_change`). The verified peer is the `rmstf` renders. -/
+  rmspropTf    : Bool := false
   weightDecay  : Float := 0.0
   cosineDecay  : Bool := false
   warmupEpochs : Nat := 0
@@ -598,6 +606,19 @@ structure TrainConfig where
       verified peer is `trainAdamSched`'s `cosineFromStep0`. -/
   cosineFromStep0 : Bool := false
   augment      : Bool := false
+  /-- TF-slim's `inception_preprocessing.distort_color` in `fast_mode` — what
+      `train_image_classifier.py` ran (it passes no `fast_mode`, so the default `True`): after the
+      crop, resize and flip, on the image in [0, 1], `random_brightness(max_delta=32/255)` then
+      `random_saturation(0.5, 1.5)`, in that one order (the four-ordering draw with hue and
+      contrast is the non-fast mode, which MobileNetV2 did not run), then `clip_by_value(0, 1)`.
+      Emitted back in 0..255 for the shared normalize. Off emits nothing, byte for byte
+      (`imagenet_parity.md` D12). imagenet (tfds) path only. -/
+  colorDistortSlim : Bool := false
+  /-- TF-slim's input scaling, `(x − 0.5) × 2` on [0, 1] — `_MEAN_RGB = _STD_RGB = 127.5` —
+      in place of the ImageNet mean / std, train and eval alike (`preprocess_for_train` and
+      `preprocess_for_eval` both end with it). Off keeps the mean / std constants, byte for byte.
+      imagenet (tfds) path only. -/
+  inputScalePm1 : Bool := false
   labelSmoothing : Float := 0.0
   /-- Focal loss (Lin et al. 2017): replace CE loss with
       `-(1-p_y)^γ · log(p_y)`. Down-weights well-classified examples,
@@ -747,6 +768,19 @@ structure TrainConfig where
       `area_range[0]` = 0.08 (the MobileNetV4 paper's config). The default keeps the `0.1`
       literal, byte for byte. -/
   cropMinCovered : Float := 0.1
+  /-- With TF's sampler: `area_range`'s floor. 0.08 is torchvision's and every existing
+      recipe's; TF-slim's `distorted_bounding_box_crop` passes `(0.05, 1.0)`. The default keeps
+      the `0.08` literal, byte for byte. -/
+  cropAreaMin : Float := 0.08
+  /-- With TF's sampler: `max_attempts` before the whole image is returned. 10 is every
+      existing recipe's; TF-slim's `distorted_bounding_box_crop` passes 100. The default keeps
+      the `10` literal, byte for byte. -/
+  cropMaxAttempts : Nat := 10
+  /-- With TF's sampler: `aspect_ratio_range` as `(lo, hi)`, when `hi > 0`. 0 keeps the
+      `(3./4, 4./3.)` literals, byte for byte; TF-slim's `distorted_bounding_box_crop` passes
+      `(0.75, 1.33)` — 1.33, not 4/3. -/
+  cropAspectLo : Float := 0.0
+  cropAspectHi : Float := 0.0
   /-- `antialias` on the train crop's and the eval's `tf.image.resize`. On, the default, is PIL's
       behaviour and every existing recipe's (`planning/archive/resize_eval_reconciliation.md`
       measured close to a point of top-1 on RSB-A3 without it); off is `tf.image.resize`'s own
@@ -857,6 +891,14 @@ structure TrainConfig where
       matrices. Matches the ViT/DeiT reference; off keeps the legacy
       decay-everything behavior for the other nets. AdamW path only. -/
   wdExcludeNormBias : Bool := false
+  /-- With `wdExcludeNormBias`: no decay on the depthwise kernels either — TF-slim's
+      `mobilenet.training_scope` puts `weights_regularizer=None` on `slim.separable_conv2d`, which
+      is what `expanded_conv` builds its depthwise from, and `l2_regularizer(weight_decay)` on
+      `slim.conv2d` (stem, expand / project 1×1s, head, logits). The `_wd_mask` leaf test is the
+      kernel's shape, `[C, 1, k, k]`: rank 4, one input channel, more than one output. Off keeps
+      the rank-only mask, byte for byte (`imagenet_parity.md` D11); the verified peer is
+      `rankWdDecaysNoDw` (the `dw` marker). -/
+  wdExcludeDepthwise : Bool := false
   /-- Validate every N epochs (plus always the final epoch) instead of every
       epoch. N ≤ 1 keeps every-epoch validation (byte-identical codegen).
       Cuts eval wall-time on large streaming datasets where the val pass is
@@ -1098,6 +1140,13 @@ structure TrainConfig where
       paper's 0.02 — 5.9× too wide, the same failure `vitInit` fixes for
       ViT. -/
   cnxInit : Bool := false
+  /-- TF-slim's `truncated_normal_initializer(stddev)` on EVERY kernel — `mobilenet.training_scope`
+      sets one `weights_initializer` for `slim.conv2d`, `slim.separable_conv2d` (the depthwise) and
+      `slim.fully_connected`, so the stem, the 1×1s, the depthwise kernels and the logits all start
+      as `truncated_normal(-2, 2) · σ` (0.09 for MobileNetV2, "if negative uses xavier"), biases
+      at 0. Replaces the fan rules on every conv-BN kernel and the dense head; 0 keeps them, byte
+      for byte. The verified peer is `VerifiedConfig.truncNormalSigma` (variance-matched). -/
+  initTruncNormal : Float := 0.0
   /-- Exponential LR decay, the EfficientNet/MobileNet schedule: after
       warmup, `lr = LR · rate^((epoch − warmup) / decayEpochs)`. 0 = off (use
       cosine). EfficientNet: rate 0.97, decayEpochs 2.4; MobileNetV2: rate 0.98,

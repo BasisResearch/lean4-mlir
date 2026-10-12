@@ -8,9 +8,11 @@ themselves go in the user's ROI order (ResNet → ViT → MNv2 → EfficientNet 
 the user's word. `imagenet_parity.md` §10 holds the F-items (cross-net) and D-items (per-net) this doc
 cites; the method is the ResNet A3/A2 prep of 2026-10-11 (4d612bb9), repeated per net.
 
-**Next (2026-10-12, later): §6, MobileNetV2.** §1–§5 are in code (§9); nothing has run. §6 opens on
-D12's reference (slim's colour distortion: TF-slim in `.venv-timm`, or a numpy twin), then the decay
-mask, the RMSProp spelling and the init. Then §7.
+**Next (2026-10-12, later still): §7, EfficientNet-B0.** §1–§6 are in code (§9); nothing has run. §7
+opens on D3 (SAME padding through the T2 / T3 ties, or symmetric padding disclosed — the user's call)
+and inherits §6's `OptRecipe.rmspropTf` for D13 (B0's `enetRmsHyper` on the same arm) and the
+`wdExcludeDepthwise` / `rankWdDecaysNoDw` pair if TF's EfficientNet skips the depthwise too (read
+`utils.py`'s `weight_decay` filter first; it excludes BN and biases by name, not the depthwise).
 
 ## 1. Done, 2026-10-11
 
@@ -59,7 +61,7 @@ What "done" means, per net, and what each later section repeats:
 | 1 | ViT-S, ViT-B (ch 9 side quest) | ½ day — DONE 2026-10-11 | S one-shot at 4 × 256; B the first accumulating ViT render (`acc`) | ViT-S micro-batch — probed: one-shot |
 | 2 | ConvNeXt-T, then S / B (ch 8) | 1½ days | accumulating no-clip renders | none |
 | 3 | MNv4-Conv-M (ch 6) | 1 day — DONE 2026-10-12 | the `mnv4in256` renders (final side 8) | the paper's own yaml is the source of truth; D7 settled by it, D8 withdrawn, D9/D10 corrected (§5) |
-| 4 | MNv2 (ch 6) | 2–3 days | decay mask, colour distortion, RMSProp op + tie, an init | D12's reference |
+| 4 | MNv2 (ch 6) | 1 day — DONE 2026-10-12 | `rmspropTf` recipe + `rmsBufNextTfF`, the `dw` decay set, the first EMA MNv2 render; the slim pipeline + init on the emitter | D12's reference = a numpy twin (the user); the recipe = the README's command, every row, 0.12 @ 256 / ×0.98 per 2.5 ep / 420 ep (the user) |
 | 5 | EfficientNet-B0 (ch 7) | 3–4 days | RMSProp op (shared), SAME padding through the ties | D3's scope |
 
 About two weeks of code against about two weeks of ResNet and ViT runs on the two boxes. Each step
@@ -337,6 +339,67 @@ Today (`jax/MainMobilenetV2Imagenet.lean`): lr 0.045 at 256, RMSProp, `wdExclude
    TF-RMSProp row; a colour-distortion known-answer gate; fill n/a (no RandAugment).
 7. Runs: ~38 + 66 h; the ch 6 MNv2 marker goes when the pair lands.
 
+**Done 2026-10-12.** Three things changed before any code. (1) D12 was misdescribed: `train_image_classifier.py`
+passes no `fast_mode`, so slim's `distort_color` ran in fast mode — brightness ±32/255 then saturation
+×U(0.5, 1.5), ONE order, clipped; hue, contrast and the four orderings are the non-fast mode. (2) D11, D13
+and the init were confirmed from `mobilenet.training_scope` (`l2_regularizer` on `slim.conv2d` only,
+`weights_regularizer=None` on `separable_conv2d`; one `truncated_normal_initializer(0.09)` for conv2d,
+separable_conv2d AND fully_connected, so the depthwise kernels and the logits take it too),
+`conv_blocks.expanded_conv` (the depthwise IS `slim.separable_conv2d`) and TF's `training_ops.cc`
+(`mom <- μ·mom + lr·g/√(ms+ε)`, `var <- var − mom`, `ms` from 1). (3) `research/slim/nets/mobilenet/README.md`'s
+reproduction command names rows the marker did not: `--label_smoothing=0.1`, `--moving_average_decay=0.9999`
+(TF's warmup-corrected `ExponentialMovingAverage(decay, global_step)`, restored at eval), `--learning_rate=0.045 ×
+NUM_GPUS` on `--batch_size=96` per clone (0.045 per 96 images → 0.12 at this pair's 256),
+`--num_epochs_per_decay=2.5 / NUM_GPUS` per-clone epochs (= ×0.98 every 2.5 epochs of data, not the paper
+sentence's "per epoch"), "about 700K steps" of 768 (≈ 420 epochs), `--preprocessing_name="inception_v2"` =
+`inception_preprocessing` (crop area ≥ 0.05, aspect (0.75, 1.33), 100 attempts, bilinear without antialias,
+`(x − 0.5) × 2` on train and eval). The user's call, as for MNv4: the README's command, every row, 0.12 at 256,
+×0.98 per 2.5 epochs, 420 epochs; D12's reference a numpy twin.
+
+JAX: `TrainConfig` gains `rmspropTf`, `wdExcludeDepthwise`, `initTruncNormal`, `colorDistortSlim`,
+`inputScalePm1`, `cropAreaMin`, `cropMaxAttempts`, `cropAspectLo` / `cropAspectHi`, every default byte-identical
+(66 artifacts re-emitted, the four MNv2 files moved); every conv-BN and depthwise init site now routes through
+`emitConvBnInitCfg` / `emitDwBnInitCfg` so an init flag cannot reach some kernels and not others (53 of 53 take
+the truncated normal: 35 conv-BN, 17 depthwise, the logits). `mobilenetV2ImagenetConfig` is the README's recipe
+with its line beside each value; `default` = 90 epochs, `full` = 420. Verified: `OptRecipe.rmspropTf` (`rmstf` /
+`rmstfdp`) = the new op `rmsBufNextTfF` (`%lr` multiplied onto the normalised gradient inside the buffer) +
+`sgdParamF` at a baked `%one`; `Proofs.rmsBufNextTf` / `rmsPropTfStep` with `rmsPropTf_triple_faithful` (rfl),
+`rmsBufNextTf_smul`, `rmsPropTfStep_theta_at_const` and `rmsPropTfStep_theta_lr_change` (the two placements
+differ by exactly `μ·b·(lr₁ − lr₀)` per coordinate when the rate moves — the D13 statement);
+`rankWdDecaysNoDw` + `wdNameBy`'s `decays` argument (the `dw` marker; `optAllParams` takes it too);
+`mnv2AdamVariant` / `mobilenetv2AdamTrainStepText` take `ema` and `dw` (B0's fifth-region threading), every
+committed MNv2 artifact byte-identical; the render `mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16` (314 all-reduces,
+744 operands, 122 `%wdz` = 105 one-dimensional + 17 depthwise, 158 `%one` / `%lr` / `%emad` broadcasts) with
+`#guard`s, proofs.yml, MANIFEST, `TestVariantPredicates` (the third ε row; `tfdp` and `dwdo` spell nothing);
+`VerifiedConfig.truncNormalSigma` → `mkParam` at std 0.8796σ (TF's ±2σ redraw, variance-matched) above every fan
+rule, `LEAN_MLIR_TRUNC_NORMAL=0|1`; `mnv2ImagenetRmsSchedule` 0.12 / 0.98 / 2.5 / staircase; the app at 420 epochs,
+σ 0.09, and `rmsOn` as a substring test (its `startsWith "rms"` would have missed `emarms…`). Gates:
+`opt_step_tie.py` generalised to four fixture parameters (`p3 = [7,1,2,2]`, a depthwise shape) with rows
+`rmswx` (B0's trainer), `rmstfwxdw` and `emarmstfwxdw` (MNv2's `full`) — 10/10 at 1.5e-7, the counterfactuals
+9.8e-1 and 5.4e+1; `scripts/gates/color_distort_gate.py` — the numpy twin of TF's `adjust_saturation` kernel tied
+to `tf.image.adjust_saturation` (4.8e-7) and to the EMITTED `_imagenet_decode_random_crop_flip` run verbatim with
+its three draws pinned (4.8e-7 at five (δ, f)), the text order, and controls at f = 1.5 (brightness and
+saturation commute exactly except through the S clamp, so f = 0.5 is a dead control — in the gate's header);
+the shim hash reproducible at seed 0, distinct at seed 1 (`SHIM_DETERMINISM=1`); parse 372, arity 281, manifest,
+`regen_jax_generated` write / sync / check, `regen_verified_mlir check` 76/76, comment_numbers, module_refs,
+repo_shape, target names, docstring-checkrefs, both DRY_RUN prechecks. Confs rewritten standalone on the §5
+template: fresh lineage by construction (the variant is in the checkpoint name; `~/mnv2_full_jax_2612/` for
+JAX), a grep per emitted line (the TF optimizer lines, the depthwise mask leaf, 53 truncated normals, the
+staircase at 2.5, LR 0.12, 420 epochs, EMA + its warmup form, the colour lines, 127.5, the crop ranges, bilinear
+without antialias, f32 eval; the render's `rmsBufNextTfF`, `%one`, 122 `%wdz`, the ε and wd constants, −α/K),
+`LEAN_MLIR_DUMP_CORRECT` appended. Smokes (`runs/2026-10-12-mnv2-jax-smoke/`, two 100-step epochs validated in f32, lr 0.12 on both — inside
+the first 2.5-epoch stair — exit 0 at the default arena, 81 ms a 256-row step compile excluded → ~49 h;
+`runs/2026-10-12-mnv2-default-4gpu/`, one capped window through the supervisor: the RMSPROP / DROPOUT / EMA
+(4 regions, TF warmup-corrected, the shadow scored) / truncated-normal banners, the `exp x0.98/2.5ep
+staircase+warmup 0ep, baseLR 0.12` line, 742 outputs, 96 ms a step median at 6 ms starvation — slim's
+bilinear feed is cheaper than timm's bicubic, as MNv4's was — → ~63 h; the render peaks at 1.53 GiB of
+11.68, 13 %). §2's "~38 + 66 h" becomes ~49 + 63 h at 420 epochs. Disclosed, not reproduced: slim's eval
+(`central_crop(0.875)` on both sides, then a non-aspect-preserving bilinear resize; scored at timm's 224 / 0.875
+like every pair, post-hoc scorable) and the sixteen asynchronous workers of 96. Not done: `rms-tie`'s TF form (an
+Imagenette-size `rmstf` artifact would be needed; `opt_step_tie` is the gate against the reference's own code).
+The ch 6 marker stands, rewritten to the README's items; D11–D13 in `imagenet_parity.md` §10.3 and the manifest
+row carry the sources. B0 inherits `rmspropTf` for its D13.
+
 ## 7. EfficientNet-B0 — the final pair
 
 Marker (ch 7): the final pair — the staircase floored on the global step from step 0, no decay on BN or
@@ -391,6 +454,6 @@ landed 2026-10-07. Of the marker's list, owed in code:
 | ViT-Ti | done | done | done | done | green | done | 320f5045, 3336f4a7 | pending | stands |
 | ViT-S / B | done | done | done (B: the first `acc` render) | done | green | done | a39f5cf7 | pending | stands |
 | ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | a0c125b3 | pending | stands |
-| MNv4-Conv-M | done (the paper's yaml) | done | done (`mnv4in256`, five) | done | green | done | — | pending | stands, rewritten |
-| MNv2 | NEXT — §6 | | | | | | | | |
-| EfficientNet-B0 | | | | | | | | | |
+| MNv4-Conv-M | done (the paper's yaml) | done | done (`mnv4in256`, five) | done | green | done | 263da67a | pending | stands, rewritten |
+| MNv2 | done (the README's command) | done | done (the first `rmstf` + EMA MNv2 render) | done | green | done | — | pending | stands, rewritten |
+| EfficientNet-B0 | NEXT — §7 | | | | | | | | |

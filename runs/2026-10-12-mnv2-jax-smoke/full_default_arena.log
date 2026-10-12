@@ -1,0 +1,23 @@
+MobileNetV2 (ImageNet, bf16) · Lean 4 → JAX
+  Conv(3→32,3x3/2)+BN → IR1(32→16,e1,s1) → IR2(16→24,e6,s2) → IR3(24→32,e6,s2) → IR4(32→64,e6,s2) → IR3(64→96,e6,s1) → IR3(96→160,e6,s2) → IR1(160→320,e6,s1) → Conv(320→1280,1x1/1)+BN → GAP → 1280→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.120000  batch_size=256 (4 devices x 64)  epochs=2  params=3504872
+steps_per_epoch=100  total_steps=200
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+  step 100/200  loss=7.0175  lr=0.12  (324.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+E1012 04:19:11.649229 2963055 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 04:19:30.365265 2963067 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[Epoch 1] lr=0.12 loss(train_avg)=7.2791 val_top1=50/50000 (0.001) val_top5=0.005 val_loss=7.1174  [32.4s train, 21.3s val]
+  step 200/200  loss=6.8784  lr=0.12  (309.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.12 loss(train_avg)=6.9593 val_top1=66/50000 (0.0013) val_top5=0.0056 val_loss=6.9393  [8.1s train, 14.3s val]
+saved 53 param-groups to /home/skoonce/mnv2_smoke_2612/mobilenet_v2_imagenet_full.bin (14019488 bytes)
+  saved full train state -> /home/skoonce/mnv2_smoke_2612/mobilenet_v2_imagenet_full.state.npz (840 arrays, step=200)
+
+Done. Total time: 76.4s
+exit 0

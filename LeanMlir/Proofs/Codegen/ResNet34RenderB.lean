@@ -634,8 +634,8 @@ def resnet34AdamTrainStepText (B nClasses : Nat) (epsStr : String)
     | .lamb      => "LAMB"
     -- RMSProp's constants are a net's own `RmsHyper` (`optConstsB`'s `rms`), and ResNet-34 has
     -- no reference RMSProp recipe to take them from.
-    | .rmsprop   => panic! "resnet34AdamTrainStepText: .rmsprop needs a ResNet-34 RmsHyper and \
-none is defined"
+    | .rmsprop | .rmspropTf => panic! "resnet34AdamTrainStepText: .rmsprop needs a ResNet-34 \
+RmsHyper and none is defined"
     | .adamwAccum k => panic! s!"resnet34AdamTrainStepText: .adamwAccum {k} needs a fourth \
 parameter region and R34's signature has three — render it from ResNet50RenderB, or add the region \
 here first"

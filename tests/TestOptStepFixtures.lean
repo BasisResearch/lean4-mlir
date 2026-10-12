@@ -29,6 +29,7 @@ That is not a stylistic preference: *a gate on a copy is not a gate on the thing
 | `p0` | `[4,3,2,2]` | rank-4, DECAYS (`rankWdDecays`: rank ≥ 2), takes the real trust ratio |
 | `p1` | `[5]` | rank-1 — the `no_weight_decay` group: `%wdz`, and D2's `trust = 1` skip |
 | `p2` | `[6,4]` | rank-2, decays. A SECOND decaying parameter is not redundant |
+| `p3` | `[7,1,2,2]` | rank-4 with ONE input channel — a depthwise kernel's shape. Decays under timm's rank rule (`rankWdDecays`), is EXCLUDED under TF-slim's (`rankWdDecaysNoDw`, the `dw` rows); the reference's `_wd_mask` under `wdExcludeDepthwise` tests the same shape |
 
 **Three, not one, and never fewer than two decaying ones.** The clip's whole semantic content is
 that ONE scalar is shared across every parameter (`Proofs.clipFactor_shared` against
@@ -47,7 +48,7 @@ open Proofs.StableHLO
 
 /-- The fixture's parameters: `(name, shape)`. See the header for why there are three. -/
 private def fixtureParams : List (String × List Nat) :=
-  [("p0", [4,3,2,2]), ("p1", [5]), ("p2", [6,4])]
+  [("p0", [4,3,2,2]), ("p1", [5]), ("p2", [6,4]), ("p3", [7,1,2,2])]
 
 /-- One optimizer-only module. `optAllParams` supplies the body; everything here is interface.
 
@@ -65,11 +66,20 @@ private def optStepModule (fname : String) (opt : OptRecipe)
     -- ORDER a reading cannot check. `scripts/parity/opt_step_tie.py` executes the reference's own
     -- `ema_update` against the `E` slot this emits, so a shadow wired to the incoming θ rather than
     -- the updated one — the one-step-lag defect — shows up as a number here and nowhere else.
-    (ema : Bool := false) : String :=
+    (ema : Bool := false)
+    -- **The RMSProp rows** (2026-10-12, planning/recipe_prep.md §6): `rms` bakes the net's
+    -- `RmsHyper` (the ε / wd the reference's own constants carry — `enetRmsHyper` for the B0
+    -- trainer, `mnv2RmsHyper` for MobileNetV2's), and `dw` is TF-slim's decay set, the depthwise
+    -- kernel `p3` excluded along with the 1-D `p1` (`rankWdDecaysNoDw`). The `.rmspropTf` rows are
+    -- where D13 is MEASURED: from a non-zero incoming buffer the two rate placements land
+    -- `μ·b·(1 − lr)` apart (`Proofs.rmsPropTfStep_theta_lr_change`), so a render that put the rate
+    -- outside would tie red against the `rmspropTf` reference and green against B0's.
+    (rms : Option RmsHyper := none) (dw : Bool := false) : String :=
   let accOn := match opt with | .adamwAccum _ => true | .lambAccum _ => true | _ => false
   let ps : List PGrad := fixtureParams.map (fun (n, ds) => ⟨n, s!"%d{n}", ds⟩)
   let (body, thetaN, mN, vN, aN, eN) :=
-    (optAllParams opt 1 1 ps wdExclude gradClip clipNorm ema).run' (0, [])
+    (optAllParams opt 1 1 ps wdExclude gradClip clipNorm ema
+      (decays := if dw then rankWdDecaysNoDw else rankWdDecays)).run' (0, [])
   let tys := fixtureParams.map (fun (_, ds) => ty ds)
   let sig := String.intercalate ", " (
     fixtureParams.map (fun (n, ds) => s!"%{n}: {ty ds}") ++
@@ -92,7 +102,7 @@ private def optStepModule (fname : String) (opt : OptRecipe)
   s!"  func.func @{fname}({sig}) -> ({outTys}) " ++ "{\n" ++
   -- Same constant prelude the real render emits, from the same three functions — a hand-written
   -- `%b1 = 0.9` here would make the gate measure this file's transcription of the recipe.
-  optConstsB opt wdStr ++ wdzConst wdExclude ++ clipZeroConst gradClip ++ body ++
+  optConstsB opt wdStr rms ++ wdzConst wdExclude ++ clipZeroConst gradClip ++ body ++
   s!"    return {retVals} : {outTys}\n" ++
   "  }\n}\n"
 
@@ -118,7 +128,7 @@ private def optStepModule (fname : String) (opt : OptRecipe)
     Adam-family references in the tree are EfficientNet's and MNv2's TF-RMSProp recipes at
     `EPS = 1e-3`/`1.0`. -/
 private def variants : List (String × OptRecipe × Bool × Bool × String × Bool) :=
-  [ -- (slug, optimizer, wdExclude, gradClip, wdStr, ema)
+  [ -- (slug, optimizer, wdExclude, gradClip, wdStr, ema); the RMSProp rows are `rmsVariants`
     ("lambclip",       .lamb,        false, true,  "", false)   -- trust ratio + clip, NO wx mask
   , ("lambwxclip",     .lamb,        true,  true,  "", false)   -- + D2 mask + D1 clip, no accumulation
   , ("lambacc4wxclip", .lambAccum 4, true,  true,  "", false)   -- D1 × accumulation at the config's k
@@ -141,6 +151,23 @@ private def variants : List (String × OptRecipe × Bool × Bool × String × Bo
     -- there localises to the shadow rather than to the clip or the accumulation.
   , ("emalambacc8wxclip", .lambAccum 8, true, true, "", true) ]
 
+/-- **The RMSProp rows** — `(slug, optimizer, wdExclude, dw, rms, ema)`, every one against a
+    reference that ships:
+
+    | slug | reference | what it measures |
+    |---|---|---|
+    | `rmswx` | `generated_efficientnet_imagenet.py` | the rate OUTSIDE (`.rmsprop`), B0's ε 1e-3 / wd 1e-5, timm's mask: the committed arm, so the `rmstf…` rows have a control |
+    | `rmstfwxdw` | `generated_mobilenet_v2_imagenet_full.py` | TF1's placement (`.rmspropTf`), MNv2's ε 1.0 / wd 4e-5, TF-slim's mask — `p3` must take `%wdz` (D11) and the buffer must carry `lr` (D13) |
+    | `emarmstfwxdw` | the same | …with the shadow: the five-region MobileNetV2 render's composition |
+
+    `rmswx` against the MobileNetV2 reference, or `rmstfwxdw` against B0's, is the counterfactual
+    that goes red (the buffer rows by a factor of `lr`, θ' by `μ·b·(1 − lr)` on every parameter);
+    run once by hand on 2026-10-12, recorded in `scripts/parity/opt_step_tie.py`'s header. -/
+private def rmsVariants : List (String × OptRecipe × Bool × Bool × RmsHyper × Bool) :=
+  [ ("rmswx",        .rmsprop,   true, false, enetRmsHyper, false)
+  , ("rmstfwxdw",    .rmspropTf, true, true,  mnv2RmsHyper, false)
+  , ("emarmstfwxdw", .rmspropTf, true, true,  mnv2RmsHyper, true) ]
+
 def main : IO Unit := do
   IO.println "── optimizer-step fixtures (planning/archive/verified_optimizer_parity.md §5) ──"
   for (slug, opt, wx, clip, wd, ema) in variants do
@@ -149,4 +176,10 @@ def main : IO Unit := do
     let path := s!".lake/build/{fname}.mlir"
     IO.FS.writeFile path m
     IO.println s!"  wrote {path} ({(m.splitOn "\n").length} lines)"
-  IO.println s!"✓ {variants.length} variants"
+  for (slug, opt, wx, dw, rms, ema) in rmsVariants do
+    let fname := s!"opt_step_{slug}"
+    let m := optStepModule fname opt wx false 1.0 "" ema (rms := some rms) (dw := dw)
+    let path := s!".lake/build/{fname}.mlir"
+    IO.FS.writeFile path m
+    IO.println s!"  wrote {path} ({(m.splitOn "\n").length} lines)"
+  IO.println s!"✓ {variants.length + rmsVariants.length} variants"

@@ -89,6 +89,17 @@ structure StemFwdB where
 -- (`resnet50ImagenetConfigRSBFaithful`, `wdExcludeNormBias := true`) did not.
 def rankWdDecays (_nm : String) (ds : List Nat) : Bool := ds.length ≥ 2
 
+/-- **`rankWdDecays` minus the depthwise kernels — TF-slim's rule for MobileNetV2.**
+    `mobilenet.training_scope` puts `slim.l2_regularizer(weight_decay)` on `slim.conv2d` (the stem,
+    every expand / project 1×1, the 1280 head and the logits) and `weights_regularizer=None` on
+    `slim.separable_conv2d`, which is what `expanded_conv` builds its depthwise from
+    (`conv_blocks.py`); BN and biases carry no regularizer. A depthwise kernel is `[C, 1, k, k]`:
+    rank 4 with one input channel and more than one output — the same test `VerifiedConfig.dwFanK2`
+    uses, and the JAX `_wd_mask`'s `wdExcludeDepthwise` leaf test. The `wxdw` renders bind these to
+    `%wdz` too (`imagenet_parity.md` D11). -/
+def rankWdDecaysNoDw (nm : String) (ds : List Nat) : Bool :=
+  rankWdDecays nm ds && !(ds.length == 4 && ds[1]! == 1 && ds[0]! > 1)
+
 /-- The decay operand for one parameter: the real `%wd`, or the zero constant when `wdExclude` is
     on and `decays` excludes it. -/
 def wdNameBy (wdExclude : Bool) (nm : String) (ds : List Nat)
@@ -198,6 +209,14 @@ inductive OptRecipe
       `m` slot and the mean-square in `v`; see `optOne`'s `.rmsprop` arm. Its constants are the
       net's own `RmsHyper` (`optConstsB`'s `rms`). -/
   | rmsprop
+  /-- **RMSProp with momentum at TF1's placement of the RATE** — `tf.train.RMSPropOptimizer`, the
+      optimizer TF-slim's `train_image_classifier.py` ran MobileNetV2 under: the buffer is
+      `b' = μ·b + lr·g/√(s' + ε)` (`rmsBufNextTfF`, the rate INSIDE the momentum term) and the
+      parameter step `θ' = θ − b'` (`sgdParamF` at a baked `%one`). `.rmsprop` above applies the
+      rate outside, `θ' = θ − lr·b'`; the two agree only while the rate is constant
+      (`Proofs.rmsPropTfStep_theta_lr_change`; `imagenet_parity.md` D13). Same slots, same
+      `RmsHyper`, same coupled L2 first. -/
+  | rmspropTf
   /-- `g ← g + wd·θ`, `v' = μ·v + g`, `θ' = θ − lr·v'`; velocity in the `v` slot, `m` untouched. -/
   | heavyBall
   /-- **PLAIN SGD** with coupled L2: `g ← g + wd·θ`, `θ' = θ − lr·g`. No velocity, so BOTH the
@@ -243,6 +262,7 @@ deriving DecidableEq, Repr
 def OptRecipe.label : OptRecipe → String
   | .adamw         => "AdamW"
   | .rmsprop       => "RMSProp"
+  | .rmspropTf     => "RMSProp (TF1: the rate inside the momentum term)"
   | .heavyBall     => "heavy-ball momentum + coupled L2"
   | .sgd           => "plain SGD + coupled L2 (no momentum)"
   | .lamb          => "LAMB (per-tensor trust ratio)"
@@ -261,6 +281,10 @@ def OptRecipe.slug (opt : OptRecipe) (replicas : Nat) : String :=
   match opt with
   | .adamw     => if replicas ≤ 1 then "adam" else "adamdp"
   | .rmsprop   => if replicas ≤ 1 then "rms"  else "rmsdp"
+  -- `rmstf`: contains `rms`, so the driver's `rmsOn` (the mean-square initialised to 1.0, the
+  -- reference's schedule) fires as on `.rmsprop`; `tf` meets `dp` as `tfdp`, which spells none
+  -- of the other markers (`tests/TestVariantPredicates.lean`).
+  | .rmspropTf => if replicas ≤ 1 then "rmstf" else "rmstfdp"
   | .heavyBall => if replicas ≤ 1 then "mom"  else "momdp"
   | .sgd       => if replicas ≤ 1 then "sgd"  else "sgddp"
   | .lamb      => if replicas ≤ 1 then "lamb" else "lambdp"
@@ -450,6 +474,23 @@ def optOne (opt : OptRecipe) (B : Nat) (replicas : Nat) (g : PGrad)
     -- θ' threads b' by SSA NAME, not by re-nesting `rmsBufNextF` inside `sgdParamF`: `pretty` has
     -- no CSE, so re-nesting would emit the whole buffer block a second time.
     let (cT, nT) ← pretty B (.sgdParamF s!"%{g.nm}" "%lr" g.ds 0 z (.operand nB z))
+    let (cE, nE) ← emaTail nT
+    pure (arS ++ cW ++ cS ++ cB ++ cT ++ cE, nT, nB, nS, none, nE)
+  | .rmspropTf =>
+    -- The `.rmsprop` arm with the rate moved: `rmsBufNextTfF` takes `%lr` and multiplies it onto
+    -- the normalised gradient INSIDE the buffer (`mom <- momentum*mom + lr*grad/sqrt(ms+eps)`),
+    -- and the parameter step is `sgdParamF` at `%one` (`var <- var - mom`) — TF's
+    -- `training_ops.cc`, which `tf.train.RMSPropOptimizer` calls and TF-slim ran. The coupled L2
+    -- and the mean-square are the SAME two ops as above, so the only difference between the two
+    -- arms is where `%lr` is read; `%one` is `optConstsB`'s, emitted only for this recipe.
+    -- `Proofs.rmsPropTf_triple_faithful` is the composition; `Proofs.rmsPropTfStep_theta_lr_change`
+    -- is why it is a different optimizer under a schedule (`imagenet_parity.md` D13).
+    let (cW, nW) ← pretty B (.momVNextF s!"%{g.nm}" wdName g.ds 0 z gr)
+    let gw : SHlo n := .operand nW z
+    let (cS, nS) ← pretty B (.adamVNextF s!"%{g.nm}v" "%rho" "%orho" g.ds 0 z gw)
+    let (cB, nB) ← pretty B (.rmsBufNextTfF s!"%{g.nm}v" s!"%{g.nm}m" "%rho" "%orho" "%mu" "%eps"
+                      "%lr" g.ds 0 0 0 0 z z gw)
+    let (cT, nT) ← pretty B (.sgdParamF s!"%{g.nm}" "%one" g.ds 1 z (.operand nB z))
     let (cE, nE) ← emaTail nT
     pure (arS ++ cW ++ cS ++ cB ++ cT ++ cE, nT, nB, nS, none, nE)
   | .lamb =>
@@ -666,7 +707,7 @@ def optWdDefault : OptRecipe → String
   | .adamw | .heavyBall | .sgd | .adamwAccum _ => "0.0001"
   | .lamb  | .lambAccum _              => "0.02"
   -- RMSProp's decay is the net's `RmsHyper.wd`, which `optConstsB` bakes; `wdStr` is not read.
-  | .rmsprop => ""
+  | .rmsprop | .rmspropTf => ""
 
 /-- **The decay actually baked**: the caller's override, or `optWdDefault`. Empty means default.
 
@@ -746,7 +787,11 @@ def optAllParams (opt : OptRecipe) (B replicas : Nat) (ps : List PGrad)
     -- features share (`VerifiedVariant.nRegions`).
     (ema : Bool := false)
     -- The shadow's suffix, `"ema"` by default for the ResNet family's maxpool (see `optOne`).
-    (emaSuf : String := "ema") :
+    (emaSuf : String := "ema")
+    -- Which parameters decay under `wdExclude`: timm's rank rule, or TF-slim's rank rule minus
+    -- the depthwise kernels (`rankWdDecaysNoDw`, the MobileNetV2 `dw` marker). Trailing and
+    -- defaulted, so every caller and every committed artifact is unchanged.
+    (decays : String → List Nat → Bool := rankWdDecays) :
     StateM Proofs.StableHLO.EmitS (String × List String × List String × List String × List String × List String) := do
   let accOn := match opt with | .adamwAccum _ => true | .lambAccum _ => true | _ => false
   let z1 : Vec 1 := fun _ => 0
@@ -816,7 +861,7 @@ def optAllParams (opt : OptRecipe) (B replicas : Nat) (ps : List PGrad)
     -- cannot collapse into one.
     let gIn : PGrad :=
       if gradClip then { g with grad := (clipped.lookup g.nm).getD g.grad } else g
-    let (c, nT, nM, nV, nA, nE) ← optOne opt B replicas gIn (wdNameBy wdExclude g.nm g.ds)
+    let (c, nT, nM, nV, nA, nE) ← optOne opt B replicas gIn (wdNameBy wdExclude g.nm g.ds decays)
                                 (preAvg := gradClip) (accIn := accRaw.lookup g.nm) (ema := ema)
                                 (emaSuf := emaSuf)
     code := code ++ c
@@ -852,6 +897,13 @@ def optConstsB (opt : OptRecipe) (wdStr : String := "") (rms : Option RmsHyper :
     match rms with
     | some h => rmsConstsBlock h
     | none => panic! "optConstsB .rmsprop: pass the net's RmsHyper as (rms := some …)"
+  | .rmspropTf =>
+    -- The same block, plus the `%one` the parameter step reads as its rate (`θ' = θ − 1·b'`;
+    -- the real rate is inside the buffer). Emitted here and nowhere else, so no `.rmsprop`
+    -- artifact gains a constant.
+    match rms with
+    | some h => rmsConstsBlock h ++ "    %one = stablehlo.constant dense<1.0> : tensor<f32>\n"
+    | none => panic! "optConstsB .rmspropTf: pass the net's RmsHyper as (rms := some …)"
   | .heavyBall =>
     "    %mu = stablehlo.constant dense<0.9> : tensor<f32>\n" ++
     s!"    %wd = stablehlo.constant dense<{wd}> : tensor<f32>\n"

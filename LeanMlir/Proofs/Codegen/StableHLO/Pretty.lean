@@ -228,6 +228,7 @@ inductive Raw where
   | momVNextF (v mu : String) (ds : List Nat) : Raw → Raw
   | momParamF (θ v mu lr : String) (ds : List Nat) : Raw → Raw
   | rmsBufNextF (sq buf rho orho mu eps : String) (ds : List Nat) : Raw → Raw
+  | rmsBufNextTfF (sq buf rho orho mu eps lr : String) (ds : List Nat) : Raw → Raw
   -- Global-norm grad clip. `clipScaleF` keeps only its two literal strings (the ℝs are
   -- denotation-only, as everywhere in `Raw`); `gradSumSqAccF`/`clipScaleF`/`lambScaleF` are BINARY.
   | gradSumSqAccF (ds : List Nat)                            : Raw → Raw → Raw
@@ -575,6 +576,8 @@ def skel : {k : Nat} → SHlo k → Raw
   | _, .momParamF θN vN muN lrN ds _ _ _ _ e => .momParamF θN vN muN lrN ds (skel e)
   | _, .rmsBufNextF sqN bufN rhoN orhoN muN epsN ds _ _ _ _ _ e =>
       .rmsBufNextF sqN bufN rhoN orhoN muN epsN ds (skel e)
+  | _, .rmsBufNextTfF sqN bufN rhoN orhoN muN epsN lrN ds _ _ _ _ _ _ e =>
+      .rmsBufNextTfF sqN bufN rhoN orhoN muN epsN lrN ds (skel e)
   | _, .gradSumSqAccF ds acc e         => .gradSumSqAccF ds (skel acc) (skel e)
   | _, .clipScaleF cS eS _ _ ds s e    => .clipScaleF cS eS ds (skel s) (skel e)
   | _, .lambDirF a b c d e' f g h i j k ds _ _ _ _ _ _ _ _ _ x =>
@@ -852,6 +855,7 @@ inductive Tok where
   | momVNextF (v mu : String) (ds : List Nat) : Tok
   | momParamF (θ v mu lr : String) (ds : List Nat) : Tok
   | rmsBufNextF (sq buf rho orho mu eps : String) (ds : List Nat) : Tok
+  | rmsBufNextTfF (sq buf rho orho mu eps lr : String) (ds : List Nat) : Tok
   | gradSumSqAccF (ds : List Nat)                           : Tok
   | clipScaleF    (clipStr epsStr : String) (ds : List Nat) : Tok
   | lambDirF (θ m v b1 ob1 b2 ob2 bc1 bc2 eps wd : String) (ds : List Nat) : Tok
@@ -956,6 +960,8 @@ def toToks : Raw → List Tok
   | .momParamF θ v mu lr ds e => toToks e ++ [.momParamF θ v mu lr ds]
   | .rmsBufNextF sq buf rho orho mu eps ds e =>
       toToks e ++ [.rmsBufNextF sq buf rho orho mu eps ds]
+  | .rmsBufNextTfF sq buf rho orho mu eps lr ds e =>
+      toToks e ++ [.rmsBufNextTfF sq buf rho orho mu eps lr ds]
   -- Both push LEFT then RIGHT, so `parseStack` pops right-then-left (`.addV`'s shape). The
   -- LEFT child is the scalar in both cases — the accumulator, and the summed global total.
   | .gradSumSqAccF ds acc e  => toToks acc ++ toToks e ++ [.gradSumSqAccF ds]
@@ -2266,6 +2272,33 @@ def emitTok (B : Nat) : Tok → List String → StateM EmitS (String × List Str
         s!"    {mub} = stablehlo.broadcast_in_dim {muN}, dims = [] : (tensor<f32>) -> {T}\n" ++
         s!"    {bs} = stablehlo.multiply {mub}, {bufN} : {T}\n" ++
         s!"    {o} = stablehlo.add {bs}, {nrm} : {T}\n", o :: st)
+  -- ══ RMSPROP, TF1's RATE PLACEMENT: `rmsBufNextF`'s lines with ONE more pair — the runtime
+  --    `%lr` broadcast and multiplied onto the normalised gradient BEFORE it joins the momentum
+  --    (`mom <- momentum*mom + lr*grad/sqrt(ms+eps)`, TF's `training_ops.cc`), so the parameter
+  --    step that follows is `sgdParamF` at `%one`. `Proofs.rmsBufNextTf`; the two placements agree
+  --    only at a constant rate (`Proofs.rmsPropTfStep_theta_lr_change`). ══
+  | .rmsBufNextTfF sqN bufN rhoN orhoN muN epsN lrN ds, r :: st => do
+      let T := ty ds
+      let rhob ← fresh; let orhob ← fresh; let ss ← fresh; let g2 ← fresh; let sg ← fresh
+      let sn ← fresh; let ep ← fresh; let da ← fresh; let dn ← fresh; let nrm ← fresh
+      let lrb ← fresh; let stp ← fresh
+      let mub ← fresh; let bs ← fresh; let o ← fresh
+      pure (
+        s!"    {rhob} = stablehlo.broadcast_in_dim {rhoN}, dims = [] : (tensor<f32>) -> {T}\n" ++
+        s!"    {orhob} = stablehlo.broadcast_in_dim {orhoN}, dims = [] : (tensor<f32>) -> {T}\n" ++
+        s!"    {ss} = stablehlo.multiply {rhob}, {sqN} : {T}\n" ++
+        s!"    {g2} = stablehlo.multiply {r}, {r} : {T}\n" ++
+        s!"    {sg} = stablehlo.multiply {orhob}, {g2} : {T}\n" ++
+        s!"    {sn} = stablehlo.add {ss}, {sg} : {T}\n" ++
+        s!"    {ep} = stablehlo.broadcast_in_dim {epsN}, dims = [] : (tensor<f32>) -> {T}\n" ++
+        s!"    {da} = stablehlo.add {sn}, {ep} : {T}\n" ++
+        s!"    {dn} = stablehlo.sqrt {da} : {T}\n" ++
+        s!"    {nrm} = stablehlo.divide {r}, {dn} : {T}\n" ++
+        s!"    {lrb} = stablehlo.broadcast_in_dim {lrN}, dims = [] : (tensor<f32>) -> {T}\n" ++
+        s!"    {stp} = stablehlo.multiply {lrb}, {nrm} : {T}\n" ++
+        s!"    {mub} = stablehlo.broadcast_in_dim {muN}, dims = [] : (tensor<f32>) -> {T}\n" ++
+        s!"    {bs} = stablehlo.multiply {mub}, {bufN} : {T}\n" ++
+        s!"    {o} = stablehlo.add {bs}, {stp} : {T}\n", o :: st)
   -- ══ GLOBAL-NORM GRADIENT CLIPPING: op-for-op the reference's two lines
   --      gn    = sqrt(sum(jnp.sum(g*g) for g in tree.leaves(grads)))
   --      grads = tree.map(lambda g: g * minimum(1.0, CLIP/(gn + 1e-6)), grads)

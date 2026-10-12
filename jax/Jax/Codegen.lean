@@ -521,8 +521,15 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
        else "_IMG_SIZE / (_IMG_SIZE + _CROP_PADDING)   # 224/256 = 0.875, timm's default\n") ++
     (if cfg.trainRes > 0 then "_TRAIN_SIZE = " ++ toString cfg.trainRes ++
        "   # RSB-A3 train resolution; eval stays _IMG_SIZE (forward infers from flat len)\n" else "") ++
-    "_MEAN_RGB = tf.constant([0.485 * 255, 0.456 * 255, 0.406 * 255], dtype=tf.float32)\n" ++
-    "_STD_RGB  = tf.constant([0.229 * 255, 0.224 * 255, 0.225 * 255], dtype=tf.float32)\n" ++
+    -- `inputScalePm1`: TF-slim's `(x − 0.5) × 2`, i.e. `(x255 − 127.5) / 127.5`, through the SAME two
+    -- constants the shared normalize reads (and the shim hands the C normalize), so nothing
+    -- downstream moves. Train and eval alike, as `inception_preprocessing` scales both.
+    (if cfg.inputScalePm1 then
+      "_MEAN_RGB = tf.constant([127.5, 127.5, 127.5], dtype=tf.float32)   # TF-slim: (x/255 - 0.5) * 2 (inputScalePm1)\n" ++
+      "_STD_RGB  = tf.constant([127.5, 127.5, 127.5], dtype=tf.float32)\n"
+     else
+      "_MEAN_RGB = tf.constant([0.485 * 255, 0.456 * 255, 0.406 * 255], dtype=tf.float32)\n" ++
+      "_STD_RGB  = tf.constant([0.229 * 255, 0.224 * 255, 0.225 * 255], dtype=tf.float32)\n") ++
     -- $AUG_SEED: op-level seed for the random crop/flip. Unset -> None -> the stateful global RNG,
     -- the reference trainers' default. Set (with tf.config.experimental.enable_op_determinism)
     -- it makes the stream reproducible, which the batch shim needs and TF refuses to provide
@@ -567,8 +574,13 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
       "    bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])\n" ++
       "    bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(\n" ++
       "        shape, bounding_boxes=bbox,\n" ++
-      "        min_object_covered=" ++ pyFloat cfg.cropMinCovered ++ ", aspect_ratio_range=(3./4, 4./3.),\n" ++
-      "        area_range=(0.08, 1.0), max_attempts=10,\n" ++
+      -- TF-slim's `distorted_bounding_box_crop` (`cropAspectLo/Hi`, `cropAreaMin`, `cropMaxAttempts`):
+      -- `(0.75, 1.33)`, `(0.05, 1.0)`, 100. The defaults keep the three literals byte for byte.
+      "        min_object_covered=" ++ pyFloat cfg.cropMinCovered ++ ", aspect_ratio_range=" ++
+        (if cfg.cropAspectHi > 0.0 then "(" ++ pyFloat cfg.cropAspectLo ++ ", " ++ pyFloat cfg.cropAspectHi ++ ")"
+         else "(3./4, 4./3.)") ++ ",\n" ++
+      "        area_range=(" ++ (if cfg.cropAreaMin == 0.08 then "0.08" else pyFloat cfg.cropAreaMin) ++
+        ", 1.0), max_attempts=" ++ toString cfg.cropMaxAttempts ++ ",\n" ++
       "        seed=_AUG_SEED,\n" ++
       "        use_image_if_no_bounding_boxes=True)\n" ++
       "    oy, ox, _ = tf.unstack(bbox_begin)\n" ++
@@ -611,6 +623,20 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
       "                  lambda: tf.image.resize([img], " ++ sz ++ ",\n" ++
       "                                          method=tf.image.ResizeMethod.BICUBIC, antialias=" ++ aa ++ ")[0])\n") ++
     "    img = tf.image.random_flip_left_right(img, seed=_AUG_SEED)\n" ++
+    -- TF-slim's `distort_color` in `fast_mode`, where `preprocess_for_train` puts it: after the
+    -- flip, on [0, 1]. Brightness then saturation, ONE order (`num_distort_cases = 1`), clipped;
+    -- `random_saturation` is TF's `adjust_saturation` kernel — an RGB→HSV round trip with the
+    -- scaled S clamped to [0, 1] — which `scripts/gates/color_distort_gate.py` ties to a numpy
+    -- twin. No op seed, as slim passes none: the global seed under SHIM_DETERMINISM makes the two
+    -- draws deterministic AND independent (sharing `_AUG_SEED` would correlate δ with the scale).
+    (if cfg.colorDistortSlim then
+      "    # TF-slim inception_preprocessing.distort_color, fast_mode (colorDistortSlim): on [0, 1],\n" ++
+      "    # brightness ±32/255 then saturation ×U(0.5, 1.5), one order, clipped; back to 0..255.\n" ++
+      "    img = img / 255.0\n" ++
+      "    img = tf.image.random_brightness(img, 32. / 255.)\n" ++
+      "    img = tf.image.random_saturation(img, 0.5, 1.5)\n" ++
+      "    img = tf.clip_by_value(img, 0.0, 1.0) * 255.0\n"
+     else "") ++
     (if cfg.useAutoAugment then "    img = _autoaugment(img)\n" else "") ++
     (if cfg.useRandAugment && cfg.randAugmentGeometric then
       -- Geometric RandAugment: N ops at magnitude M (mstd jitter via gap D) over the set.
@@ -1557,15 +1583,46 @@ private def emitHelpers (spec : NetSpec) (cfg : TrainConfig) : String := Id.run 
   code
 
 -- Helper: emit init code for one conv+BN param group (w, gamma, beta)
-private def emitConvBnInit (comment : String) (ic oc k : Nat) (zeroGamma : Bool := false) : String :=
+private def emitConvBnInit (comment : String) (ic oc k : Nat) (zeroGamma : Bool := false)
+    -- `TrainConfig.initTruncNormal`: TF-slim's `truncated_normal_initializer(stddev)` on the
+    -- kernel — `truncated_normal(-2, 2) · σ`, exactly TF's draw — in place of the fan-out uniform.
+    -- Every conv-BN site (stem, 1×1s, depthwise) takes it through `emitConvBnInitCfg`, as slim's
+    -- one arg scope covers conv2d and separable_conv2d alike. 0 emits the lines below, byte for byte.
+    (truncNormal : Float := 0.0) : String :=
   let fanOut := oc * k * k
   let gammaInit := if zeroGamma then "jnp.zeros(" ++ toString oc ++ ")" else "jnp.ones(" ++ toString oc ++ ")"
-  "    # " ++ comment ++ "\n" ++
+  let shape := "(" ++ toString oc ++ ", " ++ toString ic ++ ", " ++ toString k ++ ", " ++ toString k ++ ")"
+  "    # " ++ comment ++ (if truncNormal > 0.0 then "  (TF-slim truncated_normal std=" ++ pyFloat truncNormal ++ ")" else "") ++ "\n" ++
   "    key, k_ = random.split(key)\n" ++
-  "    scale = jnp.sqrt(6.0 / " ++ toString fanOut ++ ")\n" ++
-  "    params.append((random.uniform(k_, (" ++ toString oc ++ ", " ++ toString ic ++ ", " ++
-    toString k ++ ", " ++ toString k ++ "), minval=-scale, maxval=scale),\n" ++
+  (if truncNormal > 0.0 then
+    "    params.append((random.truncated_normal(k_, -2., 2., " ++ shape ++ ") * " ++ pyFloat truncNormal ++ ",\n"
+   else
+    "    scale = jnp.sqrt(6.0 / " ++ toString fanOut ++ ")\n" ++
+    "    params.append((random.uniform(k_, " ++ shape ++ ", minval=-scale, maxval=scale),\n") ++
   "                   " ++ gammaInit ++ ", jnp.zeros(" ++ toString oc ++ ")))\n"
+
+/-- `emitConvBnInit` with the config's init routed in — the one call form `emitInitParams` uses, so
+    a conv-BN site cannot miss `initTruncNormal` by being written against the bare helper. -/
+private def emitConvBnInitCfg (cfg : TrainConfig) (comment : String) (ic oc k : Nat)
+    (zeroGamma : Bool := false) : String :=
+  emitConvBnInit comment ic oc k zeroGamma cfg.initTruncNormal
+
+/-- A DEPTHWISE conv-BN kernel `(ch, 1, k, k)` — every depthwise site (SepConv, IR, MB, V3, UIB)
+    writes its init through this, so the one rule the sites share is in one place: fan = k²
+    (TF/timm's `variance_scaling` on a `(k, k, C, 1)` kernel, `VerifiedConfig.dwFanK2`'s peer), and
+    under `initTruncNormal` TF-slim's `truncated_normal(-2, 2) · σ` — `separable_conv2d` is in the
+    same arg scope as `conv2d`, so the depthwise kernels take it too. At the default the text is the
+    inline form every site carried before 2026-10-12, byte for byte. -/
+private def emitDwBnInitCfg (cfg : TrainConfig) (comment : String) (ch k : Nat) : String :=
+  let shape := "(" ++ toString ch ++ ", 1, " ++ toString k ++ ", " ++ toString k ++ ")"
+  "    # " ++ comment ++ (if cfg.initTruncNormal > 0.0 then "  (TF-slim truncated_normal std=" ++ pyFloat cfg.initTruncNormal ++ ")" else "") ++ "\n" ++
+  "    key, k_ = random.split(key)\n" ++
+  (if cfg.initTruncNormal > 0.0 then
+    "    params.append((random.truncated_normal(k_, -2., 2., " ++ shape ++ ") * " ++ pyFloat cfg.initTruncNormal ++ ",\n"
+   else
+    "    scale = jnp.sqrt(6.0 / " ++ toString (k * k) ++ ")\n" ++
+    "    params.append((random.uniform(k_, " ++ shape ++ ", minval=-scale, maxval=scale),\n") ++
+  "                   jnp.ones(" ++ toString ch ++ "), jnp.zeros(" ++ toString ch ++ ")))\n"
 
 -- Helper: emit init code for layer norm (gamma, beta)
 private def emitLNInit (comment : String) (dim : Nat) : String :=
@@ -1738,7 +1795,7 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
         "    params.append((random.uniform(k_, (" ++ toString oc ++ ", " ++ toString ic ++ ", " ++
           toString k ++ ", " ++ toString k ++ "), minval=-scale, maxval=scale), jnp.zeros(" ++ toString oc ++ ")))\n"
     | .convBn ic oc k _ _ =>
-      code := code ++ emitConvBnInit s!"ConvBN {ic}→{oc}, {k}x{k}" ic oc k
+      code := code ++ emitConvBnInitCfg cfg s!"ConvBN {ic}→{oc}, {k}x{k}" ic oc k
     | .convNextStage c nBlocks _ _ =>
       for bi in [:nBlocks] do
         code := code ++ convBiasInit s!"ConvNeXt[{bi}] DW 7x7 {c}ch" c 1 7 7
@@ -1767,6 +1824,14 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
       -- and its own re-run, not a silent ride-along.
       if cfg.vitInit || cfg.cnxInit then
         code := code ++ emitDenseInitTimm s!"Dense {fi}→{fo} (head)" fi fo
+      -- TF-slim's logits are a `slim.conv2d` 1×1 under the same arg scope, so the head takes the
+      -- truncated normal too (`initTruncNormal`); its bias is slim's `zeros_initializer`.
+      else if cfg.initTruncNormal > 0.0 then
+        code := code ++
+          "    # Dense " ++ toString fi ++ "→" ++ toString fo ++ "  (TF-slim truncated_normal std=" ++ pyFloat cfg.initTruncNormal ++ ")\n" ++
+          "    key, k_ = random.split(key)\n" ++
+          "    params.append((random.truncated_normal(k_, -2., 2., (" ++ toString fo ++ ", " ++ toString fi ++
+            ")) * " ++ pyFloat cfg.initTruncNormal ++ ", jnp.zeros(" ++ toString fo ++ ")))\n"
       else
       code := code ++
         "    # Dense " ++ toString fi ++ "→" ++ toString fo ++ "\n" ++
@@ -1777,68 +1842,51 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
     | .residualBlock ic oc n fs =>
       let needsProj := !(ic == oc && fs == 1)
       if needsProj then
-        code := code ++ emitConvBnInit s!"ResBlock ↓ conv1 {ic}→{oc}" ic oc 3
-        code := code ++ emitConvBnInit s!"ResBlock ↓ conv2 {oc}→{oc}" oc oc 3
-        code := code ++ emitConvBnInit s!"ResBlock ↓ proj {ic}→{oc}" ic oc 1
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock ↓ conv1 {ic}→{oc}" ic oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock ↓ conv2 {oc}→{oc}" oc oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock ↓ proj {ic}→{oc}" ic oc 1
       else
-        code := code ++ emitConvBnInit s!"ResBlock conv1 {oc}→{oc}" oc oc 3
-        code := code ++ emitConvBnInit s!"ResBlock conv2 {oc}→{oc}" oc oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv1 {oc}→{oc}" oc oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv2 {oc}→{oc}" oc oc 3
       for _ in List.range (n - 1) do
-        code := code ++ emitConvBnInit s!"ResBlock conv1 {oc}→{oc}" oc oc 3
-        code := code ++ emitConvBnInit s!"ResBlock conv2 {oc}→{oc}" oc oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv1 {oc}→{oc}" oc oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv2 {oc}→{oc}" oc oc 3
     | .bottleneckBlock ic oc n fs =>
       let mid := oc / 4
       let needsProj := !(ic == oc && fs == 1)
       if needsProj then
-        code := code ++ emitConvBnInit s!"Bottleneck ↓ 1x1 {ic}→{mid}" ic mid 1
-        code := code ++ emitConvBnInit s!"Bottleneck ↓ 3x3 {mid}→{mid}" mid mid 3
-        code := code ++ emitConvBnInit s!"Bottleneck ↓ 1x1 {mid}→{oc}" mid oc 1 (zeroGamma := true)
-        code := code ++ emitConvBnInit s!"Bottleneck ↓ proj {ic}→{oc}" ic oc 1
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck ↓ 1x1 {ic}→{mid}" ic mid 1
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck ↓ 3x3 {mid}→{mid}" mid mid 3
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck ↓ 1x1 {mid}→{oc}" mid oc 1 (zeroGamma := true)
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck ↓ proj {ic}→{oc}" ic oc 1
       else
-        code := code ++ emitConvBnInit s!"Bottleneck 1x1 {oc}→{mid}" oc mid 1
-        code := code ++ emitConvBnInit s!"Bottleneck 3x3 {mid}→{mid}" mid mid 3
-        code := code ++ emitConvBnInit s!"Bottleneck 1x1 {mid}→{oc}" mid oc 1 (zeroGamma := true)
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck 1x1 {oc}→{mid}" oc mid 1
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck 3x3 {mid}→{mid}" mid mid 3
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck 1x1 {mid}→{oc}" mid oc 1 (zeroGamma := true)
       for _ in List.range (n - 1) do
-        code := code ++ emitConvBnInit s!"Bottleneck 1x1 {oc}→{mid}" oc mid 1
-        code := code ++ emitConvBnInit s!"Bottleneck 3x3 {mid}→{mid}" mid mid 3
-        code := code ++ emitConvBnInit s!"Bottleneck 1x1 {mid}→{oc}" mid oc 1 (zeroGamma := true)
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck 1x1 {oc}→{mid}" oc mid 1
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck 3x3 {mid}→{mid}" mid mid 3
+        code := code ++ emitConvBnInitCfg cfg s!"Bottleneck 1x1 {mid}→{oc}" mid oc 1 (zeroGamma := true)
     | .separableConv ic oc _ =>
-      -- Depthwise: weight shape (ic, 1, 3, 3), Kaiming init
-      let dwFanOut := 9
-      code := code ++
-        "    # SepConv DW " ++ toString ic ++ "ch, 3x3\n" ++
-        "    key, k_ = random.split(key)\n" ++
-        "    scale = jnp.sqrt(6.0 / " ++ toString dwFanOut ++ ")\n" ++
-        "    params.append((random.uniform(k_, (" ++ toString ic ++ ", 1, 3, 3), minval=-scale, maxval=scale),\n" ++
-        "                   jnp.ones(" ++ toString ic ++ "), jnp.zeros(" ++ toString ic ++ ")))\n"
+      -- Depthwise: weight shape (ic, 1, 3, 3), Kaiming init (fan k²)
+      code := code ++ emitDwBnInitCfg cfg s!"SepConv DW {ic}ch, 3x3" ic 3
       -- Pointwise: reuse emitConvBnInit for 1x1 conv
-      code := code ++ emitConvBnInit s!"SepConv PW {ic}→{oc}" ic oc 1
+      code := code ++ emitConvBnInitCfg cfg s!"SepConv PW {ic}→{oc}" ic oc 1
     | .invertedResidual ic oc expand _stride n =>
       -- First block: ic→mid→oc
       let mid := ic * expand
       if expand != 1 then
-        code := code ++ emitConvBnInit s!"IR expand {ic}→{mid}" ic mid 1
-      -- Depthwise
-      let dwFanOut := 9
-      code := code ++
-        "    # IR DW " ++ toString mid ++ "ch, 3x3\n" ++
-        "    key, k_ = random.split(key)\n" ++
-        "    scale = jnp.sqrt(6.0 / " ++ toString dwFanOut ++ ")\n" ++
-        "    params.append((random.uniform(k_, (" ++ toString mid ++ ", 1, 3, 3), minval=-scale, maxval=scale),\n" ++
-        "                   jnp.ones(" ++ toString mid ++ "), jnp.zeros(" ++ toString mid ++ ")))\n"
-      code := code ++ emitConvBnInit s!"IR project {mid}→{oc}" mid oc 1
+        code := code ++ emitConvBnInitCfg cfg s!"IR expand {ic}→{mid}" ic mid 1
+      -- Depthwise (fan k²)
+      code := code ++ emitDwBnInitCfg cfg s!"IR DW {mid}ch, 3x3" mid 3
+      code := code ++ emitConvBnInitCfg cfg s!"IR project {mid}→{oc}" mid oc 1
       -- Remaining blocks: oc→oc*expand→oc, stride=1
       for _ in List.range (n - 1) do
         let midR := oc * expand
         if expand != 1 then
-          code := code ++ emitConvBnInit s!"IR expand {oc}→{midR}" oc midR 1
-        code := code ++
-          "    # IR DW " ++ toString midR ++ "ch, 3x3\n" ++
-          "    key, k_ = random.split(key)\n" ++
-          "    scale = jnp.sqrt(6.0 / " ++ toString dwFanOut ++ ")\n" ++
-          "    params.append((random.uniform(k_, (" ++ toString midR ++ ", 1, 3, 3), minval=-scale, maxval=scale),\n" ++
-          "                   jnp.ones(" ++ toString midR ++ "), jnp.zeros(" ++ toString midR ++ ")))\n"
-        code := code ++ emitConvBnInit s!"IR project {midR}→{oc}" midR oc 1
+          code := code ++ emitConvBnInitCfg cfg s!"IR expand {oc}→{midR}" oc midR 1
+        code := code ++ emitDwBnInitCfg cfg s!"IR DW {midR}ch, 3x3" midR 3
+        code := code ++ emitConvBnInitCfg cfg s!"IR project {midR}→{oc}" midR oc 1
     | .mbConv ic oc expand kSize _ n useSE =>
       -- Helper to emit one block's params
       let emitBlock (blockIc blockOc : Nat) : String := Id.run do
@@ -1846,16 +1894,9 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
         let mut code := ""
         -- Expand
         if expand != 1 then
-          code := code ++ emitConvBnInit s!"MB expand {blockIc}→{mid}" blockIc mid 1
-        -- Depthwise
-        let dwFanOut := kSize * kSize
-        code := code ++
-          "    # MB DW " ++ toString mid ++ "ch, " ++ toString kSize ++ "x" ++ toString kSize ++ "\n" ++
-          "    key, k_ = random.split(key)\n" ++
-          "    scale = jnp.sqrt(6.0 / " ++ toString dwFanOut ++ ")\n" ++
-          "    params.append((random.uniform(k_, (" ++ toString mid ++ ", 1, " ++
-            toString kSize ++ ", " ++ toString kSize ++ "), minval=-scale, maxval=scale),\n" ++
-          "                   jnp.ones(" ++ toString mid ++ "), jnp.zeros(" ++ toString mid ++ ")))\n"
+          code := code ++ emitConvBnInitCfg cfg s!"MB expand {blockIc}→{mid}" blockIc mid 1
+        -- Depthwise (fan k²)
+        code := code ++ emitDwBnInitCfg cfg s!"MB DW {mid}ch, {kSize}x{kSize}" mid kSize
         -- SE
         if useSE then
           -- Canonical EfficientNet SE: squeeze relative to the block INPUT
@@ -1874,7 +1915,7 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
             "    params.append((random.uniform(k_, (" ++ toString mid ++ ", " ++ toString seMid ++
               ", 1, 1), minval=-scale, maxval=scale), jnp.zeros(" ++ toString mid ++ ")))\n"
         -- Project
-        code := code ++ emitConvBnInit s!"MB project {mid}→{blockOc}" mid blockOc 1
+        code := code ++ emitConvBnInitCfg cfg s!"MB project {mid}→{blockOc}" mid blockOc 1
         code
       -- First block
       code := code ++ emitBlock ic oc
@@ -1884,15 +1925,9 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
     | .mbConvV3 ic oc expandCh kSize _ useSE _ =>
       -- Expand (if expandCh != ic)
       if expandCh != ic then
-        code := code ++ emitConvBnInit s!"V3 expand {ic}→{expandCh}" ic expandCh 1
-      -- Depthwise
-      code := code ++
-        "    # V3 DW " ++ toString expandCh ++ "ch, " ++ toString kSize ++ "x" ++ toString kSize ++ "\n" ++
-        "    key, k_ = random.split(key)\n" ++
-        "    scale = jnp.sqrt(6.0 / " ++ toString (kSize * kSize) ++ ")\n" ++
-        "    params.append((random.uniform(k_, (" ++ toString expandCh ++ ", 1, " ++
-          toString kSize ++ ", " ++ toString kSize ++ "), minval=-scale, maxval=scale),\n" ++
-        "                   jnp.ones(" ++ toString expandCh ++ "), jnp.zeros(" ++ toString expandCh ++ ")))\n"
+        code := code ++ emitConvBnInitCfg cfg s!"V3 expand {ic}→{expandCh}" ic expandCh 1
+      -- Depthwise (fan k²)
+      code := code ++ emitDwBnInitCfg cfg s!"V3 DW {expandCh}ch, {kSize}x{kSize}" expandCh kSize
       -- SE
       if useSE then
         let seMid := Nat.max 1 (expandCh / 4)
@@ -1908,39 +1943,25 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
           "    params.append((random.uniform(k_, (" ++ toString expandCh ++ ", " ++ toString seMid ++
             ", 1, 1), minval=-scale, maxval=scale), jnp.zeros(" ++ toString expandCh ++ ")))\n"
       -- Project
-      code := code ++ emitConvBnInit s!"V3 project {expandCh}→{oc}" expandCh oc 1
+      code := code ++ emitConvBnInitCfg cfg s!"V3 project {expandCh}→{oc}" expandCh oc 1
     | .uib ic oc expand _stride preDWk postDWk =>
       let mid := ic * expand
       -- Pre-depthwise (on ic channels)
       if preDWk > 0 then
-        let dwFanOut := preDWk * preDWk
-        code := code ++
-          "    # UIB pre-DW " ++ toString ic ++ "ch, " ++ toString preDWk ++ "x" ++ toString preDWk ++ "\n" ++
-          "    key, k_ = random.split(key)\n" ++
-          "    scale = jnp.sqrt(6.0 / " ++ toString dwFanOut ++ ")\n" ++
-          "    params.append((random.uniform(k_, (" ++ toString ic ++ ", 1, " ++
-            toString preDWk ++ ", " ++ toString preDWk ++ "), minval=-scale, maxval=scale),\n" ++
-          "                   jnp.ones(" ++ toString ic ++ "), jnp.zeros(" ++ toString ic ++ ")))\n"
+        code := code ++ emitDwBnInitCfg cfg s!"UIB pre-DW {ic}ch, {preDWk}x{preDWk}" ic preDWk
       -- Expand 1x1
-      code := code ++ emitConvBnInit s!"UIB expand {ic}→{mid}" ic mid 1
+      code := code ++ emitConvBnInitCfg cfg s!"UIB expand {ic}→{mid}" ic mid 1
       -- Post-depthwise (on mid channels)
       if postDWk > 0 then
-        let dwFanOut := postDWk * postDWk
-        code := code ++
-          "    # UIB post-DW " ++ toString mid ++ "ch, " ++ toString postDWk ++ "x" ++ toString postDWk ++ "\n" ++
-          "    key, k_ = random.split(key)\n" ++
-          "    scale = jnp.sqrt(6.0 / " ++ toString dwFanOut ++ ")\n" ++
-          "    params.append((random.uniform(k_, (" ++ toString mid ++ ", 1, " ++
-            toString postDWk ++ ", " ++ toString postDWk ++ "), minval=-scale, maxval=scale),\n" ++
-          "                   jnp.ones(" ++ toString mid ++ "), jnp.zeros(" ++ toString mid ++ ")))\n"
+        code := code ++ emitDwBnInitCfg cfg s!"UIB post-DW {mid}ch, {postDWk}x{postDWk}" mid postDWk
       -- Project 1x1
-      code := code ++ emitConvBnInit s!"UIB project {mid}→{oc}" mid oc 1
+      code := code ++ emitConvBnInitCfg cfg s!"UIB project {mid}→{oc}" mid oc 1
     | .fusedMbConv ic oc expand kSize _ n useSE _ =>
       let emitFusedBlock (blockIc blockOc : Nat) : String := Id.run do
         let mid := if expand == 1 then blockOc else blockIc * expand
         let mut code := ""
         -- Fused expand: kxk conv
-        code := code ++ emitConvBnInit s!"FMB fused {blockIc}→{mid}, {kSize}x{kSize}" blockIc mid kSize
+        code := code ++ emitConvBnInitCfg cfg s!"FMB fused {blockIc}→{mid}, {kSize}x{kSize}" blockIc mid kSize
         -- SE
         if useSE then
           let seMid := Nat.max 1 (mid / 4)
@@ -1957,15 +1978,15 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
               ", 1, 1), minval=-scale, maxval=scale), jnp.zeros(" ++ toString mid ++ ")))\n"
         -- Project (only if expand > 1)
         if expand != 1 then
-          code := code ++ emitConvBnInit s!"FMB project {mid}→{blockOc}" mid blockOc 1
+          code := code ++ emitConvBnInitCfg cfg s!"FMB project {mid}→{blockOc}" mid blockOc 1
         code
       code := code ++ emitFusedBlock ic oc
       for _ in List.range (n - 1) do
         code := code ++ emitFusedBlock oc oc
     | .fireModule ic sq e1 e3 =>
-      code := code ++ emitConvBnInit s!"Fire squeeze {ic}→{sq}" ic sq 1
-      code := code ++ emitConvBnInit s!"Fire expand1x1 {sq}→{e1}" sq e1 1
-      code := code ++ emitConvBnInit s!"Fire expand3x3 {sq}→{e3}" sq e3 3
+      code := code ++ emitConvBnInitCfg cfg s!"Fire squeeze {ic}→{sq}" ic sq 1
+      code := code ++ emitConvBnInitCfg cfg s!"Fire expand1x1 {sq}→{e1}" sq e1 1
+      code := code ++ emitConvBnInitCfg cfg s!"Fire expand3x3 {sq}→{e3}" sq e3 3
     | .patchEmbed ic dim p _nP =>
       -- Patch embedding conv. timm leaves this on PyTorch's nn.Conv2d default,
       -- kaiming_uniform_(a=sqrt(5)) == U(±1/sqrt(fan_in)) over fan_in = ic·p·p.
@@ -2870,6 +2891,11 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
     "    # CLS token) or the positional embedding (2-D but must not be decayed).\n" ++
     "    def _leaf(p):\n" ++
     "        if p.ndim <= 1: return jnp.zeros_like(p)\n" ++
+    -- `wdExcludeDepthwise`: TF-slim's `separable_conv2d` carries no regularizer. The leaf test is
+    -- the kernel's shape, as the verified `rankWdDecaysNoDw` and `VerifiedConfig.dwFanK2` test it.
+    (if cfg.wdExcludeDepthwise then
+      "        if p.ndim == 4 and p.shape[1] == 1 and p.shape[0] > 1: return jnp.zeros_like(p)   # depthwise [C,1,k,k]: TF-slim puts no regularizer on separable_conv2d (wdExcludeDepthwise)\n"
+     else "") ++
     "        if p.shape == _WD_POS_SHAPE: return jnp.zeros_like(p)\n" ++
     "        return jnp.ones_like(p)\n" ++
     "    return jax.tree.map(_leaf, params)\n"
@@ -2963,8 +2989,15 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
      else if hasWD then "    grads = jax.tree.map(lambda g, p: g + WD * p, grads, params)\n" else "") ++
     "    sq, buf = opt_state\n" ++
     "    sq = jax.tree.map(lambda s, g: RHO * s + (1.0 - RHO) * g * g, sq, grads)\n" ++
-    "    buf = jax.tree.map(lambda b, g, s: MOMENTUM * b + g / jnp.sqrt(s + EPS), buf, grads, sq)\n" ++
-    "    params = jax.tree.map(lambda p, b: p - lr * b, params, buf)\n" ++
+    -- `rmspropTf`: TF1's `ApplyRMSProp` — `mom <- momentum*mom + lr*grad/sqrt(ms+eps); var <- var - mom`
+    -- (`training_ops.cc`, what `tf.train.RMSPropOptimizer` and so TF-slim's MobileNetV2 ran).
+    -- The rate inside the momentum term; identical to the line below only while `lr` is constant.
+    (if cfg.rmspropTf then
+      "    buf = jax.tree.map(lambda b, g, s: MOMENTUM * b + lr * g / jnp.sqrt(s + EPS), buf, grads, sq)   # TF1 ApplyRMSProp: the rate INSIDE the momentum term (rmspropTf)\n" ++
+      "    params = jax.tree.map(lambda p, b: p - b, params, buf)\n"
+     else
+      "    buf = jax.tree.map(lambda b, g, s: MOMENTUM * b + g / jnp.sqrt(s + EPS), buf, grads, sq)\n" ++
+      "    params = jax.tree.map(lambda p, b: p - lr * b, params, buf)\n") ++
     (if cfg.runningBN then "    return params, (sq, buf), _new_bn, loss\n\n" else "    return params, (sq, buf), loss\n\n")
    | .sgd =>
     if hasMomentum then
