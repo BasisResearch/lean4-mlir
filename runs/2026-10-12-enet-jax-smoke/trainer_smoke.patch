@@ -1,0 +1,14 @@
+--- jax/generated/generated_efficientnet_b0_imagenet_full.py	2026-10-12 08:21:29.040331657 +0000
++++ runs/2026-10-12-enet-jax-smoke/trainer_smoke.py	2026-10-12 08:33:31.371033996 +0000
+@@ -1879,9 +1879,9 @@
+     val_examples   = 50000
+ 
+     BATCH_SIZE = (256 // n_devices) * n_devices or n_devices
+-    EPOCHS = 350
++    EPOCHS = 2   # SMOKE: two short epochs, then exit (both inside the 5-epoch warmup)
+     LR = 0.016000
+-    steps_per_epoch = train_examples // BATCH_SIZE
++    steps_per_epoch = 100   # SMOKE: 100 optimizer steps an epoch
+     total_steps = steps_per_epoch * EPOCHS
+     print("lr=0.016000  batch_size=" + str(BATCH_SIZE) +
+           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +

@@ -787,6 +787,12 @@ structure TrainConfig where
       measured close to a point of top-1 on RSB-A3 without it); off is `tf.image.resize`'s own
       default, which tf-models' classification pipeline runs — the MobileNetV4 paper's config. -/
   resizeAntialias : Bool := true
+  /-- TF 1's `tf.image.resize_bicubic` (`tf.compat.v1.image.resize_bicubic`) on the train crop's
+      resize and the eval resize, TF TPU EfficientNet's `_resize_image` default: no antialias and
+      `half_pixel_centers=False` — the sampling grid aligned to pixel corners, where
+      `tf.image.resize` centres it on half pixels. Off keeps `tf.image.resize` with
+      `resizeAntialias`, byte by byte. `trainResize := .bicubic` only. -/
+  resizeLegacyTf1 : Bool := false
   /-- The train crop's resize kernel. `.bicubic`, the default, keeps every generated file
       byte-identical. -/
   trainResize : TrainResize := .bicubic
@@ -845,6 +851,17 @@ structure TrainConfig where
   /-- With `useAutoAugment`: TF TPU EfficientNet's policy v0 (= timm `auto_augment_policy_v0`,
       img_mean fill on the bicubic warps) in place of the default table. EfficientNet-B0 only. -/
   autoAugmentV0 : Bool  := false
+  /-- With `autoAugmentV0`: the policy as TF TPU EfficientNet's own `autoaugment.py` applies it —
+      the sub-policies are the same 25, op for op; what moves is the geometry. `'TranslateY'` in
+      ABSOLUTE pixels, `(m/10) · translate_const` with `distort_image_with_autoaugment`'s
+      `translate_const=250` (set `randAugmentTranslateConst := 250`; 225 px at the table's level 9),
+      where timm's `TranslateYRel` moves 0.45 of the side; the geometric ops through
+      `contrib_image.{transform,rotate,translate}`, whose default interpolation is NEAREST
+      (`augNearest`, `augBicubic` off) at the `wrap`/`unwrap` fill 128 (timm: PIL bicubic at
+      img_mean); Posterize through TF's own shift ops, which clamp a shift of 8 to 7 so 0 bits
+      keeps the top bit (timm/PIL: a black image). The level mappings are already TF's
+      (`_RA_INC` off). Off keeps timm's v0, byte for byte. EfficientNet-B0's ImageNet recipe. -/
+  autoAugmentTf : Bool  := false
   /-- Repeated Augmentation (Hoffer et al. 2020; timm RASampler), RSB-A2's `3×`.
       Each image contributes `repeatedAug` independently-augmented copies per
       epoch. On the tfds path this is a stream-level `flat_map(repeat K)` before
@@ -879,6 +896,13 @@ structure TrainConfig where
       form is still emitted as `_imagenet_decode_center_crop_timm` and the shim swaps it in under
       `SHIM_EVAL_SIZE` (timm's test protocol), as `jax/scripts/eval_full50k.py PROTOCOL=timm` does. -/
   evalCropTf     : Bool  := false
+  /-- With `evalCropTf`: TF TPU EfficientNet's `_decode_and_center_crop` arithmetic rather than
+      tf-models' `center_crop_image_v2` — the square's side `int((224/(224+32)) · min(h, w))`,
+      truncated, its offsets `((h − side) + 1) // 2` (tf-models floors both), cut out of the JPEG
+      and resized BICUBIC (`_resize_image`; legacy under `resizeLegacyTf1`) where tf-models
+      resizes bilinear — the same arithmetic the train side's `cropFallbackCenter` uses. Off keeps
+      tf-models' form, byte for byte. -/
+  evalCropTfEfficientNet : Bool := false
   /-- Stochastic depth (Huang et al. 2016): drop each residual block's
       branch with a probability that ramps linearly from 0 to `dropPath`
       across the network's residual blocks; surviving branches are scaled
@@ -900,6 +924,14 @@ structure TrainConfig where
       the rank-only mask, byte for byte (`imagenet_parity.md` D11); the verified peer is
       `rankWdDecaysNoDw` (the `dw` marker). -/
   wdExcludeDepthwise : Bool := false
+  /-- With `wdExcludeNormBias`: the biases DECAY — TF TPU EfficientNet's `main.py` adds
+      `weight_decay · Σ l2_loss(v)` over every trainable variable whose name lacks
+      `'batch_normalization'`, so BN γ/β alone are exempt and the squeeze-excite and classifier
+      biases (and every kernel, the depthwise included) are decayed. The emitted `_wd_mask` is
+      then STRUCTURAL rather than rank-based: a `(W, γ, β)` triple is a conv-BN site (γ, β off), a
+      `(W, b)` pair decays both. Off keeps the rank-only mask, byte for byte. The verified peer is
+      `rankWdDecaysKeepBias` (the `wn` marker). -/
+  wdDecayBiases : Bool := false
   /-- Validate every N epochs (plus always the final epoch) instead of every
       epoch. N ≤ 1 keeps every-epoch validation (byte-identical codegen).
       Cuts eval wall-time on large streaming datasets where the val pass is
@@ -1148,6 +1180,12 @@ structure TrainConfig where
       at 0. Replaces the fan rules on every conv-BN kernel and the dense head; 0 keeps them, byte
       for byte. The verified peer is `VerifiedConfig.truncNormalSigma` (variance-matched). -/
   initTruncNormal : Float := 0.0
+  /-- TF TPU EfficientNet's `dense_kernel_initializer` on the classifier (`efficientnet_model.py`):
+      `U(±1/√shape[1])` on the Keras `(in, units)` kernel, so the range is set by the CLASS count —
+      `U(±1/√1000)` at ImageNet, variance 1/3000 against Glorot's 2/2280 (`imagenet_parity.md`
+      D6); the bias is Keras' zeros. Off keeps Glorot, byte for byte. The verified peer is
+      `VerifiedConfig.headTfUniform`. -/
+  initHeadTfUniform : Bool := false
   /-- Exponential LR decay, the EfficientNet/MobileNet schedule: after
       warmup, `lr = LR · rate^((epoch − warmup) / decayEpochs)`. 0 = off (use
       cosine). EfficientNet: rate 0.97, decayEpochs 2.4; MobileNetV2: rate 0.98,

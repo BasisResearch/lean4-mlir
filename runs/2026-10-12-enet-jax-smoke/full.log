@@ -1,0 +1,38 @@
+EfficientNet-B0 (ImageNet, bf16) · Lean 4 → JAX
+  Conv(3→32,3x3/2)+BN → MB1(32→16,e1,k3,s1,SE,Swish) → MB2(16→24,e6,k3,s2,SE,Swish) → MB2(24→40,e6,k5,s2,SE,Swish) → MB3(40→80,e6,k3,s2,SE,Swish) → MB3(80→112,e6,k5,s1,SE,Swish) → MB4(112→192,e6,k5,s2,SE,Swish) → MB1(192→320,e6,k3,s1,SE,Swish) → Conv(320→1280,1x1/1)+BN → GAP → 1280→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.016000  batch_size=256 (4 devices x 64)  epochs=2  params=5288548
+steps_per_epoch=100  total_steps=200
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bicubic (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BICUBIC...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bicubic (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BICUBIC...)` instead.
+E1012 08:45:54.921473 3092676 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:45:59.131923 3092676 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:45:59.238151 3092676 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:46:00.415589 3092687 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:46:04.791365 3092679 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+  step 100/200  loss=6.9617  lr=0.0032  (552.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+E1012 08:46:43.996309 3092686 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:46:44.401192 3092691 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:46:44.602602 3092683 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:46:58.729856 3092694 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:46:58.951262 3092674 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 08:46:59.178532 3092698 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[Epoch 1] lr=0.0032 loss(train_avg)=6.9532 val_top1=50/50000 (0.001) val_top5=0.005 val_loss=6.9082  [55.2s train, 17.7s val]
+  step 200/200  loss=6.8802  lr=0.0064  (414.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.0064 loss(train_avg)=6.9072 val_top1=75/50000 (0.0015) val_top5=0.0062 val_loss=6.9295  [9.9s train, 11.5s val]
+saved 82 param-groups to /home/skoonce/enet_smoke_2612/efficientnet_b0_imagenet.bin (21154192 bytes)
+  saved full train state -> /home/skoonce/enet_smoke_2612/efficientnet_b0_imagenet.state.npz (1048 arrays, step=200)
+
+Done. Total time: 94.7s
+exit 0

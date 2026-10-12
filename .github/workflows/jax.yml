@@ -64,6 +64,7 @@ on:
       - 'scripts/gates/aug_bicubic_pil_check.py'
       - 'scripts/gates/crop_sampler_gate.py'
       - 'scripts/gates/color_distort_gate.py'
+      - 'scripts/gates/aa_v0_tf_check.py'
       - 'requirements-timm-lock.txt'
   pull_request:
     paths:
@@ -102,6 +103,7 @@ on:
       - 'scripts/gates/aug_bicubic_pil_check.py'
       - 'scripts/gates/crop_sampler_gate.py'
       - 'scripts/gates/color_distort_gate.py'
+      - 'scripts/gates/aa_v0_tf_check.py'
       - 'requirements-timm-lock.txt'
   workflow_dispatch:
 
@@ -638,6 +640,15 @@ jobs:
         run: |
           set -o pipefail
           python3 scripts/gates/color_distort_gate.py jax/generated/generated_mobilenet_v2_imagenet_full.py 2>&1 | tee -a /tmp/parity.log
+
+      - name: EfficientNet-B0's AutoAugment as TF TPU EfficientNet's autoaugment.py applies it
+        # planning/recipe_prep.md §7 (2026-10-12): the v0 table op for op, TranslateY at (l/10)·250 px,
+        # NEAREST at fill 128, TF's posterize (the shift clamp measured on the op) and level mappings,
+        # exec'd out of the EMITTED file. The timm-form control is a committed-history file, so it
+        # runs locally only (`--control`).
+        run: |
+          set -o pipefail
+          python3 scripts/gates/aa_v0_tf_check.py jax/generated/generated_efficientnet_b0_imagenet_full.py 2>&1 | tee -a /tmp/parity.log
 
       - name: Summary
         if: always()

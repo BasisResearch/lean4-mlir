@@ -160,6 +160,10 @@ private def table : List (String × Bool × Bool × Bool) :=
     -- EfficientNet-B0's TF recipe: `do` ++ `wx` ++ `eps0001` — `dowx` must still
     -- read as dropout exactly once, and `drop` stays the one stochastic-depth marker.
   , ("emarmsdp64dropdowxeps0001bf16", true, true, true)
+    -- …and at TF's own optimizer and decay set (2026-10-12, recipe_prep.md §7): `rmstf` ++ `dp`,
+    -- then `do` ++ `wn` ++ `eps0001` — `down` must read as classifier dropout + the keep-bias set,
+    -- and `tfdp` / `wneps` as nothing.
+  , ("emarmstfdp64dropdowneps0001bf16", true, true, true)
     -- MobileNetV2 as TF-slim's README runs it (2026-10-12, planning/recipe_prep.md §6): the EMA
     -- prefix on `rmstf` (`OptRecipe.rmspropTf`, TF1's rate placement — `tf` ++ `dp` spells `tfdp`,
     -- which is no marker), then `wx` ++ `dw` ++ `do` — `dwdo` must read as dropout exactly once
@@ -302,6 +306,7 @@ private def table : List (String × Bool × Bool × Bool) :=
 private def dropoutSpellings : List String := ["adamdo", "emarms64dropdo", "rmsdo64",
   "emaaccdp8x128wxdowd005bf16", "emaacc8x128wxdowd005bf16",
   "rmsdp64wxdols0bf16", "rmsdp64wxdols0eps0001bf16", "emarmsdp64dropdowxeps0001bf16",
+  "emarmstfdp64dropdowneps0001bf16",
   "emarmstfdp64wxdwdoeps0001bf16",
   "accdp8x128wxdropdowd01bf16", "acc8x128wxdropdowd01bf16"]
 #guard table.all (fun (v, _, _, _) => cdOn v == dropoutSpellings.contains v)
@@ -646,7 +651,8 @@ private def accumSpellings : List String :=
 #guard table.all (fun (v, _, _, _) =>
   VerifiedVariant.evalTag v == (if v.contains "eps0001" then "_eps0001" else ""))
 #guard VerifiedVariant.evalTag "emarmstfdp64wxdwdoeps0001bf16" == "_eps0001"
-#guard (table.filter (fun (v, _, _, _) => v.contains "eps")).length == 3
+#guard VerifiedVariant.evalTag "emarmstfdp64dropdowneps0001bf16" == "_eps0001"
+#guard (table.filter (fun (v, _, _, _) => v.contains "eps")).length == 4
 
 -- THE `erf` MARKER, the exact GELU, against every concatenation in the table, as a partition:
 -- it reads as exact on the spellings that carry it and on no other. `erf` is three characters no

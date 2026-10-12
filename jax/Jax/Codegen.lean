@@ -310,7 +310,21 @@ _AA_OPS['TranslateY'] = (_aa_translate_y, _aa_trn, True)"
     so it replaces their `_AA_POLICY` by name. The table `autoAugmentPy` carries is the 2018 paper's
     sub-policies with TF-v0 Posterize levels, which is neither policy. Gate:
     `scripts/parity/aa_v0_timm_check.py`. -/
-private def aaV0Py : String :=
+private def aaV0Py (tfForm : Bool := false) : String :=
+  (if tfForm then
+"# ── AutoAugment policy v0 as TF TPU EfficientNet's autoaugment.py applies it (TrainConfig.autoAugmentTf):
+#    the same 25 sub-policies op for op; 'TranslateY' in ABSOLUTE pixels, (m/10)*translate_const with
+#    translate_const=250 (randAugmentTranslateConst, redefined below this block); the geometry through
+#    contrib_image's default NEAREST at the wrap/unwrap fill 128 (augNearest; _aa_transform above);
+#    Posterize through TF's own shift ops, which clamp a shift of 8 to 7 so 0 bits keeps the top bit.
+#    The level mappings are TF's (_RA_INC False). Rotate/Shear/Translate randomly negated. ──
+_AA_FILL = tf.constant([128.0, 128.0, 128.0])   # wrap/unwrap's replace value (read only by a bicubic warp)
+def _aa_posterize(img, bits):
+    shift = tf.cast(8 - bits, img.dtype)   # TF: right_shift clamps 8 -> 7, so bits=0 keeps the top bit
+    return tf.bitwise.left_shift(tf.bitwise.right_shift(img, shift), shift)
+_AA_OPS['Posterize'] = (_aa_posterize, _aa_pos, False)
+"
+   else
 "# ── AutoAugment policy v0 = TF TPU EfficientNet's ImageNet policy = timm `auto_augment_policy_v0`,
 #    op for op (TrainConfig.autoAugmentV0). Replaces _AA_POLICY above; the levels are timm's
 #    non-increasing ones (_RA_INC stays False), Rotate/Shear/TranslateRel randomly negated. ──
@@ -326,7 +340,25 @@ def _aa_posterize(img, bits):
     shift = tf.cast(8 - bits, img.dtype)
     return tf.bitwise.left_shift(tf.bitwise.right_shift(img, shift), shift)
 _AA_OPS['Posterize'] = (_aa_posterize, _aa_pos, False)
-_AA_POLICY = [
+") ++
+  (if tfForm then
+"_AA_POLICY = [
+  [('Equalize',0.8,1),('ShearY',0.8,4)],      [('Color',0.4,9),('Equalize',0.6,3)],
+  [('Color',0.4,1),('Rotate',0.6,8)],         [('Solarize',0.8,3),('Equalize',0.4,7)],
+  [('Solarize',0.4,2),('Solarize',0.6,2)],    [('Color',0.2,0),('Equalize',0.8,8)],
+  [('Equalize',0.4,8),('SolarizeAdd',0.8,3)], [('ShearX',0.2,9),('Rotate',0.6,8)],
+  [('Color',0.6,1),('Equalize',1.0,2)],       [('Invert',0.4,9),('Rotate',0.6,0)],
+  [('Equalize',1.0,9),('ShearY',0.6,3)],      [('Color',0.4,7),('Equalize',0.6,0)],
+  [('Posterize',0.4,6),('AutoContrast',0.4,7)], [('Solarize',0.6,8),('Color',0.6,9)],
+  [('Solarize',0.2,4),('Rotate',0.8,9)],      [('Rotate',1.0,7),('TranslateY',0.8,9)],
+  [('ShearX',0.0,0),('Solarize',0.8,4)],      [('ShearY',0.8,0),('Color',0.6,4)],
+  [('Color',1.0,0),('Rotate',0.6,2)],         [('Equalize',0.8,4),('Equalize',0.0,8)],
+  [('Equalize',1.0,4),('AutoContrast',0.6,2)], [('ShearY',0.4,7),('SolarizeAdd',0.6,7)],
+  [('Posterize',0.8,2),('Solarize',0.6,10)],  [('Solarize',0.6,8),('Equalize',0.6,1)],
+  [('Color',0.8,6),('Rotate',0.4,5)],
+]"
+   else
+"_AA_POLICY = [
   [('Equalize',0.8,1),('ShearY',0.8,4)],      [('Color',0.4,9),('Equalize',0.6,3)],
   [('Color',0.4,1),('Rotate',0.6,8)],         [('Solarize',0.8,3),('Equalize',0.4,7)],
   [('Solarize',0.4,2),('Solarize',0.6,2)],    [('Color',0.2,0),('Equalize',0.8,8)],
@@ -340,7 +372,7 @@ _AA_POLICY = [
   [('Equalize',1.0,4),('AutoContrast',0.6,2)], [('ShearY',0.4,7),('SolarizeAdd',0.6,7)],
   [('Posterize',0.8,2),('Solarize',0.6,10)],  [('Solarize',0.6,8),('Equalize',0.6,1)],
   [('Color',0.8,6),('Rotate',0.4,5)],
-]"
+]")
 
 /-- RandAugment (Cubuk et al. 2019): N ops sampled uniformly at one shared
     magnitude M, drawn from the color+geometric op set defined in
@@ -552,7 +584,7 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
     (if cfg.augBicubic && (cfg.useAutoAugment || (cfg.useRandAugment && cfg.randAugmentGeometric))
        then bicubicGeometryPy (if cfg.useAutoAugment && cfg.autoAugmentV0 then "_AA_FILL"
                                else if cfg.randAugmentFillMean then "_RA_FILL" else "128.0") ++ "\n\n" else "") ++
-    (if cfg.useAutoAugment && cfg.autoAugmentV0 then aaV0Py ++ "\n\n" else "") ++
+    (if cfg.useAutoAugment && cfg.autoAugmentV0 then aaV0Py cfg.autoAugmentTf ++ "\n\n" else "") ++
     (if cfg.randAugmentInc then "_RA_INC = True   # timm inc1 (gap D)\n\n" else "") ++
     (if cfg.randAugmentTranslateConst > 0.0 && (cfg.useAutoAugment || (cfg.useRandAugment && cfg.randAugmentGeometric)) then
        -- tf-models' `translate_const`: TranslateX/Y in PIXELS, `(m/10)·const`, through the same
@@ -610,6 +642,11 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
      let aa := if cfg.resizeAntialias then "True" else "False"
      match cfg.trainResize with
      | .bicubic =>
+      -- TF 1's `tf.image.resize_bicubic` (`resizeLegacyTf1`): TF TPU EfficientNet's `_resize_image`
+      -- default — no antialias, `half_pixel_centers=False` (the grid aligned to pixel corners).
+      if cfg.resizeLegacyTf1 then
+      "    img = tf.compat.v1.image.resize_bicubic([img], " ++ sz ++ ")[0]   # TF1 legacy bicubic: no antialias, corner-aligned (resizeLegacyTf1)\n"
+      else
       "    img = tf.image.resize([img], " ++ sz ++ ",\n" ++
       "                          method=tf.image.ResizeMethod.BICUBIC, antialias=" ++ aa ++ ")[0]\n"
      | .bilinear =>
@@ -682,7 +719,25 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
     -- square of `_CROP_PCT` × the shorter side straight out of the JPEG and `resize_image` takes it
     -- to `_IMG_SIZE` bilinear — the MobileNetV4 paper's own protocol. timm's form keeps its place
     -- above under the `_timm` name for `SHIM_EVAL_SIZE` / `PROTOCOL=timm`.
-    (if cfg.evalCropTf then
+    (if cfg.evalCropTf && cfg.evalCropTfEfficientNet then
+      -- TF TPU EfficientNet's `_decode_and_center_crop` (`preprocessing.py`): the side truncated to
+      -- int32, the offsets `((h − side) + 1) // 2`, `decode_and_crop_jpeg`, then `_resize_image`
+      -- (bicubic; TF 1's op under `resizeLegacyTf1`) — the train side's `cropFallbackCenter` window.
+      "def _imagenet_decode_center_crop(image_bytes):\n" ++
+      "    # TF TPU EfficientNet _decode_and_center_crop (evalCropTfEfficientNet): the square's side is\n" ++
+      "    # int(_IMG_SIZE/(_IMG_SIZE+_CROP_PADDING) * min(h, w)) — truncated — at offsets ((h - side) + 1)//2,\n" ++
+      "    # cut out of the JPEG, then resized to _IMG_SIZE bicubic: the train side's centre-crop fallback\n" ++
+      "    # window. _imagenet_decode_center_crop_timm above is timm's protocol, under SHIM_EVAL_SIZE.\n" ++
+      "    shape = tf.io.extract_jpeg_shape(image_bytes)\n" ++
+      "    _cs = tf.cast((_IMG_SIZE / (_IMG_SIZE + _CROP_PADDING)) *\n" ++
+      "                  tf.cast(tf.minimum(shape[0], shape[1]), tf.float32), tf.int32)\n" ++
+      "    img = tf.io.decode_and_crop_jpeg(image_bytes, tf.stack([(shape[0] - _cs + 1) // 2, (shape[1] - _cs + 1) // 2, _cs, _cs]), channels=3)\n" ++
+      (if cfg.resizeLegacyTf1 then
+        "    return tf.compat.v1.image.resize_bicubic([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bicubic (resizeLegacyTf1)\n\n"
+       else
+        "    return tf.image.resize(img, [_IMG_SIZE, _IMG_SIZE], method=tf.image.ResizeMethod.BICUBIC,\n" ++
+        "                           antialias=" ++ (if cfg.resizeAntialias then "True" else "False") ++ ")\n\n")
+     else if cfg.evalCropTf then
       "def _imagenet_decode_center_crop(image_bytes):\n" ++
       "    # tf-models center_crop_image_v2 + resize_image (evalCropTf): crop _CROP_PCT of the SHORTER side,\n" ++
       "    # centred, out of the JPEG, then resize to _IMG_SIZE bilinear. _imagenet_decode_center_crop_timm\n" ++
@@ -1830,7 +1885,18 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
       -- Fixing it moves the training distribution for nets that have LANDED
       -- numbers (R50 77.74/77.91/77.09, R34 74.14), so it needs its own A/B
       -- and its own re-run, not a silent ride-along.
-      if cfg.vitInit || cfg.cnxInit then
+      -- TF TPU EfficientNet's `dense_kernel_initializer` (`initHeadTfUniform`): `U(±1/√shape[1])`
+      -- on the Keras `(in, units)` kernel, so the range is set by the CLASS count — `1/√1000` at
+      -- ImageNet, variance 1/3000 against Glorot's 2/2280 (`imagenet_parity.md` D6); Keras' zeros
+      -- on the bias. The verified peer is `VerifiedConfig.headTfUniform`.
+      if cfg.initHeadTfUniform then
+        code := code ++
+          "    # Dense " ++ toString fi ++ "→" ++ toString fo ++ "  (TF EfficientNet dense_kernel_initializer: U(±1/sqrt(" ++ toString fo ++ ")), initHeadTfUniform)\n" ++
+          "    key, k_ = random.split(key)\n" ++
+          "    scale = 1.0 / jnp.sqrt(" ++ toString fo ++ ".0)\n" ++
+          "    params.append((random.uniform(k_, (" ++ toString fo ++ ", " ++ toString fi ++
+            "), minval=-scale, maxval=scale), jnp.zeros(" ++ toString fo ++ ")))\n"
+      else if cfg.vitInit || cfg.cnxInit then
         code := code ++ emitDenseInitTimm s!"Dense {fi}→{fo} (head)" fi fo
       -- TF-slim's logits are a `slim.conv2d` 1×1 under the same arg scope, so the head takes the
       -- truncated normal too (`initTruncNormal`); its bias is slim's `zeros_initializer`.
@@ -2895,6 +2961,23 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
      | some (n, d) => s!"_WD_POS_SHAPE = ({n}, {d})\n"
      | none => "_WD_POS_SHAPE = None\n") ++
     "def _wd_mask(params):\n" ++
+    -- `wdDecayBiases`: TF TPU EfficientNet's filter is by NAME (`'batch_normalization' not in
+    -- v.name`), so the mask has to know which 1-D parameter is a BN γ/β and which a bias, and the
+    -- rank cannot say. The param list can: every conv-BN site is a `(W, γ, β)` triple and every
+    -- biased layer (SE, classifier) a `(W, b)` pair. A bare array — only `opt_step_tie.py`'s
+    -- fixture passes one — is a bias under this rule and decays.
+    (if cfg.wdDecayBiases then
+      "    # TF TPU EfficientNet (wdDecayBiases): `'batch_normalization' not in v.name` — BN γ/β alone are\n" ++
+      "    # exempt; every kernel AND every bias (SE, classifier) decays. Structural: a (W, γ, β) triple is a\n" ++
+      "    # conv-BN site, a (W, b) pair decays both; a bare array decays.\n" ++
+      "    def _entry(t):\n" ++
+      "        if isinstance(t, tuple) and len(t) == 3:\n" ++
+      "            return (jnp.ones_like(t[0]), jnp.zeros_like(t[1]), jnp.zeros_like(t[2]))\n" ++
+      "        if isinstance(t, tuple):\n" ++
+      "            return tuple(jnp.ones_like(p) for p in t)\n" ++
+      "        return jnp.ones_like(t)\n" ++
+      "    return [_entry(t) for t in params]\n"
+     else
     "    # timm no_weight_decay: no decay on 1-D params (biases, LayerNorm γ/β,\n" ++
     "    # CLS token) or the positional embedding (2-D but must not be decayed).\n" ++
     "    def _leaf(p):\n" ++
@@ -2906,7 +2989,7 @@ private def emitLossAndTraining (spec : NetSpec) (cfg : TrainConfig) : String :=
      else "") ++
     "        if p.shape == _WD_POS_SHAPE: return jnp.zeros_like(p)\n" ++
     "        return jnp.ones_like(p)\n" ++
-    "    return jax.tree.map(_leaf, params)\n"
+    "    return jax.tree.map(_leaf, params)\n")
    else "") ++
   "\n" ++
   (match opt with

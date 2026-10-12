@@ -78,7 +78,7 @@ def _aa_transform(img, vec):
     transforms = tf.reshape(tf.cast(vec, tf.float32), [1, 8])
     out = tf.raw_ops.ImageProjectiveTransformV3(
         images=images, transforms=transforms, output_shape=tf.stack([H, W]),
-        fill_value=128.0, interpolation='BILINEAR', fill_mode='CONSTANT')
+        fill_value=128.0, interpolation='NEAREST', fill_mode='CONSTANT')   # tf-models: nearest (augNearest)
     return tf.cast(tf.clip_by_value(out[0], 0.0, 255.0), tf.uint8)
 
 def _aa_shear_x(img, lvl):    return _aa_transform(img, [1.0, lvl, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
@@ -231,96 +231,15 @@ def _autoaugment(img):
     idx = tf.random.uniform([], 0, len(_AA_POLICY), dtype=tf.int32)
     out = tf.switch_case(idx, branches)
     return tf.cast(out, tf.float32)
-# ── timm's geometric ops run PIL BICUBIC, and TF has no bicubic
-#    projective warp (ImageProjectiveTransformV3 takes NEAREST/BILINEAR only and LOGS, not raises,
-#    on anything else). So the warp is written out: PIL's own affine sampler, a = -1 cubic (PIL's
-#    transform filter; its resize uses -0.5) over a 4x4 neighbourhood, neighbours clamped at the
-#    border, truncated to uint8 as PIL does, the fill where the source centre falls outside the
-#    image. Overrides the bilinear _aa_transform above; see _aa_warp1d for why only Rotate uses it. ──
-def _aa_transform(img, vec):
-    x = tf.cast(img, tf.float32)
-    H = tf.shape(x)[0]; W = tf.shape(x)[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    v = [tf.cast(t, tf.float32) for t in vec]
-    ys, xs = tf.meshgrid(tf.range(Hf), tf.range(Wf), indexing='ij')
-    den = v[6] * xs + v[7] * ys + 1.0
-    u = (v[0] * xs + v[1] * ys + v[2]) / den          # source column, pixel-index coords
-    w = (v[3] * xs + v[4] * ys + v[5]) / den          # source row
-    inside = (u >= -0.5) & (u < Wf - 0.5) & (w >= -0.5) & (w < Hf - 0.5)
-    x0 = tf.floor(u); y0 = tf.floor(w)
-    def _cub(t):   # PIL's transform bicubic (a = -1) weights for the taps at -1, 0, +1, +2
-        a = -1.0
-        def near(d): return ((a + 2.0) * d - (a + 3.0)) * d * d + 1.0
-        def far(d):  return ((a * d - 5.0 * a) * d + 8.0 * a) * d - 4.0 * a
-        return tf.stack([far(1.0 + t), near(t), near(1.0 - t), far(2.0 - t)], -1)
-    wx = _cub(u - x0); wy = _cub(w - y0)
-    offs = tf.constant([-1.0, 0.0, 1.0, 2.0])
-    xi = tf.clip_by_value(tf.cast(x0[..., None] + offs, tf.int32), 0, W - 1)
-    yi = tf.clip_by_value(tf.cast(y0[..., None] + offs, tf.int32), 0, H - 1)
-    flat = tf.reshape(x, [-1, 3])
-    out = tf.zeros([H, W, 3], tf.float32)
-    for i in range(4):
-        row = tf.zeros([H, W, 3], tf.float32)
-        for j in range(4):
-            row += wx[:, :, j:j+1] * tf.gather(flat, yi[:, :, i] * W + xi[:, :, j])
-        out += wy[:, :, i:i+1] * row
-    out = tf.where(inside[..., None], out, _AA_FILL)
-    return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
-
-# Shear and translate move pixels along ONE axis, where the other axis lands on integer rows
-# (columns), whose cubic weights are exactly [0, 1, 0, 0]: four gathers give the 16-tap result bit
-# for bit at a quarter of the cost. Only Rotate needs the full warp.
-# `axis` 1 samples along x (u = x + a*y + c), 0 along y (v = y + a*x + c).
-def _aa_warp1d(img, a, c, axis):
-    x = tf.cast(img, tf.float32)
-    H = tf.shape(x)[0]; W = tf.shape(x)[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    a = tf.cast(a, tf.float32); c = tf.cast(c, tf.float32)
-    ys, xs = tf.meshgrid(tf.range(Hf), tf.range(Wf), indexing='ij')
-    if axis == 1:
-        u = xs + a * ys + c; n = W; nf = Wf
-    else:
-        u = ys + a * xs + c; n = H; nf = Hf
-    inside = (u >= -0.5) & (u < nf - 0.5)
-    u0 = tf.floor(u); t = u - u0
-    a_ = -1.0
-    def near(d): return ((a_ + 2.0) * d - (a_ + 3.0)) * d * d + 1.0
-    def far(d):  return ((a_ * d - 5.0 * a_) * d + 8.0 * a_) * d - 4.0 * a_
-    wts = [far(1.0 + t), near(t), near(1.0 - t), far(2.0 - t)]
-    flat = tf.reshape(x, [-1, 3])
-    iy = tf.cast(ys, tf.int32); ix = tf.cast(xs, tf.int32)
-    out = tf.zeros([H, W, 3], tf.float32)
-    for k in range(4):
-        tap = tf.clip_by_value(tf.cast(u0, tf.int32) + (k - 1), 0, n - 1)
-        idx = iy * W + tap if axis == 1 else tap * W + ix
-        out += wts[k][:, :, None] * tf.gather(flat, idx)
-    out = tf.where(inside[..., None], out, _AA_FILL)
-    return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
-
-# PIL's affine data is in pixel-CENTRE coordinates: timm's shear (1, f, 0, 0, 1, 0) is
-# u = x + f*y + f/2 in index coordinates. Translate already agrees.
-def _aa_shear_x(img, lvl):     return _aa_warp1d(img, lvl, 0.5 * lvl, 1)
-def _aa_shear_y(img, lvl):     return _aa_warp1d(img, lvl, 0.5 * lvl, 0)
-def _aa_translate_x(img, pct): return _aa_warp1d(img, 0.0, -pct * tf.cast(tf.shape(img)[1], tf.float32), 1)  # timm -Rel
-def _aa_translate_y(img, pct): return _aa_warp1d(img, 0.0, -pct * tf.cast(tf.shape(img)[0], tf.float32), 0)
-_AA_OPS['ShearX'] = (_aa_shear_x, _aa_she, True)
-_AA_OPS['ShearY'] = (_aa_shear_y, _aa_she, True)
-_AA_OPS['TranslateX'] = (_aa_translate_x, _aa_trn, True)
-_AA_OPS['TranslateY'] = (_aa_translate_y, _aa_trn, True)
-
-# ── AutoAugment policy v0 = TF TPU EfficientNet's ImageNet policy = timm `auto_augment_policy_v0`,
-#    op for op (TrainConfig.autoAugmentV0). Replaces _AA_POLICY above; the levels are timm's
-#    non-increasing ones (_RA_INC stays False), Rotate/Shear/TranslateRel randomly negated. ──
-# timm's create_transform fills with img_mean = round(255 * mean) for IMAGENET_DEFAULT_MEAN;
-# the bicubic warps read it (the bilinear ImageProjectiveTransformV3 path takes a scalar only).
-_AA_FILL = tf.constant([124.0, 116.0, 104.0])
-_AA_OPS['TranslateYRel'] = _AA_OPS['TranslateY']   # fraction (translate_pct 0.45) of the height
-# PIL posterize at 0 bits is a black image (timm: 'results in black image with Tpu posterize');
-# TF clamps a uint8 shift of 8 to 7 and would keep the top bit.
+# ── AutoAugment policy v0 as TF TPU EfficientNet's autoaugment.py applies it (TrainConfig.autoAugmentTf):
+#    the same 25 sub-policies op for op; 'TranslateY' in ABSOLUTE pixels, (m/10)*translate_const with
+#    translate_const=250 (randAugmentTranslateConst, redefined below this block); the geometry through
+#    contrib_image's default NEAREST at the wrap/unwrap fill 128 (augNearest; _aa_transform above);
+#    Posterize through TF's own shift ops, which clamp a shift of 8 to 7 so 0 bits keeps the top bit.
+#    The level mappings are TF's (_RA_INC False). Rotate/Shear/Translate randomly negated. ──
+_AA_FILL = tf.constant([128.0, 128.0, 128.0])   # wrap/unwrap's replace value (read only by a bicubic warp)
 def _aa_posterize(img, bits):
-    if bits <= 0:
-        return tf.zeros_like(img)
-    shift = tf.cast(8 - bits, img.dtype)
+    shift = tf.cast(8 - bits, img.dtype)   # TF: right_shift clamps 8 -> 7, so bits=0 keeps the top bit
     return tf.bitwise.left_shift(tf.bitwise.right_shift(img, shift), shift)
 _AA_OPS['Posterize'] = (_aa_posterize, _aa_pos, False)
 _AA_POLICY = [
@@ -331,13 +250,20 @@ _AA_POLICY = [
   [('Color',0.6,1),('Equalize',1.0,2)],       [('Invert',0.4,9),('Rotate',0.6,0)],
   [('Equalize',1.0,9),('ShearY',0.6,3)],      [('Color',0.4,7),('Equalize',0.6,0)],
   [('Posterize',0.4,6),('AutoContrast',0.4,7)], [('Solarize',0.6,8),('Color',0.6,9)],
-  [('Solarize',0.2,4),('Rotate',0.8,9)],      [('Rotate',1.0,7),('TranslateYRel',0.8,9)],
+  [('Solarize',0.2,4),('Rotate',0.8,9)],      [('Rotate',1.0,7),('TranslateY',0.8,9)],
   [('ShearX',0.0,0),('Solarize',0.8,4)],      [('ShearY',0.8,0),('Color',0.6,4)],
   [('Color',1.0,0),('Rotate',0.6,2)],         [('Equalize',0.8,4),('Equalize',0.0,8)],
   [('Equalize',1.0,4),('AutoContrast',0.6,2)], [('ShearY',0.4,7),('SolarizeAdd',0.6,7)],
   [('Posterize',0.8,2),('Solarize',0.6,10)],  [('Solarize',0.6,8),('Equalize',0.6,1)],
   [('Color',0.8,6),('Rotate',0.4,5)],
 ]
+
+# tf-models translate_const (randAugmentTranslateConst): TranslateX/Y move (m/10)*250.0 PIXELS, not timm's fraction of the side
+def _aa_trn(m): return (m/_AA_MAX)*250.0
+def _aa_translate_x(img, px): return _aa_transform(img, [1.0, 0.0, -px, 0.0, 1.0, 0.0, 0.0, 0.0])
+def _aa_translate_y(img, px): return _aa_transform(img, [1.0, 0.0, 0.0, 0.0, 1.0, -px, 0.0, 0.0])
+_AA_OPS['TranslateX'] = (_aa_translate_x, _aa_trn, True)
+_AA_OPS['TranslateY'] = (_aa_translate_y, _aa_trn, True)
 
 def _imagenet_decode_random_crop_flip(image_bytes):
     shape = tf.io.extract_jpeg_shape(image_bytes)
@@ -359,13 +285,12 @@ def _imagenet_decode_random_crop_flip(image_bytes):
                      lambda: tf.stack([(shape[0] - _cs + 1) // 2, (shape[1] - _cs + 1) // 2, _cs, _cs]),
                      lambda: window)
     img = tf.io.decode_and_crop_jpeg(image_bytes, window, channels=3)
-    img = tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                          method=tf.image.ResizeMethod.BICUBIC, antialias=True)[0]
+    img = tf.compat.v1.image.resize_bicubic([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bicubic: no antialias, corner-aligned (resizeLegacyTf1)
     img = tf.image.random_flip_left_right(img, seed=_AUG_SEED)
     img = _autoaugment(img)
     return img
 
-def _imagenet_decode_center_crop(image_bytes):
+def _imagenet_decode_center_crop_timm(image_bytes):
     img = tf.io.decode_jpeg(image_bytes, channels=3)
     shape = tf.shape(img)
     h, w = shape[0], shape[1]
@@ -378,6 +303,17 @@ def _imagenet_decode_center_crop(image_bytes):
     oy = (nh - _IMG_SIZE) // 2
     ox = (nw - _IMG_SIZE) // 2
     return tf.image.crop_to_bounding_box(img, oy, ox, _IMG_SIZE, _IMG_SIZE)
+
+def _imagenet_decode_center_crop(image_bytes):
+    # TF TPU EfficientNet _decode_and_center_crop (evalCropTfEfficientNet): the square's side is
+    # int(_IMG_SIZE/(_IMG_SIZE+_CROP_PADDING) * min(h, w)) — truncated — at offsets ((h - side) + 1)//2,
+    # cut out of the JPEG, then resized to _IMG_SIZE bicubic: the train side's centre-crop fallback
+    # window. _imagenet_decode_center_crop_timm above is timm's protocol, under SHIM_EVAL_SIZE.
+    shape = tf.io.extract_jpeg_shape(image_bytes)
+    _cs = tf.cast((_IMG_SIZE / (_IMG_SIZE + _CROP_PADDING)) *
+                  tf.cast(tf.minimum(shape[0], shape[1]), tf.float32), tf.int32)
+    img = tf.io.decode_and_crop_jpeg(image_bytes, tf.stack([(shape[0] - _cs + 1) // 2, (shape[1] - _cs + 1) // 2, _cs, _cs]), channels=3)
+    return tf.compat.v1.image.resize_bicubic([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bicubic (resizeLegacyTf1)
 
 def build_imagenet_iter(split, batch_size, training, augment, shard=None):
     ds = tfds.load('imagenet2012', split=split,
@@ -472,6 +408,7 @@ def _main():
     if not training and os.environ.get('SHIM_EVAL_SIZE'):
         globals()['_IMG_SIZE'] = int(os.environ['SHIM_EVAL_SIZE'])
         globals()['_CROP_PCT'] = float(os.environ.get('SHIM_EVAL_CROP', globals().get('_CROP_PCT', 0.875)))
+        globals()['_imagenet_decode_center_crop'] = _imagenet_decode_center_crop_timm   # timm's resize-then-crop for timm's protocol
     it = iter(build_imagenet_iter(split, batch, training, training, shard))
     _wire_img = ((lambda a: np.ascontiguousarray(a)) if _U8_ACTIVE[0]
                  else (lambda a: np.ascontiguousarray(a, dtype=np.float32)))

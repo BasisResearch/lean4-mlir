@@ -45,6 +45,11 @@ def efficientnetImagenetConfig : VerifiedConfig where
   -- imagenet_parity.md D5). Host-side. On since 2026-10-07; `LEAN_MLIR_SE_FAN_OUT=0` reproduces
   -- the runs before it from their seed.
   seFanOutInit := true
+  -- **The classifier at TF's init.** `dense_kernel_initializer` draws the head `U(±1/√1000)` —
+  -- variance 1/3000 where Glorot gave 2/2280 on the 1280→1000 dense (planning/imagenet_parity.md
+  -- D6; recipe_prep.md §7). Host-side. On since 2026-10-12; `LEAN_MLIR_HEAD_TF_UNIFORM=0`
+  -- reproduces the runs before it from their seed.
+  headTfUniform := true
 
 /-- Entry point. Defaults to the single-device `adam64` variant, matching the other three ImageNet
     drivers: a DP default makes a plain invocation die at the first step on a replica-count

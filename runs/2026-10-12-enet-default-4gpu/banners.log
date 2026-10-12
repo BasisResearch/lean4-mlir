@@ -1,0 +1,13 @@
+[pjrt_ffi] compiled verified_mlir/efficientnetin_emarmstfdp64dropdowneps0001bf16_train_step.mlir (@efficientnetin_emarmstfdp64dropdowneps0001bf16_train_step, 965 outputs, 4 replicas) in 33078 ms
+[pjrt_ffi] compiled verified_mlir/efficientnetin_fwd.mlir (@efficientnetin_fwd, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 4522 ms
+[pjrt_ffi] compiled verified_mlir/efficientnetin_fwd_eval_eps0001.mlir (@efficientnetin_fwd_eval_eps0001, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 509 ms
+  ▸ RMSPROP: m = momentum buffer (init 0), v = running MEAN-SQUARE (init 1.0, TF convention — this optimizer is not bias-corrected)
+  ▸ STOCHASTIC DEPTH: 9 drop sites, keeps #[0.975000, 0.950000, 0.925000, 0.913000, 0.888000, 0.875000, 0.850000, 0.838000, 0.825000] — host-drawn per step, 1/keep folded in, NOT on the resident path. Eval is the identity (drop-free forward).
+  ▸ CLASSIFIER DROPOUT: keep 0.800000, mask tensor<256x1280xf32> (PER-ELEMENT, one Bernoulli per example×feature — not per-example like the drop scales), host-drawn per step at seed+999983, 1/keep folded in. Eval is the identity (drop-free forward).
+  ▸ EMA: region 3 of 4 [θ|m|v|ema], shadow starts AT the weights, decay min(0.999900, (1+t)/(10+t)) — TF warmup-corrected. EVAL AND CHECKPOINT SCORE THE SHADOW.
+  ▸ INIT: depthwise fan = k² (the JAX reference's rule), not He fan-out C·k²
+  ▸ INIT: SE FC fan = out on 32 squeeze-excite denses (the JAX reference's 1×1-conv fan-out), not Glorot
+  ▸ INIT: classifier U(±1/√out) on 1 dense (TF EfficientNet's dense_kernel_initializer: variance 1/(3·[1000]), not Glorot
+  ▸ SHIM RESPAWN: one producer every 10 epoch(s), round-robin over 4 — no loader lives past 40 epochs.
+  ▸ SHIM PREFETCH: ON (depth 4 over 4 producer handle(s) — each step's read is issued before the previous step's invoke, one in flight PER HANDLE, so every producer drains during compute instead of blocking in write()). Measured 377 → 224 ms/step on R34/ImageNet 4×bs64 for depth 1. Batch buffers are allocated and freed on the main thread; the pool only fills them.
+exit=0

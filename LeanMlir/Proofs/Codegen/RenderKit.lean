@@ -100,6 +100,19 @@ def rankWdDecays (_nm : String) (ds : List Nat) : Bool := ds.length ≥ 2
 def rankWdDecaysNoDw (nm : String) (ds : List Nat) : Bool :=
   rankWdDecays nm ds && !(ds.length == 4 && ds[1]! == 1 && ds[0]! > 1)
 
+/-- **`rankWdDecays` plus the biases — TF TPU EfficientNet's rule.** `main.py` adds
+    `weight_decay · Σ l2_loss(v)` over every trainable variable whose name lacks
+    `'batch_normalization'`, so the BN γ/β alone are exempt: the squeeze-excite biases, the
+    classifier bias and (under `convBias`) the conv biases decay along with every kernel, the
+    depthwise included. The rank cannot tell a bias from a γ, so this reads the NAME the
+    renderer gave the parameter: EfficientNet's BN scales end in `g` (`sg`, `b2eg`, `hg`) and its
+    shifts in `bt` (`sbt`, `b2ebt`, `hbt`); no bias does (`zb1`, `zb2`, `bd`, `sb`, `b2eb`).
+    `EfficientNetRender.Basic` guards the counts on its own signature. The `wn` renders bind only
+    the BN parameters to `%wdz`; the JAX peer is `_wd_mask`'s structural form
+    (`wdDecayBiases`). -/
+def rankWdDecaysKeepBias (nm : String) (ds : List Nat) : Bool :=
+  rankWdDecays nm ds || !(nm.endsWith "g" || nm.endsWith "bt")
+
 /-- The decay operand for one parameter: the real `%wd`, or the zero constant when `wdExclude` is
     on and `decays` excludes it. -/
 def wdNameBy (wdExclude : Bool) (nm : String) (ds : List Nat)
@@ -179,9 +192,12 @@ def syncBnBf16TwinsNote : String :=
 /-- The `%wdz` declaration an excluding render needs. Emitted only when the flag is on, so at
     `wdExclude := false` not one byte moves and every committed artifact is untouched. `params`
     names which parameters take it, in the banner comment only. -/
-def wdzConst (wdExclude : Bool) (params : String := "1-D params") : String :=
+def wdzConst (wdExclude : Bool) (params : String := "1-D params")
+    -- `rule` names whose exclusion it is, in the banner comment only; TF EfficientNet's `wn`
+    -- renders pass their own, since timm's is not the rule they bake.
+    (rule : String := "timm no_weight_decay (wdExcludeNormBias)") : String :=
   if wdExclude then
-    s!"    // ── timm no_weight_decay (wdExcludeNormBias): {params} take %wdz, not %wd ──\n" ++
+    s!"    // ── {rule}: {params} take %wdz, not %wd ──\n" ++
     "    %wdz = stablehlo.constant dense<0.0> : tensor<f32>\n"
   else ""
 

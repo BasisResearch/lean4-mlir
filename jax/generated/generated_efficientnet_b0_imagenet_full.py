@@ -54,7 +54,7 @@ def _aa_transform(img, vec):
     transforms = tf.reshape(tf.cast(vec, tf.float32), [1, 8])
     out = tf.raw_ops.ImageProjectiveTransformV3(
         images=images, transforms=transforms, output_shape=tf.stack([H, W]),
-        fill_value=128.0, interpolation='BILINEAR', fill_mode='CONSTANT')
+        fill_value=128.0, interpolation='NEAREST', fill_mode='CONSTANT')   # tf-models: nearest (augNearest)
     return tf.cast(tf.clip_by_value(out[0], 0.0, 255.0), tf.uint8)
 
 def _aa_shear_x(img, lvl):    return _aa_transform(img, [1.0, lvl, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
@@ -207,96 +207,15 @@ def _autoaugment(img):
     idx = tf.random.uniform([], 0, len(_AA_POLICY), dtype=tf.int32)
     out = tf.switch_case(idx, branches)
     return tf.cast(out, tf.float32)
-# ── timm's geometric ops run PIL BICUBIC, and TF has no bicubic
-#    projective warp (ImageProjectiveTransformV3 takes NEAREST/BILINEAR only and LOGS, not raises,
-#    on anything else). So the warp is written out: PIL's own affine sampler, a = -1 cubic (PIL's
-#    transform filter; its resize uses -0.5) over a 4x4 neighbourhood, neighbours clamped at the
-#    border, truncated to uint8 as PIL does, the fill where the source centre falls outside the
-#    image. Overrides the bilinear _aa_transform above; see _aa_warp1d for why only Rotate uses it. ──
-def _aa_transform(img, vec):
-    x = tf.cast(img, tf.float32)
-    H = tf.shape(x)[0]; W = tf.shape(x)[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    v = [tf.cast(t, tf.float32) for t in vec]
-    ys, xs = tf.meshgrid(tf.range(Hf), tf.range(Wf), indexing='ij')
-    den = v[6] * xs + v[7] * ys + 1.0
-    u = (v[0] * xs + v[1] * ys + v[2]) / den          # source column, pixel-index coords
-    w = (v[3] * xs + v[4] * ys + v[5]) / den          # source row
-    inside = (u >= -0.5) & (u < Wf - 0.5) & (w >= -0.5) & (w < Hf - 0.5)
-    x0 = tf.floor(u); y0 = tf.floor(w)
-    def _cub(t):   # PIL's transform bicubic (a = -1) weights for the taps at -1, 0, +1, +2
-        a = -1.0
-        def near(d): return ((a + 2.0) * d - (a + 3.0)) * d * d + 1.0
-        def far(d):  return ((a * d - 5.0 * a) * d + 8.0 * a) * d - 4.0 * a
-        return tf.stack([far(1.0 + t), near(t), near(1.0 - t), far(2.0 - t)], -1)
-    wx = _cub(u - x0); wy = _cub(w - y0)
-    offs = tf.constant([-1.0, 0.0, 1.0, 2.0])
-    xi = tf.clip_by_value(tf.cast(x0[..., None] + offs, tf.int32), 0, W - 1)
-    yi = tf.clip_by_value(tf.cast(y0[..., None] + offs, tf.int32), 0, H - 1)
-    flat = tf.reshape(x, [-1, 3])
-    out = tf.zeros([H, W, 3], tf.float32)
-    for i in range(4):
-        row = tf.zeros([H, W, 3], tf.float32)
-        for j in range(4):
-            row += wx[:, :, j:j+1] * tf.gather(flat, yi[:, :, i] * W + xi[:, :, j])
-        out += wy[:, :, i:i+1] * row
-    out = tf.where(inside[..., None], out, _AA_FILL)
-    return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
-
-# Shear and translate move pixels along ONE axis, where the other axis lands on integer rows
-# (columns), whose cubic weights are exactly [0, 1, 0, 0]: four gathers give the 16-tap result bit
-# for bit at a quarter of the cost. Only Rotate needs the full warp.
-# `axis` 1 samples along x (u = x + a*y + c), 0 along y (v = y + a*x + c).
-def _aa_warp1d(img, a, c, axis):
-    x = tf.cast(img, tf.float32)
-    H = tf.shape(x)[0]; W = tf.shape(x)[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    a = tf.cast(a, tf.float32); c = tf.cast(c, tf.float32)
-    ys, xs = tf.meshgrid(tf.range(Hf), tf.range(Wf), indexing='ij')
-    if axis == 1:
-        u = xs + a * ys + c; n = W; nf = Wf
-    else:
-        u = ys + a * xs + c; n = H; nf = Hf
-    inside = (u >= -0.5) & (u < nf - 0.5)
-    u0 = tf.floor(u); t = u - u0
-    a_ = -1.0
-    def near(d): return ((a_ + 2.0) * d - (a_ + 3.0)) * d * d + 1.0
-    def far(d):  return ((a_ * d - 5.0 * a_) * d + 8.0 * a_) * d - 4.0 * a_
-    wts = [far(1.0 + t), near(t), near(1.0 - t), far(2.0 - t)]
-    flat = tf.reshape(x, [-1, 3])
-    iy = tf.cast(ys, tf.int32); ix = tf.cast(xs, tf.int32)
-    out = tf.zeros([H, W, 3], tf.float32)
-    for k in range(4):
-        tap = tf.clip_by_value(tf.cast(u0, tf.int32) + (k - 1), 0, n - 1)
-        idx = iy * W + tap if axis == 1 else tap * W + ix
-        out += wts[k][:, :, None] * tf.gather(flat, idx)
-    out = tf.where(inside[..., None], out, _AA_FILL)
-    return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
-
-# PIL's affine data is in pixel-CENTRE coordinates: timm's shear (1, f, 0, 0, 1, 0) is
-# u = x + f*y + f/2 in index coordinates. Translate already agrees.
-def _aa_shear_x(img, lvl):     return _aa_warp1d(img, lvl, 0.5 * lvl, 1)
-def _aa_shear_y(img, lvl):     return _aa_warp1d(img, lvl, 0.5 * lvl, 0)
-def _aa_translate_x(img, pct): return _aa_warp1d(img, 0.0, -pct * tf.cast(tf.shape(img)[1], tf.float32), 1)  # timm -Rel
-def _aa_translate_y(img, pct): return _aa_warp1d(img, 0.0, -pct * tf.cast(tf.shape(img)[0], tf.float32), 0)
-_AA_OPS['ShearX'] = (_aa_shear_x, _aa_she, True)
-_AA_OPS['ShearY'] = (_aa_shear_y, _aa_she, True)
-_AA_OPS['TranslateX'] = (_aa_translate_x, _aa_trn, True)
-_AA_OPS['TranslateY'] = (_aa_translate_y, _aa_trn, True)
-
-# ── AutoAugment policy v0 = TF TPU EfficientNet's ImageNet policy = timm `auto_augment_policy_v0`,
-#    op for op (TrainConfig.autoAugmentV0). Replaces _AA_POLICY above; the levels are timm's
-#    non-increasing ones (_RA_INC stays False), Rotate/Shear/TranslateRel randomly negated. ──
-# timm's create_transform fills with img_mean = round(255 * mean) for IMAGENET_DEFAULT_MEAN;
-# the bicubic warps read it (the bilinear ImageProjectiveTransformV3 path takes a scalar only).
-_AA_FILL = tf.constant([124.0, 116.0, 104.0])
-_AA_OPS['TranslateYRel'] = _AA_OPS['TranslateY']   # fraction (translate_pct 0.45) of the height
-# PIL posterize at 0 bits is a black image (timm: 'results in black image with Tpu posterize');
-# TF clamps a uint8 shift of 8 to 7 and would keep the top bit.
+# ── AutoAugment policy v0 as TF TPU EfficientNet's autoaugment.py applies it (TrainConfig.autoAugmentTf):
+#    the same 25 sub-policies op for op; 'TranslateY' in ABSOLUTE pixels, (m/10)*translate_const with
+#    translate_const=250 (randAugmentTranslateConst, redefined below this block); the geometry through
+#    contrib_image's default NEAREST at the wrap/unwrap fill 128 (augNearest; _aa_transform above);
+#    Posterize through TF's own shift ops, which clamp a shift of 8 to 7 so 0 bits keeps the top bit.
+#    The level mappings are TF's (_RA_INC False). Rotate/Shear/Translate randomly negated. ──
+_AA_FILL = tf.constant([128.0, 128.0, 128.0])   # wrap/unwrap's replace value (read only by a bicubic warp)
 def _aa_posterize(img, bits):
-    if bits <= 0:
-        return tf.zeros_like(img)
-    shift = tf.cast(8 - bits, img.dtype)
+    shift = tf.cast(8 - bits, img.dtype)   # TF: right_shift clamps 8 -> 7, so bits=0 keeps the top bit
     return tf.bitwise.left_shift(tf.bitwise.right_shift(img, shift), shift)
 _AA_OPS['Posterize'] = (_aa_posterize, _aa_pos, False)
 _AA_POLICY = [
@@ -307,13 +226,20 @@ _AA_POLICY = [
   [('Color',0.6,1),('Equalize',1.0,2)],       [('Invert',0.4,9),('Rotate',0.6,0)],
   [('Equalize',1.0,9),('ShearY',0.6,3)],      [('Color',0.4,7),('Equalize',0.6,0)],
   [('Posterize',0.4,6),('AutoContrast',0.4,7)], [('Solarize',0.6,8),('Color',0.6,9)],
-  [('Solarize',0.2,4),('Rotate',0.8,9)],      [('Rotate',1.0,7),('TranslateYRel',0.8,9)],
+  [('Solarize',0.2,4),('Rotate',0.8,9)],      [('Rotate',1.0,7),('TranslateY',0.8,9)],
   [('ShearX',0.0,0),('Solarize',0.8,4)],      [('ShearY',0.8,0),('Color',0.6,4)],
   [('Color',1.0,0),('Rotate',0.6,2)],         [('Equalize',0.8,4),('Equalize',0.0,8)],
   [('Equalize',1.0,4),('AutoContrast',0.6,2)], [('ShearY',0.4,7),('SolarizeAdd',0.6,7)],
   [('Posterize',0.8,2),('Solarize',0.6,10)],  [('Solarize',0.6,8),('Equalize',0.6,1)],
   [('Color',0.8,6),('Rotate',0.4,5)],
 ]
+
+# tf-models translate_const (randAugmentTranslateConst): TranslateX/Y move (m/10)*250.0 PIXELS, not timm's fraction of the side
+def _aa_trn(m): return (m/_AA_MAX)*250.0
+def _aa_translate_x(img, px): return _aa_transform(img, [1.0, 0.0, -px, 0.0, 1.0, 0.0, 0.0, 0.0])
+def _aa_translate_y(img, px): return _aa_transform(img, [1.0, 0.0, 0.0, 0.0, 1.0, -px, 0.0, 0.0])
+_AA_OPS['TranslateX'] = (_aa_translate_x, _aa_trn, True)
+_AA_OPS['TranslateY'] = (_aa_translate_y, _aa_trn, True)
 
 def _imagenet_decode_random_crop_flip(image_bytes):
     shape = tf.io.extract_jpeg_shape(image_bytes)
@@ -335,13 +261,12 @@ def _imagenet_decode_random_crop_flip(image_bytes):
                      lambda: tf.stack([(shape[0] - _cs + 1) // 2, (shape[1] - _cs + 1) // 2, _cs, _cs]),
                      lambda: window)
     img = tf.io.decode_and_crop_jpeg(image_bytes, window, channels=3)
-    img = tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                          method=tf.image.ResizeMethod.BICUBIC, antialias=True)[0]
+    img = tf.compat.v1.image.resize_bicubic([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bicubic: no antialias, corner-aligned (resizeLegacyTf1)
     img = tf.image.random_flip_left_right(img, seed=_AUG_SEED)
     img = _autoaugment(img)
     return img
 
-def _imagenet_decode_center_crop(image_bytes):
+def _imagenet_decode_center_crop_timm(image_bytes):
     img = tf.io.decode_jpeg(image_bytes, channels=3)
     shape = tf.shape(img)
     h, w = shape[0], shape[1]
@@ -354,6 +279,17 @@ def _imagenet_decode_center_crop(image_bytes):
     oy = (nh - _IMG_SIZE) // 2
     ox = (nw - _IMG_SIZE) // 2
     return tf.image.crop_to_bounding_box(img, oy, ox, _IMG_SIZE, _IMG_SIZE)
+
+def _imagenet_decode_center_crop(image_bytes):
+    # TF TPU EfficientNet _decode_and_center_crop (evalCropTfEfficientNet): the square's side is
+    # int(_IMG_SIZE/(_IMG_SIZE+_CROP_PADDING) * min(h, w)) — truncated — at offsets ((h - side) + 1)//2,
+    # cut out of the JPEG, then resized to _IMG_SIZE bicubic: the train side's centre-crop fallback
+    # window. _imagenet_decode_center_crop_timm above is timm's protocol, under SHIM_EVAL_SIZE.
+    shape = tf.io.extract_jpeg_shape(image_bytes)
+    _cs = tf.cast((_IMG_SIZE / (_IMG_SIZE + _CROP_PADDING)) *
+                  tf.cast(tf.minimum(shape[0], shape[1]), tf.float32), tf.int32)
+    img = tf.io.decode_and_crop_jpeg(image_bytes, tf.stack([(shape[0] - _cs + 1) // 2, (shape[1] - _cs + 1) // 2, _cs, _cs]), channels=3)
+    return tf.compat.v1.image.resize_bicubic([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bicubic (resizeLegacyTf1)
 
 def build_imagenet_iter(split, batch_size, training, augment, shard=None):
     ds = tfds.load('imagenet2012', split=split,
@@ -395,6 +331,11 @@ def prefetch_to_device(it, sharding, depth=2):
 # returns fp32; master weights / LayerNorm / softmax stay fp32.
 # Helps matmul-bound nets (ViT/transformers ~2.7-3.6x on gfx1100).
 DT = jnp.bfloat16
+# evalF32: `evaluate()` and the validation loop score in f32 by rebinding the module globals
+# DT / CONV_DT around the eval forward. `mm` / `convdt` read them at TRACE time; `eval_batch` is
+# traced once, on its first call, while they hold float32, and `train_step` under DT. Neither
+# retraces: fixed shapes, and `take` is traced. The names stay the module's, so a script that
+# sets `mod.DT = jnp.float32` (scripts/parity/vit_timm_parity.py) still gets the f32 forward.
 def mm(a, b):
     return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)
 
@@ -921,9 +862,9 @@ def init_params(key):
     scale = jnp.sqrt(6.0 / 1280)
     params.append((random.uniform(k_, (1280, 320, 1, 1), minval=-scale, maxval=scale),
                    jnp.ones(1280), jnp.zeros(1280)))
-    # Dense 1280→1000
+    # Dense 1280→1000  (TF EfficientNet dense_kernel_initializer: U(±1/sqrt(1000)), initHeadTfUniform)
     key, k_ = random.split(key)
-    scale = jnp.sqrt(6.0 / 2280)
+    scale = 1.0 / jnp.sqrt(1000.0)
     params.append((random.uniform(k_, (1000, 1280), minval=-scale, maxval=scale), jnp.zeros(1000)))
     return params
 
@@ -1780,13 +1721,16 @@ EPS = 0.001000
 WD = 0.000010
 _WD_POS_SHAPE = None
 def _wd_mask(params):
-    # timm no_weight_decay: no decay on 1-D params (biases, LayerNorm γ/β,
-    # CLS token) or the positional embedding (2-D but must not be decayed).
-    def _leaf(p):
-        if p.ndim <= 1: return jnp.zeros_like(p)
-        if p.shape == _WD_POS_SHAPE: return jnp.zeros_like(p)
-        return jnp.ones_like(p)
-    return jax.tree.map(_leaf, params)
+    # TF TPU EfficientNet (wdDecayBiases): `'batch_normalization' not in v.name` — BN γ/β alone are
+    # exempt; every kernel AND every bias (SE, classifier) decays. Structural: a (W, γ, β) triple is a
+    # conv-BN site, a (W, b) pair decays both; a bare array decays.
+    def _entry(t):
+        if isinstance(t, tuple) and len(t) == 3:
+            return (jnp.ones_like(t[0]), jnp.zeros_like(t[1]), jnp.zeros_like(t[2]))
+        if isinstance(t, tuple):
+            return tuple(jnp.ones_like(p) for p in t)
+        return jnp.ones_like(t)
+    return [_entry(t) for t in params]
 
 @jit
 def train_step(params, opt_state, bn, x, y, lr, drop_key=None):
@@ -1794,8 +1738,8 @@ def train_step(params, opt_state, bn, x, y, lr, drop_key=None):
     grads = jax.tree.map(lambda g, p, msk: g + WD * msk * p, grads, params, WD_MASK)
     sq, buf = opt_state
     sq = jax.tree.map(lambda s, g: RHO * s + (1.0 - RHO) * g * g, sq, grads)
-    buf = jax.tree.map(lambda b, g, s: MOMENTUM * b + g / jnp.sqrt(s + EPS), buf, grads, sq)
-    params = jax.tree.map(lambda p, b: p - lr * b, params, buf)
+    buf = jax.tree.map(lambda b, g, s: MOMENTUM * b + lr * g / jnp.sqrt(s + EPS), buf, grads, sq)   # TF1 ApplyRMSProp: the rate INSIDE the momentum term (rmspropTf)
+    params = jax.tree.map(lambda p, b: p - b, params, buf)
     return params, (sq, buf), _new_bn, loss
 
 EMA_DECAY = 0.999900
@@ -1837,7 +1781,11 @@ def eval_batch(params, bn, x, y, take):
     return correct1, correct5, loss
 
 def evaluate(params, images, labels, batch_size=512):
+    global DT, CONV_DT
     batch_size = (batch_size // n_devices) * n_devices or n_devices
+    _dt_saved = (DT, CONV_DT)
+    DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
+    print('  eval: f32 forward (evalF32)')
     _p = np.random.default_rng(12345).permutation(len(labels))
     images, labels = images[_p], labels[_p]
     correct1 = 0
@@ -1860,6 +1808,7 @@ def evaluate(params, images, labels, batch_size=512):
         total_loss += float(l)
         n_batches += 1
     evaluated = len(labels)
+    DT, CONV_DT = _dt_saved
     return correct1, correct5, evaluated, total_loss / max(n_batches, 1)
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -2037,6 +1986,14 @@ if __name__ == "__main__":
         train_secs = time.time() - ep_t0  # train-only wall time (measured before validation)
         # Validation pass: rebuild iterator each epoch (non-repeating).
         print("  Running validation ...")
+        # evalF32: score through an f32 forward. `eval_batch` is traced HERE, on its first call, so
+        # the swap must precede any trace of it — asserted, not assumed.
+        if not getattr(eval_batch, '_f32_traced', False):
+            assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'
+            eval_batch._f32_traced = True
+        _dt_saved = (DT, CONV_DT)
+        DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
+        print('  eval: f32 forward (evalF32)')
         ev_t0 = time.time()
         v_iter = prefetch_to_device(
             iter(build_imagenet_iter('validation', BATCH_SIZE, training=False, augment=False)),
@@ -2053,6 +2010,7 @@ if __name__ == "__main__":
             total   += y.shape[0]
             total_eval_loss += float(l)
             v_batches += 1
+        DT, CONV_DT = _dt_saved
         acc1 = correct1 / max(total, 1)
         acc5 = correct5 / max(total, 1)
         print("[Epoch " + str(epoch+1) + "] lr=" + str(round(float(lr), 6)) +

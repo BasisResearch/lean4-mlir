@@ -8,12 +8,10 @@ themselves go in the user's ROI order (ResNet → ViT → MNv2 → EfficientNet 
 the user's word. `imagenet_parity.md` §10 holds the F-items (cross-net) and D-items (per-net) this doc
 cites; the method is the ResNet A3/A2 prep of 2026-10-11 (4d612bb9), repeated per net.
 
-**Next (2026-10-12, later still): §7, EfficientNet-B0 — D3 is done; the rest of §7 follows.** §1–§6
-are in code (§9); nothing has run. §7 opened on D3 (the user: proofs) and that half is in (§7's
-"Done" paragraph); what remains inherits §6's `OptRecipe.rmspropTf` for D13 (B0's `enetRmsHyper` on
-the same arm) and the `wdExcludeDepthwise` / `rankWdDecaysNoDw` pair if TF's EfficientNet skips the
-depthwise too (read `utils.py`'s `weight_decay` filter first; it excludes BN and biases by name, not
-the depthwise).
+**All seven sections are in code (2026-10-12; §9).** Nothing has run. §7 closed in two halves — D3
+(a89fa9af) and the rest as TF's own code has it (its second "Done" paragraph): `main.py`'s filter
+excludes BN alone, so the biases decay and the depthwise does too (no `dw`); D13 rides on §6's
+`OptRecipe.rmspropTf`. What is left is the runs, in the user's ROI order, each on the user's word.
 
 ## 1. Done, 2026-10-11
 
@@ -63,7 +61,7 @@ What "done" means, per net, and what each later section repeats:
 | 2 | ConvNeXt-T, then S / B (ch 8) | 1½ days | accumulating no-clip renders | none |
 | 3 | MNv4-Conv-M (ch 6) | 1 day — DONE 2026-10-12 | the `mnv4in256` renders (final side 8) | the paper's own yaml is the source of truth; D7 settled by it, D8 withdrawn, D9/D10 corrected (§5) |
 | 4 | MNv2 (ch 6) | 1 day — DONE 2026-10-12 | `rmspropTf` recipe + `rmsBufNextTfF`, the `dw` decay set, the first EMA MNv2 render; the slim pipeline + init on the emitter | D12's reference = a numpy twin (the user); the recipe = the README's command, every row, 0.12 @ 256 / ×0.98 per 2.5 ep / 420 ep (the user) |
-| 5 | EfficientNet-B0 (ch 7) | 3–4 days — D3 DONE 2026-10-12 | RMSProp op (shared); SAME padding through the ties turned out to be a re-pointing onto MNv2's Xla op family, not new math | D3: proofs (the user) |
+| 5 | EfficientNet-B0 (ch 7) | 3–4 days — DONE 2026-10-12 (D3 a89fa9af; the rest the same day) | RMSProp op (shared); SAME padding through the ties turned out to be a re-pointing onto MNv2's Xla op family, not new math; then five pipeline / init / decay flags and the `wn` decay set read off TF's own code | D3: proofs (the user) |
 
 About two weeks of code against about two weeks of ResNet and ViT runs on the two boxes. Each step
 ends in one commit per net (code + confs + smokes), the chapter untouched until its pair lands.
@@ -476,6 +474,72 @@ the faithful net — the chapter's 89.96 % was trained on the symmetric artifact
 marker's "which moves the T2 / T3 ties" clause is gone (process, not a recipe gap); the padding item
 stays in it until the pair lands. Items 1–4, 6 and 7 are the rest of §7.
 
+**The rest of §7 done 2026-10-12 — TF TPU EfficientNet's own code, every row.** Read off
+tensorflow/tpu `models/official/efficientnet/{main,utils,efficientnet_model,preprocessing,
+autoaugment}.py` (master, fetched 2026-10-12) before anything was set, as at MNv4 and MNv2, and three
+of the marker's items changed shape on the way. (1) Item 1 is void: `_decode_and_random_crop` samples
+at `max_attempts=10` and a crop that came back whole (`_at_least_x_are_equal(original_shape,
+tf.shape(image), 3)`) is replaced by `_decode_and_center_crop` — TF's sampler HAS the fallback,
+`cropFallbackCenter` is it, and the marker's "without" was wrong (F2 corrected). (2) "No decay on BN
+or biases" is timm's rule, not TF's: `main.py` adds `weight_decay · Σ l2_loss(v)` over every
+trainable variable whose name lacks `'batch_normalization'`, so the SE and classifier biases decay
+(D21). (3) "AutoAugment v0 with bicubic geometry" was timm's rendering: `autoaugment.py` runs the
+geometry through `contrib_image.{transform,rotate,translate}` at their default NEAREST, fills with
+128, moves TranslateY by `(l/10)·250` PIXELS (`distort_image_with_autoaugment`'s `translate_const`),
+and posterizes through TF's clamped shift (0 bits keeps the top bit); the 25-row table was already
+TF's op for op (D20). Confirmed, no change: the staircase on the global step from step 0, the
+`0.2·i/16` drop-connect ramp, BN 0.99 / 1e-3, label smoothing 0.1, dropout 0.2, EMA 0.9999
+warmup-corrected (`num_updates=global_step`) and scored, the SAME stem and head convs without bias,
+the SE convs with, lr 0.016 at 256. Also read off and set: the classifier at `dense_kernel_initializer`'s
+`U(±1/√shape[1])` — the CLASS count sets the range (D6); `tf.image.resize_bicubic` (TF 1: no
+antialias, corner-aligned) on every resize and `_decode_and_center_crop`'s own arithmetic at eval
+(D22); the eval forward in f32 (F8). Disclosed, not reproduced: the conv kernels' distribution
+(`tf.random_normal` at He fan-out where every init here is variance-matched uniform), warmup at
+`lr · step / W` from step 0 (ours `(step + 1) / W`, one step ahead), the eval crop scored at timm's
+protocol too (post hoc, `PROTOCOL=timm`).
+
+JAX: `TrainConfig` gains `autoAugmentTf`, `wdDecayBiases`, `initHeadTfUniform`, `resizeLegacyTf1`,
+`evalCropTfEfficientNet`, every default byte-identical (66 artifacts re-emitted, the four B0 files
+moved: trainers and shims); `efficientNetB0ImagenetConfig` names its source per line (`rmspropTf`,
+`wdDecayBiases`, `initHeadTfUniform`, `autoAugmentTf` + `augNearest` + `randAugmentTranslateConst
+250` with `augBicubic` off, `resizeLegacyTf1`, `evalCropTf` + `evalCropTfEfficientNet`, `evalF32`),
+the 80-epoch `default` tier with it. The `_wd_mask` under `wdDecayBiases` is STRUCTURAL — a
+`(W, γ, β)` triple is a conv-BN site, a `(W, b)` pair decays both — since the rank cannot tell a bias
+from a γ. Verified: `rankWdDecaysKeepBias` (by name: γ ends in `g`, β in `bt`; guarded on `enetSig` —
+98 BN parameters excluded, 33 biases decaying, 131 under `wx`) behind the `wn` marker in `wx`'s slot;
+the render `efficientnetin_emarmstfdp64dropdowneps0001bf16` (`OptRecipe.rmspropTf` at `enetRmsHyper`,
+100 lines naming `%wdz` = 98 + its constant and banner; every committed artifact byte-identical);
+`VerifiedConfig.headTfUniform` → `mkParam`'s kind-0 rank-2 branch at variance `1/(3·out)`,
+`LEAN_MLIR_HEAD_TF_UNIFORM=0|1`, an INIT banner, set in the ImageNet driver; the shim carries the
+pipeline rows. Gates: `scripts/gates/aa_v0_tf_check.py` (the v0 table, TranslateY at `(l/10)·250`,
+a 7° rotation emitting only source pixels and the fill, the TF shift clamp measured on
+`tf.bitwise.right_shift` itself, TF's level mappings; HEAD's timm-form trainer red on 6 rows as the
+control; in jax.yml), `opt_step_tie.py` row `emarmstfwn` 7.9e-8 (the `rmswx` row retired — both B0
+trainers carry TF's placement now, so it has no reference; 5.19e+01 as the counterfactual, recorded),
+`enet_timm_parity --controls` unchanged (1.7e-6 / 7.3e-7; the forward did not move),
+`TestVariantPredicates` (136 spellings, the fourth ε row), `TestOptStepFixtures`, the shim hash
+reproducible at seed 0 and distinct at seed 1 under `SHIM_DETERMINISM=1`, `regen_jax_generated`
+write / sync / check, `regen_verified_mlir check`, manifest (+ `wn` in its decoder), parse 373, arity
+282, comment_numbers, module_refs, docstring-checkrefs, `pc_crop`'s new `tf1-bicubic` kernel. Confs:
+`enet-default-4gpu` on the new variant with a grep per emitted line (TranslateY, 250 px, NEAREST, two
+legacy resizes, the eval crop, the render's 100 `%wdz`) and `LEAN_MLIR_DUMP_CORRECT` appended;
+`enet-full-jax-4gpu` on a fresh lineage (`~/enet_tf350_2612/`) with a grep per line (the TF update,
+`_entry`, `1/√1000`, the pipeline, `evalF32`). Smokes: `runs/2026-10-12-enet-default-4gpu/` (the conf's own precheck and launch, `ONCE=1
+LEAN_MLIR_MAX_STEPS=400 LEAN_MLIR_PROBE_WARM=200`: 121 ms/step median at 2 ms starvation — 148 on
+the PIL-bicubic feed on 09-25; TF's nearest AutoAugment and TF 1's bicubic are the cheaper shim —
+606 s/epoch + ~85 s eval/ckpt → ~67 h; no checkpoint under the new variant) and
+`runs/2026-10-12-enet-jax-smoke/` (two 100-step epochs on four cards at the default arena, the
+warmup reading 0.0032 then 0.0064 as `0.016·(step+1)/500` has it, the f32 eval line before every
+validation, 99 ms a step in the second epoch → ~49 h); the §2 row's "~47 + 80 h" becomes ~49 + 67 h.
+Both DRY_RUN prechecks pass on the new greps. And the Imagenette rerun D3 owed landed the same
+morning (`runs/2026-10-12-enet-imagenette-d3/`): **90.04 / 98.29** at epoch 80 (best 90.17) on the
+`SAME`-padded net against the symmetric artifact's 89.96 / 98.45, 40.7 min on one card — inside
+the split's CI either way, so ch 7's Imagenette section, its result table and the two appendix
+copies carry the new run (the log excerpt, the first-four-epochs sentence, "eight tenths of a point
+over MobileNetV2"). The ch 7 marker is
+rewritten to TF's rows (the fallback WITH, decay off BN alone, nearest geometry, TF 1's bicubic, the
+f32 eval); `imagenet_parity.md` D6 / D13 / D20–D22 / F2 and §10.4 carry the sources.
+
 ## 8. What this does not cover
 
 * The runs' order and boxes (`imagenet_parity.md` §10.4): A3 pair first, ViT-Ti, then A2, MNv2 … as
@@ -495,4 +559,4 @@ stays in it until the pair lands. Items 1–4, 6 and 7 are the rest of §7.
 | ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | a0c125b3 | pending | stands |
 | MNv4-Conv-M | done (the paper's yaml) | done | done (`mnv4in256`, five) | done | green | done | 263da67a | pending | stands, rewritten |
 | MNv2 | done (the README's command) | done | done (the first `rmstf` + EMA MNv2 render) | done | green | done | — | pending | stands, rewritten |
-| EfficientNet-B0 | D3 done (JAX `mbconv_block` SAME) — rest NEXT | — | done (`depthwiseStridedXla*` at the four sites, 36 artifacts) | — | parity gate at `--pad tf` | — | — | pending | stands; T2/T3 clause dropped |
+| EfficientNet-B0 | done (TF's code, every row: 5 new flags + `rmspropTf` / `evalF32`) | done (`headTfUniform`) | done (D3's 36 Xla artifacts; the `emarmstfdp64dropdowneps0001bf16` render) | done | green | done | a89fa9af + — | pending | stands, rewritten to TF's rows |

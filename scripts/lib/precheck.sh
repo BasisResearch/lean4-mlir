@@ -131,11 +131,14 @@ pc_crop() {
         echo "⛔ $f carries EfficientNet's centre-crop fallback, which this recipe does not"; ok=1; }; fi ;;
     *) echo "⛔ pc_crop: unknown kind $kind"; return 1 ;;
   esac
-  local bil bic; bil="$(grep -c 'ResizeMethod.BILINEAR' <<<"$calls")"; bic="$(grep -c 'ResizeMethod.BICUBIC' <<<"$calls")"
+  local bil bic tf1; bil="$(grep -c 'ResizeMethod.BILINEAR' <<<"$calls")"; bic="$(grep -c 'ResizeMethod.BICUBIC' <<<"$calls")"
+  tf1="$(grep -c 'tf.compat.v1.image.resize_bicubic' <<<"$calls")"
   case "$rs" in
-    bicubic)  [ "$bil" = 0 ] && [ "$bic" -ge 1 ] ;;
+    bicubic)  [ "$bil" = 0 ] && [ "$bic" -ge 1 ] && [ "$tf1" = 0 ] ;;
     bilinear) [ "$bil" -ge 1 ] && [ "$bic" = 0 ] ;;
     random)   [ "$bil" -ge 1 ] && [ "$bic" -ge 1 ] ;;
+    # TF 1's legacy bicubic (resizeLegacyTf1: no antialias, corner-aligned) — TF TPU EfficientNet
+    tf1-bicubic) [ "$bil" = 0 ] && [ "$bic" = 0 ] && [ "$tf1" -ge 1 ] ;;
     *) false ;;
   esac || { echo "⛔ $f's train crop does not resize $rs (trainResize) — re-emit"; ok=1; }
   return $ok

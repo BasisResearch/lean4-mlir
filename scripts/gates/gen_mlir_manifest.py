@@ -185,6 +185,9 @@ def decode(variant: str) -> str:
     if "wx" in variant:
         # timm `no_weight_decay`: decay OFF BN γ/β and biases
         bits.append("no decay on norm/bias")
+    if "wn" in variant:
+        # TF TPU EfficientNet's filter: BN γ/β alone exempt, the biases decay (rankWdDecaysKeepBias)
+        bits.append("no decay on BN γ/β only")
     if "clip" in variant:
         bits.append("grad clip")
     if "bce" in variant:

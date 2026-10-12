@@ -162,9 +162,19 @@ VARIANTS = [
     # Counterfactuals, run by hand 2026-10-12 (each fixture against the OTHER placement's trainer):
     # `rmstfwxdw` vs B0's, worst rel 9.8e-01; `rmswx` vs MNv2's, 5.4e+01 (the buffer rows, which
     # carry `lr` on one side only). Six to eight orders above the floor; the gate has teeth.
-    ("rmswx",        "generated_efficientnet_b0_imagenet.py",   1, False, False),
+    # `rmswx` — the committed `.rmsprop` arm (the rate OUTSIDE, `p - lr * b`, timm's mask) — had B0's
+    # trainer as its reference until 2026-10-12. Both B0 trainers carry `rmspropTf` + `wdDecayBiases`
+    # since, so the row has NO reference and is a counterfactual: against B0's `default` trainer it
+    # comes out at worst rel 5.19e+01 (the buffer rows carry `lr` on one side only; `m'[1]`, the 1-D
+    # parameter, decays on the reference side alone) — run 2026-10-12, recorded here, the row gone.
     ("rmstfwxdw",    "generated_mobilenet_v2_imagenet_full.py", 1, False, False),
     ("emarmstfwxdw", "generated_mobilenet_v2_imagenet_full.py", 1, False, True),
+    # ⭐ EfficientNet-B0's own recipe (2026-10-12, planning/recipe_prep.md §7): TF1's placement
+    # (`rmspropTf`) at B0's ε 1e-3 / wd 1e-5 with TF TPU EfficientNet's decay set — every trainable
+    # variable but the BatchNorm ones (`wdDecayBiases`, the STRUCTURAL `_wd_mask`; the render's
+    # `rankWdDecaysKeepBias`): the fixture's rank-1 `p1` is a bias here and DECAYS, as does the
+    # depthwise `p3`, where `rmswx` exempts `p1` and `rmstfwxdw` both. Against B0's `full` trainer.
+    ("emarmstfwn",   "generated_efficientnet_b0_imagenet_full.py", 1, False, True),
 ]
 
 # Tolerance. The two sides run the SAME arithmetic in the same f32 order for the most part, but not

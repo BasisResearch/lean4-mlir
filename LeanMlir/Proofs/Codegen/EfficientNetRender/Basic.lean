@@ -1087,7 +1087,10 @@ def enetAdamVariant (B replicas : Nat) (opt : OptRecipe := .adamw) (ema : Bool :
     (bf16 : Bool := false)
     -- `wx` (no decay on BN γ/β and biases) and the BN-ε marker (`bnEpsMarker`), TRAILING and
     -- defaulted for `bf16`'s reason. They print after `do` and before `bf16`: `…dropdowxeps0001bf16`.
-    (wx : Bool := false) (epsMarker : String := "") : String :=
+    (wx : Bool := false) (epsMarker : String := "")
+    -- `wn` — `wx`'s slot, TF EfficientNet's decay set (`rankWdDecaysKeepBias`: BN γ/β alone
+    -- exempt, the biases decay). TRAILING and defaulted, so every committed spelling is untouched.
+    (wn : Bool := false) : String :=
   -- THE STOCHASTIC-DEPTH MARKER IS `"drop"`, NOT `"sd"`.
   -- `"sd"` collides: `rms` ++ `dp` spells **`rmsdp`**, which CONTAINS "sd", so a `"sd"` substring
   -- test fires on `rmsdp64` and `emarmsdp64` — every RMSProp DATA-PARALLEL variant, including the
@@ -1126,7 +1129,7 @@ def enetAdamVariant (B replicas : Nat) (opt : OptRecipe := .adamw) (ema : Bool :
   -- at `…rms64bf16_train_step.mlir` declaring `@efficientnetin_rms64_train_step` inside: the flag
   -- reaches the name function and the name function ignores it. The `#guard`s below catch that
   -- before anything runs.
-  (if wx then "wx" else "") ++ epsMarker ++
+  (if wx then (if wn then "wn" else "wx") else "") ++ epsMarker ++
   (if bf16 then "bf16" else "")
 
 /-- **EfficientNet-B0 AdamW train step rendered from the verified AST.**
@@ -1166,7 +1169,12 @@ def efficientnetAdamTrainStepText (B nClasses : Nat) (epsStr : String)
     (forceSync : Bool := false)
     -- `wdExclude` — `wx`, no decay on the 1-D parameters (BN γ/β, biases): `wdNameBy`'s rule,
     -- the JAX `wdExcludeNormBias` mask. TRAILING and defaulted: every committed render is untouched.
-    (wdExclude : Bool := false) : String :=
+    (wdExclude : Bool := false)
+    -- `wn` — with `wdExclude`, TF TPU EfficientNet's decay set in place of timm's: `main.py` decays
+    -- every trainable variable but the BatchNorm ones (`'batch_normalization' not in v.name`), so
+    -- the SE and classifier biases take `%wd` and only the 49 BN pairs take `%wdz`
+    -- (`rankWdDecaysKeepBias`; the JAX `wdDecayBiases` mask). TRAILING and defaulted.
+    (wn : Bool := false) : String :=
   let sync : Bool := replicas > 1 || forceSync
   -- `negAlphaKStr` is DERIVED from `nClasses` when empty. Passing −α/K as a string independent
   -- of K is the two-writers-for-one-fact shape: a K=10 constant in a K=1000 render sits ON THE
@@ -1210,7 +1218,7 @@ def efficientnetAdamTrainStepText (B nClasses : Nat) (epsStr : String)
     let mut eN : List String := []
     for i in [0:sigList.length] do
       let (nm, ds) := sigList[i]!
-      let wdN := wdNameBy wdExclude nm ds
+      let wdN := wdNameBy wdExclude nm ds (if wn then rankWdDecaysKeepBias else rankWdDecays)
       -- The EMA shadow `%{nm}e` is `optOne`'s, after either tail: it reads `nT`, the UPDATED
       -- parameter. `Proofs.adamMNext β₁ m g = β₁·m + (1−β₁)·g` IS the reference's `ema_update` at
       -- `(β₁ := d, m := ema, g := θ')`, so it is **no new op**.
@@ -1264,7 +1272,10 @@ def efficientnetAdamTrainStepText (B nClasses : Nat) (epsStr : String)
        | _ => "") ++
       zeroBiasPrelude convBias enetBiasWidths ++ code ++ statCode ++
       optConstsB opt (rms := some enetRmsHyper) ++
-      wdzConst wdExclude ++ adamCode ++ lossCode ++
+      wdzConst wdExclude (if wn then "the 49 BN γ/β pairs alone (every other variable decays, \
+biases included)" else "1-D params")
+        (rule := if wn then "TF EfficientNet main.py's 'batch_normalization' filter (wdDecayBiases)"
+                 else "timm no_weight_decay (wdExcludeNormBias)") ++ adamCode ++ lossCode ++
       s!"    return {String.intercalate ", " retVals} : {String.intercalate ", " retTys}\n",
       bnList.map (fun t => t.2.2.1))
   let (inner, bnOc) := go.run' (0, [])
@@ -1291,7 +1302,7 @@ def efficientnetAdamTrainStepText (B nClasses : Nat) (epsStr : String)
   -- The entry name must track the driver's `{slug}_{variant}_train_step` convention, or the shim
   -- refuses the call ("entry mismatch"). `enetAdamVariant` is the single source for the name, the
   -- artifact path and `LEAN_MLIR_VARIANT`.
-  let fname := s!"{slug}_{enetAdamVariant B replicas opt ema sd cd bf16 wdExclude (bnEpsMarker epsStr)}_train_step"
+  let fname := s!"{slug}_{enetAdamVariant B replicas opt ema sd cd bf16 wdExclude (bnEpsMarker epsStr) wn}_train_step"
   "module @m {\n" ++
   s!"  func.func @{fname}({inSig}) -> ({outSig}) " ++ "{\n" ++
   inner ++
@@ -1695,6 +1706,35 @@ end Proofs.StableHLO
   (Proofs.StableHLO.efficientnetFwdEvalText 64 1000 "1.0e-3" false "efficientnetin")
 #guard Proofs.StableHLO.enetAdamVariant 64 4 .rmsprop true true true true (wx := true)
     (epsMarker := Proofs.StableHLO.bnEpsMarker "1.0e-3") == "emarmsdp64dropdowxeps0001bf16"
+
+-- **The paper's own code, every row (2026-10-12, planning/recipe_prep.md §7)** — the arm
+-- `enet-default-4gpu` runs since D3: the line above with the optimizer and the decay set TF TPU
+-- EfficientNet's `main.py` / `utils.py` actually run. `rmstf` is TF1's `RMSPropOptimizer`, the rate
+-- INSIDE the momentum buffer (`OptRecipe.rmspropTf`, D13 — `Proofs.rmsPropTfStep_theta_lr_change`
+-- is the difference as a theorem); `wn` is its decay set, every trainable variable but the
+-- BatchNorm ones (`rankWdDecaysKeepBias`): the 49 γ/β pairs take `%wdz`, the 32 SE biases and the
+-- classifier bias take `%wd` with the kernels (the depthwise included — D11 is MNv2's rule, not
+-- B0's). Same geometry, masks, ε and precision as the `wx` render; the eval partner is the same
+-- `efficientnetin_fwd_eval_eps0001.mlir`. The classifier init (D6), the pipeline rows (TF's
+-- AutoAugment form, legacy bicubic, `_decode_and_center_crop`) and the f32 eval are host-side.
+#eval IO.FS.writeFile "verified_mlir/efficientnetin_emarmstfdp64dropdowneps0001bf16_train_step.mlir"
+  (Proofs.StableHLO.efficientnetAdamTrainStepText 64 1000 "1.0e-3"
+    "0.100000" "" "64.0" 4 false "efficientnetin" .rmspropTf (ema := true) (sd := true) (cd := true)
+    (bf16 := true) (wdExclude := true) (wn := true))
+#guard Proofs.StableHLO.enetAdamVariant 64 4 .rmspropTf true true true true (wx := true)
+    (epsMarker := Proofs.StableHLO.bnEpsMarker "1.0e-3") (wn := true) == "emarmstfdp64dropdowneps0001bf16"
+-- `wn` sits in `wx`'s slot: without `wx` it spells nothing, and every committed spelling is untouched.
+#guard Proofs.StableHLO.enetAdamVariant 64 4 .rmspropTf true true true true (wn := true)
+    (epsMarker := Proofs.StableHLO.bnEpsMarker "1.0e-3") == "emarmstfdp64dropdoeps0001bf16"
+-- The decay set on B0's own signature: under `wn` exactly the 98 BN parameters (49 γ + 49 β) are
+-- excluded and the 33 biases (16 blocks × 2 SE + the classifier) decay; under `wx` every one of the
+-- 131 one-dimensional parameters is excluded. The names the rule reads are this file's.
+#guard ((Proofs.StableHLO.enetSig 1000 false).filter (fun (nm, ds) =>
+    !Proofs.StableHLO.rankWdDecaysKeepBias nm ds)).length == 98
+#guard ((Proofs.StableHLO.enetSig 1000 false).filter (fun (nm, ds) =>
+    ds.length == 1 && Proofs.StableHLO.rankWdDecaysKeepBias nm ds)).length == 33
+#guard ((Proofs.StableHLO.enetSig 1000 false).filter (fun (nm, ds) =>
+    !Proofs.StableHLO.rankWdDecays nm ds)).length == 131
 
 -- The **2-GPU** peer: 2 replicas × batch 128 = the same global 256 =
 -- `efficientNetB0ImagenetConfig.batchSize`, so it keeps the geometry the 4×64 render above has and

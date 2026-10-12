@@ -74,12 +74,17 @@ private def optStepModule (fname : String) (opt : OptRecipe)
     -- where D13 is MEASURED: from a non-zero incoming buffer the two rate placements land
     -- `μ·b·(1 − lr)` apart (`Proofs.rmsPropTfStep_theta_lr_change`), so a render that put the rate
     -- outside would tie red against the `rmspropTf` reference and green against B0's.
-    (rms : Option RmsHyper := none) (dw : Bool := false) : String :=
+    (rms : Option RmsHyper := none) (dw : Bool := false)
+    -- `wn` — TF TPU EfficientNet's decay set (`rankWdDecaysKeepBias`): the rank-1 `p1` is a BIAS
+    -- under it and decays, as does the depthwise `p3`; only a γ/β name would be exempt, and the
+    -- fixture has none. The reference side's structural mask decays a bare array for the same
+    -- reason (`wdDecayBiases`).
+    (wn : Bool := false) : String :=
   let accOn := match opt with | .adamwAccum _ => true | .lambAccum _ => true | _ => false
   let ps : List PGrad := fixtureParams.map (fun (n, ds) => ⟨n, s!"%d{n}", ds⟩)
   let (body, thetaN, mN, vN, aN, eN) :=
     (optAllParams opt 1 1 ps wdExclude gradClip clipNorm ema
-      (decays := if dw then rankWdDecaysNoDw else rankWdDecays)).run' (0, [])
+      (decays := if dw then rankWdDecaysNoDw else if wn then rankWdDecaysKeepBias else rankWdDecays)).run' (0, [])
   let tys := fixtureParams.map (fun (_, ds) => ty ds)
   let sig := String.intercalate ", " (
     fixtureParams.map (fun (n, ds) => s!"%{n}: {ty ds}") ++
@@ -156,17 +161,22 @@ private def variants : List (String × OptRecipe × Bool × Bool × String × Bo
 
     | slug | reference | what it measures |
     |---|---|---|
-    | `rmswx` | `generated_efficientnet_imagenet.py` | the rate OUTSIDE (`.rmsprop`), B0's ε 1e-3 / wd 1e-5, timm's mask: the committed arm, so the `rmstf…` rows have a control |
+    | `emarmstfwn` | `generated_efficientnet_b0_imagenet_full.py` | TF1's placement at B0's ε 1e-3 / wd 1e-5 with TF EfficientNet's decay set (`wn`, `rankWdDecaysKeepBias`): `p1` and `p3` both DECAY, and the shadow |
     | `rmstfwxdw` | `generated_mobilenet_v2_imagenet_full.py` | TF1's placement (`.rmspropTf`), MNv2's ε 1.0 / wd 4e-5, TF-slim's mask — `p3` must take `%wdz` (D11) and the buffer must carry `lr` (D13) |
     | `emarmstfwxdw` | the same | …with the shadow: the five-region MobileNetV2 render's composition |
 
-    `rmswx` against the MobileNetV2 reference, or `rmstfwxdw` against B0's, is the counterfactual
-    that goes red (the buffer rows by a factor of `lr`, θ' by `μ·b·(1 − lr)` on every parameter);
-    run once by hand on 2026-10-12, recorded in `scripts/parity/opt_step_tie.py`'s header. -/
+    `rmswx` (the rate OUTSIDE, `.rmsprop`, timm's mask) was the committed B0 arm until 2026-10-12
+    and the `rmstf…` rows' control; both B0 trainers carry `rmspropTf` + `wdDecayBiases` since, so
+    it has no reference and is the counterfactual that goes red (worst rel 5.19e+01 against B0's
+    `default` trainer: the buffer rows by a factor of `lr`, `p1` decayed on one side only), run
+    2026-10-12 and recorded in `scripts/parity/opt_step_tie.py`'s header with the earlier pair. -/
 private def rmsVariants : List (String × OptRecipe × Bool × Bool × RmsHyper × Bool) :=
-  [ ("rmswx",        .rmsprop,   true, false, enetRmsHyper, false)
-  , ("rmstfwxdw",    .rmspropTf, true, true,  mnv2RmsHyper, false)
-  , ("emarmstfwxdw", .rmspropTf, true, true,  mnv2RmsHyper, true) ]
+  [ ("rmstfwxdw",    .rmspropTf, true, true,  mnv2RmsHyper, false)
+  , ("emarmstfwxdw", .rmspropTf, true, true,  mnv2RmsHyper, true)
+    -- EfficientNet-B0's own recipe since 2026-10-12 (recipe_prep.md §7): TF1's placement at B0's
+    -- ε 1e-3 / wd 1e-5 with TF EfficientNet's decay set — `p1` and `p3` DECAY (`wn`), where
+    -- `rmswx` exempts `p1` and `rmstfwxdw` exempts both. Against B0's `full` trainer.
+  , ("emarmstfwn",   .rmspropTf, true, false, enetRmsHyper, true) ]
 
 def main : IO Unit := do
   IO.println "── optimizer-step fixtures (planning/archive/verified_optimizer_parity.md §5) ──"
@@ -179,6 +189,7 @@ def main : IO Unit := do
   for (slug, opt, wx, dw, rms, ema) in rmsVariants do
     let fname := s!"opt_step_{slug}"
     let m := optStepModule fname opt wx false 1.0 "" ema (rms := some rms) (dw := dw)
+      (wn := slug.endsWith "wn")
     let path := s!".lake/build/{fname}.mlir"
     IO.FS.writeFile path m
     IO.println s!"  wrote {path} ({(m.splitOn "\n").length} lines)"

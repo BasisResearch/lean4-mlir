@@ -211,6 +211,15 @@ structure VerifiedConfig where
       Imagenette B0 driver and every gate are byte-identical; the ImageNet B0 driver sets it
       (2026-10-07), and `LEAN_MLIR_SE_FAN_OUT=0|1` overrides it at launch. -/
   seFanOutInit : Bool := false
+  /-- **TF TPU EfficientNet's classifier init** — the verified peer of `TrainConfig.initHeadTfUniform`.
+      `efficientnet_model.py`'s `dense_kernel_initializer` draws the head `U(±1/√shape[1])` on the
+      Keras `(in, units)` kernel, so the range is set by the CLASS count: `U(±1/√1000)` at
+      ImageNet, variance 1/3000 against Glorot's 2/(1280 + 1000) (`imagenet_parity.md` D6). Applied
+      to the kind-0 rank-2 parameter — B0's one dense; its SE FCs are kind 7 — at variance
+      `1/(3·out)` through `F32.heInit` (variance-matched, as every init here). Host-side, no
+      re-render. Off by default; the ImageNet B0 driver sets it (2026-10-12), and
+      `LEAN_MLIR_HEAD_TF_UNIFORM=0|1` overrides it at launch. -/
+  headTfUniform : Bool := false
   /-- **TF-slim's truncated-normal init, σ on EVERY kernel** — the verified peer of
       `TrainConfig.initTruncNormal`. `mobilenet.training_scope` gives `slim.conv2d`,
       `slim.separable_conv2d` and `slim.fully_connected` one `truncated_normal_initializer(stddev)`
@@ -526,7 +535,8 @@ def mkLabels (bs off nc : Nat) : ByteArray := Id.run do
 def mkParam (seed : Nat) (dims : Array Nat) (kind : Nat)
     (vitInit : Bool := false) (biasSigma : Option Float := none)
     (heFanIn : Bool := false) (cnxInit : Bool := false) (dwFanK2 : Bool := false)
-    (zeroGamma : Bool := false) (seFanOut : Bool := false) (truncNormal : Float := 0.0) :
+    (zeroGamma : Bool := false) (seFanOut : Bool := false) (truncNormal : Float := 0.0)
+    (headTfUniform : Bool := false) :
     IO ByteArray := do
   let n := dims.foldl (· * ·) 1
   match kind with
@@ -591,6 +601,10 @@ def mkParam (seed : Nat) (dims : Array Nat) (kind : Nat)
       -- to the Glorot rule below, byte-identical to its kind-0 past. No net sets this with cnxInit
       -- or vitInit, so the order among the three is moot.
       if kind == 7 && seFanOut && dims.size == 2 then 2.0 / (dims[1]!).toFloat
+      -- **The classifier under `headTfUniform`** (`VerifiedConfig.headTfUniform`): TF EfficientNet's
+      -- `U(±1/√out)`, variance `1/(3·out)` on the kind-0 `[in, out]` dense. Only B0's ImageNet
+      -- driver sets it, and B0's only kind-0 rank-2 parameter is the head.
+      else if kind == 0 && headTfUniform && dims.size == 2 then 1.0 / (3.0 * (dims[1]!).toFloat)
       else if cnxInit then 0.0004                                                 -- 0.02²
       else if vitInit then
         if dims.size == 4 then 1.0 / (3.0 * (dims[1]! * dims[2]! * dims[3]!).toFloat)  -- Conv2d dflt
@@ -2235,10 +2249,17 @@ new-batch weight {bnMomShown}{if accOn then s!" = 1 − {cfg.bnMomentum}^(1/{acc
     | _        => cfg.seFanOutInit
   if seFanOut && net.specs.any (·.2 == 7) then
     IO.println s!"  ▸ INIT: SE FC fan = out on {(net.specs.filter (·.2 == 7)).size} squeeze-excite denses (the JAX reference's 1×1-conv fan-out), not Glorot"
+  let headTfUniform := match (← IO.getEnv "LEAN_MLIR_HEAD_TF_UNIFORM") with
+    | some "1" => true
+    | some "0" => false
+    | _        => cfg.headTfUniform
+  if headTfUniform then
+    let heads := net.specs.filter (fun s => s.2 == 0 && s.1.size == 2)
+    IO.println s!"  ▸ INIT: classifier U(±1/√out) on {heads.size} dense (TF EfficientNet's dense_kernel_initializer: variance 1/(3·{(heads.map (·.1[1]!)).toList}), not Glorot"
   for spec in net.specs do
     parts := parts.push (← mkParam seed spec.1 spec.2 cfg.vitInit (cnxInit := cfg.cnxInit)
       (dwFanK2 := dwFanK2) (zeroGamma := zeroGamma) (seFanOut := seFanOut)
-      (truncNormal := truncNormal))
+      (truncNormal := truncNormal) (headTfUniform := headTfUniform))
     seed := seed + 1
   -- LEAN_MLIR_PERTURB_R: displace the initial parameters along a random unit vector of exact L2
   -- norm r, before any training. This is the CONDITIONING probe for gate G2: if an r that is
