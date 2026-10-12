@@ -162,7 +162,7 @@ def _config_body(mainfile, cfgname):
 # features: `randaugment` is `useRandAugment ∧ randAugmentGeometric`, so a derived config that
 # overrides only one of the two is mis-read by any coarser merge.
 _RAW_BOOL = ["useAutoAugment", "useRandAugment", "randAugmentGeometric",
-             "randomErasing", "useMixup", "useCutmix"]
+             "randomErasing", "useMixup", "useCutmix", "colorDistortSlim"]
 _RAW_NAT  = {"repeatedAug": 1}
 
 def read_raw_config(mainfile, cfgname, _depth=0):
@@ -195,6 +195,7 @@ def read_config_flags(mainfile, cfgname):
         # two are separated here instead of collapsed.
         "randaugment":  b("useRandAugment") and b("randAugmentGeometric"),
         "ra_lite":      b("useRandAugment") and not b("randAugmentGeometric"),
+        "slim_color":   b("colorDistortSlim"),
         "random_erase": b("randomErasing"),
         "repeated_aug": n("repeatedAug", 1) > 1,
         "mixup":        b("useMixup"),
@@ -207,7 +208,9 @@ def shim_call_sites(path):
     return {
         "autoaugment":  "img = _autoaugment(" in py,
         "randaugment":  "img = _randaugment(" in py,
-        "ra_lite":      "img = tf.image.random_brightness(" in py,
+        # Both colour paths open on `random_brightness`; its argument tells them apart.
+        "ra_lite":      "img = tf.image.random_brightness(img, 0.3 * 255.0 * _M)" in py,
+        "slim_color":   "img = tf.image.random_brightness(img, 32. / 255.)" in py,
         "random_erase": "img = _random_erase(" in py,
         # Repeated augmentation is a STREAM change (K copies before the shuffle), not a per-image
         # one — `flat_map` is its only fingerprint, and no other feature emits one.
@@ -283,7 +286,7 @@ for slug, mainfile, refname, recipe in NETS:
 #  Gate 2 — the augmentation PARTITION: config flags vs generated call sites, feature by feature
 # ──────────────────────────────────────────────────────────────────────────────────────────────
 print("\n── gate 2: the augmentation partition — config vs the generated CALL SITES ──")
-FEATURES = ["autoaugment", "randaugment", "ra_lite", "random_erase", "repeated_aug"]
+FEATURES = ["autoaugment", "randaugment", "ra_lite", "slim_color", "random_erase", "repeated_aug"]
 print(f"    {'net':<10}" + "".join(f"{f:<14}" for f in FEATURES))
 flags_by_slug, sites_by_slug = {}, {}
 for slug, mainfile, _, _ in NETS:
@@ -440,15 +443,16 @@ if "--break" in sys.argv:
     print("\n── --break: the negative controls ──")
     # (a) the pre-fix world: every net wired to R34's shim. Gate 0's distinctness must fire, and so
     #     must gate 2 on every net whose augmentation vanishes — i.e. every net whose recipe is
-    #     NOT R34's. That count is 6 as of 2026-08-12: vitin, efficientnetin, convnextin, resnet50in,
-    #     resnet50in160 and mnv4in.
+    #     NOT R34's. That count is 7 as of 2026-10-12: vitin, efficientnetin, convnextin, resnet50in,
+    #     resnet50in160, mnv4in and mobilenetv2in.
     #     ⚠ It was 3 until R50 was wired, then 4, then 5 once R50 gained its SECOND recipe — the
     #     `short` (RSB-A3) shim at trainRes 160. Both R50 rows share a Main file and a reference
     #     but differ in RECIPE, and the partition keys on the recipe, so they count separately.
     #     6 since MNv4 joined the table (2026-08-12) with its own shim and a recipe that is not
     #     R34's; the other five were unchanged by that, which is how the bump was confirmed benign.
-    #     mobilenetv2in still does not count because its config IS R34's (no extra augmentation), which
-    #     is why gate 2's partition treats them as one class.
+    #     7 since MobileNetV2 took slim's `distort_color` (6762494c, 2026-10-12): its recipe is no
+    #     longer R34's, so it changed class on purpose — the `slim_color` column is what tells it
+    #     apart (the old `ra_lite` probe matched its `random_brightness` call and fired red).
     #     Bump this deliberately when a net joins — a wrong constant here makes control A red
     #     and the whole file useless, which is exactly what it did when R50 arrived.
     #     ▶ Confirm the bump before making it: list the firing slugs, not just their count. A count
@@ -462,9 +466,9 @@ if "--break" in sys.argv:
         if any(flags_by_slug[slug][f] != shim_call_sites(r34)[f] for f in FEATURES))
     print(f"    pre-fix wiring (every net → R34's shim): distinctness fires = {distinct_fired}, "
           f"partition fires on {partition_fired} nets")
-    check(distinct_fired and partition_fired == 6,
-          "control A: the pre-fix wiring is REJECTED, on exactly the 6 affected nets",
-          f"distinct={distinct_fired}, partition fired on {partition_fired} (want 6)")
+    check(distinct_fired and partition_fired == 7,
+          "control A: the pre-fix wiring is REJECTED, on exactly the 7 affected nets",
+          f"distinct={distinct_fired}, partition fired on {partition_fired} (want 7)")
     # (b) swap two nets' shims — the counts stay right, only the PARTITION is wrong. This is the
     #     `swap1` control from wdx-tie: a gate checking "five distinct shims exist" passes it.
     # ⚠⚠ BASE NETS ONLY, and that is the fix `ccca380` needed and did not get. `wiring` covers the
