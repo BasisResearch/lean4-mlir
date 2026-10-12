@@ -78,46 +78,52 @@ noncomputable def mnv2InputGradB (N : Nat) {nCls : Nat}
     The fused stage's and the twenty-one blocks' backwards are supplied, as are the three
     BatchNorm backs and the three relu masks' predicates; the conv, GAP, relabel and dense leaves are concrete and lifted over the `N`
     examples. The two relabellings are the head's `[N, c] ↔ [N, c, 1, 1]` (`castIdx` in the
-    graph, no text in the render). -/
-noncomputable def mnv4InputGradB (N : Nat) {nCls : Nat}
+    graph, no text in the render).
+
+    `f` is the final feature side — the render's own knob (`mobilenetv4AdamTrainStepText`'s `f`):
+    7 at the 224 input, 8 at the paper tier's 256 (`mnv4in256`), the other sides its multiples
+    (stem 16f, fused 8f, then 4f, 2f, f; the input `2·16f`). Added 2026-10-12 so the whole-net tie
+    covers both renders; every earlier statement is the instance `f := 7`, and `16 * 7` IS `112`
+    to the kernel. -/
+noncomputable def mnv4InputGradB (N f : Nat) {nCls : Nat}
     (Ws : Kernel4 32 3 3 3) (Wh1 : Kernel4 960 256 1 1) (Wh : Kernel4 1280 960 1 1)
     (Wd : Mat 1280 nCls)
-    (bnBs : Vec (N * (32 * 112 * 112)) → Vec (N * (32 * 112 * 112)))
-    (bnBh1 : Vec (N * (960 * 7 * 7)) → Vec (N * (960 * 7 * 7)))
+    (bnBs : Vec (N * (32 * (16 * f) * (16 * f))) → Vec (N * (32 * (16 * f) * (16 * f))))
+    (bnBh1 : Vec (N * (960 * f * f)) → Vec (N * (960 * f * f)))
     (bnBh : Vec (N * (1280 * 1 * 1)) → Vec (N * (1280 * 1 * 1)))
-    (fB : Vec (N * (48 * 56 * 56)) → Vec (N * (32 * 112 * 112)))
-    (b1B : Vec (N * (80 * 28 * 28)) → Vec (N * (48 * 56 * 56)))
-    (b2B : Vec (N * (80 * 28 * 28)) → Vec (N * (80 * 28 * 28)))
-    (b3B : Vec (N * (160 * 14 * 14)) → Vec (N * (80 * 28 * 28)))
-    (b4B : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b5B : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b6B : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b7B : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b8B : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b9B : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b10B : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b11B : Vec (N * (256 * 7 * 7)) → Vec (N * (160 * 14 * 14)))
-    (b12B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b13B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b14B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b15B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b16B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b17B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b18B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b19B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b20B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b21B : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (m_stem : Fin (N * (32 * 112 * 112)) → Prop) [DecidablePred m_stem]
-    (m_h1 : Fin (N * (960 * 7 * 7)) → Prop) [DecidablePred m_h1]
+    (fB : Vec (N * (48 * (8 * f) * (8 * f))) → Vec (N * (32 * (16 * f) * (16 * f))))
+    (b1B : Vec (N * (80 * (4 * f) * (4 * f))) → Vec (N * (48 * (8 * f) * (8 * f))))
+    (b2B : Vec (N * (80 * (4 * f) * (4 * f))) → Vec (N * (80 * (4 * f) * (4 * f))))
+    (b3B : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (80 * (4 * f) * (4 * f))))
+    (b4B : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b5B : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b6B : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b7B : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b8B : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b9B : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b10B : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b11B : Vec (N * (256 * f * f)) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b12B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b13B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b14B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b15B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b16B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b17B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b18B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b19B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b20B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b21B : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (m_stem : Fin (N * (32 * (16 * f) * (16 * f))) → Prop) [DecidablePred m_stem]
+    (m_h1 : Fin (N * (960 * f * f)) → Prop) [DecidablePred m_h1]
     (m_h : Fin (N * (1280 * 1 * 1)) → Prop) [DecidablePred m_h] :
-    Vec (N * nCls) → Vec (N * (3 * 224 * 224)) :=
-  (StableHLO.batchMap N (flatConvStride2Back (h := 112) (w := 112) Ws)
+    Vec (N * nCls) → Vec (N * (3 * (2 * (16 * f)) * (2 * (16 * f)))) :=
+  (StableHLO.batchMap N (flatConvStride2Back (h := 16 * f) (w := 16 * f) Ws)
       ∘ bnBs ∘ reluMaskBack m_stem)
   ∘ fB
   ∘ b1B ∘ b2B ∘ b3B ∘ b4B ∘ b5B ∘ b6B ∘ b7B ∘ b8B ∘ b9B ∘ b10B ∘ b11B ∘ b12B ∘ b13B ∘ b14B ∘ b15B ∘ b16B ∘ b17B ∘ b18B ∘ b19B ∘ b20B ∘ b21B
-  ∘ (StableHLO.batchMap N (convFlatBack (h := 7) (w := 7) Wh1)
+  ∘ (StableHLO.batchMap N (convFlatBack (h := f) (w := f) Wh1)
       ∘ bnBh1 ∘ reluMaskBack m_h1)
-  ∘ ((StableHLO.batchMap N (gapBack 960 7 7)
+  ∘ ((StableHLO.batchMap N (gapBack 960 f f)
         ∘ fun v i => v (Fin.cast (by rw [Nat.mul_one, Nat.mul_one]) i))
       ∘ (StableHLO.batchMap N (convFlatBack (h := 1) (w := 1) Wh)
         ∘ bnBh ∘ reluMaskBack m_h))

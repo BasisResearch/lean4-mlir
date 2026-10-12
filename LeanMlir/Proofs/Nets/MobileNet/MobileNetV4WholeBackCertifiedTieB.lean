@@ -410,71 +410,77 @@ private theorem mnv4BFullHasVJPAt_backward
     backward of `mnv4BFullHasVJPAt` at those twenty-six stages, at an input where the stem and
     both head relu clauses (`h_stem`, `h_h1`, `h_h2`) hold.
 
-    `N` and `nCls` are both binders, so this covers the 10-class Imagenette artifacts and the
-    1000-class `mnv4in` ones at every batch size. On the data-parallel (sync-BN) artifacts,
+    `N`, `nCls` and the final side `f` are binders, so this covers the 10-class Imagenette
+    artifacts and the 1000-class `mnv4in` ones at every batch size, and — since 2026-10-12 — the
+    paper tier's `mnv4in256` renders at `f := 8` beside the 224 ones at `f := 7` (the stages'
+    sides are `16f, 8f, 4f, 2f, f`, the input `2·16f`; `MobileNetBackChains.mnv4InputGradB`).
+    The stage ties this rewrites with were generic in `h w` all along, and the apex over opaque
+    stages binds its widths, so the side costs nothing here; `mobilenetv4ForwardBFull_eq_slots`,
+    which identifies the stages with the literal-resolution forward of `MobileNetV4FullB`, stays
+    at 224 (that file's note on resolution literals). On the data-parallel (sync-BN) artifacts,
     instantiate at the global batch `R·N` (see `MobileNetV4SyncB`). -/
-theorem mnv4InputGradB_eq_mnv4B_full_vjp (N : Nat) {nCls : Nat}
+theorem mnv4InputGradB_eq_mnv4B_full_vjp (N f : Nat) {nCls : Nat}
     (Ws : Kernel4 32 3 3 3) (bs : Vec 32) (εs : ℝ) (hεs : 0 < εs) (γs βs : Vec 32)
     (Wh1 : Kernel4 960 256 1 1) (bh1 : Vec 960) (εh1 : ℝ) (hεh1 : 0 < εh1) (γh1 βh1 : Vec 960)
     (Wh : Kernel4 1280 960 1 1) (bh : Vec 1280) (εh : ℝ) (hεh : 0 < εh) (γh βh : Vec 1280)
     (Wd : Mat 1280 nCls) (bd : Vec nCls)
-    (fused : Vec (N * (32 * 112 * 112)) → Vec (N * (48 * 56 * 56)))
-    (b1 : Vec (N * (48 * 56 * 56)) → Vec (N * (80 * 28 * 28)))
-    (b2 : Vec (N * (80 * 28 * 28)) → Vec (N * (80 * 28 * 28)))
-    (b3 : Vec (N * (80 * 28 * 28)) → Vec (N * (160 * 14 * 14)))
-    (b4 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b5 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b6 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b7 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b8 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b9 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b10 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b11 : Vec (N * (160 * 14 * 14)) → Vec (N * (256 * 7 * 7)))
-    (b12 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b13 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b14 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b15 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b16 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b17 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b18 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b19 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b20 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b21 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (x : Vec (N * (3 * 224 * 224)))
-    (h_stem : Mnv4StemSmoothAtB N 112 112 Ws bs εs γs βs x)
-    (hfused : HasVJPDiffAt fused (opaqueA0 (mnv4StemB N 112 112 Ws bs εs γs βs) x))
-    (hb1 : HasVJPDiffAt b1 (opaqueA1 (mnv4StemB N 112 112 Ws bs εs γs βs) fused x))
-    (hb2 : HasVJPDiffAt b2 (opaqueA2 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 x))
-    (hb3 : HasVJPDiffAt b3 (opaqueA3 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 x))
-    (hb4 : HasVJPDiffAt b4 (opaqueA4 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 x))
-    (hb5 : HasVJPDiffAt b5 (opaqueA5 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 x))
-    (hb6 : HasVJPDiffAt b6 (opaqueA6 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 x))
-    (hb7 : HasVJPDiffAt b7 (opaqueA7 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 x))
-    (hb8 : HasVJPDiffAt b8 (opaqueA8 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 x))
-    (hb9 : HasVJPDiffAt b9 (opaqueA9 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 x))
-    (hb10 : HasVJPDiffAt b10 (opaqueA10 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 x))
-    (hb11 : HasVJPDiffAt b11 (opaqueA11 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 x))
-    (hb12 : HasVJPDiffAt b12 (opaqueA12 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 x))
-    (hb13 : HasVJPDiffAt b13 (opaqueA13 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 x))
-    (hb14 : HasVJPDiffAt b14 (opaqueA14 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 x))
-    (hb15 : HasVJPDiffAt b15 (opaqueA15 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 x))
-    (hb16 : HasVJPDiffAt b16 (opaqueA16 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 x))
-    (hb17 : HasVJPDiffAt b17 (opaqueA17 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 x))
-    (hb18 : HasVJPDiffAt b18 (opaqueA18 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 x))
-    (hb19 : HasVJPDiffAt b19 (opaqueA19 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 x))
-    (hb20 : HasVJPDiffAt b20 (opaqueA20 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 x))
-    (hb21 : HasVJPDiffAt b21 (opaqueA21 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 x))
-    (h_h1 : ∀ k, StableHLO.bnBatchLA N 960 7 7 εh1 γh1 βh1
-      (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)) k ≠ 0)
+    (fused : Vec (N * (32 * (16 * f) * (16 * f))) → Vec (N * (48 * (8 * f) * (8 * f))))
+    (b1 : Vec (N * (48 * (8 * f) * (8 * f))) → Vec (N * (80 * (4 * f) * (4 * f))))
+    (b2 : Vec (N * (80 * (4 * f) * (4 * f))) → Vec (N * (80 * (4 * f) * (4 * f))))
+    (b3 : Vec (N * (80 * (4 * f) * (4 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b4 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b5 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b6 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b7 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b8 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b9 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b10 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b11 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (256 * f * f)))
+    (b12 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b13 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b14 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b15 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b16 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b17 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b18 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b19 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b20 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b21 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (x : Vec (N * (3 * (2 * (16 * f)) * (2 * (16 * f)))))
+    (h_stem : Mnv4StemSmoothAtB N (16 * f) (16 * f) Ws bs εs γs βs x)
+    (hfused : HasVJPDiffAt fused (opaqueA0 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) x))
+    (hb1 : HasVJPDiffAt b1 (opaqueA1 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused x))
+    (hb2 : HasVJPDiffAt b2 (opaqueA2 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 x))
+    (hb3 : HasVJPDiffAt b3 (opaqueA3 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 x))
+    (hb4 : HasVJPDiffAt b4 (opaqueA4 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 x))
+    (hb5 : HasVJPDiffAt b5 (opaqueA5 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 x))
+    (hb6 : HasVJPDiffAt b6 (opaqueA6 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 x))
+    (hb7 : HasVJPDiffAt b7 (opaqueA7 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 x))
+    (hb8 : HasVJPDiffAt b8 (opaqueA8 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 x))
+    (hb9 : HasVJPDiffAt b9 (opaqueA9 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 x))
+    (hb10 : HasVJPDiffAt b10 (opaqueA10 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 x))
+    (hb11 : HasVJPDiffAt b11 (opaqueA11 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 x))
+    (hb12 : HasVJPDiffAt b12 (opaqueA12 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 x))
+    (hb13 : HasVJPDiffAt b13 (opaqueA13 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 x))
+    (hb14 : HasVJPDiffAt b14 (opaqueA14 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 x))
+    (hb15 : HasVJPDiffAt b15 (opaqueA15 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 x))
+    (hb16 : HasVJPDiffAt b16 (opaqueA16 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 x))
+    (hb17 : HasVJPDiffAt b17 (opaqueA17 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 x))
+    (hb18 : HasVJPDiffAt b18 (opaqueA18 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 x))
+    (hb19 : HasVJPDiffAt b19 (opaqueA19 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 x))
+    (hb20 : HasVJPDiffAt b20 (opaqueA20 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 x))
+    (hb21 : HasVJPDiffAt b21 (opaqueA21 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 x))
+    (h_h1 : ∀ k, StableHLO.bnBatchLA N 960 f f εh1 γh1 βh1
+      (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)) k ≠ 0)
     (h_h2 : ∀ k, StableHLO.bnBatchLA N 1280 1 1 εh γh βh
-      (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N 7 7 (opaqueA23 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1) x))) k ≠ 0) :
-    mnv4InputGradB N Ws Wh1 Wh Wd
-      ((bnBatchLAHasVJP N 32 112 112 εs hεs γs βs).backward
+      (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N f f (opaqueA23 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) x))) k ≠ 0) :
+    mnv4InputGradB N f Ws Wh1 Wh Wd
+      ((bnBatchLAHasVJP N 32 (16 * f) (16 * f) εs hεs γs βs).backward
         (StableHLO.batchMap N (flatConvStride2 Ws bs) x))
-      ((bnBatchLAHasVJP N 960 7 7 εh1 hεh1 γh1 βh1).backward
-        (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)))
+      ((bnBatchLAHasVJP N 960 f f εh1 hεh1 γh1 βh1).backward
+        (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)))
       ((bnBatchLAHasVJP N 1280 1 1 εh hεh γh βh).backward
-        (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N 7 7 (opaqueA23 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1) x))))
+        (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N f f (opaqueA23 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) x))))
       hfused.fst.backward
       hb1.fst.backward
       hb2.fst.backward
@@ -497,36 +503,36 @@ theorem mnv4InputGradB_eq_mnv4B_full_vjp (N : Nat) {nCls : Nat}
       hb19.fst.backward
       hb20.fst.backward
       hb21.fst.backward
-      (fun i => StableHLO.bnBatchLA N 32 112 112 εs γs βs
+      (fun i => StableHLO.bnBatchLA N 32 (16 * f) (16 * f) εs γs βs
         (StableHLO.batchMap N (flatConvStride2 Ws bs) x) i > 0)
-      (fun i => StableHLO.bnBatchLA N 960 7 7 εh1 γh1 βh1
-        (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)) i > 0)
+      (fun i => StableHLO.bnBatchLA N 960 f f εh1 γh1 βh1
+        (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)) i > 0)
       (fun i => StableHLO.bnBatchLA N 1280 1 1 εh γh βh
-        (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N 7 7 (opaqueA23 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1) x))) i > 0)
+        (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N f f (opaqueA23 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) x))) i > 0)
       = (mnv4BFullHasVJPAt
-          (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21
-          (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1)
-          (cbReluB N (h := 1) (w := 1) Wh bh εh γh βh ∘ mnv4PoolB N 7 7)
+          (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21
+          (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1)
+          (cbReluB N (h := 1) (w := 1) Wh bh εh γh βh ∘ mnv4PoolB N f f)
           (mnv4ClsB N Wd bd)
           x
-          ⟨mnv4StemBHasVJPAt N 112 112 Ws bs εs hεs γs βs x h_stem,
-            mnv4StemB_differentiableAt N 112 112 Ws bs εs hεs γs βs x h_stem⟩
+          ⟨mnv4StemBHasVJPAt N (16 * f) (16 * f) Ws bs εs hεs γs βs x h_stem,
+            mnv4StemB_differentiableAt N (16 * f) (16 * f) Ws bs εs hεs γs βs x h_stem⟩
           hfused hb1 hb2 hb3 hb4 hb5 hb6 hb7 hb8 hb9 hb10 hb11 hb12 hb13 hb14 hb15 hb16 hb17 hb18 hb19 hb20 hb21
           ⟨cbReluBHasVJPAt N Wh1 bh1 εh1 hεh1 γh1 βh1 _ h_h1,
             cbReluB_differentiableAt N Wh1 bh1 εh1 hεh1 γh1 βh1 _ h_h1⟩
-          (mnv4Hc2BHasVJPDiffAt N 7 7 Wh bh εh hεh γh βh _ h_h2)
+          (mnv4Hc2BHasVJPDiffAt N f f Wh bh εh hεh γh βh _ h_h2)
           ⟨(mnv4ClsBHasVJP N Wd bd).toHasVJPAt _,
             (mnv4ClsB_differentiable N Wd bd) _⟩).backward := by
   unfold mnv4InputGradB
-  rw [mnv4StemBBack_eq_vjp_backward (N := N) (h := 112) (w := 112)
+  rw [mnv4StemBBack_eq_vjp_backward (N := N) (h := 16 * f) (w := 16 * f)
         (by decide) (by decide) Ws bs εs hεs γs βs x h_stem,
-      cbReluBBack_eq_vjp_backward (N := N) (h := 7) (w := 7)
+      cbReluBBack_eq_vjp_backward (N := N) (h := f) (w := f)
         (by decide) (by decide) Wh1 bh1 εh1 hεh1 γh1 βh1
-        (opaqueA22 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x) h_h1,
-      mnv4Hc2BBack_eq_vjp_backward (N := N) (h := 7) (w := 7) Wh bh εh hεh γh βh
-        (opaqueA23 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1) x) h_h2,
+        (opaqueA22 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x) h_h1,
+      mnv4Hc2BBack_eq_vjp_backward (N := N) (h := f) (w := f) Wh bh εh hεh γh βh
+        (opaqueA23 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) x) h_h2,
       mnv4ClsBBack_eq_vjp_backward (N := N) Wd bd
-        (opaqueA24 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1) (cbReluB N (h := 1) (w := 1) Wh bh εh γh βh ∘ mnv4PoolB N 7 7) x)]
+        (opaqueA24 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) (cbReluB N (h := 1) (w := 1) Wh bh εh γh βh ∘ mnv4PoolB N f f) x)]
   funext dy
   rw [mnv4BFullHasVJPAt_backward]
   repeat rw [Function.comp_apply]
@@ -539,69 +545,69 @@ theorem mnv4InputGradB_eq_mnv4B_full_vjp (N : Nat) {nCls : Nat}
     (`hfused`, `hb1 … hb21`), is the Jacobian-transpose of the composition of those stages. The
     stages are variables here; `mobilenetv4ForwardBFull_eq_slots` identifies them with the
     committed forward. -/
-theorem mnv4InputGradB_correct (N : Nat) {nCls : Nat}
+theorem mnv4InputGradB_correct (N f : Nat) {nCls : Nat}
     (Ws : Kernel4 32 3 3 3) (bs : Vec 32) (εs : ℝ) (hεs : 0 < εs) (γs βs : Vec 32)
     (Wh1 : Kernel4 960 256 1 1) (bh1 : Vec 960) (εh1 : ℝ) (hεh1 : 0 < εh1) (γh1 βh1 : Vec 960)
     (Wh : Kernel4 1280 960 1 1) (bh : Vec 1280) (εh : ℝ) (hεh : 0 < εh) (γh βh : Vec 1280)
     (Wd : Mat 1280 nCls) (bd : Vec nCls)
-    (fused : Vec (N * (32 * 112 * 112)) → Vec (N * (48 * 56 * 56)))
-    (b1 : Vec (N * (48 * 56 * 56)) → Vec (N * (80 * 28 * 28)))
-    (b2 : Vec (N * (80 * 28 * 28)) → Vec (N * (80 * 28 * 28)))
-    (b3 : Vec (N * (80 * 28 * 28)) → Vec (N * (160 * 14 * 14)))
-    (b4 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b5 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b6 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b7 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b8 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b9 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b10 : Vec (N * (160 * 14 * 14)) → Vec (N * (160 * 14 * 14)))
-    (b11 : Vec (N * (160 * 14 * 14)) → Vec (N * (256 * 7 * 7)))
-    (b12 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b13 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b14 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b15 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b16 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b17 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b18 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b19 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b20 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (b21 : Vec (N * (256 * 7 * 7)) → Vec (N * (256 * 7 * 7)))
-    (x : Vec (N * (3 * 224 * 224)))
-    (h_stem : Mnv4StemSmoothAtB N 112 112 Ws bs εs γs βs x)
-    (hfused : HasVJPDiffAt fused (opaqueA0 (mnv4StemB N 112 112 Ws bs εs γs βs) x))
-    (hb1 : HasVJPDiffAt b1 (opaqueA1 (mnv4StemB N 112 112 Ws bs εs γs βs) fused x))
-    (hb2 : HasVJPDiffAt b2 (opaqueA2 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 x))
-    (hb3 : HasVJPDiffAt b3 (opaqueA3 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 x))
-    (hb4 : HasVJPDiffAt b4 (opaqueA4 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 x))
-    (hb5 : HasVJPDiffAt b5 (opaqueA5 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 x))
-    (hb6 : HasVJPDiffAt b6 (opaqueA6 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 x))
-    (hb7 : HasVJPDiffAt b7 (opaqueA7 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 x))
-    (hb8 : HasVJPDiffAt b8 (opaqueA8 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 x))
-    (hb9 : HasVJPDiffAt b9 (opaqueA9 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 x))
-    (hb10 : HasVJPDiffAt b10 (opaqueA10 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 x))
-    (hb11 : HasVJPDiffAt b11 (opaqueA11 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 x))
-    (hb12 : HasVJPDiffAt b12 (opaqueA12 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 x))
-    (hb13 : HasVJPDiffAt b13 (opaqueA13 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 x))
-    (hb14 : HasVJPDiffAt b14 (opaqueA14 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 x))
-    (hb15 : HasVJPDiffAt b15 (opaqueA15 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 x))
-    (hb16 : HasVJPDiffAt b16 (opaqueA16 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 x))
-    (hb17 : HasVJPDiffAt b17 (opaqueA17 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 x))
-    (hb18 : HasVJPDiffAt b18 (opaqueA18 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 x))
-    (hb19 : HasVJPDiffAt b19 (opaqueA19 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 x))
-    (hb20 : HasVJPDiffAt b20 (opaqueA20 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 x))
-    (hb21 : HasVJPDiffAt b21 (opaqueA21 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 x))
-    (h_h1 : ∀ k, StableHLO.bnBatchLA N 960 7 7 εh1 γh1 βh1
-      (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)) k ≠ 0)
+    (fused : Vec (N * (32 * (16 * f) * (16 * f))) → Vec (N * (48 * (8 * f) * (8 * f))))
+    (b1 : Vec (N * (48 * (8 * f) * (8 * f))) → Vec (N * (80 * (4 * f) * (4 * f))))
+    (b2 : Vec (N * (80 * (4 * f) * (4 * f))) → Vec (N * (80 * (4 * f) * (4 * f))))
+    (b3 : Vec (N * (80 * (4 * f) * (4 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b4 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b5 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b6 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b7 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b8 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b9 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b10 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (160 * (2 * f) * (2 * f))))
+    (b11 : Vec (N * (160 * (2 * f) * (2 * f))) → Vec (N * (256 * f * f)))
+    (b12 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b13 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b14 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b15 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b16 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b17 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b18 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b19 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b20 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (b21 : Vec (N * (256 * f * f)) → Vec (N * (256 * f * f)))
+    (x : Vec (N * (3 * (2 * (16 * f)) * (2 * (16 * f)))))
+    (h_stem : Mnv4StemSmoothAtB N (16 * f) (16 * f) Ws bs εs γs βs x)
+    (hfused : HasVJPDiffAt fused (opaqueA0 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) x))
+    (hb1 : HasVJPDiffAt b1 (opaqueA1 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused x))
+    (hb2 : HasVJPDiffAt b2 (opaqueA2 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 x))
+    (hb3 : HasVJPDiffAt b3 (opaqueA3 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 x))
+    (hb4 : HasVJPDiffAt b4 (opaqueA4 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 x))
+    (hb5 : HasVJPDiffAt b5 (opaqueA5 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 x))
+    (hb6 : HasVJPDiffAt b6 (opaqueA6 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 x))
+    (hb7 : HasVJPDiffAt b7 (opaqueA7 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 x))
+    (hb8 : HasVJPDiffAt b8 (opaqueA8 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 x))
+    (hb9 : HasVJPDiffAt b9 (opaqueA9 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 x))
+    (hb10 : HasVJPDiffAt b10 (opaqueA10 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 x))
+    (hb11 : HasVJPDiffAt b11 (opaqueA11 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 x))
+    (hb12 : HasVJPDiffAt b12 (opaqueA12 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 x))
+    (hb13 : HasVJPDiffAt b13 (opaqueA13 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 x))
+    (hb14 : HasVJPDiffAt b14 (opaqueA14 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 x))
+    (hb15 : HasVJPDiffAt b15 (opaqueA15 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 x))
+    (hb16 : HasVJPDiffAt b16 (opaqueA16 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 x))
+    (hb17 : HasVJPDiffAt b17 (opaqueA17 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 x))
+    (hb18 : HasVJPDiffAt b18 (opaqueA18 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 x))
+    (hb19 : HasVJPDiffAt b19 (opaqueA19 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 x))
+    (hb20 : HasVJPDiffAt b20 (opaqueA20 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 x))
+    (hb21 : HasVJPDiffAt b21 (opaqueA21 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 x))
+    (h_h1 : ∀ k, StableHLO.bnBatchLA N 960 f f εh1 γh1 βh1
+      (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)) k ≠ 0)
     (h_h2 : ∀ k, StableHLO.bnBatchLA N 1280 1 1 εh γh βh
-      (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N 7 7 (opaqueA23 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1) x))) k ≠ 0)
-    (dy : Vec (N * nCls)) (i : Fin (N * (3 * 224 * 224))) :
-    mnv4InputGradB N Ws Wh1 Wh Wd
-      ((bnBatchLAHasVJP N 32 112 112 εs hεs γs βs).backward
+      (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N f f (opaqueA23 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) x))) k ≠ 0)
+    (dy : Vec (N * nCls)) (i : Fin (N * (3 * (2 * (16 * f)) * (2 * (16 * f))))) :
+    mnv4InputGradB N f Ws Wh1 Wh Wd
+      ((bnBatchLAHasVJP N 32 (16 * f) (16 * f) εs hεs γs βs).backward
         (StableHLO.batchMap N (flatConvStride2 Ws bs) x))
-      ((bnBatchLAHasVJP N 960 7 7 εh1 hεh1 γh1 βh1).backward
-        (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)))
+      ((bnBatchLAHasVJP N 960 f f εh1 hεh1 γh1 βh1).backward
+        (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)))
       ((bnBatchLAHasVJP N 1280 1 1 εh hεh γh βh).backward
-        (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N 7 7 (opaqueA23 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1) x))))
+        (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N f f (opaqueA23 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) x))))
       hfused.fst.backward
       hb1.fst.backward
       hb2.fst.backward
@@ -624,20 +630,20 @@ theorem mnv4InputGradB_correct (N : Nat) {nCls : Nat}
       hb19.fst.backward
       hb20.fst.backward
       hb21.fst.backward
-      (fun i => StableHLO.bnBatchLA N 32 112 112 εs γs βs
+      (fun i => StableHLO.bnBatchLA N 32 (16 * f) (16 * f) εs γs βs
         (StableHLO.batchMap N (flatConvStride2 Ws bs) x) i > 0)
-      (fun i => StableHLO.bnBatchLA N 960 7 7 εh1 γh1 βh1
-        (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)) i > 0)
+      (fun i => StableHLO.bnBatchLA N 960 f f εh1 γh1 βh1
+        (StableHLO.batchMap N (flatConv Wh1 bh1) (opaqueA22 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x)) i > 0)
       (fun i => StableHLO.bnBatchLA N 1280 1 1 εh γh βh
-        (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N 7 7 (opaqueA23 (mnv4StemB N 112 112 Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1) x))) i > 0)
+        (StableHLO.batchMap N (flatConv Wh bh) (mnv4PoolB N f f (opaqueA23 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) x))) i > 0)
       dy i
       = ∑ j : Fin (N * nCls),
           pdiv (mnv4ClsB N Wd bd
-          ∘ (cbReluB N (h := 1) (w := 1) Wh bh εh γh βh ∘ mnv4PoolB N 7 7)
-          ∘ cbReluB N (h := 7) (w := 7) Wh1 bh1 εh1 γh1 βh1
+          ∘ (cbReluB N (h := 1) (w := 1) Wh bh εh γh βh ∘ mnv4PoolB N f f)
+          ∘ cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1
           ∘ b21 ∘ b20 ∘ b19 ∘ b18 ∘ b17 ∘ b16 ∘ b15 ∘ b14 ∘ b13 ∘ b12 ∘ b11 ∘ b10 ∘ b9 ∘ b8 ∘ b7 ∘ b6 ∘ b5 ∘ b4 ∘ b3 ∘ b2 ∘ b1
-          ∘ fused ∘ mnv4StemB N 112 112 Ws bs εs γs βs) x i j * dy j := by
-  exact HasVJPAt.correct_of_backward_eq _ (mnv4InputGradB_eq_mnv4B_full_vjp N Ws bs εs hεs γs βs Wh1 bh1 εh1 hεh1 γh1 βh1
+          ∘ fused ∘ mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) x i j * dy j := by
+  exact HasVJPAt.correct_of_backward_eq _ (mnv4InputGradB_eq_mnv4B_full_vjp N f Ws bs εs hεs γs βs Wh1 bh1 εh1 hεh1 γh1 βh1
     Wh bh εh hεh γh βh Wd bd fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x h_stem hfused
     hb1 hb2 hb3 hb4 hb5 hb6 hb7 hb8 hb9 hb10 hb11 hb12 hb13 hb14 hb15 hb16 hb17 hb18 hb19 hb20 hb21 h_h1 h_h2) dy i
 

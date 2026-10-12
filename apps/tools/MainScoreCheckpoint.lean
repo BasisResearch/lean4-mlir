@@ -69,7 +69,8 @@ def scorableNets : List (String × VerifiedNetSpec) :=
   , ("efficientnet", efficientnetVerified)
   , ("efficientnet-in", efficientnetImagenetVerified)
   , ("mnv4",         mobilenetv4Verified)
-  , ("mnv4-in",      mnv4ImagenetVerified) ]
+  , ("mnv4-in",      mnv4ImagenetVerified)
+  , ("mnv4-in256",   mnv4Imagenet256FullVerified) ]
 
 def usage : String :=
   let names := String.intercalate " " (scorableNets.map (·.1))

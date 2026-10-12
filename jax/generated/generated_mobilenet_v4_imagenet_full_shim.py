@@ -42,9 +42,9 @@ import tensorflow as tf
 tf.config.set_visible_devices([], 'GPU')  # keep TF off the GPUs
 import tensorflow_datasets as tfds
 
-_IMG_SIZE = 224
+_IMG_SIZE = 256
 _CROP_PADDING = 32
-_CROP_PCT = _IMG_SIZE / (_IMG_SIZE + _CROP_PADDING)   # 224/256 = 0.875, timm's default
+_CROP_PCT = 0.875000   # explicit test crop ratio (timm resnet50.a1/a2/a3_in1k = 0.95)
 _MEAN_RGB = tf.constant([0.485 * 255, 0.456 * 255, 0.406 * 255], dtype=tf.float32)
 _STD_RGB  = tf.constant([0.229 * 255, 0.224 * 255, 0.225 * 255], dtype=tf.float32)
 _AUG_SEED = os.environ.get('AUG_SEED')
@@ -78,7 +78,7 @@ def _aa_transform(img, vec):
     transforms = tf.reshape(tf.cast(vec, tf.float32), [1, 8])
     out = tf.raw_ops.ImageProjectiveTransformV3(
         images=images, transforms=transforms, output_shape=tf.stack([H, W]),
-        fill_value=128.0, interpolation='BILINEAR', fill_mode='CONSTANT')
+        fill_value=128.0, interpolation='NEAREST', fill_mode='CONSTANT')   # tf-models: nearest (augNearest)
     return tf.cast(tf.clip_by_value(out[0], 0.0, 255.0), tf.uint8)
 
 def _aa_shear_x(img, lvl):    return _aa_transform(img, [1.0, lvl, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
@@ -231,80 +231,10 @@ def _autoaugment(img):
     idx = tf.random.uniform([], 0, len(_AA_POLICY), dtype=tf.int32)
     out = tf.switch_case(idx, branches)
     return tf.cast(out, tf.float32)
-# ── timm's geometric ops run PIL BICUBIC, and TF has no bicubic
-#    projective warp (ImageProjectiveTransformV3 takes NEAREST/BILINEAR only and LOGS, not raises,
-#    on anything else). So the warp is written out: PIL's own affine sampler, a = -1 cubic (PIL's
-#    transform filter; its resize uses -0.5) over a 4x4 neighbourhood, neighbours clamped at the
-#    border, truncated to uint8 as PIL does, the fill where the source centre falls outside the
-#    image. Overrides the bilinear _aa_transform above; see _aa_warp1d for why only Rotate uses it. ──
-def _aa_transform(img, vec):
-    x = tf.cast(img, tf.float32)
-    H = tf.shape(x)[0]; W = tf.shape(x)[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    v = [tf.cast(t, tf.float32) for t in vec]
-    ys, xs = tf.meshgrid(tf.range(Hf), tf.range(Wf), indexing='ij')
-    den = v[6] * xs + v[7] * ys + 1.0
-    u = (v[0] * xs + v[1] * ys + v[2]) / den          # source column, pixel-index coords
-    w = (v[3] * xs + v[4] * ys + v[5]) / den          # source row
-    inside = (u >= -0.5) & (u < Wf - 0.5) & (w >= -0.5) & (w < Hf - 0.5)
-    x0 = tf.floor(u); y0 = tf.floor(w)
-    def _cub(t):   # PIL's transform bicubic (a = -1) weights for the taps at -1, 0, +1, +2
-        a = -1.0
-        def near(d): return ((a + 2.0) * d - (a + 3.0)) * d * d + 1.0
-        def far(d):  return ((a * d - 5.0 * a) * d + 8.0 * a) * d - 4.0 * a
-        return tf.stack([far(1.0 + t), near(t), near(1.0 - t), far(2.0 - t)], -1)
-    wx = _cub(u - x0); wy = _cub(w - y0)
-    offs = tf.constant([-1.0, 0.0, 1.0, 2.0])
-    xi = tf.clip_by_value(tf.cast(x0[..., None] + offs, tf.int32), 0, W - 1)
-    yi = tf.clip_by_value(tf.cast(y0[..., None] + offs, tf.int32), 0, H - 1)
-    flat = tf.reshape(x, [-1, 3])
-    out = tf.zeros([H, W, 3], tf.float32)
-    for i in range(4):
-        row = tf.zeros([H, W, 3], tf.float32)
-        for j in range(4):
-            row += wx[:, :, j:j+1] * tf.gather(flat, yi[:, :, i] * W + xi[:, :, j])
-        out += wy[:, :, i:i+1] * row
-    out = tf.where(inside[..., None], out, 128.0)
-    return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
-
-# Shear and translate move pixels along ONE axis, where the other axis lands on integer rows
-# (columns), whose cubic weights are exactly [0, 1, 0, 0]: four gathers give the 16-tap result bit
-# for bit at a quarter of the cost. Only Rotate needs the full warp.
-# `axis` 1 samples along x (u = x + a*y + c), 0 along y (v = y + a*x + c).
-def _aa_warp1d(img, a, c, axis):
-    x = tf.cast(img, tf.float32)
-    H = tf.shape(x)[0]; W = tf.shape(x)[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    a = tf.cast(a, tf.float32); c = tf.cast(c, tf.float32)
-    ys, xs = tf.meshgrid(tf.range(Hf), tf.range(Wf), indexing='ij')
-    if axis == 1:
-        u = xs + a * ys + c; n = W; nf = Wf
-    else:
-        u = ys + a * xs + c; n = H; nf = Hf
-    inside = (u >= -0.5) & (u < nf - 0.5)
-    u0 = tf.floor(u); t = u - u0
-    a_ = -1.0
-    def near(d): return ((a_ + 2.0) * d - (a_ + 3.0)) * d * d + 1.0
-    def far(d):  return ((a_ * d - 5.0 * a_) * d + 8.0 * a_) * d - 4.0 * a_
-    wts = [far(1.0 + t), near(t), near(1.0 - t), far(2.0 - t)]
-    flat = tf.reshape(x, [-1, 3])
-    iy = tf.cast(ys, tf.int32); ix = tf.cast(xs, tf.int32)
-    out = tf.zeros([H, W, 3], tf.float32)
-    for k in range(4):
-        tap = tf.clip_by_value(tf.cast(u0, tf.int32) + (k - 1), 0, n - 1)
-        idx = iy * W + tap if axis == 1 else tap * W + ix
-        out += wts[k][:, :, None] * tf.gather(flat, idx)
-    out = tf.where(inside[..., None], out, 128.0)
-    return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
-
-# PIL's affine data is in pixel-CENTRE coordinates: timm's shear (1, f, 0, 0, 1, 0) is
-# u = x + f*y + f/2 in index coordinates. Translate already agrees.
-def _aa_shear_x(img, lvl):     return _aa_warp1d(img, lvl, 0.5 * lvl, 1)
-def _aa_shear_y(img, lvl):     return _aa_warp1d(img, lvl, 0.5 * lvl, 0)
-def _aa_translate_x(img, pct): return _aa_warp1d(img, 0.0, -pct * tf.cast(tf.shape(img)[1], tf.float32), 1)  # timm -Rel
-def _aa_translate_y(img, pct): return _aa_warp1d(img, 0.0, -pct * tf.cast(tf.shape(img)[0], tf.float32), 0)
-_AA_OPS['ShearX'] = (_aa_shear_x, _aa_she, True)
-_AA_OPS['ShearY'] = (_aa_shear_y, _aa_she, True)
+# tf-models translate_const (randAugmentTranslateConst): TranslateX/Y move (m/10)*100.0 PIXELS, not timm's fraction of the side
+def _aa_trn(m): return (m/_AA_MAX)*100.0
+def _aa_translate_x(img, px): return _aa_transform(img, [1.0, 0.0, -px, 0.0, 1.0, 0.0, 0.0, 0.0])
+def _aa_translate_y(img, px): return _aa_transform(img, [1.0, 0.0, 0.0, 0.0, 1.0, -px, 0.0, 0.0])
 _AA_OPS['TranslateX'] = (_aa_translate_x, _aa_trn, True)
 _AA_OPS['TranslateY'] = (_aa_translate_y, _aa_trn, True)
 
@@ -322,54 +252,33 @@ _RA_OPS = ['AutoContrast','Equalize','Invert','Rotate','Posterize','Solarize',
 def _randaugment(img, n, m, mstd=0.0):
     img = tf.cast(tf.clip_by_value(img, 0.0, 255.0), tf.uint8)
     for _ in range(n):
-        k = tf.random.uniform([], 0, len(_RA_OPS), dtype=tf.int32)
+        k = tf.random.uniform([], 0, len(_RA_OPS) + 1, dtype=tf.int32)   # tf-models: + an identity branch (randAugmentIdentityOp)
         mg = m if mstd <= 0.0 else tf.clip_by_value(tf.random.normal([], m, mstd), 0.0, _AA_MAX)
         branches = [(lambda nm=nm, x=img, mv=mg: _aa_apply_op(x, nm, mv)) for nm in _RA_OPS]
         img = tf.cond(tf.random.uniform([]) < 0.700000,   # each op applied with prob 0.700000 (TrainConfig.randAugmentProb)
-                      lambda k=k, br=branches: tf.switch_case(k, br),
+                      lambda k=k, br=branches, x=img: tf.switch_case(k, br, default=lambda: x),
                       lambda x=img: x)
     return tf.cast(img, tf.float32)
-
-# ── torchvision RandomResizedCrop.get_params (timm's RandomResizedCropAndInterpolation draws
-#    the same): area U(0.08, 1) of the image, aspect log-uniform on [3/4, 4/3], the first of 10
-#    draws that fits, offsets uniform over the valid range; else a centre crop at the ratio bound
-#    the image violates, or the whole image. Returns decode_and_crop_jpeg's window [i, j, h, w]. ──
-def _torchvision_rrc(shape):
-    H = shape[0]; W = shape[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    area = tf.random.uniform([10], 0.08, 1.0) * Hf * Wf
-    ar = tf.exp(tf.random.uniform([10], np.log(3. / 4), np.log(4. / 3)))
-    ws = tf.cast(tf.round(tf.sqrt(area * ar)), tf.int32)
-    hs = tf.cast(tf.round(tf.sqrt(area / ar)), tf.int32)
-    ok = (ws > 0) & (ws <= W) & (hs > 0) & (hs <= H)
-    k = tf.argmax(tf.cast(ok, tf.int32))   # the first draw that fits
-    def hit():
-        h = hs[k]; w = ws[k]
-        i = tf.random.uniform([], 0, H - h + 1, dtype=tf.int32)
-        j = tf.random.uniform([], 0, W - w + 1, dtype=tf.int32)
-        return tf.stack([i, j, h, w])
-    def fallback():
-        r = Wf / Hf
-        w = tf.where(r > 4. / 3, tf.cast(tf.round(Hf * (4. / 3)), tf.int32), W)
-        h = tf.where(r < 3. / 4, tf.cast(tf.round(Wf / (3. / 4)), tf.int32), H)
-        return tf.stack([(H - h) // 2, (W - w) // 2, h, w])
-    return tf.cond(tf.reduce_any(ok), hit, fallback)
-
 def _imagenet_decode_random_crop_flip(image_bytes):
     shape = tf.io.extract_jpeg_shape(image_bytes)
-    window = _torchvision_rrc(shape)
+    bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
+    bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
+        shape, bounding_boxes=bbox,
+        min_object_covered=0.08, aspect_ratio_range=(3./4, 4./3.),
+        area_range=(0.08, 1.0), max_attempts=10,
+        seed=_AUG_SEED,
+        use_image_if_no_bounding_boxes=True)
+    oy, ox, _ = tf.unstack(bbox_begin)
+    th, tw, _ = tf.unstack(bbox_size)
+    window = tf.stack([oy, ox, th, tw])
     img = tf.io.decode_and_crop_jpeg(image_bytes, window, channels=3)
-    # timm's train interpolation 'random': bilinear or bicubic, a fair coin per image
-    img = tf.cond(tf.random.uniform([]) < 0.5,
-                  lambda: tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                                          method=tf.image.ResizeMethod.BILINEAR, antialias=True)[0],
-                  lambda: tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                                          method=tf.image.ResizeMethod.BICUBIC, antialias=True)[0])
+    img = tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
+                          method=tf.image.ResizeMethod.BILINEAR, antialias=False)[0]
     img = tf.image.random_flip_left_right(img, seed=_AUG_SEED)
     img = _randaugment(img, 2, 15.000000, 0.000000)
     return img
 
-def _imagenet_decode_center_crop(image_bytes):
+def _imagenet_decode_center_crop_timm(image_bytes):
     img = tf.io.decode_jpeg(image_bytes, channels=3)
     shape = tf.shape(img)
     h, w = shape[0], shape[1]
@@ -382,6 +291,18 @@ def _imagenet_decode_center_crop(image_bytes):
     oy = (nh - _IMG_SIZE) // 2
     ox = (nw - _IMG_SIZE) // 2
     return tf.image.crop_to_bounding_box(img, oy, ox, _IMG_SIZE, _IMG_SIZE)
+
+def _imagenet_decode_center_crop(image_bytes):
+    # tf-models center_crop_image_v2 + resize_image (evalCropTf): crop _CROP_PCT of the SHORTER side,
+    # centred, out of the JPEG, then resize to _IMG_SIZE bilinear. _imagenet_decode_center_crop_timm
+    # above is timm's protocol, swapped in under SHIM_EVAL_SIZE.
+    shape = tf.cast(tf.io.extract_jpeg_shape(image_bytes), tf.float32)
+    cs = _CROP_PCT * tf.minimum(shape[0], shape[1])
+    off = tf.cast((shape - cs) / 2.0, tf.int32)
+    csi = tf.cast(cs, tf.int32)
+    img = tf.io.decode_and_crop_jpeg(image_bytes, tf.stack([off[0], off[1], csi, csi]), channels=3)
+    return tf.image.resize(img, [_IMG_SIZE, _IMG_SIZE], method=tf.image.ResizeMethod.BILINEAR,
+                           antialias=False)
 
 def build_imagenet_iter(split, batch_size, training, augment, shard=None):
     ds = tfds.load('imagenet2012', split=split,
@@ -476,6 +397,7 @@ def _main():
     if not training and os.environ.get('SHIM_EVAL_SIZE'):
         globals()['_IMG_SIZE'] = int(os.environ['SHIM_EVAL_SIZE'])
         globals()['_CROP_PCT'] = float(os.environ.get('SHIM_EVAL_CROP', globals().get('_CROP_PCT', 0.875)))
+        globals()['_imagenet_decode_center_crop'] = _imagenet_decode_center_crop_timm   # timm's resize-then-crop for timm's protocol
     it = iter(build_imagenet_iter(split, batch, training, training, shard))
     _wire_img = ((lambda a: np.ascontiguousarray(a)) if _U8_ACTIVE[0]
                  else (lambda a: np.ascontiguousarray(a, dtype=np.float32)))

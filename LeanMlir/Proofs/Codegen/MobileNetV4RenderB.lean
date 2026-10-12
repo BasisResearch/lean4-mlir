@@ -517,7 +517,8 @@ def mnv4FwdChainB (B nClasses : Nat) (epsStr : String) (mode : BnMode := .train)
     -- `f`, the FINAL feature side: 7 at the 224 input every committed artifact is rendered at,
     -- 8 at 256 (timm's test size for Conv-M r224). Every other side is a multiple of it — input
     -- 32f, stem 16f, fused 8f, the block rows' `h` scaled by f/7 — so the default is byte-identical.
-    -- Eval renders only: every train step and the training-mode proofs stay at 224; the eval
+    -- The train-step writer takes the same `f` (the paper tier's `mnv4in256` renders at 8).
+    -- The training-mode proofs stay at 224 (`MobileNetV4FullB`'s note on resolution literals); the eval
     -- graph `mnv4FwdGraphBFullEval` is stated at any `f`.
     (f : Nat := 7)
     -- stochastic depth on the skip blocks' residual branches, train step only; defaulted off, so
@@ -573,11 +574,13 @@ def mnv4ZbWidths : List Nat :=
     direction, but `mnv4-fwd-smoke` checks it anyway so the failure arrives at `lake build` and not
     at `iree-compile`. -/
 def mnv4FwdText (B nClasses : Nat) (epsStr : String)
-    (slug : String := "mnv4") (vSuffix : String := "") : String :=
+    (slug : String := "mnv4") (vSuffix : String := "")
+    -- the input side (224, or the paper tier's 256); a multiple of 32, as `mnv4FwdEvalText`'s
+    (s : Nat := 224) : String :=
   let sigList := mnv4SigList nClasses
-  let inSig := s!"%x: {ty [B, 3*224*224]}, " ++
+  let inSig := s!"%x: {ty [B, 3*s*s]}, " ++
     String.intercalate ", " (sigList.map (fun (n, t) => s!"{n}: {t}"))
-  let r := (mnv4FwdChainB B nClasses epsStr .train).run' (0, [])
+  let r := (mnv4FwdChainB B nClasses epsStr .train (f := s / 32)).run' (0, [])
   "module @m {\n" ++
   s!"  func.func @{slug}_fwd{vSuffix}({inSig}) -> {ty [B, nClasses]} " ++ "{\n" ++
   "    // ── MobileNetV4-Conv-M forward: every op is pretty(verified AST node) except the %zb zero-bias constants ──\n" ++
@@ -914,8 +917,22 @@ def mobilenetv4AdamTrainStepText (B nClasses : Nat) (epsStr : String)
     (wdStr : String := "") (cd : Bool := false)
     -- stochastic depth on the 18 skip blocks (`mnv4DropSites`), masks `%dp0 … %dp17` after the BN
     -- stats and before `%do` (EfficientNet's placement), handed back as passthroughs.
-    (sd : Bool := false) : String :=
+    (sd : Bool := false)
+    -- `f`, the FINAL feature side — `mnv4FwdChainB`'s own: 7 at the 224 input every artifact
+    -- before the paper tier was rendered at, 8 at the paper's 256 (`mnv4in256`). Every spatial
+    -- literal below is a multiple of it (input 32f, stem 16f, fused 8f, the block rows' `h` scaled
+    -- by f/7, the head at f), so the default re-renders every committed artifact byte-identically.
+    -- ResNet-50's `q` is the same knob under another name.
+    (f : Nat := 7)
+    -- AdamW's ε as the artifact spells it. `1.0e-8` is `adamWConsts`' own line and every
+    -- committed artifact's; the paper tier bakes TF's Keras default `1.0e-7` (arXiv 2404.10518
+    -- Table 10), replaced on the shared constants block rather than copied beside it.
+    (adamEps : String := "1.0e-8") : String :=
   let sync : Bool := replicas > 1 || forceSync
+  let withEps (consts : String) : String :=
+    if adamEps == "1.0e-8" then consts else consts.replace "dense<1.0e-8>" s!"dense<{adamEps}>"
+  -- the block table at this resolution: the rows' `h` scaled by f/7, exactly as the forward chain
+  let blockAt (b : UibSpec) : UibSpec := if f == 7 then b else { b with h := b.h * f / 7 }
   let accOn : Bool := match opt with | some (.adamwAccum _) => true | some (.lambAccum _) => true | _ => false
   let alphaStr := fmt6 0.1
   let negAlphaKStr := "-" ++ alphaOverK nClasses 0.1
@@ -925,17 +942,17 @@ def mobilenetv4AdamTrainStepText (B nClasses : Nat) (epsStr : String)
     -- inline a second transcription of the block table into their train step and rely on eyes to
     -- keep the two in step; here there is only one, so a train/score divergence — which
     -- `regen_verified_mlir.sh check` reports green — cannot arise.
-    let fwd ← mnv4FwdChainB B nClasses epsStr .train bf16 replicas sync cd (sd := sd)
-    let zx    : Vec (B*(3*224*224)) := fun _ => 0
+    let fwd ← mnv4FwdChainB B nClasses epsStr .train bf16 replicas sync cd (f := f) (sd := sd)
+    let zx    : Vec (B*(3*(2*(16*f))*(2*(16*f)))) := fun _ => 0   -- the strided op's own spelling
     let zSk   : Kernel4 32 3 3 3 := fun _ _ _ _ => 0
     let z32   : Vec 32 := fun _ => 0
-    let z112  : Vec (B*(32*112*112)) := fun _ => 0
-    let z112p : Vec (B*(32*(112*112))) := fun _ => 0
-    let z7     : Vec (B*(256*7*7)) := fun _ => 0
+    let z112  : Vec (B*(32*(16*f)*(16*f))) := fun _ => 0
+    let z112p : Vec (B*(32*((16*f)*(16*f)))) := fun _ => 0
+    let z7     : Vec (B*(256*f*f)) := fun _ => 0
     let zH1k   : Kernel4 960 256 1 1 := fun _ _ _ _ => 0
     let z960   : Vec 960 := fun _ => 0
-    let zH17   : Vec (B*(960*7*7)) := fun _ => 0
-    let zH17p  : Vec (B*(960*(7*7))) := fun _ => 0
+    let zH17   : Vec (B*(960*f*f)) := fun _ => 0
+    let zH17p  : Vec (B*(960*(f*f))) := fun _ => 0
     let zG     : Vec (B*(960*1*1)) := fun _ => 0
     let zGb    : Vec (B*960) := fun _ => 0
     let zHk    : Kernel4 1280 960 1 1 := fun _ _ _ _ => 0
@@ -977,37 +994,37 @@ def mobilenetv4AdamTrainStepText (B nClasses : Nat) (epsStr : String)
     let (cHg, nHg) ← bnGammaSite B 1280 1 1 sync epsStr nHc nDhm fwd.hst
     let (cHt, nHt) ← pretty B (.bnBetaGradB (N := B) (oc := 1280) (h := 1) (w := 1)
       (.operand nDhm zH1p))
-    let (cDgp, nDgp) ← pretty B (.gapBackBatched (N := B) (c := 960) (h := 7) (w := 7)
+    let (cDgp, nDgp) ← pretty B (.gapBackBatched (N := B) (c := 960) (h := f) (w := f)
       (.operand nDhx zGb))
     -- the first head conv's stage: relu mask at `h1n`, BN back, then input/weight grads at 256→960
     let (cDh1m, nDh1m) ← pretty B (.selectPosB nH1n zH17 (.operand nDgp zH17))
-    let (cDh1n, nDh1n) ← bnBackSite B 960 7 7 sync replicas epsStr "%h1g" nH1c "h1gdst" nDh1m fwd.h1st
-    let (cDh1x, nDh1x) ← pretty B (.convBackBatchedAt bf16 (N := B) (ic := 256) (oc := 960) (h := 7) (w := 7) zrnd
+    let (cDh1n, nDh1n) ← bnBackSite B 960 f f sync replicas epsStr "%h1g" nH1c "h1gdst" nDh1m fwd.h1st
+    let (cDh1x, nDh1x) ← pretty B (.convBackBatchedAt bf16 (N := B) (ic := 256) (oc := 960) (h := f) (w := f) zrnd
       "%h1W" zH1k z960 (.operand nDh1n zH17))
-    let (cH1W, nH1W) ← pretty B (.convWeightGradBAt bf16 (N := B) (ic := 256) (oc := 960) (h := 7) (w := 7) zrnd
+    let (cH1W, nH1W) ← pretty B (.convWeightGradBAt bf16 (N := B) (ic := 256) (oc := 960) (h := f) (w := f) zrnd
       fwd.last z960 z7 zH1k (.operand nDh1n zH17))
-    let (cH1g, nH1g) ← bnGammaSite B 960 7 7 sync epsStr nH1c nDh1m fwd.h1st
-    let (cH1t, nH1t) ← pretty B (.bnBetaGradB (N := B) (oc := 960) (h := 7) (w := 7)
+    let (cH1g, nH1g) ← bnGammaSite B 960 f f sync epsStr nH1c nDh1m fwd.h1st
+    let (cH1t, nH1t) ← pretty B (.bnBetaGradB (N := B) (oc := 960) (h := f) (w := f)
       (.operand nDh1m zH17p))
     -- ═══ backward: ONE fold over `mnv4Blocks` reversed, dispatched by the same row the
     --     forward used, so a family can never be differentiated as a different family ═══
     let mut dy := nDh1x
     let mut gcode := ""
     let mut blockPs : List (List PGrad) := []
-    for ((b, bi), f, xin) in (mnv4Blocks.zipIdx.zip (fwd.blocks.zip fwd.inputs)).reverse do
-      let g ← uibBackDispatch B b epsStr xin f dy bf16 replicas sync
+    for ((b, bi), fr, xin) in (mnv4Blocks.zipIdx.zip (fwd.blocks.zip fwd.inputs)).reverse do
+      let g ← uibBackDispatch B (blockAt b) epsStr xin fr dy bf16 replicas sync
         (if sd then mnv4DropSite bi else none)
       gcode := gcode ++ g.code
       blockPs := [g.ps] ++ blockPs
       dy := g.dx
-    let g0 ← fusedMbConvBackStridedGradB B 32 48 4 3 56 epsStr "0" fwd.str fwd.f0 dy bf16 replicas sync
+    let g0 ← fusedMbConvBackStridedGradB B 32 48 4 3 (8*f) epsStr "0" fwd.str fwd.f0 dy bf16 replicas sync
     -- ═══ stem backward: relu mask → BN back, then the 3 stem gradients (NO conv-back past %x) ═══
     let (cDsm, nDsm) ← pretty B (.selectPosB nStn z112 (.operand g0.dx z112))
-    let (cDsn, nDsn) ← bnBackSite B 32 112 112 sync replicas epsStr "%sg" nStc "sgdst" nDsm fwd.sst
+    let (cDsn, nDsn) ← bnBackSite B 32 (16*f) (16*f) sync replicas epsStr "%sg" nStc "sgdst" nDsm fwd.sst
     let (csW, nsW) ← pretty B (.convStridedWeightGradBAt bf16 (N := B) (ic := 3) (oc := 32)
-      (h := 112) (w := 112) zrnd "%x" z32 zx zSk (.operand nDsn z112))
-    let (csg, nsg) ← bnGammaSite B 32 112 112 sync epsStr nStc nDsm fwd.sst
-    let (cst, nst) ← pretty B (.bnBetaGradB (N := B) (oc := 32) (h := 112) (w := 112)
+      (h := 16*f) (w := 16*f) zrnd "%x" z32 zx zSk (.operand nDsn z112))
+    let (csg, nsg) ← bnGammaSite B 32 (16*f) (16*f) sync epsStr nStc nDsm fwd.sst
+    let (cst, nst) ← pretty B (.bnBetaGradB (N := B) (oc := 32) (h := 16*f) (w := 16*f)
       (.operand nDsm z112p))
     -- ═══ BN running statistics: batch μ/var per BN layer, from that layer's BN INPUT.
     --     Derived from the SAME forward record that computes them (`f.qc`/`f.ec`/`f.dc`/`f.pc`)
@@ -1029,30 +1046,30 @@ def mobilenetv4AdamTrainStepText (B nClasses : Nat) (epsStr : String)
         pure (cM ++ cV, [nM, nV])
     -- One UIB block's stats in `uibStatSig` order. `eh` is the spatial size of the pre-DW and
     -- expand BNs: `2h` in a strided block (both run before the post-DW's downsample), `h` otherwise.
-    let uibStats (b : UibSpec) (f : UibFwdB) : StateM Proofs.StableHLO.EmitS (String × List String) := do
+    let uibStats (b : UibSpec) (fr : UibFwdB) : StateM Proofs.StableHLO.EmitS (String × List String) := do
       let mid := b.ic * b.expand
       let eh := if b.stride2 then 2 * b.h else b.h
       let mut code := ""
       let mut ns : List String := []
       if b.preDWk > 0 then
-        let (c, n) ← bnStat b.ic eh f.qc f.qst
+        let (c, n) ← bnStat b.ic eh fr.qc fr.qst
         code := code ++ c; ns := ns ++ n
-      let (ce, ne) ← bnStat mid eh f.ec f.est
+      let (ce, ne) ← bnStat mid eh fr.ec fr.est
       code := code ++ ce; ns := ns ++ ne
       if b.postDWk > 0 then
-        let (c, n) ← bnStat mid b.h f.dc f.dst
+        let (c, n) ← bnStat mid b.h fr.dc fr.dst
         code := code ++ c; ns := ns ++ n
-      let (cp, np) ← bnStat b.oc b.h f.pc f.pst
+      let (cp, np) ← bnStat b.oc b.h fr.pc fr.pst
       pure (code ++ cp, ns ++ np)
-    let (cQs, qs) ← bnStat 32 112 nStc fwd.sst
-    let (cQ0c, q0c) ← bnStat 128 56 fwd.f0.ec fwd.f0.est
-    let (cQ0p, q0p) ← bnStat  48 56 fwd.f0.pc fwd.f0.pst
+    let (cQs, qs) ← bnStat 32 (16*f) nStc fwd.sst
+    let (cQ0c, q0c) ← bnStat 128 (8*f) fwd.f0.ec fwd.f0.est
+    let (cQ0p, q0p) ← bnStat  48 (8*f) fwd.f0.pc fwd.f0.pst
     let mut qcode := ""
     let mut qnames : List String := []
-    for (b, f) in mnv4Blocks.zip fwd.blocks do
-      let (c, n) ← uibStats b f
+    for (b, fr) in mnv4Blocks.zip fwd.blocks do
+      let (c, n) ← uibStats (blockAt b) fr
       qcode := qcode ++ c; qnames := qnames ++ n
-    let (cQh1, qh1) ← bnStat 960 7 nH1c fwd.h1st
+    let (cQh1, qh1) ← bnStat 960 f nH1c fwd.h1st
     let (cQh, qh) ← bnStat 1280 1 nHc fwd.hst
     -- ═══ the 233 parameter gradients in func-arg order ═══
     let stemPs : List PGrad :=
@@ -1100,14 +1117,14 @@ def mobilenetv4AdamTrainStepText (B nClasses : Nat) (epsStr : String)
           "StableHLO.mnv4FwdGraphSyncFull_shard" "MobileNet" ++
         (if bf16 then syncBnBf16TwinsNote else "")) ++
       zeroBiasPrelude false mnv4ZbWidths ++ body ++
-      (match opt with
+      withEps (match opt with
        | none => adamWConsts
        | some o => optConstsB o wdStr ++ wdzConst wdExclude) ++ adamCode ++ lossCode ++
       s!"    return {String.intercalate ", " retVals} : {String.intercalate ", " retTys}\n"
   let sigList : List (String × String) := mnv4SigList nClasses
   let statSig := String.intercalate ", " (mnv4StatSigList.map (fun (n, t) => s!"{n}i: {t}"))
   -- EMA's region suffix is `ema`, `optOne`'s spelling (the ResNet family's; see its note).
-  let inSig := s!"%x: {ty [B, 3*224*224]}, " ++ packedTrainSig sigList accOn ema (emaSuf := "ema") ++
+  let inSig := s!"%x: {ty [B, 3*(32*f)*(32*f)]}, " ++ packedTrainSig sigList accOn ema (emaSuf := "ema") ++
     ", " ++ statSig ++ dropMaskSig B sd (List.range mnv4DropSites.length) ++
     (if cd then s!", {doName}: {ty [B, 1280]}" else "") ++
     s!", %onehot: {ty [B, nClasses]}"
@@ -1201,8 +1218,9 @@ end Proofs.StableHLO
 -- timm's TEST protocol for Conv-M r224 (`mobilenetv4_conv_medium.e500_r224_in1k`: 256px, crop 1.0,
 -- jax/timm_eval_protocols.json): the same eval graph at a 256 input, final side 8, entry
 -- `@mnv4in_fwd_eval_s256` (an artifact's entry is its file name — `regen_verified_mlir.sh check`).
--- Same operands, so `score-checkpoint` scores it under `LEAN_MLIR_EVAL_SIZE=256`. Training
--- stays at 224; the eval statement (`MobileNetV4FullBEval`) covers this size too.
+-- Same operands, so `score-checkpoint` scores it under `LEAN_MLIR_EVAL_SIZE=256`. This tier trains
+-- at 224 (the paper tier trains at 256 on its own `mnv4in256` renders below); the eval statement
+-- (`MobileNetV4FullBEval`) covers this size too.
 #eval IO.FS.writeFile "verified_mlir/mnv4in_fwd_eval_s256.mlir"
   (Proofs.StableHLO.mnv4FwdEvalText 64 1000 "1.0e-5" "mnv4in" "_s256" (s := 256))
 #guard (Proofs.StableHLO.mnv4FwdEvalText 64 1000 "1.0e-5" "mnv4in" (s := 224)) ==
@@ -1294,6 +1312,50 @@ end Proofs.StableHLO
     (opt := some (.adamwAccum 8)) (wdExclude := true) (wdStr := "0.1") (cd := true) (sd := true))
 #guard Proofs.StableHLO.mnv4RecipeVariant 128 4 true (some (.adamwAccum 8)) false true "0.1" true true ==
   "accdp8x128wxdropdowd01bf16"
+
+-- **THE PAPER TIER AT THE PAPER'S 256²** — slug `mnv4in256`, `mnv4Imagenet256FullVerified`'s
+-- artifacts, the verified peer of the JAX `full` recipe as the paper's own training config
+-- (tensorflow/models `official/vision/configs/experiments/image_classification/
+-- imagenet_mobilenetv4_conv_medium_tpu.yaml`) has it: `input_size 256`, BatchNorm ε 1e-3
+-- (`norm_epsilon`; the 224 family keeps timm's 1e-5, which the timm parity gate ties to), and
+-- AdamW's ε at Keras' 1e-7 (Table 10). Same recipe render as the 224 tier otherwise
+-- (`accdp8x128wxdropdowd01bf16`: 8 accumulated micro-batches of 4 × 128, wd 0.1 off norm/bias,
+-- stochastic depth on the 18 skip rows, classifier dropout, no EMA, bf16), at the final side
+-- `f = 8`. The drop-path KEEPS are the driver's (`dropIdxOffset`/`dropDenom`), not the render's.
+-- The evals: the recipe's own at 256 (the paper scores Conv-M at 256, centre crop 0.875), and
+-- timm's test protocol for `mobilenetv4_conv_medium.e500_r256_in1k` at 320 / 1.0 (`_s320`,
+-- jax/timm_eval_protocols.json), scored under `LEAN_MLIR_EVAL_SIZE=320`.
+-- The per-block ties (`MobileNetV4StepTieB`) bind the row's `UibSpec`, so they cover `f = 8`, and
+-- the whole-net input-VJP tie (`MobileNetV4WholeBackCertifiedTieB`) binds the side `f` since
+-- 2026-10-12; the forward's own whole-net statements (`MobileNetV4FullB`) stay at 224, that file's
+-- note on resolution literals.
+#eval IO.FS.writeFile "verified_mlir/mnv4in256_fwd.mlir"
+  (Proofs.StableHLO.mnv4FwdText 64 1000 "1.0e-3" "mnv4in256" (s := 256))
+#eval IO.FS.writeFile "verified_mlir/mnv4in256_fwd_eval.mlir"
+  (Proofs.StableHLO.mnv4FwdEvalText 64 1000 "1.0e-3" "mnv4in256" (s := 256))
+#eval IO.FS.writeFile "verified_mlir/mnv4in256_fwd_eval_s320.mlir"
+  (Proofs.StableHLO.mnv4FwdEvalText 64 1000 "1.0e-3" "mnv4in256" "_s320" (s := 320))
+#eval IO.FS.writeFile "verified_mlir/mnv4in256_accdp8x128wxdropdowd01bf16_train_step.mlir"
+  (Proofs.StableHLO.mobilenetv4AdamTrainStepText 128 1000 "1.0e-3" 4 "mnv4in256" true
+    (opt := some (.adamwAccum 8)) (wdExclude := true) (wdStr := "0.1") (cd := true) (sd := true)
+    (f := 8) (adamEps := "1.0e-7"))
+-- its single-device peer, for `mnv4-dp-check`
+#eval IO.FS.writeFile "verified_mlir/mnv4in256_acc8x128wxdropdowd01bf16_train_step.mlir"
+  (Proofs.StableHLO.mobilenetv4AdamTrainStepText 128 1000 "1.0e-3" 1 "mnv4in256" true
+    (opt := some (.adamwAccum 8)) (wdExclude := true) (wdStr := "0.1") (cd := true) (sd := true)
+    (f := 8) (adamEps := "1.0e-7"))
+-- The 256 train step declares a 3·256·256 input, bakes the two ε's the paper's config names, and
+-- carries no 1e-8 anywhere; the 224 writer at `f := 7` is the default, byte for byte
+-- (`regen_verified_mlir.sh check` re-renders every committed artifact through the same call).
+#guard (Proofs.StableHLO.mnv4FwdText 64 1000 "1.0e-5" "mnv4in" (s := 224)) ==
+  Proofs.StableHLO.mnv4FwdText 64 1000 "1.0e-5" "mnv4in"
+private def mnv4At256Probe : String :=
+  Proofs.StableHLO.mobilenetv4AdamTrainStepText 32 10 "1.0e-3" 1 "mnv4" true
+    (opt := some (.adamwAccum 8)) (wdExclude := true) (wdStr := "0.1") (cd := true)
+    (sd := true) (f := 8) (adamEps := "1.0e-7")
+#guard (mnv4At256Probe.splitOn "%x: tensor<32x196608xf32>").length == 2
+#guard (mnv4At256Probe.splitOn "%eps = stablehlo.constant dense<1.0e-7> : tensor<f32>").length == 2
+#guard (mnv4At256Probe.splitOn "1.0e-8").length == 1
 #guard "accdp8x128wxdropdowd01bf16".contains "drop"
 #guard "accdp8x128wxdropdowd01bf16".contains "do"
 #guard !"accdp8x128wxdropdowd01bf16".startsWith "ema"

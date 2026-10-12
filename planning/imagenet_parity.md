@@ -481,10 +481,10 @@ did not move).
 | D4 | MNv2, MNv4, B0 | verified depthwise init | var 2/k² (TF/timm, = JAX) | He fan-out 2/(C·k²): 0.03–0.18× std | ✅ 2026-10-07 (the user: "flip on the constructors"): `dwFanK2 := true` in the three ImageNet drivers; `LEAN_MLIR_DW_FAN_K2=0` reproduces the landed runs. The audit now reads MNv2 0/158 and MNv4 0/233 tensors apart; B0 17/213, all of them D5's SE FCs. Each net's rerun carries it |
 | D5 | B0 | SE FC init | var 2/out | verified Glorot (reduce ~0.2×, expand 0.91×) | ✅ 2026-10-07: init kind 7 on the SE FCs (`VLayer.mbConvSE{,NB}`, `EfficientNetLayout.specs` in lockstep), `mkParam` var 2/out under `VerifiedConfig.seFanOutInit`, set in the ImageNet B0 driver; `LEAN_MLIR_SE_FAN_OUT=0` reproduces the landed run. Host-side; `E4M3Quant` quantizes kind 7 as a weight. The B0 rerun (R5) carries it with D4 |
 | D6 | B0 (+all CNNs) | classifier init | TF U(±1/√1000); torch Linear default | Glorot, both paths | S each |
-| D7 | MNv4 `full` | RandAugment m15 | TF extrapolates; pinned timm clamps at 10 | extrapolates | decision |
-| D8 | MNv4 `full` | RandAugment mapping | timm inc1, or TF's set | timm's inc1 op list with NON-increasing mappings (`_RA_INC` off): at m15 Solarize is a no-op, Posterize keeps 6 bits | S |
-| D9 | MNv4 | BN running-stat decay | timm 0.9 | 0.99, both paths (C4 value never chosen) | S, eval only |
-| D10 | MNv4 | drop-path ramp | timm idx/23 over all blocks | 0.075·i/20 over 21 UIBs, both paths | S, host side |
+| D7 | MNv4 `full` | RandAugment m15 | TF extrapolates; pinned timm clamps at 10 | extrapolates | ✅ 2026-10-12, settled by the paper's own config: tf-models' `augment.py` clamps only at `magnitude_std > 0`, the yaml sets none — m15 extrapolates, as emitted |
+| D8 | MNv4 `full` | RandAugment mapping | timm inc1, or TF's set | timm's inc1 op list with NON-increasing mappings (`_RA_INC` off): at m15 Solarize is a no-op, Posterize keeps 6 bits | ⛔ withdrawn 2026-10-12: the paper's code uses TF's mappings (what is emitted); inc1 at m15 would be Posterize −2 bits and Solarize at −128. The yaml's other RA items landed instead: an identity branch in the draw, `translate_const 100`, nearest resampling, `exclude_ops [Cutout]` |
+| D9 | MNv4 | BN running-stat decay | timm 0.9 | 0.99, both paths (C4 value never chosen) | ✅ 2026-10-12 on `full`: the yaml's `norm_momentum 0.997`, `norm_epsilon 1e-3` (not timm's 0.9 / 1e-5), both paths (`mnv4in256` bakes the ε) |
+| D10 | MNv4 | drop-path ramp | timm idx/23 over all blocks | 0.075·i/20 over 21 UIBs, both paths | ✅ 2026-10-12 on `full`: tf-models' `rate·(block_idx+1)/25` over its 25-entry block list, UIB `i` at `(i+3)/25` (`dropPathAllBlocks`; `dropIdxOffset 3` / `dropDenom 25`) — not timm's /23 either |
 | D11 | MNv2 | depthwise weight decay | TF-slim skips it | decayed, both paths | M (variant + both arms) |
 | D12 | MNv2 | slim inception colour distortion | yes (unverified offline) | none | M |
 | D13 | MNv2, B0 | RMSProp lr placement | TF1: lr inside momentum | outside, both paths | JAX S, verified M; matters only while lr moves |
@@ -650,7 +650,7 @@ emitter (`Jax/Codegen.lean`) and the shims, so they go in one pass before any pe
 |---|---|---|---|---|
 | 1 | MNv2 | D11 depthwise wd exclusion (new variant), D12 slim colour distortion (shim), D13 lr inside momentum (render), TF init if the manifest says so; F8 only | M | ~38 + ~66 h. ⚠ `mnv2-default-4gpu.conf` needs a `CKPT_TAG` first, or it resumes the epoch-350 checkpoint on the 3060 box |
 | 2 | ViT-Ti | D2 clip off, D19 live-weight scoring, k2 accumulation; Phase 2 | S | ~46 + ~65 h |
-| 3 | MNv4 `full` | D7–D10, EMA off; Phase 2 | S each | ~112 + ~95 h |
+| 3 | MNv4 `full` | D7–D10, EMA off; Phase 2 — ✅ 2026-10-12 as the paper's own yaml at 256² (`recipe_prep.md` §5; the `mnv4in256` renders) | S each | smoked 2026-10-12 (the confs' ETAs) |
 | 4 | ConvNeXt-T | D2 clip off, k16 accumulation, D15 (rerun JAX too); Phase 2 | S–M | ~77 + ~107 h |
 | 5 | B0 | **D3 SAME padding on strided depthwise moves the T2/T3 ties**; D6 classifier init; D13 | M–L, the only proof work | ~47 + ~80 h |
 | — | R34 / R50 | heavy-ball `opt_step_tie` row (§9.4); D16 Imagenette zero-γ | S | none; A3 discloses F1/F3/F4 |

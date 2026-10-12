@@ -26,9 +26,12 @@ The job is `scripts/jobs/mnv4-default-4gpu.conf`: `emaaccdp8x128wxdowd005bf16`, 
 over 512, wd 0.05 off norm/bias, classifier dropout 0.1, EMA 0.9999, bf16, 100 epochs, RandAugment
 N2 m9 from the shim: the JAX reference's `default` recipe. The optimizer, schedule and
 regularisers are selected by the variant string; this file only supplies the defaults below.
-The 500-epoch paper tier is `LEAN_MLIR_RECIPE=full` with `accdp8x128wxdropdowd01bf16`
-(`scripts/jobs/mnv4-full-4gpu.conf`): the `full` shim's RandAugment m15, dropout 0.2, drop-path
-0.075 on the 18 skip blocks, wd 0.1, no EMA.
+The 500-epoch paper tier is `LEAN_MLIR_RECIPE=full` with `accdp8x128wxdropdowd01bf16` on the
+`mnv4in256` renders (`scripts/jobs/mnv4-full-4gpu.conf`; `mnv4Imagenet256FullVerified`): the
+paper's own training config — tensorflow/models' `imagenet_mobilenetv4_conv_medium_tpu.yaml` —
+at its 256², the `full` shim's RandAugment m15 at p 0.7 under TF's mappings, dropout 0.2, drop-path
+0.075 over tf-models' 25-entry ramp on the 18 skip blocks, wd 0.1, BN 0.997 / ε 1e-3, AdamW ε 1e-7,
+the cosine from step 0, no EMA.
 
 A single-card figure off this driver is not comparable to the book's other ImageNet rows, which
 were all measured at 4×. Run the job, not the bare binary, for anything printable.
@@ -83,21 +86,28 @@ def runMnv4Imagenet (argv : List String) : IO Unit := do
     | some u => u.toFloat * 1e-6
     | none   => 0.001   -- NOT the reference's 0.004: that is a batch-4096 rate, this is 256.
   -- `LEAN_MLIR_RECIPE` picks the NET SPEC, hence the shim and the host-drawn masks: `default` (the
-  -- 100-epoch pair, RandAugment m9, dropout 0.1) or `full` (the paper tier: m15, dropout 0.2,
-  -- drop-path 0.075 on the skip blocks). A `drop` variant on `default` would draw no masks
-  -- (`default` has no drop sites) and `full` without one would skip the drop-path, so the two
-  -- must agree.
+  -- 100-epoch pair, RandAugment m9, dropout 0.1, 224²) or `full` (the paper tier as the paper's own
+  -- config has it: 256² — slug `mnv4in256`, its own renders — m15, dropout 0.2, drop-path 0.075
+  -- over tf-models' 25-entry ramp on the skip blocks, BN decay 0.997, the cosine from step 0).
+  -- A `drop` variant on `default` would draw no masks (`default` has no drop sites) and `full`
+  -- without one would skip the drop-path, so the two must agree.
   let recipe := ((← IO.getEnv "LEAN_MLIR_RECIPE").getD "default").trimAscii.toString
   let net ← match recipe with
     | "default" => pure mnv4ImagenetVerified
-    | "full"    => pure mnv4ImagenetFullVerified
+    | "full"    => pure mnv4Imagenet256FullVerified
     | r => throw <| IO.userError s!"LEAN_MLIR_RECIPE={r}: `default` or `full`"
   if VerifiedVariant.sdOn variant != (recipe == "full") then
     throw <| IO.userError s!"LEAN_MLIR_RECIPE={recipe} with LEAN_MLIR_VARIANT={variant}: the `full` \
       recipe trains a `drop` variant (e.g. accdp8x128wxdropdowd01bf16) and `default` does not."
-  IO.println s!"  ▸ RECIPE: {recipe} — augmentation from {net.shimScript}"
+  IO.println s!"  ▸ RECIPE: {recipe} — augmentation from {net.shimScript}; {net.imageH}²"
+  -- The paper tier's two host-side items off its config (`norm_momentum 0.997`; `CosineDecay`
+  -- over every step with `LinearWarmup` on top). The 224 tier keeps the 100-epoch pair's 0.99 and
+  -- the per-step form that restarts the cosine at warmup's end.
+  let paperTier := recipe == "full"
   net.toNet.trainAdamSched
-    { mnv4ImagenetConfig with batchSize := bs, epochs := epochs }
-    (argv.head?.getD "data") baseLR 0.9 0.999 5 variant
+    { mnv4ImagenetConfig with
+        batchSize := bs, epochs := epochs,
+        bnMomentum := if paperTier then 0.997 else mnv4ImagenetConfig.bnMomentum }
+    (argv.head?.getD "data") baseLR 0.9 0.999 5 variant (cosineFromStep0 := paperTier)
 
 def main (argv : List String) : IO Unit := runMnv4Imagenet argv

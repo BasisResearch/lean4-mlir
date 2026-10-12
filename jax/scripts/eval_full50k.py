@@ -170,7 +170,7 @@ params = jax.device_put(params, m.replicated_sharding)
 bn     = jax.device_put(bn, m.replicated_sharding)
 
 # ── which protocols to score ──────────────────────────────────────────────────────────────
-_train = (m._IMG_SIZE, getattr(m, "_CROP_PCT", None), "train (the module's own)")
+_train = (m._IMG_SIZE, getattr(m, "_CROP_PCT", None), "train (the module's own)", False)
 if os.environ.get("EVAL_SIZE"):
     protocols = [(int(os.environ["EVAL_SIZE"]), float(os.environ.get("EVAL_CROP", "1.0")), "explicit")]
 else:
@@ -187,27 +187,34 @@ else:
             sys.exit(f"no timm protocol for {os.path.basename(GEN)} in jax/timm_eval_protocols.json")
         if _t["interpolation"] != "bicubic":
             print(f"⚠ timm resizes {_t['timm']} {_t['interpolation']}; this scorer resizes bicubic")
-        protocols.append((_t["test_size"], _t["test_crop_pct"], f"timm {_t['timm']} (timm {_tbl['timm_version']})"))
+        protocols.append((_t["test_size"], _t["test_crop_pct"], f"timm {_t['timm']} (timm {_tbl['timm_version']})", True))
     if not protocols:
         sys.exit(f"PROTOCOL={PROTOCOL}: expected train | timm | both")
 _fixed = "_s = int(round((x.shape[-1]" not in src
-for size, crop, _ in protocols:
+for size, crop, _, _ in protocols:
     if _fixed and size != m._IMG_SIZE:
         sys.exit(f"{GEN}'s forward reshapes to a fixed {m._IMG_SIZE}px input; it cannot be scored at {size}")
     if crop is None:
         sys.exit(f"{GEN} predates `_CROP_PCT` and can only be scored at its own protocol (PROTOCOL=train)")
 
 # ── the val split, through the module's OWN preprocessing, at the protocol's size/crop ──────
-def _score(size, crop):
+def _score(size, crop, timm_crop=False):
   # The module's crop function and this reshape read `_IMG_SIZE` / `_CROP_PCT` as globals at trace
   # time, so setting them re-targets the SAME preprocessing code rather than a copy of it.
   if crop is not None:
     m._IMG_SIZE, m._CROP_PCT = size, crop
+  # A module whose own eval crop is tf-models' (`evalCropTf`: crop the short side, then resize
+  # bilinear) keeps timm's resize-then-crop form under the `_timm` name; timm's protocol is scored
+  # through that one, as the verified shim does under SHIM_EVAL_SIZE.
+  _crop_fn = m._imagenet_decode_center_crop
+  if timm_crop and hasattr(m, "_imagenet_decode_center_crop_timm"):
+      _crop_fn = m._imagenet_decode_center_crop_timm
+      print("   crop: timm's resize-then-crop (_imagenet_decode_center_crop_timm); the module's own is tf-models' crop-then-resize")
   ds = tfds.load('imagenet2012', split='validation',
                  decoders={'image': tfds.decode.SkipDecoding()},
                  data_dir=os.environ.get('TFDS_DATA_DIR'))
   def _pp(ex):
-      img = m._imagenet_decode_center_crop(ex['image'])
+      img = _crop_fn(ex['image'])
       img = tf.cast(img, tf.float32)
       img = (img - m._MEAN_RGB) / m._STD_RGB
       img = tf.transpose(img, [2, 0, 1])
@@ -273,9 +280,9 @@ def _score(size, crop):
 
 
 results = []
-for size, crop, name in protocols:
+for size, crop, name, timm_crop in protocols:
     print(f"\n── scoring at {size}px, crop_pct {crop} — {name}")
-    c1, c5, total = _score(size, crop)
+    c1, c5, total = _score(size, crop, timm_crop)
     results.append((name, size, crop, c1, c5, total))
     print(f"   top-1: {c1}/{total} = {100.0 * c1 / total:.2f}%   top-5: {c5}/{total} = {100.0 * c5 / total:.2f}%")
 

@@ -246,6 +246,8 @@ PAIRS = [("resnet34_fwd.mlir",     "resnet34_adam_train_step.mlir"),
 #   fails if an ImageNet forward is in neither this dict nor PAIRS, so a new one cannot be added
 #   without a decision.
 NO_PARTNER = {
+  "mnv4in256_fwd.mlir":    "the paper tier's drop-free training-mode forward at B=64 (2026-10-12); both "
+                           "mnv4in256 train steps carry drop + do at B=128",
   "convnextsin_fwd.mlir":  "drop-free at B=64; every convnextsin train step carries drop "
                            "(convnextsin_drop_fwd is the paired one)",
   "convnextbin_fwd.mlir":  "drop-free at B=64; every convnextbin train step carries drop "

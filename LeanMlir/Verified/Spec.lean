@@ -309,8 +309,15 @@ structure VerifiedNetSpec where
       import `Proofs/Codegen`, so the two cannot share a definition.
       [`tests/TestDropPathRamp.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestDropPathRamp.lean) is the `#guard` that pins them together. -/
   dropSites : Array Nat := #[]
-  /-- The ramp denominator: the reference's block count minus one. -/
+  /-- The ramp denominator: the reference's block count minus one (timm's `linspace`), or its
+      block count (TF's `rate · idx / len(blocks)`), or every entry of its block list
+      (tf-models' `get_stochastic_depth_rate(rate, block_idx + 1, len(decoded_specs))`). -/
   dropDenom : Nat := 1
+  /-- Added to each site's index in the numerator: site `i` keeps with
+      `1 − dropRate · (i + dropIdxOffset) / dropDenom`. `0` for every ramp that counts the sites'
+      own blocks from zero; MobileNetV4's paper tier counts its 25-entry block list from one with
+      the stem and the fused stage ahead of the first UIB, so UIB `i` is entry `i + 3`. -/
+  dropIdxOffset : Nat := 0
   /-- The drop-path rate at the deepest site. -/
   dropRate : Float := 0.0
   /-- Which directory this net's artifacts live in — see `VerifiedNet.mlirDir`. Default
@@ -345,10 +352,11 @@ def nClasses (s : VerifiedNetSpec) : Nat :=
   | some (.dense _ oc) => oc
   | _ => 0
 
-/-- The stochastic-depth keeps at drop-path rate `rate`, one per site: `1 − rate · i / dropDenom`.
-    Rate `0` gives exactly `1.0` everywhere (the identity endpoint). -/
+/-- The stochastic-depth keeps at drop-path rate `rate`, one per site:
+    `1 − rate · (i + dropIdxOffset) / dropDenom`. Rate `0` gives exactly `1.0` everywhere (the
+    identity endpoint). -/
 def dropKeepsAt (s : VerifiedNetSpec) (rate : Float) : Array Float :=
-  s.dropSites.map (fun i => 1.0 - rate * i.toFloat / s.dropDenom.toFloat)
+  s.dropSites.map (fun i => 1.0 - rate * (i + s.dropIdxOffset).toFloat / s.dropDenom.toFloat)
 
 /-- The stochastic-depth keeps at the spec's own rate. -/
 def dropKeeps (s : VerifiedNetSpec) : Array Float := s.dropKeepsAt s.dropRate

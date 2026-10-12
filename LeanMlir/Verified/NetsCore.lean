@@ -1582,6 +1582,44 @@ def mnv4ImagenetFullVerified : VerifiedNetSpec :=
 #guard mnv4ImagenetFullVerified.dropKeeps[0]! == 1.0 - 0.075 / 20.0
 #guard mnv4ImagenetFullVerified.dropKeeps.back! == 1.0 - 0.075
 
+/-- **MobileNetV4-Conv-M, the paper tier at the paper's 256²** — the verified peer of the JAX
+    `full` recipe as the paper's own training config has it (tensorflow/models
+    `official/vision/configs/experiments/image_classification/imagenet_mobilenetv4_conv_medium_tpu.yaml`,
+    whose header names the paper's 500-epoch top-1): `input_size [256, 256, 3]`, so the slug is its own
+    (`mnv4in256`, `d0 = 3·256·256`, the render at final side 8, BatchNorm ε 1e-3 and AdamW ε 1e-7
+    baked — `MobileNetV4RenderB`), and the stochastic-depth ramp is tf-models'
+    `get_stochastic_depth_rate(0.075, block_idx + 1, 25)` over the 25-entry block list (stem,
+    fused stage, the 21 UIBs, the two head convs; `flat_stochastic_depth_drop_rate: false`), so
+    UIB `i` (entry `i + 2`) keeps with `1 − 0.075 · (i + 3) / 25` — only where it skips, as
+    `UniversalInvertedBottleneckBlock.call` applies it under `use_residual ∧ in == out ∧ stride 1`.
+    The 224 tier above keeps timm's `i / 20`. Everything else is `mnv4ImagenetFullVerified`'s:
+    the `full` shim (the yaml's RandAugment m15 at p 0.7, TF's mappings — `tf-models` `augment.py`
+    extrapolates past 10 at `magnitude_std 0`), dropout 0.2, the 18 sites. The host-side BN decay
+    (`norm_momentum 0.997`) and the schedule (`CosineDecay` over every step with the linear warmup
+    overriding its first 1,560) are the app's arguments. -/
+def mnv4Imagenet256FullVerified : VerifiedNetSpec :=
+  { mnv4ImagenetFullVerified with
+      name          := "MobileNetV4-Conv-M (ImageNet-1k, paper tier, 256²)",
+      slug          := "mnv4in256",
+      imageH        := 256,
+      imageW        := 256,
+      dropDenom     := 25,
+      dropIdxOffset := 3,
+      blurb         := "MobileNetV4-Conv-M on full 1000-class ImageNet at the paper's 256², the \
+                        paper's 500-epoch recipe as its own training config has it (RandAugment \
+                        m15, dropout 0.2, drop-path 0.075 over the 25-entry block list, BN 0.997 \
+                        / 1e-3), via the VERIFIED renderer." }
+
+#guard mnv4Imagenet256FullVerified.toSpecs == mnv4ImagenetVerified.toSpecs
+#guard mnv4Imagenet256FullVerified.shimScript == mnv4ImagenetFullVerified.shimScript
+#guard mnv4Imagenet256FullVerified.dropSites == mnv4ImagenetFullVerified.dropSites
+#guard mnv4Imagenet256FullVerified.dropoutKeep == mnv4ImagenetFullVerified.dropoutKeep
+-- tf-models' ramp at the first and last skip rows: UIB 1 is entry 3 (numerator 4), UIB 20 entry 22
+-- (numerator 23); neither endpoint is 0 or the full rate, where timm's `i / 20` reaches both.
+#guard (mnv4Imagenet256FullVerified.dropKeeps[0]! - (1.0 - 0.075 * 4.0 / 25.0)).abs < 1e-12
+#guard (mnv4Imagenet256FullVerified.dropKeeps.back! - (1.0 - 0.075 * 23.0 / 25.0)).abs < 1e-12
+#guard mnv4Imagenet256FullVerified.dropKeeps.size == 18
+
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- THE INVARIANT THAT LICENSES `loadData`'s `trainPix := net.d0` (`Verified.Train`,
 -- the `.imagenet` branch). Placed here because it needs EVERY `.imagenet` spec in scope.
@@ -1601,5 +1639,7 @@ def mnv4ImagenetFullVerified : VerifiedNetSpec :=
 #guard mnv4ImagenetVerified.d0         == 3*224*224
 -- The one net that is DELIBERATELY not 224: RSB-A3 trains at 160² and evaluates at 224².
 #guard resnet50Imagenet160Verified.d0  == 3*160*160
+-- And the paper tier of MobileNetV4-Conv-M, which trains AND evaluates at the paper's 256².
+#guard mnv4Imagenet256FullVerified.d0  == 3*256*256
 
 

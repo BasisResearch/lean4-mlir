@@ -19,6 +19,7 @@ data="${2:-data}"
 # score-checkpoint net -> the generated-trainer stem its recipe is (jax/timm_eval_protocols.json keys)
 case "$net" in
   mnv4-in)         key=mobilenet_v4_imagenet ;;
+  mnv4-in256)      key=mobilenet_v4_imagenet_full ;;       # the paper tier at 256: timm's r256 weights test at 320 / 1.0
   mobilenetv2-in)  key=mobilenet_v2_imagenet ;;
   efficientnet-in) key=efficientnet_b0_imagenet ;;
   convnext-in)     key=convnext_tiny_imagenet ;;

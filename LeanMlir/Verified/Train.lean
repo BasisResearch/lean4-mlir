@@ -1781,7 +1781,13 @@ def VerifiedNet.trainAdamSched (net : VerifiedNet) (cfg : VerifiedConfig) (dataD
     -- `schedPerEpoch` / `warmupLRInit`: timm's `CosineLRScheduler` with `t_in_epochs` (DeiT, the RSB
     -- tiers) — the rate set once per epoch, warmup linear from `warmupLRInit` (timm `--warmup-lr`),
     -- the cosine over ALL `cfg.epochs` counted from epoch 0 — the reference's `TrainConfig.schedPerEpoch`.
-    (schedPerEpoch : Bool := false) (warmupLRInit : Float := 0.0) : IO Unit := do
+    (schedPerEpoch : Bool := false) (warmupLRInit : Float := 0.0)
+    -- `cosineFromStep0`: tf-models' schedule — `LinearWarmup` over `CosineDecay(decay_steps =
+    -- every step)`, the MobileNetV4 paper's own config — the cosine counts from step 0 over ALL
+    -- steps and the warmup ramps linearly from 0 to the cosine's value at its own end, the step
+    -- 0-based (so the first step's rate is 0); where the per-step form below restarts the cosine
+    -- at warmup's end. The reference's `TrainConfig.cosineFromStep0`.
+    (cosineFromStep0 : Bool := false) : IO Unit := do
   -- A FINISHED RUN, LAUNCHED AGAIN. The resume below picks a reaped run up where it stopped; once
   -- the `.epoch` marker has reached `cfg.epochs` there is nothing left to train, and resuming runs
   -- zero epochs and prints `done` with no accuracy — a second `lake run cifar` looked like a
@@ -2047,6 +2053,8 @@ differentiates (see r50FwdChainB for the pattern), or drop the env var and score
   if schedPerEpoch then
     IO.println s!"  ▸ LR SCHEDULE: per epoch (timm CosineLRScheduler, t_in_epochs) — warmup {warmupLRInit}→{baseLR} \
 over {warmupEpochs} epochs, then cosine over all {cfg.epochs} epochs to the floor {minLR}; the rate is constant within an epoch"
+  if cosineFromStep0 then
+    IO.println s!"  ▸ LR SCHEDULE: per step, tf-models CosineDecay over every step of the {cfg.epochs} epochs counted from step 0 (floor {minLR}), LinearWarmup 0→cosine({warmupEpochs} ep) over {warmupEpochs} epochs on top; the step 0-based"
   if rmsprop then
     IO.println s!"  ▸ RMSPROP: m = momentum buffer (init 0), v = running MEAN-SQUARE (init 1.0, \
 TF convention — this optimizer is not bias-corrected)"
@@ -2610,6 +2618,14 @@ gate's control, not a configuration.")
                    -- `schedPerEpoch` branch (`jax/Jax/Codegen.lean`), formula for formula, with `t` the
                    -- 0-based epoch — `ep` here, `epoch` there — held for the whole epoch.
                    schedPerEpochLR baseLR minLR warmupLRInit warmupEpochs cfg.epochs ep
+                 else if cosineFromStep0 then
+                   -- tf-models: `CosineDecay(initial_learning_rate, decay_steps = total)(step)`
+                   -- at the 0-based step, `LinearWarmup` ramping `0 → cosine(warmup_steps)` over
+                   -- it — the reference's `cosineFromStep0` lines (`jax/Jax/Codegen.lean`).
+                   let cosAt (t : Float) := minLR + (baseLR - minLR) * 0.5 *
+                     (1.0 + Float.cos (3.14159265358979 * t / totalSteps))
+                   if gstep ≤ warmSteps then (gstep - 1.0) / warmSteps * cosAt warmSteps
+                   else cosAt (gstep - 1.0)
                  else if gstep ≤ warmSteps then baseLR * gstep / warmSteps
                  else if expDecayRate > 0.0 then
                    -- The staircase is TF's `exponential_decay(staircase=True)` on the GLOBAL step

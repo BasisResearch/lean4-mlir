@@ -8,9 +8,9 @@ themselves go in the user's ROI order (ResNet → ViT → MNv2 → EfficientNet 
 the user's word. `imagenet_parity.md` §10 holds the F-items (cross-net) and D-items (per-net) this doc
 cites; the method is the ResNet A3/A2 prep of 2026-10-11 (4d612bb9), repeated per net.
 
-**Next (2026-10-12, later): §5, MobileNetV4-Conv-M.** §1–§4 are in code (§9); nothing has run. §5
-opens on two decisions the user owns (D7, the m15 extrapolation; the timm tag the tier reproduces),
-then a 256² render. Then §6 → §7 in the order of §2.
+**Next (2026-10-12, later): §6, MobileNetV2.** §1–§5 are in code (§9); nothing has run. §6 opens on
+D12's reference (slim's colour distortion: TF-slim in `.venv-timm`, or a numpy twin), then the decay
+mask, the RMSProp spelling and the init. Then §7.
 
 ## 1. Done, 2026-10-11
 
@@ -58,7 +58,7 @@ What "done" means, per net, and what each later section repeats:
 |---|---|---|---|---|
 | 1 | ViT-S, ViT-B (ch 9 side quest) | ½ day — DONE 2026-10-11 | S one-shot at 4 × 256; B the first accumulating ViT render (`acc`) | ViT-S micro-batch — probed: one-shot |
 | 2 | ConvNeXt-T, then S / B (ch 8) | 1½ days | accumulating no-clip renders | none |
-| 3 | MNv4-Conv-M (ch 6) | 1 day | a 256² render | D7, the timm tag |
+| 3 | MNv4-Conv-M (ch 6) | 1 day — DONE 2026-10-12 | the `mnv4in256` renders (final side 8) | the paper's own yaml is the source of truth; D7 settled by it, D8 withdrawn, D9/D10 corrected (§5) |
 | 4 | MNv2 (ch 6) | 2–3 days | decay mask, colour distortion, RMSProp op + tie, an init | D12's reference |
 | 5 | EfficientNet-B0 (ch 7) | 3–4 days | RMSProp op (shared), SAME padding through the ties | D3's scope |
 
@@ -258,6 +258,53 @@ no `randAugmentInc`, BN decay 0.99.
 6. Runs: ~112 + 95 h (10-07); the ch 6 MNv4 marker goes when the pair lands and both tiers are rescored
    at timm's protocol.
 
+**Done 2026-10-12.** The two decisions dissolved into one fact: the paper's own training config is
+public — tensorflow/models `official/vision/configs/experiments/image_classification/
+imagenet_mobilenetv4_conv_medium_tpu.yaml` ("Top-1 Acc: 79.9% @ 500 epochs") — and timm's
+`e500_r256_in1k` recipe is not ("inspired by the paper with timm enhancements"), so the tier reproduces
+the yaml on timm's net and the timm tag supplies only the comparison numbers (79.93 @ 256, 80.86 @ 320)
+and a second scoring protocol. Read off the yaml and the tf-models sources it inherits from (`augment.py`,
+`classification_input.py`, `preprocess_ops.py`, `lr_schedule.py`, `nn_layers.py`, `mobilenet.py`), and
+set on both paths (the user: build every row; the JAX config names its source per line):
+`input_size 256` (train and eval); `norm_momentum 0.997`, `norm_epsilon 1e-3` (D9's "timm 0.9" was
+wrong — the paper's code is TF's 0.997); the drop-path ramp `0.075·(block_idx+1)/25` over the 25-entry
+block list with `flat_stochastic_depth_drop_rate: false` — UIB `i` at `(i+3)/25`, residual rows only
+(D10's "/23" was timm's); RandAugment m15 at p 0.7 under tf-models' `augment.py`: `magnitude_std 0` so
+no clamp — m15 extrapolates (D7 settled; Posterize 6 bits, Solarize a no-op, enhance 2.8, rotate 45°),
+TF's non-increasing mappings (D8 withdrawn: inc1 at m15 would be Posterize −2 bits and Solarize at −128,
+black and inverted images), an identity branch in the 16-way draw, `translate_const 100` (±150 px),
+nearest resampling at fill 128, `exclude_ops [Cutout]` (our 15-op list); TF's crop sampler at
+`min_object_covered = area_range[0] = 0.08` with the whole image on exhaustion, bilinear resize without
+antialias (`tf.image.resize`'s default), the eval centre crop 0.875 of the SHORTER side then resize
+(`center_crop_image_v2`); AdamW ε 1e-7 (Table 10, Keras' default); the schedule `LinearWarmup` over
+`CosineDecay(decay_steps = 156000)` — the cosine over every step from step 0, warmup 0 → cosine(1560)
+over 1,560 steps, the step 0-based; no EMA, no Mixup, no clip, wd 0.1 excluding BN. Disclosed, not
+reproduced: the init (timm's, the 10-07 D4 call), the decay reaching the classifier bias (1,000 floats),
+and the head order — timm pools before its 1280 conv where tf-models' list runs that conv at 8×8 and
+pools after (the net is timm's, the parity gate's). Code: `TrainConfig` gains `imgSize`, `evalCropTf`,
+`resizeAntialias`, `cropMinCovered`, `randAugmentIdentityOp`, `randAugmentTranslateConst`, `augNearest`,
+`adamEps`, `dropPathAllBlocks`, `cosineFromStep0`, every default byte-identical (66 artifacts re-emitted,
+two changed); the emitter keeps timm's eval form as `_imagenet_decode_center_crop_timm` under
+`evalCropTf` and the shim swaps it in under `SHIM_EVAL_SIZE`, `eval_full50k.py PROTOCOL=timm` likewise.
+Verified: `mobilenetv4AdamTrainStepText` takes the final side `f` (R50's `q`; every 224 artifact
+re-renders byte-identical) and `adamEps`; the `mnv4in256` family — `mnv4Imagenet256FullVerified`
+(`d0 = 3·256·256`, `dropDenom 25`, the new `VerifiedNetSpec.dropIdxOffset 3`), renders `mnv4in256_fwd`,
+`_fwd_eval` (256), `_fwd_eval_s320` (timm's test size), `_acc{,dp}8x128wxdropdowd01bf16_train_step` at
+BN ε 1e-3 and AdamW ε 1e-7 (1,112 operands, arity green); the app passes `bnMomentum 0.997` and the
+driver's new `cosineFromStep0` on `full`; `score-checkpoint mnv4-in256`, `score_timm.sh mnv4-in256`,
+`timm_eval_protocols.json` row `mobilenet_v4_imagenet_full` (r256: 320 / 1.0). The 256 render at
+4 × 128 peaks at 4.02 GiB of 11.68 (34 %, `runs/2026-10-12-mnv4-full-4gpu/peak_memory_256.log`), so the
+geometry stays `accdp8x128`. Confs rewritten on the §3/§4 template with a grep per emitted line and the
+bitmaps appended; smokes in `runs/2026-10-12-mnv4-jax-smoke/` and `runs/2026-10-12-mnv4-full-4gpu/`
+(JAX 2.56 s a 4096-row step at the default arena = the 224 pace, feed-bound, ~112 h; verified 214 ms a 512-row micro-step, compute-bound at 4 ms starvation — faster than the 224 tier's 274 because TF's geometry is cheaper than the PIL-bicubic path — ~75 h; the §2 row's "~112 + 95 h" becomes ~112 + 75 h). The apex tie is generalised (the user's call): `mnv4InputGradB`, `mnv4InputGradB_eq_mnv4B_full_vjp` and
+`mnv4InputGradB_correct` take `(N f : Nat)` with the sides `16f, 8f, 4f, 2f, f` and the input `2·16f` in
+place of 112/56/28/14/7 and 224 — the stage ties were generic in `h w` all along and the apex binds its
+widths, so the generalised module built in 12 s with the proof untouched; the 224 statements are the
+instance `f := 7`. `mobilenetv4ForwardBFull_eq_slots`, which identifies the opaque stages with
+`MobileNetV4FullB`'s literal-resolution forward, stays at 224 (that file's note on resolution literals),
+as do the per-block ties' instances; the per-block statements bind the row's `UibSpec` and so cover `f = 8`. The ch 6 marker stands, rewritten to the yaml's
+items; D7–D10 in `imagenet_parity.md` §10.3 carry the correction.
+
 ## 6. MobileNetV2 — TF-slim in three places
 
 Marker (ch 6): TF-slim in three places, on both paths: weight decay off the depthwise kernels, slim's
@@ -343,7 +390,7 @@ landed 2026-10-07. Of the marker's list, owed in code:
 | R50 A3 / A2 / A1 | done | done | existing | done | green | done | 4d612bb9 | pending | stands until the runs |
 | ViT-Ti | done | done | done | done | green | done | 320f5045, 3336f4a7 | pending | stands |
 | ViT-S / B | done | done | done (B: the first `acc` render) | done | green | done | a39f5cf7 | pending | stands |
-| ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | — | pending | stands |
-| MNv4-Conv-M | NEXT — §5 | | | | | | | | |
-| MNv2 | | | | | | | | | |
+| ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | a0c125b3 | pending | stands |
+| MNv4-Conv-M | done (the paper's yaml) | done | done (`mnv4in256`, five) | done | green | done | — | pending | stands, rewritten |
+| MNv2 | NEXT — §6 | | | | | | | | |
 | EfficientNet-B0 | | | | | | | | | |

@@ -33,6 +33,7 @@ MAP = [
     ("resnet50_imagenet_adamprobe",    "resnet50.a3_in1k",        "RSB-A3 (train 160)"),
     ("mobilenet_v2_imagenet",          "mobilenetv2_100.ra_in1k", "MobileNetV2 1.0"),
     ("mobilenet_v4_imagenet",          "mobilenetv4_conv_medium.e500_r224_in1k", "Conv-M trained at 224"),
+    ("mobilenet_v4_imagenet_full",     "mobilenetv4_conv_medium.e500_r256_in1k", "Conv-M, the paper tier at 256"),
     ("efficientnet_b0_imagenet",       "tf_efficientnet_b0.in1k", "the paper's TF recipe, ported"),
     ("convnext_tiny_imagenet",         "convnext_tiny.fb_in1k",   "the paper's weights"),
     ("convnext_s_imagenet",            "convnext_small.fb_in1k",  "the paper's weights"),

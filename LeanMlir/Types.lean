@@ -589,6 +589,14 @@ structure TrainConfig where
       byte for byte. The verified peer is `trainAdamSched`'s `schedPerEpoch` / `warmupLRInit`. -/
   schedPerEpoch : Bool := false
   warmupLRInit  : Float := 0.0
+  /-- tf-models' schedule, the MobileNetV4 paper's config: `LinearWarmup` over
+      `CosineDecay(decay_steps = total_steps)` — the cosine counts EVERY step from step 0 (the
+      warmup only overrides its first `warmup_steps`) and the warmup ramps linearly from 0 to the
+      cosine's own value at its end, the step 0-based (the first step's rate is 0). The per-step
+      form this emitter writes otherwise restarts the cosine at the end of warmup. Off keeps that
+      form, byte for byte; per-step only (`schedPerEpoch` off), with `minLR` as the floor. The
+      verified peer is `trainAdamSched`'s `cosineFromStep0`. -/
+  cosineFromStep0 : Bool := false
   augment      : Bool := false
   labelSmoothing : Float := 0.0
   /-- Focal loss (Lin et al. 2017): replace CE loss with
@@ -734,6 +742,16 @@ structure TrainConfig where
   /-- With TF's sampler: EfficientNet's fallback, the eval centre crop (224/256 of the shorter
       side) where the sampler returned the whole image, in place of the whole image. -/
   cropFallbackCenter : Bool := false
+  /-- With TF's sampler: `sample_distorted_bounding_box`'s `min_object_covered`. 0.1 is TF
+      EfficientNet's and every existing recipe's; tf-models' `random_crop_image` passes its
+      `area_range[0]` = 0.08 (the MobileNetV4 paper's config). The default keeps the `0.1`
+      literal, byte for byte. -/
+  cropMinCovered : Float := 0.1
+  /-- `antialias` on the train crop's and the eval's `tf.image.resize`. On, the default, is PIL's
+      behaviour and every existing recipe's (`planning/archive/resize_eval_reconciliation.md`
+      measured close to a point of top-1 on RSB-A3 without it); off is `tf.image.resize`'s own
+      default, which tf-models' classification pipeline runs — the MobileNetV4 paper's config. -/
+  resizeAntialias : Bool := true
   /-- The train crop's resize kernel. `.bicubic`, the default, keeps every generated file
       byte-identical. -/
   trainResize : TrainResize := .bicubic
@@ -767,6 +785,19 @@ structure TrainConfig where
       (`round(255·mean)` = (124, 116, 104)) instead of the paper code's grey 128. Needs
       `augBicubic` (the bilinear path takes a scalar fill). Off keeps the 128 byte for byte. -/
   randAugmentFillMean : Bool := false
+  /-- tf-models' RandAugment draws each layer's op from the op list PLUS an identity branch
+      (`maxval = len(available_ops) + 1` in `_distort_common`), so an op is applied with
+      `p / (n + 1)` rather than timm's `p / n`. Off keeps timm's n-way draw, byte for byte. -/
+  randAugmentIdentityOp : Bool := false
+  /-- tf-models' `translate_const`: TranslateX/Y move by `(m / 10) · translate_const` PIXELS
+      (100 in the MobileNetV4 paper's config, so ±150 px at m15) instead of timm's
+      `translate_pct 0.45` of the side. 0 keeps timm's form, byte for byte. Bilinear-path only
+      (`augBicubic` off). -/
+  randAugmentTranslateConst : Float := 0.0
+  /-- tf-models' geometric ops resample NEAREST (`transform(interpolation='nearest')`, the
+      `wrap`/`unwrap` fill 128) where this emitter's bilinear path resamples BILINEAR at the same
+      fill. Off keeps BILINEAR, byte for byte. Bilinear-path only (`augBicubic` off). -/
+  augNearest : Bool := false
   /-- AutoAugment, ImageNet learned policy (Cubuk et al. 2018) — the full 25
       sub-policies, applied per-image after crop/hflip on the imagenet (tfds)
       path. Unlike `useRandAugment` (color subset only), this includes the
@@ -800,6 +831,19 @@ structure TrainConfig where
   /-- Explicit test-time center-crop ratio (RSB-A3 uses 0.95). 0 = the default
       `_IMG_SIZE/(_IMG_SIZE+32)` ≈ 0.875 ratio. imagenet (tfds) path only. -/
   testCropRatio  : Float := 0.0
+  /-- The tfds pipeline's `_IMG_SIZE` — the side images are trained AND evaluated at when
+      `trainRes` is 0 — in place of the literal 224 every ImageNet spec is declared at
+      (`NetSpec.imageH`). The generated `forward` infers the side from the flat length, so the
+      spec stays shared across a net's recipes: MobileNetV4's `full` tier trains at the paper's
+      256 on the 224 spec. 0 keeps the `224` literal, byte for byte. imagenet (tfds) path only. -/
+  imgSize        : Nat   := 0
+  /-- The eval centre crop in tf-models' order: a square of `_CROP_PCT` × the SHORTER side cut
+      out of the JPEG (`center_crop_image_v2`), then resized to `_IMG_SIZE` bilinear
+      (`resize_image`) — the MobileNetV4 paper's own validation. Off keeps timm's form (resize
+      the short side to `_IMG_SIZE / _CROP_PCT` bicubic, then crop), byte for byte. On, timm's
+      form is still emitted as `_imagenet_decode_center_crop_timm` and the shim swaps it in under
+      `SHIM_EVAL_SIZE` (timm's test protocol), as `jax/scripts/eval_full50k.py PROTOCOL=timm` does. -/
+  evalCropTf     : Bool  := false
   /-- Stochastic depth (Huang et al. 2016): drop each residual block's
       branch with a probability that ramps linearly from 0 to `dropPath`
       across the network's residual blocks; surviving branches are scaled
@@ -981,6 +1025,11 @@ structure TrainConfig where
       The verified peer is the render's `epsStr`, a different artifact per ε (the `eps<d…>`
       variant marker and its own `_fwd_eval_eps<d…>` eval graph), not a host-side knob. -/
   bnEps : Float := 1e-5
+  /-- AdamW's ε, the `1e-8` in the emitted update (`jnp.sqrt(vi) + 1e-8`): PyTorch's and timm's
+      default. Keras' is 1e-7, which the MobileNetV4 paper's config inherits (Table 10). The
+      default keeps the `1e-8` literal, byte for byte. The verified peer is the render's `adamEps`
+      (`MobileNetV4RenderB`), a different artifact per ε. -/
+  adamEps : Float := 1e-8
   /-- LayerNorm ε of the transformer `layer_norm` (ViT Ti/S/B; ConvNeXt's two LayerNorms are
       separate helpers, already at 1e-6). 1e-5 is PyTorch's `nn.LayerNorm` default and every
       existing trainer's; DeiT builds its blocks with `partial(nn.LayerNorm, eps=1e-6)`. The
@@ -997,6 +1046,13 @@ structure TrainConfig where
       of `i/(N−1)` (timm's `linspace(0, rate, depth)`), on the MBConv path only. Off keeps every
       generated file byte-identical. -/
   dropPathOverN : Bool := false
+  /-- tf-models' stochastic-depth ramp (`MobileNet._mobilenet_base` with
+      `flat_stochastic_depth_drop_rate: false`): `rate · (block_idx + 1) / num_blocks` over EVERY
+      entry of the block list — the stem, the fused stage, the UIBs, the head convs; not the pool,
+      not the classifier — so MobileNetV4-Conv-M's UIB `i` (entry `i + 2` of 25) drops at
+      `0.075 · (i + 3) / 25`, where timm's `linspace` gives `i / 20`. Applied only where the block
+      skips, as both do. On the UIB path only. Off keeps `i / (N − 1)`, byte for byte. -/
+  dropPathAllBlocks : Bool := false
   /-- timm/DeiT ViT weight init, replacing the generic Xavier-uniform for
       transformer-shaped nets. Off by default so every existing run is
       byte-identical; turn it on per-recipe.

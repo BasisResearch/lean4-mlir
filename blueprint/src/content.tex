@@ -7657,8 +7657,9 @@ stem's endpoint ties, and each block's backward in its slot; see
   \Prove{} the same for the hand-written MobileNetV4-Conv-M reverse pass
   against
   \(\mathrm{head} \circ b_{21} \circ \dots \circ b_1 \circ \mathrm{fused} \circ \mathrm{stem}\),
-  generic in \(N\) and in the number of classes; the shape check against
-  \texttt{mobilenetv4ForwardBFull} is again separate.
+  generic in \(N\), in the number of classes and in the final feature side
+  (\(7\) at \(224^2\), \(8\) at the paper tier's \(256^2\)); the shape check
+  against \texttt{mobilenetv4ForwardBFull} is again separate, at \(224^2\).
 \end{theorem}
 
 \begin{proof}
@@ -8825,13 +8826,17 @@ protocol. Rows above the first rule differ; rows between the rules are
 held equal by construction, the BatchNorm group included: the reference
 normalizes over the $512$-image shard its accumulation hands each step,
 and the verified render all-reduces to the same $512$. \textbf{[TODO: the
-paper's tier --- $500$ epochs, wd $0.1$, dropout $0.2$, RandAugment $m15$
-at $p\,0.7$, drop-path $0.075$ --- exists on both paths and has not run:
-\texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, ${\sim}112 +
-95$\,h. Still out of it: the paper's $256^2$ (ours $224$),
-\texttt{timm}'s \texttt{inc1} magnitude mappings, BN decay $0.9$, the
-drop-path ramp over all $23$ blocks, the verified depthwise init; and both
-tiers scored at \texttt{timm}'s $256$ / $1.0$.]}
+paper's tier --- its own training config (\texttt{tensorflow/models},
+\texttt{imagenet\_mobilenetv4\_conv\_medium\_tpu.yaml}: $500$ epochs at
+$256^2$, wd $0.1$, dropout $0.2$, RandAugment $m15$ at $p\,0.7$ under
+TensorFlow's mappings, drop-path $0.075$ over its $25$-entry block list, BN
+$0.997$ / $\varepsilon\,10^{-3}$, AdamW $\varepsilon\,10^{-7}$, the cosine
+from step 0, its crop and resize) --- exists on both paths and has not run:
+\texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, the \texttt{mnv4in256}
+renders. Disclosed: the init and the head order are \texttt{timm}'s, the decay
+reaches the classifier bias. Scored at the paper's $256$ / $0.875$ and at
+\texttt{timm}'s $320$ / $1.0$ for its \texttt{e500\_r256} weights; the
+$224$ tier above at \texttt{timm}'s $256$ / $1.0$.]}
 
 \medskip\noindent\textbf{The two paths agree to $0.11$ points on top-1
 and $0.16$ on top-5}, inside the 95\% Wilson interval ($\pm0.37$ at $77\%$ on $50{,}000$ images), at one seed each. The

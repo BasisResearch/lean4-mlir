@@ -18,9 +18,9 @@ import tensorflow as tf
 tf.config.set_visible_devices([], 'GPU')  # keep TF off the GPUs
 import tensorflow_datasets as tfds
 
-_IMG_SIZE = 224
+_IMG_SIZE = 256
 _CROP_PADDING = 32
-_CROP_PCT = _IMG_SIZE / (_IMG_SIZE + _CROP_PADDING)   # 224/256 = 0.875, timm's default
+_CROP_PCT = 0.875000   # explicit test crop ratio (timm resnet50.a1/a2/a3_in1k = 0.95)
 _MEAN_RGB = tf.constant([0.485 * 255, 0.456 * 255, 0.406 * 255], dtype=tf.float32)
 _STD_RGB  = tf.constant([0.229 * 255, 0.224 * 255, 0.225 * 255], dtype=tf.float32)
 _AUG_SEED = os.environ.get('AUG_SEED')
@@ -54,7 +54,7 @@ def _aa_transform(img, vec):
     transforms = tf.reshape(tf.cast(vec, tf.float32), [1, 8])
     out = tf.raw_ops.ImageProjectiveTransformV3(
         images=images, transforms=transforms, output_shape=tf.stack([H, W]),
-        fill_value=128.0, interpolation='BILINEAR', fill_mode='CONSTANT')
+        fill_value=128.0, interpolation='NEAREST', fill_mode='CONSTANT')   # tf-models: nearest (augNearest)
     return tf.cast(tf.clip_by_value(out[0], 0.0, 255.0), tf.uint8)
 
 def _aa_shear_x(img, lvl):    return _aa_transform(img, [1.0, lvl, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
@@ -207,80 +207,10 @@ def _autoaugment(img):
     idx = tf.random.uniform([], 0, len(_AA_POLICY), dtype=tf.int32)
     out = tf.switch_case(idx, branches)
     return tf.cast(out, tf.float32)
-# ── timm's geometric ops run PIL BICUBIC, and TF has no bicubic
-#    projective warp (ImageProjectiveTransformV3 takes NEAREST/BILINEAR only and LOGS, not raises,
-#    on anything else). So the warp is written out: PIL's own affine sampler, a = -1 cubic (PIL's
-#    transform filter; its resize uses -0.5) over a 4x4 neighbourhood, neighbours clamped at the
-#    border, truncated to uint8 as PIL does, the fill where the source centre falls outside the
-#    image. Overrides the bilinear _aa_transform above; see _aa_warp1d for why only Rotate uses it. ──
-def _aa_transform(img, vec):
-    x = tf.cast(img, tf.float32)
-    H = tf.shape(x)[0]; W = tf.shape(x)[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    v = [tf.cast(t, tf.float32) for t in vec]
-    ys, xs = tf.meshgrid(tf.range(Hf), tf.range(Wf), indexing='ij')
-    den = v[6] * xs + v[7] * ys + 1.0
-    u = (v[0] * xs + v[1] * ys + v[2]) / den          # source column, pixel-index coords
-    w = (v[3] * xs + v[4] * ys + v[5]) / den          # source row
-    inside = (u >= -0.5) & (u < Wf - 0.5) & (w >= -0.5) & (w < Hf - 0.5)
-    x0 = tf.floor(u); y0 = tf.floor(w)
-    def _cub(t):   # PIL's transform bicubic (a = -1) weights for the taps at -1, 0, +1, +2
-        a = -1.0
-        def near(d): return ((a + 2.0) * d - (a + 3.0)) * d * d + 1.0
-        def far(d):  return ((a * d - 5.0 * a) * d + 8.0 * a) * d - 4.0 * a
-        return tf.stack([far(1.0 + t), near(t), near(1.0 - t), far(2.0 - t)], -1)
-    wx = _cub(u - x0); wy = _cub(w - y0)
-    offs = tf.constant([-1.0, 0.0, 1.0, 2.0])
-    xi = tf.clip_by_value(tf.cast(x0[..., None] + offs, tf.int32), 0, W - 1)
-    yi = tf.clip_by_value(tf.cast(y0[..., None] + offs, tf.int32), 0, H - 1)
-    flat = tf.reshape(x, [-1, 3])
-    out = tf.zeros([H, W, 3], tf.float32)
-    for i in range(4):
-        row = tf.zeros([H, W, 3], tf.float32)
-        for j in range(4):
-            row += wx[:, :, j:j+1] * tf.gather(flat, yi[:, :, i] * W + xi[:, :, j])
-        out += wy[:, :, i:i+1] * row
-    out = tf.where(inside[..., None], out, 128.0)
-    return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
-
-# Shear and translate move pixels along ONE axis, where the other axis lands on integer rows
-# (columns), whose cubic weights are exactly [0, 1, 0, 0]: four gathers give the 16-tap result bit
-# for bit at a quarter of the cost. Only Rotate needs the full warp.
-# `axis` 1 samples along x (u = x + a*y + c), 0 along y (v = y + a*x + c).
-def _aa_warp1d(img, a, c, axis):
-    x = tf.cast(img, tf.float32)
-    H = tf.shape(x)[0]; W = tf.shape(x)[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    a = tf.cast(a, tf.float32); c = tf.cast(c, tf.float32)
-    ys, xs = tf.meshgrid(tf.range(Hf), tf.range(Wf), indexing='ij')
-    if axis == 1:
-        u = xs + a * ys + c; n = W; nf = Wf
-    else:
-        u = ys + a * xs + c; n = H; nf = Hf
-    inside = (u >= -0.5) & (u < nf - 0.5)
-    u0 = tf.floor(u); t = u - u0
-    a_ = -1.0
-    def near(d): return ((a_ + 2.0) * d - (a_ + 3.0)) * d * d + 1.0
-    def far(d):  return ((a_ * d - 5.0 * a_) * d + 8.0 * a_) * d - 4.0 * a_
-    wts = [far(1.0 + t), near(t), near(1.0 - t), far(2.0 - t)]
-    flat = tf.reshape(x, [-1, 3])
-    iy = tf.cast(ys, tf.int32); ix = tf.cast(xs, tf.int32)
-    out = tf.zeros([H, W, 3], tf.float32)
-    for k in range(4):
-        tap = tf.clip_by_value(tf.cast(u0, tf.int32) + (k - 1), 0, n - 1)
-        idx = iy * W + tap if axis == 1 else tap * W + ix
-        out += wts[k][:, :, None] * tf.gather(flat, idx)
-    out = tf.where(inside[..., None], out, 128.0)
-    return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
-
-# PIL's affine data is in pixel-CENTRE coordinates: timm's shear (1, f, 0, 0, 1, 0) is
-# u = x + f*y + f/2 in index coordinates. Translate already agrees.
-def _aa_shear_x(img, lvl):     return _aa_warp1d(img, lvl, 0.5 * lvl, 1)
-def _aa_shear_y(img, lvl):     return _aa_warp1d(img, lvl, 0.5 * lvl, 0)
-def _aa_translate_x(img, pct): return _aa_warp1d(img, 0.0, -pct * tf.cast(tf.shape(img)[1], tf.float32), 1)  # timm -Rel
-def _aa_translate_y(img, pct): return _aa_warp1d(img, 0.0, -pct * tf.cast(tf.shape(img)[0], tf.float32), 0)
-_AA_OPS['ShearX'] = (_aa_shear_x, _aa_she, True)
-_AA_OPS['ShearY'] = (_aa_shear_y, _aa_she, True)
+# tf-models translate_const (randAugmentTranslateConst): TranslateX/Y move (m/10)*100.0 PIXELS, not timm's fraction of the side
+def _aa_trn(m): return (m/_AA_MAX)*100.0
+def _aa_translate_x(img, px): return _aa_transform(img, [1.0, 0.0, -px, 0.0, 1.0, 0.0, 0.0, 0.0])
+def _aa_translate_y(img, px): return _aa_transform(img, [1.0, 0.0, 0.0, 0.0, 1.0, -px, 0.0, 0.0])
 _AA_OPS['TranslateX'] = (_aa_translate_x, _aa_trn, True)
 _AA_OPS['TranslateY'] = (_aa_translate_y, _aa_trn, True)
 
@@ -298,54 +228,33 @@ _RA_OPS = ['AutoContrast','Equalize','Invert','Rotate','Posterize','Solarize',
 def _randaugment(img, n, m, mstd=0.0):
     img = tf.cast(tf.clip_by_value(img, 0.0, 255.0), tf.uint8)
     for _ in range(n):
-        k = tf.random.uniform([], 0, len(_RA_OPS), dtype=tf.int32)
+        k = tf.random.uniform([], 0, len(_RA_OPS) + 1, dtype=tf.int32)   # tf-models: + an identity branch (randAugmentIdentityOp)
         mg = m if mstd <= 0.0 else tf.clip_by_value(tf.random.normal([], m, mstd), 0.0, _AA_MAX)
         branches = [(lambda nm=nm, x=img, mv=mg: _aa_apply_op(x, nm, mv)) for nm in _RA_OPS]
         img = tf.cond(tf.random.uniform([]) < 0.700000,   # each op applied with prob 0.700000 (TrainConfig.randAugmentProb)
-                      lambda k=k, br=branches: tf.switch_case(k, br),
+                      lambda k=k, br=branches, x=img: tf.switch_case(k, br, default=lambda: x),
                       lambda x=img: x)
     return tf.cast(img, tf.float32)
-
-# ── torchvision RandomResizedCrop.get_params (timm's RandomResizedCropAndInterpolation draws
-#    the same): area U(0.08, 1) of the image, aspect log-uniform on [3/4, 4/3], the first of 10
-#    draws that fits, offsets uniform over the valid range; else a centre crop at the ratio bound
-#    the image violates, or the whole image. Returns decode_and_crop_jpeg's window [i, j, h, w]. ──
-def _torchvision_rrc(shape):
-    H = shape[0]; W = shape[1]
-    Hf = tf.cast(H, tf.float32); Wf = tf.cast(W, tf.float32)
-    area = tf.random.uniform([10], 0.08, 1.0) * Hf * Wf
-    ar = tf.exp(tf.random.uniform([10], np.log(3. / 4), np.log(4. / 3)))
-    ws = tf.cast(tf.round(tf.sqrt(area * ar)), tf.int32)
-    hs = tf.cast(tf.round(tf.sqrt(area / ar)), tf.int32)
-    ok = (ws > 0) & (ws <= W) & (hs > 0) & (hs <= H)
-    k = tf.argmax(tf.cast(ok, tf.int32))   # the first draw that fits
-    def hit():
-        h = hs[k]; w = ws[k]
-        i = tf.random.uniform([], 0, H - h + 1, dtype=tf.int32)
-        j = tf.random.uniform([], 0, W - w + 1, dtype=tf.int32)
-        return tf.stack([i, j, h, w])
-    def fallback():
-        r = Wf / Hf
-        w = tf.where(r > 4. / 3, tf.cast(tf.round(Hf * (4. / 3)), tf.int32), W)
-        h = tf.where(r < 3. / 4, tf.cast(tf.round(Wf / (3. / 4)), tf.int32), H)
-        return tf.stack([(H - h) // 2, (W - w) // 2, h, w])
-    return tf.cond(tf.reduce_any(ok), hit, fallback)
-
 def _imagenet_decode_random_crop_flip(image_bytes):
     shape = tf.io.extract_jpeg_shape(image_bytes)
-    window = _torchvision_rrc(shape)
+    bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
+    bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
+        shape, bounding_boxes=bbox,
+        min_object_covered=0.08, aspect_ratio_range=(3./4, 4./3.),
+        area_range=(0.08, 1.0), max_attempts=10,
+        seed=_AUG_SEED,
+        use_image_if_no_bounding_boxes=True)
+    oy, ox, _ = tf.unstack(bbox_begin)
+    th, tw, _ = tf.unstack(bbox_size)
+    window = tf.stack([oy, ox, th, tw])
     img = tf.io.decode_and_crop_jpeg(image_bytes, window, channels=3)
-    # timm's train interpolation 'random': bilinear or bicubic, a fair coin per image
-    img = tf.cond(tf.random.uniform([]) < 0.5,
-                  lambda: tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                                          method=tf.image.ResizeMethod.BILINEAR, antialias=True)[0],
-                  lambda: tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                                          method=tf.image.ResizeMethod.BICUBIC, antialias=True)[0])
+    img = tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
+                          method=tf.image.ResizeMethod.BILINEAR, antialias=False)[0]
     img = tf.image.random_flip_left_right(img, seed=_AUG_SEED)
     img = _randaugment(img, 2, 15.000000, 0.000000)
     return img
 
-def _imagenet_decode_center_crop(image_bytes):
+def _imagenet_decode_center_crop_timm(image_bytes):
     img = tf.io.decode_jpeg(image_bytes, channels=3)
     shape = tf.shape(img)
     h, w = shape[0], shape[1]
@@ -358,6 +267,18 @@ def _imagenet_decode_center_crop(image_bytes):
     oy = (nh - _IMG_SIZE) // 2
     ox = (nw - _IMG_SIZE) // 2
     return tf.image.crop_to_bounding_box(img, oy, ox, _IMG_SIZE, _IMG_SIZE)
+
+def _imagenet_decode_center_crop(image_bytes):
+    # tf-models center_crop_image_v2 + resize_image (evalCropTf): crop _CROP_PCT of the SHORTER side,
+    # centred, out of the JPEG, then resize to _IMG_SIZE bilinear. _imagenet_decode_center_crop_timm
+    # above is timm's protocol, swapped in under SHIM_EVAL_SIZE.
+    shape = tf.cast(tf.io.extract_jpeg_shape(image_bytes), tf.float32)
+    cs = _CROP_PCT * tf.minimum(shape[0], shape[1])
+    off = tf.cast((shape - cs) / 2.0, tf.int32)
+    csi = tf.cast(cs, tf.int32)
+    img = tf.io.decode_and_crop_jpeg(image_bytes, tf.stack([off[0], off[1], csi, csi]), channels=3)
+    return tf.image.resize(img, [_IMG_SIZE, _IMG_SIZE], method=tf.image.ResizeMethod.BILINEAR,
+                           antialias=False)
 
 def build_imagenet_iter(split, batch_size, training, augment, shard=None):
     ds = tfds.load('imagenet2012', split=split,
@@ -399,6 +320,11 @@ def prefetch_to_device(it, sharding, depth=2):
 # returns fp32; master weights / LayerNorm / softmax stay fp32.
 # Helps matmul-bound nets (ViT/transformers ~2.7-3.6x on gfx1100).
 DT = jnp.bfloat16
+# evalF32: `evaluate()` and the validation loop score in f32 by rebinding the module globals
+# DT / CONV_DT around the eval forward. `mm` / `convdt` read them at TRACE time; `eval_batch` is
+# traced once, on its first call, while they hold float32, and `train_step` under DT. Neither
+# retraces: fixed shapes, and `take` is traced. The names stay the module's, so a script that
+# sets `mod.DT = jnp.float32` (scripts/parity/vit_timm_parity.py) still gets the f32 forward.
 def mm(a, b):
     return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)
 
@@ -436,9 +362,9 @@ def conv2d(x, w, b, padding=None, stride=(1,1)):
     return x + b.reshape(1, -1, 1, 1)
 
 # BN momentum compensated for gradient accumulation (K=8): _bn runs K× per
-# optimizer step, so per-micro momentum = 0.99**(1/K) = 0.998744 → K updates
-# compose to ~one 0.99/step update (true single-forward bs4096). Norm stats stay per-micro.
-def _bn(x, gamma, beta, prev, training, eps=1e-5, momentum=0.998744):
+# optimizer step, so per-micro momentum = 0.997**(1/K) = 0.999625 → K updates
+# compose to ~one 0.997/step update (true single-forward bs4096). Norm stats stay per-micro.
+def _bn(x, gamma, beta, prev, training, eps=0.001, momentum=0.999625):
     rm, rv = prev
     if training:
         bm = jnp.mean(x, axis=(0, 2, 3)); bv = jnp.var(x, axis=(0, 2, 3))
@@ -1802,47 +1728,47 @@ def forward(params, x, bn, training, drop_key=None):
     x = jax.nn.relu(x)
     x, _ne = fused_mbconv_block(params, x, 1, 2, 4, 3, False, bn, bn_i, training, act=jax.nn.relu)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 3, 2, 3, 5, bn, bn_i, training, dpkeys[0], 1.000000)
+    x, _ne = uib_block(params, x, 3, 2, 3, 5, bn, bn_i, training, dpkeys[0], 0.991000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 7, 1, 3, 3, bn, bn_i, training, dpkeys[1], 0.996250)
+    x, _ne = uib_block(params, x, 7, 1, 3, 3, bn, bn_i, training, dpkeys[1], 0.988000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 11, 2, 3, 5, bn, bn_i, training, dpkeys[2], 0.992500)
+    x, _ne = uib_block(params, x, 11, 2, 3, 5, bn, bn_i, training, dpkeys[2], 0.985000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 15, 1, 3, 3, bn, bn_i, training, dpkeys[3], 0.988750)
+    x, _ne = uib_block(params, x, 15, 1, 3, 3, bn, bn_i, training, dpkeys[3], 0.982000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 19, 1, 3, 3, bn, bn_i, training, dpkeys[4], 0.985000)
+    x, _ne = uib_block(params, x, 19, 1, 3, 3, bn, bn_i, training, dpkeys[4], 0.979000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 23, 1, 3, 5, bn, bn_i, training, dpkeys[5], 0.981250)
+    x, _ne = uib_block(params, x, 23, 1, 3, 5, bn, bn_i, training, dpkeys[5], 0.976000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 27, 1, 3, 3, bn, bn_i, training, dpkeys[6], 0.977500)
+    x, _ne = uib_block(params, x, 27, 1, 3, 3, bn, bn_i, training, dpkeys[6], 0.973000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 31, 1, 3, 0, bn, bn_i, training, dpkeys[7], 0.973750)
+    x, _ne = uib_block(params, x, 31, 1, 3, 0, bn, bn_i, training, dpkeys[7], 0.970000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 34, 1, 0, 0, bn, bn_i, training, dpkeys[8], 0.970000)
+    x, _ne = uib_block(params, x, 34, 1, 0, 0, bn, bn_i, training, dpkeys[8], 0.967000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 36, 1, 3, 0, bn, bn_i, training, dpkeys[9], 0.966250)
+    x, _ne = uib_block(params, x, 36, 1, 3, 0, bn, bn_i, training, dpkeys[9], 0.964000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 39, 2, 5, 5, bn, bn_i, training, dpkeys[10], 0.962500)
+    x, _ne = uib_block(params, x, 39, 2, 5, 5, bn, bn_i, training, dpkeys[10], 0.961000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 43, 1, 5, 5, bn, bn_i, training, dpkeys[11], 0.958750)
+    x, _ne = uib_block(params, x, 43, 1, 5, 5, bn, bn_i, training, dpkeys[11], 0.958000)
     bn_out.extend(_ne); bn_i += len(_ne)
     x, _ne = uib_block(params, x, 47, 1, 3, 5, bn, bn_i, training, dpkeys[12], 0.955000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 51, 1, 3, 5, bn, bn_i, training, dpkeys[13], 0.951250)
+    x, _ne = uib_block(params, x, 51, 1, 3, 5, bn, bn_i, training, dpkeys[13], 0.952000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 55, 1, 0, 0, bn, bn_i, training, dpkeys[14], 0.947500)
+    x, _ne = uib_block(params, x, 55, 1, 0, 0, bn, bn_i, training, dpkeys[14], 0.949000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 57, 1, 3, 0, bn, bn_i, training, dpkeys[15], 0.943750)
+    x, _ne = uib_block(params, x, 57, 1, 3, 0, bn, bn_i, training, dpkeys[15], 0.946000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 60, 1, 3, 5, bn, bn_i, training, dpkeys[16], 0.940000)
+    x, _ne = uib_block(params, x, 60, 1, 3, 5, bn, bn_i, training, dpkeys[16], 0.943000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 64, 1, 5, 5, bn, bn_i, training, dpkeys[17], 0.936250)
+    x, _ne = uib_block(params, x, 64, 1, 5, 5, bn, bn_i, training, dpkeys[17], 0.940000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 68, 1, 0, 0, bn, bn_i, training, dpkeys[18], 0.932500)
+    x, _ne = uib_block(params, x, 68, 1, 0, 0, bn, bn_i, training, dpkeys[18], 0.937000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 70, 1, 0, 0, bn, bn_i, training, dpkeys[19], 0.928750)
+    x, _ne = uib_block(params, x, 70, 1, 0, 0, bn, bn_i, training, dpkeys[19], 0.934000)
     bn_out.extend(_ne); bn_i += len(_ne)
-    x, _ne = uib_block(params, x, 72, 1, 5, 0, bn, bn_i, training, dpkeys[20], 0.925000)
+    x, _ne = uib_block(params, x, 72, 1, 5, 0, bn, bn_i, training, dpkeys[20], 0.931000)
     bn_out.extend(_ne); bn_i += len(_ne)
     x, _ns = conv_bn(x, params[75][0], params[75][1], params[75][2], bn[bn_i], training)
     bn_out.append(_ns); bn_i += 1
@@ -1871,12 +1797,12 @@ def loss_fn(params, bn, x, y, drop_key=None):
     return -jnp.mean(jnp.sum(log_probs * tgt, axis=-1)), _new_bn
 
 def augment_batch(x, rng):
-    """Random crop (numpy, CPU): pad 224→252, crop back to 224x224."""
-    x = x.reshape(-1, 3, 224, 224)
+    """Random crop (numpy, CPU): pad 256→284, crop back to 256x256."""
+    x = x.reshape(-1, 3, 256, 256)
     x = np.pad(x, ((0,0), (0,0), (14,14), (14,14)))
     top = rng.randint(0, 29)
     left = rng.randint(0, 29)
-    x = x[:, :, top:top+224, left:left+224]
+    x = x[:, :, top:top+256, left:left+256]
     return x.reshape(x.shape[0], -1)
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1919,7 +1845,7 @@ def train_step(params, opt_state, bn, x, y, lr, drop_key=None):
     v = jax.tree.map(lambda vi, g: 0.999 * vi + 0.001 * g * g, v, grads)
     mc = jax.tree.map(lambda mi: mi / (1 - 0.9 ** t), m)
     vc = jax.tree.map(lambda vi: vi / (1 - 0.999 ** t), v)
-    params = jax.tree.map(lambda p, mi, vi, msk: p - lr * (mi / (jnp.sqrt(vi) + 1e-8) + WD * msk * p), params, mc, vc, WD_MASK)
+    params = jax.tree.map(lambda p, mi, vi, msk: p - lr * (mi / (jnp.sqrt(vi) + 1e-7) + WD * msk * p), params, mc, vc, WD_MASK)
     return params, (m, v, t), _new_bn, loss
 
 @jit
@@ -1938,7 +1864,11 @@ def eval_batch(params, bn, x, y, take):
     return correct1, correct5, loss
 
 def evaluate(params, images, labels, batch_size=512):
+    global DT, CONV_DT
     batch_size = (batch_size // n_devices) * n_devices or n_devices
+    _dt_saved = (DT, CONV_DT)
+    DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
+    print('  eval: f32 forward (evalF32)')
     _p = np.random.default_rng(12345).permutation(len(labels))
     images, labels = images[_p], labels[_p]
     correct1 = 0
@@ -1961,6 +1891,7 @@ def evaluate(params, images, labels, batch_size=512):
         total_loss += float(l)
         n_batches += 1
     evaluated = len(labels)
+    DT, CONV_DT = _dt_saved
     return correct1, correct5, evaluated, total_loss / max(n_batches, 1)
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -2111,13 +2042,13 @@ if __name__ == "__main__":
         n_batches = 0
         for _ in range(steps_per_epoch):
             x, y = next(train_iter)
-            # Per-step LR (warmup → cosine)
+            # Per-step LR, tf-models: CosineDecay over ALL total_steps from step 0, LinearWarmup 0 -> cosine(warmup_steps) on top (cosineFromStep0)
+            _cos = lambda t: 0.000000 + (LR - 0.000000) * 0.5 * (1 + np.cos(np.pi * min(t / max(total_steps, 1), 1.0)))
             warmup_steps = steps_per_epoch * 5
             if _global_step < warmup_steps:
-                lr = jnp.float32(LR * (_global_step + 1) / warmup_steps)
+                lr = jnp.float32(_global_step / warmup_steps * _cos(warmup_steps))
             else:
-                prog = (_global_step - warmup_steps) / max(total_steps - warmup_steps, 1)
-                lr = jnp.float32(LR * 0.5 * (1 + np.cos(np.pi * min(prog, 1.0))))
+                lr = jnp.float32(_cos(_global_step))
             params, opt_state, bn_state, loss = train_step(params, opt_state, bn_state, x, y, lr, jax.random.fold_in(_drop_base, _global_step))
             epoch_loss += loss  # jax scalar: defer the device sync to epoch end
             n_batches += 1
@@ -2140,6 +2071,14 @@ if __name__ == "__main__":
         ev_t0 = time.time()
         if _do_val:
             print("  Running validation ...")
+            # evalF32: score through an f32 forward. `eval_batch` is traced HERE, on its first call, so
+            # the swap must precede any trace of it — asserted, not assumed.
+            if not getattr(eval_batch, '_f32_traced', False):
+                assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'
+                eval_batch._f32_traced = True
+            _dt_saved = (DT, CONV_DT)
+            DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
+            print('  eval: f32 forward (evalF32)')
             v_iter = prefetch_to_device(
                 iter(build_imagenet_iter('validation', MICRO_BATCH, training=False, augment=False)),
                 data_sharding)
@@ -2150,6 +2089,7 @@ if __name__ == "__main__":
                 total   += y.shape[0]
                 total_eval_loss += float(l)
                 v_batches += 1
+            DT, CONV_DT = _dt_saved
         acc1 = correct1 / max(total, 1)
         acc5 = correct5 / max(total, 1)
         val_secs = time.time() - ev_t0

@@ -13,10 +13,9 @@ import Jax
     Eval uses running BN statistics (`runningBN := true`): the UIB and fused-MBConv
     blocks are wired into the codegen's running-BN threading.
 
-    Resolution 224: the tfds pipeline hardcodes `_IMG_SIZE=224`, and timm ships
-    an official `mobilenetv4_conv_medium.e500_r224_in1k` variant, so 224 is a
-    published-faithful choice. (r256 would need `_IMG_SIZE` to derive from the
-    spec — a separate codegen change.) -/
+    Resolution: the spec is declared at 224, timm's `mobilenetv4_conv_medium.e500_r224_in1k`,
+    which the `default` (100-epoch) tier trains at; the `full` tier sets `imgSize := 256`, the
+    paper's own `input_size`, on the same spec (the generated `forward` infers the side). -/
 
 def mobilenetV4ConvMImagenet : NetSpec where
   name := "MobileNetV4-Conv-M (ImageNet, bf16)"
@@ -109,16 +108,43 @@ def mobilenetV4ConvMImagenetConfigBench : TrainConfig :=
   { mobilenetV4ConvMImagenetConfig with
       epochs := 1, batchSize := 128, gradAccumSteps := 1, useEMA := false }
 
-/-- Tier 3 — paper-faithful 500-epoch run. Full regularization pack; rent for it. -/
+/-- Tier 3 — the paper's 500-epoch recipe, as the paper's own training config has it:
+    tensorflow/models `official/vision/configs/experiments/image_classification/
+    imagenet_mobilenetv4_conv_medium_tpu.yaml` (its header names the paper's 500-epoch top-1), read 2026-10-12,
+    with tf-models' `augment.py` / `classification_input.py` / `preprocess_ops.py` /
+    `lr_schedule.py` / `nn_layers.py` where the yaml inherits a default. Every line below names its
+    source; the net stays timm's `mobilenetv4_conv_medium` (the parity gate's), which pools BEFORE
+    its 1280 head conv where tf-models' list runs that conv at 8×8 and pools after — disclosed, as
+    are the init (timm's, D4) and the decay reaching the classifier bias (the yaml excludes BN only).
+    The verified peer is `mnv4Imagenet256FullVerified` (`mnv4in256`). -/
 def mobilenetV4ConvMImagenetConfigFull : TrainConfig :=
   { mobilenetV4ConvMImagenetConfig with
-      epochs         := 500
-      weightDecay    := 0.1        -- paper
-      dropout        := 0.2        -- paper
-      randAugmentM   := 15.0       -- paper; NOT clamped at mstd 0: the shim scales ops by m/_AA_MAX (10), so 15 extrapolates past timm's range
-      randAugmentProb := 0.7       -- paper (Table 9): each RandAugment layer applies at p 0.7, not timm's 0.5
-      dropPath       := 0.075      -- paper; drop-path reaches every residual UIB (`uib_block`'s `_drop_branch`)
-      useEMA         := false }    -- paper: Conv-M trains without EMA, so the live weights are scored
+      epochs         := 500        -- yaml: train_steps 156000 = 500 × 312 at 4096
+      weightDecay    := 0.1        -- yaml: adamw.weight_decay_rate 0.1 (BN excluded)
+      dropout        := 0.2        -- yaml: dropout_rate 0.2
+      randAugmentM   := 15.0       -- yaml: randaug.magnitude 15; tf-models clamps only at magnitude_std > 0, so 15 extrapolates (Posterize 6 bits, Solarize a no-op, enhance 2.8, rotate 45°)
+      randAugmentProb := 0.7       -- yaml: prob_to_apply 0.7
+      randAugmentIdentityOp := true  -- augment.py `_distort_common`: the op index is drawn over len(ops) + 1 (an identity branch)
+      randAugmentTranslateConst := 100.0  -- augment.py default translate_const 100: ±150 px at m15, not timm's 0.45 of the side
+      augBicubic     := false      -- tf-models resamples its geometric ops through ImageProjectiveTransformV3 …
+      augNearest     := true       -- … at interpolation='nearest' (augment.py `transform`), fill 128 (wrap/unwrap)
+      randAugmentFillMean := false -- the 128 fill, not timm's img_mean
+      dropPath       := 0.075      -- yaml: stochastic_depth_drop_rate 0.075, flat_stochastic_depth_drop_rate false …
+      dropPathAllBlocks := true    -- … mobilenet.py: rate · (block_idx + 1) / 25 over the whole block list (UIB i at (i + 3) / 25), residual blocks only
+      imgSize        := 256        -- yaml: input_size [256, 256, 3], train and eval
+      testCropRatio  := 0.875      -- image_classification.py: center_crop_fraction 0.875 (the default at 256 would be 256/288)
+      evalCropTf     := true       -- classification_input.py: centre crop of the SHORTER side, then resize bilinear
+      cropTorchvision := false     -- preprocess_ops.random_crop_image_v2: TF's sample_distorted_bounding_box …
+      cropFallbackCenter := false  -- … with use_image_if_no_bounding_boxes (the whole image on exhaustion; no centre-crop fallback)
+      cropMinCovered := 0.08       -- … min_object_covered = area_range[0] = 0.08
+      trainResize    := .bilinear  -- image_classification.py: tf_resize_method 'bilinear'
+      resizeAntialias := false     -- tf.image.resize's default, which tf-models runs
+      bnMomentum     := 0.997      -- yaml: norm_momentum 0.997 (the 100-epoch tier's 0.99 is the repo's own)
+      bnEps          := 1e-3       -- yaml: norm_epsilon 0.001 (timm's 1e-5 stays on the 224 tier the parity gate ties)
+      adamEps        := 1e-7       -- Table 10 / Keras AdamWeightDecay default epsilon 1e-7
+      cosineFromStep0 := true      -- yaml: CosineDecay decay_steps 156000 from step 0 + linear warmup 1560 steps (5 epochs) from 0
+      evalF32        := true       -- the verified path's eval forward; scored post hoc in f32 as every pair is
+      useEMA         := false }    -- Table 10: no EMA for Conv-M; the live weights are scored
 
 def mobilenetV4ConvMImagenetRecipes : List Recipe := [
   { name := "default", cfg := mobilenetV4ConvMImagenetConfig,
