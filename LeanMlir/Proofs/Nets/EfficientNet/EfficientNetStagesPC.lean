@@ -58,7 +58,7 @@ noncomputable def mbStridedFwdB (N : Nat) {ic mid oc h w kHd kWd r : Nat}
     Vec (N * (ic * (2 * h) * (2 * w))) → Vec (N * (oc * h * w)) :=
   projB N (h := h) (w := w) Wp bp εp γp βp ∘
     seB N (h := h) (w := w) Wz₁ bz₁ Wz₂ bz₂ ∘
-    dwbsSB N (h := h) (w := w) Wd bd εd γd βd ∘
+    dwbsSXlaB N (h := h) (w := w) Wd bd εd γd βd ∘
     cbsB N (h := 2 * h) (w := 2 * w) We be εe γe βe
 
 /-- MBConv6 with an identity residual skip (`s=1 ∧ ic=oc=c`): `x + (project ∘ SE ∘ depthwise ∘ expand)(x)`. -/
@@ -148,7 +148,7 @@ def mbStridedGraphB (p epsStr : String) {N ic mid oc h w kHd kWd r : Nat}
       (.batchOp (N := N) (.seBlock (h := h) (w := w) s!"%{p}zW1" s!"%{p}zb1" s!"%{p}zW2" s!"%{p}zb2"
           Wz₁ bz₁ Wz₂ bz₂)
         (.batchOp (N := N) .swish (.bnBatchF s!"%{p}dg" s!"%{p}dbt" epsStr εd γd βd
-          (.batchOp (N := N) (.depthwiseStridedAt bf16 id (h := h) (w := w) s!"%{p}dW" (biasName false "" mid) Wd bd)
+          (.batchOp (N := N) (.depthwiseStridedXlaAt bf16 id (h := h) (w := w) s!"%{p}dW" (biasName false "" mid) Wd bd)
             (.batchOp (N := N) .swish (.bnBatchF s!"%{p}eg" s!"%{p}ebt" epsStr εe γe βe
               (.batchOp (N := N) (.convAt bf16 id (h := 2 * h) (w := 2 * w) s!"%{p}eW" (biasName false "" mid) We be) e))))))))
 
@@ -161,8 +161,8 @@ theorem mbStridedGraphB_faithful (p epsStr : String) {N ic mid oc h w kHd kWd r 
     den (mbStridedGraphB p epsStr We be εe γe βe Wd bd εd γd βd Wz₁ bz₁ Wz₂ bz₂ Wp bp εp γp βp bf16 e)
       = mbStridedFwdB N (h := h) (w := w) We be εe γe βe Wd bd εd γd βd Wz₁ bz₁ Wz₂ bz₂
           Wp bp εp γp βp (den e) := by
-  unfold mbStridedGraphB mbStridedFwdB projB seB dwbsSB cbsB
-  simp only [den_batchOp, Bf16Fold.denOp_convAt_id, Bf16Fold.denOp_depthwiseStridedAt_id,
+  unfold mbStridedGraphB mbStridedFwdB projB seB dwbsSXlaB cbsB
+  simp only [den_batchOp, Bf16Fold.denOp_convAt_id, Bf16Fold.denOp_depthwiseStridedXlaAt_id,
     den_bnBatchF, ↓den_batchOp_swish_eq_swishF, swishF_faithful]
   simp only [denOp, Function.comp_apply]
 

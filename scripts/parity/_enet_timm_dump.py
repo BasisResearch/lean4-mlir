@@ -6,10 +6,10 @@ one TRAIN-mode forward (batch statistics) and one EVAL-mode forward (running sta
 writes the parameters in the JAX reference's `params[k][j]` order next to both logits.
 
 `--pad`:
-  tf      `tf_efficientnet_b0` — TF's net: SAME padding at every conv (the paper's)
-  hybrid  `efficientnet_b0` (symmetric) with the stem swapped for a SAME conv — what the JAX and
-          verified paths compute today (planning/imagenet_parity.md §2.1: "SAME stem + symmetric
-          strided depthwise")
+  tf      `tf_efficientnet_b0` — TF's net: SAME padding at every conv (the paper's; what the JAX
+          and verified paths compute since 2026-10-12, D3)
+  hybrid  `efficientnet_b0` (symmetric) with the stem swapped for a SAME conv — what the two paths
+          computed before D3 ("SAME stem + symmetric strided depthwise"; a control now)
   sym     `efficientnet_b0` as is — torchvision/timm symmetric everywhere (a control)
 Classifier dropout and drop-path are 0, so train mode is deterministic.
 

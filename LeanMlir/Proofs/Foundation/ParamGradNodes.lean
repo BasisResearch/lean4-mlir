@@ -57,6 +57,15 @@ theorem dStridedInB_eq_batchMapBackward {N c h w kH kW : Nat} (W : DepthwiseKern
           (depthwiseStride2Flat_differentiable W b)).backward x dy :=
   depthwiseStridedBackBatched_faithful "" W b x (.operand "" dy)
 
+/-- `dStridedXlaInB` — the emitted XLA-`SAME` strided depthwise input-cotangent — is the batched
+    strided depthwise VJP's backward, at any saved input. -/
+theorem dStridedXlaInB_eq_batchMapBackward {N c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
+    (b : Vec c) (x : Vec (N * (c * (2 * h) * (2 * w)))) (dy : Vec (N * (c * h * w))) :
+    dStridedXlaInB N W b dy
+      = (batchMapHasVJP (depthwiseStride2FlatXla W b) (depthwiseStride2FlatXlaHasVJP W b)
+          (depthwiseStride2FlatXla_differentiable W b)).backward x dy :=
+  depthwiseStridedXlaBackBatched_faithful "" W b x (.operand "" dy)
+
 -- ════════════════════════════════════════════════════════════════
 -- § One stage back: the loss gradient pulled through each emitted backward op
 --   Each lemma is `HasGradAt.comp` through a certified VJP, restated at the cotangent the render
@@ -184,6 +193,18 @@ theorem hasGradAt_depthwiseStrided {N c h w kH kW : Nat} (W : DepthwiseKernel c 
     ((batchMapHasVJP _ (depthwiseStride2FlatHasVJP W b)
       (depthwiseStride2Flat_differentiable W b)).toHasVJPAt _)).of_eq
     (dStridedInB_eq_batchMapBackward (h := h) (w := w) W b _ _).symm
+
+/-- Back through a batched XLA-`SAME` strided depthwise: `dStridedXlaInB` (MobileNetV2's and
+    EfficientNet-B0's stride-2 bodies). -/
+theorem hasGradAt_depthwiseStridedXla {N c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
+    (b : Vec c) (x : Vec (N * (c * (2 * h) * (2 * w)))) {G : Vec (N * (c * h * w)) → Vec 1}
+    {dy : Vec (N * (c * h * w))} (hG : HasGradAt G (batchMap N (depthwiseStride2FlatXla W b) x) dy) :
+    HasGradAt (fun y => G (batchMap N (depthwiseStride2FlatXla W b) y)) x
+      (dStridedXlaInB N W b dy) :=
+  (hG.comp ((batchMap_differentiable _ (depthwiseStride2FlatXla_differentiable W b)) _)
+    ((batchMapHasVJP _ (depthwiseStride2FlatXlaHasVJP W b)
+      (depthwiseStride2FlatXla_differentiable W b)).toHasVJPAt _)).of_eq
+    (dStridedXlaInB_eq_batchMapBackward (h := h) (w := w) W b _ _).symm
 
 -- ════════════════════════════════════════════════════════════════
 -- § Convolutions and dense layers

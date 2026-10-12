@@ -19,7 +19,8 @@ def efficientNetB0Imagenet : NetSpec where
   -- below — the stem and the 1×1 head — emit `jax.nn.relu` while every MBConv interior emits
   -- `swish`. EfficientNet-B0 is SiLU/swish THROUGHOUT, stem and head included.
   -- The Imagenette twin carries this line too; the deviation it prevents is several times the
-  -- padding deviation.
+  -- strided-depthwise padding deviation (0.37 of the logit scale at train resolution, closed as
+  -- D3 on 2026-10-12: `mbconv_block` now pads its depthwise `'SAME'` under `convPadStyle`).
   -- The VERIFIED render is swish (194 `stablehlo.logistic`, zero `stablehlo.maximum`), so without
   -- this line the port is MORE paper-faithful than the reference it is scored against, and the
   -- reference ↔ verified accuracy comparison is not like-for-like.

@@ -9948,17 +9948,24 @@ the \texttt{emarmsdp64dropdowxeps0001bf16} render with its
 the rerun is what quantifies it. There was no deficit for it to explain: the
 reference scores $77.15\%$ / $93.30\%$ against the paper's $77.1$ / $93.3$.
 
-\medskip\noindent\textbf{One difference is known and open: the four strided
-depthwise convolutions pad symmetrically on both paths where TensorFlow pads
-\texttt{SAME}.} TF's \texttt{SAME} puts the odd pixel of padding on the
-bottom and right; ours splits it evenly, so at stride two the depthwise
-window sits one pixel off. Measured against \texttt{tf\_efficientnet\_b0} on
-shared weights (\texttt{scripts/parity/\allowbreak enet\_timm\_parity.py
---pad tf}), the
-logits differ by $0.37$ of their scale at training resolution and $0.048$
-at evaluation. It is the largest deviation left, it is the same on both
-paths, and it is decided before the rerun rather than by it. A smaller
-one is also the same on both paths: the learning rate multiplies the
+\medskip\noindent\textbf{One difference was known and open in this pair: the
+four strided depthwise convolutions padded symmetrically on both paths where
+TensorFlow pads \texttt{SAME}.} TF's \texttt{SAME} puts the odd pixel of
+padding on the bottom and right; a symmetric pad splits it evenly, so at
+stride two the depthwise window sits one pixel off. Measured against
+\texttt{tf\_efficientnet\_b0} on shared weights
+(\texttt{scripts/parity/\allowbreak enet\_timm\_parity.py --pad hybrid}),
+the logits differ by $0.37$ of their scale at training resolution and
+$0.048$ at evaluation --- the largest deviation this pair carried, and the
+same on both paths. Both now pad as TensorFlow does: the reference's
+\texttt{mbconv\_block} passes \texttt{'SAME'} to its depthwise, and the
+verified render emits the odd-phase strided depthwise at its four sites
+(\texttt{depthwiseStride2FlatXla}, the stem's convention: a symmetric
+stride-one convolution read at the odd positions), with the block, step and
+data-parallel ties restated on that form; the gate now pins
+\texttt{tf\_efficientnet\_b0} itself and shows the old hybrid red. The
+rerun carries it. A smaller difference is also the same
+on both paths: the learning rate multiplies the
 momentum buffer on its way into the weights, where TensorFlow's RMSProp
 folds it into the buffer, so the two part while the rate moves --- through
 the warmup, and for a few steps after each drop of the staircase.
@@ -10019,7 +10026,7 @@ TensorFlow's crop sampler without its centre-crop fallback, the fp32
 classifier head, synchronised BatchNorm, TensorFlow's classifier init
 $U(\pm 1/\sqrt{1000})$ with the depthwise and squeeze-excite fan inits,
 RMSProp's learning rate inside the momentum term, and SAME padding on the
-strided depthwise convolutions, which moves the T2/T3 ties;
+strided depthwise convolutions;
 \texttt{enet-full-jax-4gpu} / \texttt{enet-default-4gpu}, ${\sim}47 +
 80$\,h.]}
 

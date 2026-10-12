@@ -413,4 +413,35 @@ theorem depthwiseStridedWSyncAt_of_scaled (bf16 : Bool) (R : Nat) (hR : 0 < R) (
   simp only [den_allReduceMeanF, Bf16Fold.den_depthwiseStridedWeightGradBAt_id] at h ⊢
   exact h
 
+/-- `DepthwiseStridedXlaWSync` on the switch (XLA-`SAME` padding: MobileNetV2's and
+    EfficientNet-B0's downsampling depthwises). -/
+def DepthwiseStridedXlaWSyncAt (bf16 : Bool) (R : Nat) (hR : 0 < R) (N h w : Nat) {c kH kW : Nat}
+    (t xN cotN : String) (b : Vec c) (X : Vec ((R * N) * (c * (2 * h) * (2 * w))))
+    (W : DepthwiseKernel c kH kW) (cots : Fin R → Vec (N * (c * h * w)))
+    (COT : Vec ((R * N) * (c * h * w))) : Prop :=
+  ∀ idx : Fin (c * kH * kW),
+    den (.allReduceMeanF R hR t [c, 1, kH, kW] (fun r =>
+          SHlo.depthwiseStridedXlaWeightGradBAt bf16 (h := h) (w := w) id xN b
+            (batchShard R N (c * (2 * h) * (2 * w)) X r) W (.operand cotN (cots r)))) idx
+      = den (SHlo.depthwiseStridedXlaWeightGradBAt bf16 (h := h) (w := w) id xN b X W
+          (.operand cotN COT)) idx
+
+theorem depthwiseStridedXlaWSyncAt_false (R : Nat) (hR : 0 < R) (N h w : Nat) {c kH kW : Nat}
+    (t xN cotN : String) (b : Vec c) (X : Vec ((R * N) * (c * (2 * h) * (2 * w))))
+    (W : DepthwiseKernel c kH kW) (cots : Fin R → Vec (N * (c * h * w)))
+    (COT : Vec ((R * N) * (c * h * w))) :
+    DepthwiseStridedXlaWSyncAt false R hR N h w t xN cotN b X W cots COT
+      = DepthwiseStridedXlaWSync R hR N h w t xN cotN b X W cots COT := rfl
+
+theorem depthwiseStridedXlaWSyncAt_of_scaled (bf16 : Bool) (R : Nat) (hR : 0 < R) (N h w : Nat)
+    {c kH kW : Nat} (t xN cotN : String) (b : Vec c)
+    (X : Vec ((R * N) * (c * (2 * h) * (2 * w)))) (W : DepthwiseKernel c kH kW)
+    (cots : Fin R → Vec (N * (c * h * w))) (COT : Vec ((R * N) * (c * h * w)))
+    (hc : ∀ r, cots r = batchShard R N (c * h * w) (fun i => (R : ℝ) * COT i) r) :
+    DepthwiseStridedXlaWSyncAt bf16 R hR N h w t xN cotN b X W cots COT := by
+  intro idx
+  have h := depthwiseStridedXlaWSync_of_scaled R hR N h w t xN cotN b X W cots COT hc idx
+  simp only [den_allReduceMeanF, Bf16Fold.den_depthwiseStridedXlaWeightGradBAt_id] at h ⊢
+  exact h
+
 end Proofs.SyncKit

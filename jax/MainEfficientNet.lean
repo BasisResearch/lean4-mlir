@@ -10,7 +10,8 @@ def efficientNetB0 : NetSpec where
   imageW := 224
   -- EfficientNet-B0 is SiLU/swish throughout, stem and head included. The verified render is
   -- swish there too; without this line the reference is not, a deviation several times the
-  -- padding deviation.
+  -- strided-depthwise padding deviation (0.37 of the logit scale at train resolution, closed as
+  -- D3 on 2026-10-12: `mbconv_block` now pads its depthwise `'SAME'` under `convPadStyle`).
   convBnAct := .swish
   layers := [
     .convBn 3 32 3 2 .same,                          -- 224→112

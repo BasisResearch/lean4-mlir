@@ -75,7 +75,7 @@ activation on every replica. The forward half with the sites is
 `efficientnetin_emarmsdp64dropdowxeps0001bf16`, whose conv and depthwise weight gradients are the
 bf16 kinds. Every conv and depthwise weight collective below is stated on the renderers' switch —
 `ConvWSyncAt bf16` / `ConvStridedXlaWSyncAt bf16` / `DepthwiseWSyncAt bf16` /
-`DepthwiseStridedWSyncAt bf16` (`Foundation.GradNodesBAt`): the replicas' nodes and the
+`DepthwiseStridedXlaWSyncAt bf16` (`Foundation.GradNodesBAt`): the replicas' nodes and the
 batch-`R·N` node are the f32 kind at `false` and the bf16 kind at `true` — and the capstone takes
 `bf16`, so it covers the f32 DP artifacts and the `*bf16` ones' step read over ℝ at the identity
 rounding (`Bf16Erasure`), where each bf16 collective is `1/R` of the batch-`R·N` bf16 node exactly
@@ -89,10 +89,10 @@ open Proofs Proofs.StableHLO Proofs.IR
 namespace Proofs.EnetSyncTieG
 
 open scoped BigOperators
-open Proofs.BackLinks (reassocB bnBackB swBackB sigBackB cInB dInB dStridedInB gapInB seInB
+open Proofs.BackLinks (reassocB bnBackB swBackB sigBackB cInB dInB dStridedXlaInB gapInB seInB
   gateCotB)
 open Proofs.BackLinks (bnInB bnInB_eq_bnBackB rowB unrowB)
-open Proofs.BackLinks (den_convBackBatched_eq_cInB cbsB_back_eq dwbsB_back_eq dwbsSB_back_eq
+open Proofs.BackLinks (den_convBackBatched_eq_cInB cbsB_back_eq dwbsB_back_eq dwbsSXlaB_back_eq
   projB_back_eq bnBackB_smul swBackB_smul sigBackB_smul seInB_smul gateCotB_smul
   seInB_eq_batchMapAux)
 open Proofs.SyncKit
@@ -236,11 +236,11 @@ private noncomputable def sEr (xin : Vec (N * (ic * (2 * h) * (2 * w)))) :
   swish (N * (mid * (2 * h) * (2 * w))) (sEn N h w p xin)
 
 private noncomputable def sDc (xin : Vec (N * (ic * (2 * h) * (2 * w)))) : Vec (N * (mid * h * w)) :=
-  batchMap N (depthwiseStride2Flat p.dW p.db) (sEr N h w p xin)
+  batchMap N (depthwiseStride2FlatXla p.dW p.db) (sEr N h w p xin)
 
 private noncomputable def sCotEr (hd : 0 < p.dε) (hp : 0 < p.pε) (xin : Vec (N * (ic * (2 * h) * (2 * w))))
     (dy : Vec (N * (oc * h * w))) : Vec (N * (mid * (2 * h) * (2 * w))) :=
-  dStridedInB N p.dW p.db (tCotDc N h w p.toEnTail hd hp (sDc N h w p xin) dy)
+  dStridedXlaInB N p.dW p.db (tCotDc N h w p.toEnTail hd hp (sDc N h w p xin) dy)
 
 private noncomputable def sCotEn (hd : 0 < p.dε) (hp : 0 < p.pε) (xin : Vec (N * (ic * (2 * h) * (2 * w))))
     (dy : Vec (N * (oc * h * w))) : Vec (N * (mid * (2 * h) * (2 * w))) :=
@@ -379,7 +379,7 @@ theorem sCotIn_eq_vjp (N h w : Nat) {ic mid oc rd kh kw : Nat} (p : MBW ic mid o
     (mbStridedFwdBHasVJP N (h := h) (w := w) p.eW p.eb p.eε he p.eγ p.eβ p.dW p.db p.dε hd p.dγ
       p.dβ p.z1 p.zb1 p.z2 p.zb2 p.pW p.pb p.pε hp p.pγ p.pβ)]
   simp only [mbStridedFwdBHasVJP, vjpComp_backward]
-  rw [projB_back_eq, dwbsSB_back_eq, cbsB_back_eq]
+  rw [projB_back_eq, dwbsSXlaB_back_eq, cbsB_back_eq]
   rfl
 
 theorem nCotIn_eq_vjp (N h w : Nat) {ic oc rd kh kw : Nat} (p : MBWNoExp ic oc rd kh kw)
@@ -487,7 +487,7 @@ private theorem xCotEc_smul (he : 0 < p.eε) (hd : 0 < p.dε) (hp : 0 < p.pε) (
 private theorem sCotEr_smul (hd : 0 < p.dε) (hp : 0 < p.pε) (xin : Vec (N * (ic * (2 * h) * (2 * w)))) :
     IsHomog (sCotEr N h w p hd hp xin) := by
   intro s dy
-  unfold sCotEr; rw [tCotDc_smul, dStridedInB_smul]
+  unfold sCotEr; rw [tCotDc_smul, dStridedXlaInB_smul]
 
 private theorem sCotEn_smul (hd : 0 < p.dε) (hp : 0 < p.pε) (xin : Vec (N * (ic * (2 * h) * (2 * w)))) :
     IsHomog (sCotEn N h w p hd hp xin) := by
@@ -712,7 +712,7 @@ noncomputable def rsCotIn {c mid rd kh kw : Nat} (p : MBW c mid c rd kh kw)
 private noncomputable def ssCotEr {ic mid oc rd kh kw : Nat} (p : MBW ic mid oc rd kh kw)
     (XIN : Vec ((R * N) * (ic * (2 * h) * (2 * w)))) (dys : Fin R → Vec (N * (oc * h * w)))
     (r : Fin R) : Vec (N * (mid * (2 * h) * (2 * w))) :=
-  dStridedInB N p.dW p.db (tsCotDc R hR N h w p.toEnTail (sDc (R * N) h w p XIN) dys r)
+  dStridedXlaInB N p.dW p.db (tsCotDc R hR N h w p.toEnTail (sDc (R * N) h w p XIN) dys r)
 
 private noncomputable def ssCotEn {ic mid oc rd kh kw : Nat} (p : MBW ic mid oc rd kh kw)
     (XIN : Vec ((R * N) * (ic * (2 * h) * (2 * w)))) (dys : Fin R → Vec (N * (oc * h * w)))
@@ -851,7 +851,7 @@ private theorem ssCotEr_shard (hd : 0 < p.dε) (hp : 0 < p.pε)
     ssCotEr R hR N h w p XIN dys r
       = batchShard R N (mid * (2 * h) * (2 * w)) (sCotEr (R * N) h w p hd hp XIN DY) r := by
   unfold ssCotEr
-  rw [tsCotDc_shard R hR N h w hN hh hw p.toEnTail hd hp _ dys DY hdys r, dStridedInB_shard]
+  rw [tsCotDc_shard R hR N h w hN hh hw p.toEnTail hd hp _ dys DY hdys r, dStridedXlaInB_shard]
   rfl
 
 private theorem ssCotEn_shard (hd : 0 < p.dε) (hp : 0 < p.pε)
@@ -1116,7 +1116,7 @@ def stridedSyncTiedG (R : Nat) (hR : 0 < R) (N h w : Nat) {ic mid oc rd kh kw : 
       (ssCotEc R hR N h w p XIN dys) (sCotEc (R * N) h w p he hd hp XIN DY)
   ∧ BnSync R hR N mid (2 * h) (2 * w) s!"{pfx}eg" s!"{pfx}ebt" vN epsStr cotN p.eε
       (sEc (R * N) h w p XIN) (ssCotEn R hR N h w p XIN dys) (sCotEn (R * N) h w p hd hp XIN DY)
-  ∧ DepthwiseStridedWSyncAt bf16 R hR N h w s!"{pfx}dW" xN cotN p.db (sEr (R * N) h w p XIN) p.dW
+  ∧ DepthwiseStridedXlaWSyncAt bf16 R hR N h w s!"{pfx}dW" xN cotN p.db (sEr (R * N) h w p XIN) p.dW
       (tsCotDc R hR N h w p.toEnTail (sDc (R * N) h w p XIN) dys)
       (tCotDc (R * N) h w p.toEnTail hd hp (sDc (R * N) h w p XIN) DY)
   ∧ tailSyncTiedG R hR N h w pfx xN cotN vN epsStr p.toEnTail hp bf16 (sDc (R * N) h w p XIN) dys DY
@@ -1136,7 +1136,7 @@ theorem strided_syncTiedG (R : Nat) (hR : 0 < R) (N h w : Nat) {ic mid oc rd kh 
       rw [ssCotEc_shard R hR N h w hN hh hw p he hd hp XIN dys _ hdys r, sCotEc_smul])
   · exact bnSync_of_scaled R hR N mid (2 * h) (2 * w) (nhw_ne_zero hN h2h h2w) _ _ _ _ _ _ _ _ _ (fun r => by
       rw [ssCotEn_shard R hR N h w hN hh hw p hd hp XIN dys _ hdys r, sCotEn_smul])
-  · exact depthwiseStridedWSyncAt_of_scaled bf16 R hR N h w _ _ _ _ _ _ _ _ (fun r => by
+  · exact depthwiseStridedXlaWSyncAt_of_scaled bf16 R hR N h w _ _ _ _ _ _ _ _ (fun r => by
       rw [tsCotDc_shard R hR N h w hN hh hw p.toEnTail hd hp _ dys _ hdys r, tCotDc_smul])
 
 /-- **The MBConv1 block, DP-tied** (b1) — ten collectives: the depthwise weight, then the tail's

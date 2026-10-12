@@ -6,11 +6,13 @@ weights (planning/imagenet_parity.md G3).
 ImageNet stem/head ran ReLU instead of swish unseen (2026-08-30): nothing compared either reference
 with an independent EfficientNet. This does, for both JAX emitters.
 
-The spec is TF's EfficientNet-B0 (SAME padding at every conv, BN ε 1e-3). The JAX and verified
-paths pad the stem SAME but the strided depthwise convs symmetrically — a hybrid neither TF nor
-timm's `efficientnet_b0` computes. The gate pins that hybrid (`--pad hybrid`, the default: timm's
-`efficientnet_b0` with a SAME stem) so any OTHER structural drift is caught, and `--pad tf` reports
-the distance to TF's net itself — the one deviation left, and it is disclosed, not hidden.
+The spec is TF's EfficientNet-B0 (SAME padding at every conv, BN ε 1e-3), and since 2026-10-12
+both paths compute it: the stem AND the four strided depthwise convs pad SAME (D3,
+planning/imagenet_parity.md §9.2 — before it the paths padded the strided depthwises symmetrically,
+a hybrid neither TF nor timm's `efficientnet_b0` computes, measured here at 0.37 / 0.048 of the
+logit scale). The gate pins `tf_efficientnet_b0` (`--pad tf`, the default); `--controls` must show
+it RED on that old hybrid (`efficientnet_b0` with a SAME stem), on symmetric padding everywhere and
+on BN ε 1e-5, or the gate is blind to those defects.
 
 What it does:
   1. `.venv-timm` builds timm's net (random init, BN affine + running statistics randomised) and
@@ -27,8 +29,8 @@ What it does:
 Usage:
     scripts/parity/enet_timm_parity.py              # batch 4, seed 0, tol 1e-3 (relative to max |logit|)
     scripts/parity/enet_timm_parity.py --tol 1e-4
-    scripts/parity/enet_timm_parity.py --controls   # also RED on symmetric padding and on ε 1e-5
-    scripts/parity/enet_timm_parity.py --pad tf     # the distance to TF's all-SAME net (expected above tol)
+    scripts/parity/enet_timm_parity.py --controls   # also RED on the pre-D3 hybrid, symmetric padding, ε 1e-5
+    scripts/parity/enet_timm_parity.py --pad hybrid # the distance to the hybrid the paths computed before D3
 """
 import argparse, os, subprocess, sys, tempfile
 import numpy as np
@@ -102,11 +104,13 @@ def main():
     ap.add_argument("--batch", type=int, default=4)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--tol", type=float, default=1e-3)
-    ap.add_argument("--pad", default="hybrid", choices=["hybrid", "tf", "sym"],
-                    help="the timm target: our SAME-stem hybrid (the gate), TF's all-SAME net, or symmetric")
+    ap.add_argument("--pad", default="tf", choices=["tf", "hybrid", "sym"],
+                    help="the timm target: TF's all-SAME net (the gate, both paths since D3), the SAME-stem "
+                         "hybrid the paths computed before 2026-10-12, or symmetric everywhere")
     ap.add_argument("--controls", action="store_true",
-                    help="also run the ImageNet net against timm at symmetric padding and at ε 1e-5; "
-                         "both must come out ABOVE tolerance, or the gate cannot see those defects")
+                    help="also run the ImageNet net against timm at the pre-D3 hybrid padding, at symmetric "
+                         "padding and at ε 1e-5; all three must come out ABOVE tolerance, or the gate cannot "
+                         "see those defects")
     a = ap.parse_args()
     if not os.path.exists(TIMM_PY):
         sys.exit(f"⛔ {TIMM_PY} missing — the pinned timm env (requirements-timm-lock.txt)")
@@ -140,8 +144,9 @@ def main():
         if a.controls:
             label, mod, spec, cfg, ds, classes, running, eps = NETS[1]
             fwd = load_forward(emit(tmp, mod, spec, cfg, ds))
-            for why, pad, ceps in (("symmetric padding everywhere (timm's efficientnet_b0)", "sym", eps),
-                                   ("BN ε 1e-5 against the recipe's 1e-3", "hybrid", 1e-5)):
+            for why, pad, ceps in (("the pre-D3 hybrid: SAME stem, symmetric strided depthwise", "hybrid", eps),
+                                   ("symmetric padding everywhere (timm's efficientnet_b0)", "sym", eps),
+                                   ("BN ε 1e-5 against the recipe's 1e-3", "tf", 1e-5)):
                 d = timm_dump(tmp, classes, a.batch, a.seed, ceps, pad)
                 params = [tuple(jnp.asarray(d[f"p{k}_{j}"]) for j in range(3 if f"p{k}_2" in d else 2))
                           for k in range(int(d["n_params"]))]

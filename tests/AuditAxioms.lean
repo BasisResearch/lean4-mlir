@@ -486,7 +486,7 @@ open Proofs
 #print axioms EnetFold.bnGammaB_den
 #print axioms EnetFold.bnBetaB_den
 #print axioms EnetFold.depthwiseWB_den
-#print axioms EnetFold.depthwiseStridedWB_den
+#print axioms EnetFold.depthwiseStridedXlaWB_den
 -- ch8-EfficientNet-B0 TIE
 #print axioms EnetTie.enet_exp_tied
 #print axioms EnetTie.enet_strided_tied
@@ -2513,7 +2513,7 @@ open Proofs
 #print axioms Proofs.MobileNetV2SyncTieB.mnv2StridedSyncCotIn_shard
 #print axioms Proofs.MobileNetV2SyncTieB.mnv2StemSyncCotC_shard
 #print axioms Proofs.MobileNetV2SyncTieB.mnv2HeadSyncCotBlk_shard
-#print axioms Proofs.MobileNetV2SyncTieB.den_allReduceMeanF_depthwiseStridedXlaWeightGradB_shard
+#print axioms Proofs.SyncKit.den_allReduceMeanF_depthwiseStridedXlaWeightGradB_shard
 #print axioms Proofs.MobileNetV2SyncTieB.mnv2_net_syncTiedB
 #print axioms Proofs.MobileNetV2SyncTieB.mnv2_net_syncTiedB_smoothedCE
 

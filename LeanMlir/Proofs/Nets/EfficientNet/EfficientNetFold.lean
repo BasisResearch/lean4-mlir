@@ -158,16 +158,20 @@ theorem depthwiseWB_den {N c h w kH kW : Nat}
   rw [depthwiseWeightSgdB_eq_grad, GradNodeB.depthwiseWGradB_den]
 
 /-- **Batched strided depthwise weight op denotes the certified Σ_n batched weight gradient.** The
-    strided VJP is already flat, so `Σ_n` of `depthwiseStride2WeightGradHasVJP.correct`. -/
-theorem depthwiseStridedWB_den {N c h w kH kW : Nat}
+    op is the XLA-`SAME` `depthwiseStridedXlaWeightSgdB` the render emits at the four strided
+    MBConvs (b2 / b4 / b6 / b12, `EfficientNetRender.Basic`) — the weight-grad correlation pad
+    shifted one position, as the stem's — so, as for the stem, the certified gradient is the
+    gradient of the net that ships. The strided VJP is already flat, so `Σ_n` of
+    `depthwiseStride2XlaWeightGradHasVJP.correct`. -/
+theorem depthwiseStridedXlaWB_den {N c h w kH kW : Nat}
     (xN wN lrStr cotN : String) (b : Vec c) (x : Vec (N * (c * (2*h) * (2*w))))
     (W : DepthwiseKernel c kH kW) (cot : Vec (N * (c * h * w))) (lr : ℝ) (idx : Fin (c * kH * kW)) :
-    den (SHlo.depthwiseStridedWeightSgdB xN wN lrStr b x W lr (.operand cotN cot)) idx
+    den (SHlo.depthwiseStridedXlaWeightSgdB xN wN lrStr b x W lr (.operand cotN cot)) idx
       = Tensor3.flatten W idx - lr * ∑ n : Fin N, ∑ j : Fin (c * h * w),
           pdiv (fun v' : Vec (c * kH * kW) =>
-                  depthwiseStride2Flat (Tensor3.unflatten v') b (batchSlice N (c * (2*h) * (2*w)) x n))
+                  depthwiseStride2FlatXla (Tensor3.unflatten v') b (batchSlice N (c * (2*h) * (2*w)) x n))
                (Tensor3.flatten W) idx j * batchSlice N (c * h * w) cot n j := by
-  rw [depthwiseStridedWeightSgdB_eq_grad, GradNodeB.depthwiseStridedWGradB_den]
+  rw [depthwiseStridedXlaWeightSgdB_eq_grad, GradNodeB.depthwiseStridedXlaWGradB_den]
 
 -- ════════════════════════════════════════════════════════════════
 -- § Tie clauses — one fused SGD node each (the `GradNodeB.*TiedB_holds` clauses under `θ − lr·`)

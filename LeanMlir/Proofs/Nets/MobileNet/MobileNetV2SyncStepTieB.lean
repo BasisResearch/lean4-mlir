@@ -58,7 +58,7 @@ op's lowering is.
 `mobilenetv2in_rmsdp64wxdols0eps0001bf16`, whose conv and depthwise weight gradients are the bf16
 kinds. Every conv and depthwise weight collective below is stated on the renderers' switch —
 `ConvWSyncAt bf16` / `ConvStridedXlaWSyncAt bf16` / `DepthwiseWSyncAt bf16`
-(`Foundation.GradNodesBAt`) and this file's `DepthwiseStridedXlaWSyncAt bf16`: the replicas' nodes
+/ `DepthwiseStridedXlaWSyncAt bf16` (`Foundation.GradNodesBAt`): the replicas' nodes
 and the batch-`R·N` node are the f32 kind at `false` and the bf16 kind at `true` — and the capstone
 takes `bf16`, so it covers the f32 DP artifacts (`mobilenetv2_adamdp`, `mobilenetv2in_adamdp64`,
 `mobilenetv2in_rmsdp64`, `mobilenetv2in_rmsdp128`) and the `*bf16` ones' step read over ℝ at the
@@ -82,7 +82,7 @@ open Proofs Proofs.StableHLO Proofs.IR
 namespace Proofs.MobileNetV2SyncTieB
 
 open scoped BigOperators
-open Proofs.BackLinks (reassocB cInB dInB gapInB)
+open Proofs.BackLinks (reassocB cInB dInB dStridedXlaInB gapInB)
 open Proofs.BackLinks (bnInB unrowB rowB relu6MaskB)
 open Proofs.SyncKit
 open Proofs.SyncKit
@@ -91,10 +91,6 @@ open Proofs.MobileNetV2TieB
 -- ════════════════════════════════════════════════════════════════
 -- § 1. Homogeneity — the single-device chain is linear in its cotangent
 -- ════════════════════════════════════════════════════════════════
-
-private theorem dStridedXlaInB_smul (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW) (b : Vec c)
-    : IsHomog (dStridedXlaInB N (h := h) (w := w) W b) :=
-  batchMap_smul _ (HasVJP.backward_smul _ _)
 
 /-! The block cotangents, each one line from the previous link's. -/
 
@@ -225,12 +221,6 @@ theorem mnv2HeadCotBlk_smul (N h w : Nat) {ic oc nCls : Nat} (Wh : Kernel4 oc ic
 -- ════════════════════════════════════════════════════════════════
 -- § 2. Sharding — every non-BN link of the chain commutes with the batch cut
 -- ════════════════════════════════════════════════════════════════
-
-private theorem dStridedXlaInB_shard {R N : Nat} {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
-    (b : Vec c) (DY : Vec ((R * N) * (c * h * w))) (r : Fin R) :
-    dStridedXlaInB N (h := h) (w := w) W b (batchShard R N (c * h * w) DY r)
-      = batchShard R N (c * (2 * h) * (2 * w)) (dStridedXlaInB (R * N) (h := h) (w := w) W b DY) r :=
-  (batchShard_batchMap _ DY r).symm
 
 /-- The head's GAP backward, through replica `r`'s shard of the dropout mask, is shard `r` of
     the global one through the global mask (`dropoutOpt_shard` between the two per-example
@@ -622,76 +612,6 @@ theorem mnv2HeadSyncCotBlk_shard (r : Fin R) :
   rfl
 
 end HeadShard
-
--- ════════════════════════════════════════════════════════════════
--- § 4. The parameter collectives MobileNetV2 adds
--- ════════════════════════════════════════════════════════════════
-
-/-- **P4 at the XLA-`SAME` strided depthwise weight** (`b2`, `b4`, `b7`, `b14`). -/
-theorem den_allReduceMeanF_depthwiseStridedXlaWeightGradB_shard {N c h w kH kW : Nat} (R : Nat)
-    (hR : 0 < R) (t xN cotN : String) (ds : List Nat) (b : Vec c) (W : DepthwiseKernel c kH kW)
-    (X : Vec ((R * N) * (c * (2 * h) * (2 * w)))) (DY : Vec ((R * N) * (c * h * w)))
-    (dy : Fin R → SHlo (N * (c * h * w)))
-    (hdy : ∀ r, den (dy r) = batchShard R N (c * h * w) DY r) (idx : Fin (c * kH * kW)) :
-    den (.allReduceMeanF R hR t ds
-          (fun r => .depthwiseStridedXlaWeightGradB xN b
-            (batchShard R N (c * (2 * h) * (2 * w)) X r) W (dy r))) idx
-      = (1 / (R : ℝ)) * den (.depthwiseStridedXlaWeightGradB xN b X W (.operand cotN DY)) idx := by
-  simp only [den_allReduceMeanF]
-  congr 1
-  simp only [denStep, denStepApp, hdy]
-  shard_sum
-
--- ════════════════════════════════════════════════════════════════
--- § 5. Per-parameter DP ties for the new kinds
--- ════════════════════════════════════════════════════════════════
-
-/-- The XLA-`SAME` strided depthwise weight, DP-tied. -/
-private def DepthwiseStridedXlaWSync (R : Nat) (hR : 0 < R) (N h w : Nat) {c kH kW : Nat}
-    (t xN cotN : String) (b : Vec c) (X : Vec ((R * N) * (c * (2 * h) * (2 * w))))
-    (W : DepthwiseKernel c kH kW) (cots : Fin R → Vec (N * (c * h * w)))
-    (COT : Vec ((R * N) * (c * h * w))) : Prop :=
-  ∀ idx : Fin (c * kH * kW),
-    den (.allReduceMeanF R hR t [c, 1, kH, kW] (fun r =>
-          .depthwiseStridedXlaWeightGradB xN b (batchShard R N (c * (2 * h) * (2 * w)) X r) W
-            (.operand cotN (cots r)))) idx
-      = den (.depthwiseStridedXlaWeightGradB xN b X W (.operand cotN COT)) idx
-
-private theorem depthwiseStridedXlaWSync_of_scaled (R : Nat) (hR : 0 < R) (N h w : Nat) {c kH kW : Nat}
-    (t xN cotN : String) (b : Vec c) (X : Vec ((R * N) * (c * (2 * h) * (2 * w))))
-    (W : DepthwiseKernel c kH kW) (cots : Fin R → Vec (N * (c * h * w)))
-    (COT : Vec ((R * N) * (c * h * w)))
-    (hc : ∀ r, cots r = batchShard R N (c * h * w) (fun i => (R : ℝ) * COT i) r) :
-    DepthwiseStridedXlaWSync R hR N h w t xN cotN b X W cots COT := by
-  intro idx
-  rw [den_allReduceMeanF_depthwiseStridedXlaWeightGradB_shard R hR t xN cotN _ b W X
-      (fun i => (R : ℝ) * COT i) (fun r => .operand cotN (cots r)) (fun r => hc r) idx,
-    depthwiseStridedXlaWeightGradB_smul, inv_mul_R R hR]
-
-/-- `DepthwiseStridedXlaWSync` on the switch — `GradNodesBAt`'s pattern (`ConvWSyncAt`, …) for the
-    one kind that is MobileNetV2's alone, so its collective stays local: the f32 lemma under
-    `Bf16Erasure` (`den_depthwiseStridedXlaWeightGradBAt_id`). -/
-private def DepthwiseStridedXlaWSyncAt (bf16 : Bool) (R : Nat) (hR : 0 < R) (N h w : Nat)
-    {c kH kW : Nat} (t xN cotN : String) (b : Vec c)
-    (X : Vec ((R * N) * (c * (2 * h) * (2 * w)))) (W : DepthwiseKernel c kH kW)
-    (cots : Fin R → Vec (N * (c * h * w))) (COT : Vec ((R * N) * (c * h * w))) : Prop :=
-  ∀ idx : Fin (c * kH * kW),
-    den (.allReduceMeanF R hR t [c, 1, kH, kW] (fun r =>
-          SHlo.depthwiseStridedXlaWeightGradBAt bf16 (h := h) (w := w) id xN b
-            (batchShard R N (c * (2 * h) * (2 * w)) X r) W (.operand cotN (cots r)))) idx
-      = den (SHlo.depthwiseStridedXlaWeightGradBAt bf16 (h := h) (w := w) id xN b X W
-          (.operand cotN COT)) idx
-
-private theorem depthwiseStridedXlaWSyncAt_of_scaled (bf16 : Bool) (R : Nat) (hR : 0 < R)
-    (N h w : Nat) {c kH kW : Nat} (t xN cotN : String) (b : Vec c)
-    (X : Vec ((R * N) * (c * (2 * h) * (2 * w)))) (W : DepthwiseKernel c kH kW)
-    (cots : Fin R → Vec (N * (c * h * w))) (COT : Vec ((R * N) * (c * h * w)))
-    (hc : ∀ r, cots r = batchShard R N (c * h * w) (fun i => (R : ℝ) * COT i) r) :
-    DepthwiseStridedXlaWSyncAt bf16 R hR N h w t xN cotN b X W cots COT := by
-  intro idx
-  have h := depthwiseStridedXlaWSync_of_scaled R hR N h w t xN cotN b X W cots COT hc idx
-  simp only [den_allReduceMeanF, Bf16Fold.den_depthwiseStridedXlaWeightGradBAt_id] at h ⊢
-  exact h
 
 -- ════════════════════════════════════════════════════════════════
 -- § 6. The per-block DP ties

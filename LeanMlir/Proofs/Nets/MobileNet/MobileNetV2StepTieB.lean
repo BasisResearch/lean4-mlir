@@ -97,25 +97,13 @@ open Proofs Proofs.StableHLO Proofs.IR
 namespace Proofs.MobileNetV2TieB
 
 open scoped BigOperators
-open Proofs.BackLinks (reassocB bnBackB cInB dInB gapInB)
+open Proofs.BackLinks (reassocB bnBackB cInB dInB dStridedXlaInB gapInB)
 open Proofs.BackLinks (bnInB bnInB_eq_bnBackB unrowB rowB relu6MaskB)
 open Proofs.GradNodeB (bnPairTiedB_holds convBTiedB_holds convStridedXlaWTiedBAt_holds
   convWTiedBAt_holds denseBTiedB_holds denseWTiedB_holds depthwiseBTiedB_holds
   depthwiseWTiedBAt_holds depthwiseStridedXlaWTiedBAt_holds)
 
 -- ════════════════════════════════════════════════════════════════
--- § The chain helper MobileNetV2 adds (its relu6 mask `relu6MaskB` is in `Batched.BackLinks`)
--- ════════════════════════════════════════════════════════════════
-
-/-- **Batched XLA-`SAME` STRIDED depthwise input-VJP** (= `den depthwiseStridedXlaBackBatched`;
-    upsamples `h → 2h`). Not `BackLinks.dStridedInB`, which is the SYMMETRIC
-    `depthwiseStride2Flat` — B0's strided depthwise and MobileNetV2's have identical types and
-    different certificates, and this is the one place that distinction is recorded on the backward
-    side. -/
-noncomputable def dStridedXlaInB (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
-    (b : Vec c) (dy : Vec (N * (c * h * w))) : Vec (N * (c * (2 * h) * (2 * w))) :=
-  batchMap N (fun d => (depthwiseStride2FlatXlaHasVJP W b).backward (fun _ => 0) d) dy
-
 -- ════════════════════════════════════════════════════════════════
 -- § The `t = 1` block (b1) — `projB ∘ dwbrB`, no expand and no skip
 -- ════════════════════════════════════════════════════════════════

@@ -359,10 +359,11 @@ structure NetSpec where
       because torchvision's `Conv2d(3,64,7,stride=2,padding=3)` is the net their verified render
       implements.
 
-      It changes only a strided top-level conv, which in the kit is the stem. Block-internal
-      convs (`basic_block_down`, `bottleneck_block_down`, …) call the helpers without a padding
-      argument and so take the symmetric default; the mobile/TF-origin blocks pass `'SAME'`
-      explicitly inside their own helpers. Both are untouched by this field.
+      It changes a strided top-level conv, which in the kit is the stem, and `mbconv_block`'s
+      strided depthwise (EfficientNet-B0's four, TF `SAME` since D3 on 2026-10-12). Block-internal
+      convs elsewhere (`basic_block_down`, `bottleneck_block_down`, …) call the helpers without a
+      padding argument and so take the symmetric default; the other mobile/TF-origin blocks pass
+      `'SAME'` or the symmetric pad explicitly inside their own helpers, untouched by this field.
 
       Scoped per net rather than per layer for the same reason as `convBnAct`: no net in the kit
       mixes the two conventions across its own top-level convs. -/

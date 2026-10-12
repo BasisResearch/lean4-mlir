@@ -484,6 +484,17 @@ private def gradPrefixCases : List (String × String × String) :=
                           (fun _ => 0 : Vec (BS*(oc*(2*ch)*(2*ch))))
                           (fun _ _ _ => 0 : DepthwiseKernel oc kk kk) 0
                           (.operand "%x" (fun _ => 0 : Vec (BS*(oc*ch*ch)))))))
+  , ("depthwiseStridedXlaWeightGradB",
+     render (pretty BS (.depthwiseStridedXlaWeightGradB (N := BS) (c := oc) (h := ch) (w := ch)
+                          (kH := kk) (kW := kk) "%a" zB
+                          (fun _ => 0 : Vec (BS*(oc*(2*ch)*(2*ch))))
+                          (fun _ _ _ => 0 : DepthwiseKernel oc kk kk)
+                          (.operand "%x" (fun _ => 0 : Vec (BS*(oc*ch*ch)))))),
+     render (pretty BS (.depthwiseStridedXlaWeightSgdB (N := BS) (c := oc) (h := ch) (w := ch)
+                          (kH := kk) (kW := kk) "%a" "%W" "0.05" zB
+                          (fun _ => 0 : Vec (BS*(oc*(2*ch)*(2*ch))))
+                          (fun _ _ _ => 0 : DepthwiseKernel oc kk kk) 0
+                          (.operand "%x" (fun _ => 0 : Vec (BS*(oc*ch*ch)))))))
   , ("patchEmbedWeightGrad",
      render (pretty BS (.patchEmbedWeightGrad (ic := pi) (H := pH) (W := pW) (P := pp)
                           (N := tk) (D := dm) "%img" (fun _ => 0 : Vec (pi*pH*pW))

@@ -298,6 +298,26 @@ theorem dwbsSBackBatchedGraph_faithful {N c h w kH kW : Nat}
       bnBatchLABack_faithful (β := β) (hε := hε), swishBack_faithful]
   simp only [dwbsSBHasVJP, bnSwishStageHasVJP, vjpComp_backward, Function.comp_apply]
 
+/-- `dwbsSBackBatchedGraph` at XLA-`SAME`: the backward graph of `dwbsSXlaB` (EfficientNet-B0's
+    strided depthwise since its padding follows TF's) — the same bn/swish backs at the output
+    `h×w`, then `depthwiseStridedXlaBackBatched` scatters onto the odd positions. -/
+noncomputable def dwbsSXlaBackBatchedGraph {N c h w kH kW : Nat}
+    (W : DepthwiseKernel c kH kW) (b : Vec c) (ε : ℝ) (γ β : Vec c)
+    (x : Vec (N * (c * (2 * h) * (2 * w)))) (e : SHlo (N * (c * h * w))) :
+    SHlo (N * (c * (2 * h) * (2 * w))) :=
+  .depthwiseStridedXlaBackBatched (N := N) "%dwssW" W b
+    (.bnBatchLABack "%dwssG" "%dwssX" "dwssE" ε γ (batchMap N (depthwiseStride2FlatXla W b) x)
+      (.swishBack "%dwssSw" (bnBatchLA N c h w ε γ β (batchMap N (depthwiseStride2FlatXla W b) x)) e))
+
+theorem dwbsSXlaBackBatchedGraph_faithful {N c h w kH kW : Nat}
+    (W : DepthwiseKernel c kH kW) (b : Vec c) (ε : ℝ) (hε : 0 < ε) (γ β : Vec c)
+    (x : Vec (N * (c * (2 * h) * (2 * w)))) (e : SHlo (N * (c * h * w))) :
+    den (dwbsSXlaBackBatchedGraph W b ε γ β x e)
+      = (dwbsSXlaBHasVJP N W b ε hε γ β).backward x (den e) := by
+  rw [dwbsSXlaBackBatchedGraph, depthwiseStridedXlaBackBatched_faithful (v := x),
+      bnBatchLABack_faithful (β := β) (hε := hε), swishBack_faithful]
+  simp only [dwbsSXlaBHasVJP, bnSwishStageHasVJP, vjpComp_backward, Function.comp_apply]
+
 /-- Batched **conv → bn** stage backward graph (MBConv project, no swish). -/
 noncomputable def projBackBatchedGraph {N ic oc h w kH kW : Nat}
     (W : Kernel4 oc ic kH kW) (b : Vec oc) (ε : ℝ) (γ _β : Vec oc)
@@ -425,6 +445,20 @@ theorem den_depthwiseStridedBackBatched_eq_dStridedInB {N c h w kH kW : Nat} (wN
     (W : DepthwiseKernel c kH kW) (b : Vec c) (e : SHlo (N * (c * h * w))) :
     den (SHlo.depthwiseStridedBackBatched (N := N) wN W b e)
       = dStridedInB N (h := h) (w := w) W b (den e) := rfl
+
+/-- Batched **XLA-`SAME` strided depthwise input-VJP** (= `den depthwiseStridedXlaBackBatched`;
+    upsamples `h→2h` onto the ODD positions). Not `dStridedInB`, which is the symmetric
+    `depthwiseStride2Flat`'s: identical types, different certificates. MobileNetV2's four strided
+    depthwises and, since the D3 switch, EfficientNet-B0's four. -/
+noncomputable def dStridedXlaInB (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
+    (b : Vec c) (dy : Vec (N * (c * h * w))) : Vec (N * (c * (2 * h) * (2 * w))) :=
+  batchMap N (fun d => (depthwiseStride2FlatXlaHasVJP W b).backward (fun _ => 0) d) dy
+
+/-- `dStridedXlaInB` is the `den` of the emitted `depthwiseStridedXlaBackBatched` node. -/
+theorem den_depthwiseStridedXlaBackBatched_eq_dStridedXlaInB {N c h w kH kW : Nat} (wN : String)
+    (W : DepthwiseKernel c kH kW) (b : Vec c) (e : SHlo (N * (c * h * w))) :
+    den (SHlo.depthwiseStridedXlaBackBatched (N := N) wN W b e)
+      = dStridedXlaInB N (h := h) (w := w) W b (den e) := rfl
 
 /-- Batched **GAP input-VJP** (= `den gapBackBatched`; the head's GAP backward, broadcast÷(h·w)). -/
 noncomputable def gapInB (N c h w : Nat) (dy : Vec (N * c)) : Vec (N * (c * h * w)) :=
@@ -601,6 +635,18 @@ theorem dwbsSB_back_eq (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH k
   have hg := dwbsSBackBatchedGraph_faithful W b ε hε γ β x (.operand "" dy)
   rw [den_operand] at hg
   rw [← hg, dwbsSBackBatchedGraph, den_depthwiseStridedBackBatched_eq_dStridedInB, bnBatchLABack_faithful (β := β) (hε := hε), swishBack_faithful, den_operand]
+  rfl
+
+theorem dwbsSXlaB_back_eq (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW) (b : Vec c)
+    (ε : ℝ) (hε : 0 < ε) (γ β : Vec c) (x : Vec (N * (c * (2 * h) * (2 * w))))
+    (dy : Vec (N * (c * h * w))) :
+    (dwbsSXlaBHasVJP N (h := h) (w := w) W b ε hε γ β).backward x dy
+      = dStridedXlaInB N W b (bnBackB N c h w ε hε γ β (batchMap N (depthwiseStride2FlatXla W b) x)
+          (swBackB (N * (c * h * w))
+            (bnBatchLA N c h w ε γ β (batchMap N (depthwiseStride2FlatXla W b) x)) dy)) := by
+  have hg := dwbsSXlaBackBatchedGraph_faithful W b ε hε γ β x (.operand "" dy)
+  rw [den_operand] at hg
+  rw [← hg, dwbsSXlaBackBatchedGraph, den_depthwiseStridedXlaBackBatched_eq_dStridedXlaInB, bnBatchLABack_faithful (β := β) (hε := hε), swishBack_faithful, den_operand]
   rfl
 
 theorem projB_back_eq (N : Nat) {ic oc h w kH kW : Nat} (W : Kernel4 oc ic kH kW) (b : Vec oc)

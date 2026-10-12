@@ -17,7 +17,7 @@ batch `R·N`.
 given that each replica's input is its shard of one global batch `X`. **The spec does not move**:
 the right-hand side is the committed `efficientnetForwardBFull`, at `N := R·N`, and it does not
 move with the precision either: `bf16` selects the conv and depthwise kinds at every site
-(`.convAt` / `.convStridedXlaAt` / `.depthwiseAt` / `.depthwiseStridedAt`, as the single-device
+(`.convAt` / `.convStridedXlaAt` / `.depthwiseAt` / `.depthwiseStridedXlaAt`, as the single-device
 graph), `bf16 := true` being the kinds the `*bf16` DP renders emit —
 `efficientnetin_emarmsdp64dropdowxeps0001bf16`, the run the book reports, among them (its drop
 sites are outside this graph, as they are at f32); each conv's shard step erases the switch
@@ -193,7 +193,7 @@ def mbStridedGraphSync (p epsStr : String) (R : Nat) (hR : 0 < R) (N h w : Nat)
         (.swishF (bnSyncSiteLA s!"%{p}dg" s!"%{p}dbt" epsStr s!"{p}dgmu" s!"{p}dgvar" [mid] [mid]
           R hR q.dε q.dγ q.dβ
           (fun r => .batchOp (N := N)
-            (.depthwiseStridedAt bf16 id (h := h) (w := w) s!"%{p}dW" s!"%{p}db" q.dW q.db)
+            (.depthwiseStridedXlaAt bf16 id (h := h) (w := w) s!"%{p}dW" s!"%{p}db" q.dW q.db)
             (.swishF (bnSyncSiteLA s!"%{p}eg" s!"%{p}ebt" epsStr s!"{p}egmu" s!"{p}egvar" [mid] [mid]
               R hR q.eε q.eγ q.eβ
               (fun r => .batchOp (N := N)
@@ -217,8 +217,8 @@ theorem mbStridedGraphSync_shard (p epsStr : String) (R : Nat) (hR : 0 < R) (N h
     R hR hm2 q.eε q.eγ q.eβ _ _ hec
   have her := den_swishF_shard _ _ hen
   have hdc := den_batchOp_shard (N := N)
-    (.depthwiseStridedAt bf16 id (h := h) (w := w) s!"%{p}dW" s!"%{p}db" q.dW q.db) _ _ her
-  simp only [Bf16Fold.denOp_depthwiseStridedAt_id] at hdc
+    (.depthwiseStridedXlaAt bf16 id (h := h) (w := w) s!"%{p}dW" s!"%{p}db" q.dW q.db) _ _ her
+  simp only [Bf16Fold.denOp_depthwiseStridedXlaAt_id] at hdc
   have hdn := den_bnSyncSiteLA s!"%{p}dg" s!"%{p}dbt" epsStr s!"{p}dgmu" s!"{p}dgvar" [mid] [mid]
     R hR hm q.dε q.dγ q.dβ _ _ hdc
   have hdr := den_swishF_shard _ _ hdn

@@ -507,8 +507,7 @@ def mbconv_block(params, x, idx, stride, expand, ksize, use_se, bn, bn_start, tr
               dimension_numbers=('NCHW', 'OIHW', 'NCHW')).astype(jnp.float32)
         x, ns = _bn(x, params[i][1], params[i][2], bn[bi], training); out.append(ns); bi += 1
         x = swish(x); i += 1
-    pad = ((ksize - 1) // 2, (ksize - 1) // 2)
-    x = jax.lax.conv_general_dilated(convdt(x), convdt(params[i][0]), (stride,stride), (pad,pad),
+    x = jax.lax.conv_general_dilated(convdt(x), convdt(params[i][0]), (stride,stride), 'SAME',
           dimension_numbers=('NCHW', 'OIHW', 'NCHW'),
           feature_group_count=x.shape[1]).astype(jnp.float32)
     x, ns = _bn(x, params[i][1], params[i][2], bn[bi], training); out.append(ns); bi += 1

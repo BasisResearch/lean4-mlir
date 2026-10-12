@@ -20,9 +20,10 @@ Per-block (ic, mid=t·ic, oc, r=⌈ic/4⌉, k, spatial, kind):
   b7  80→80   mid480 r20 k3 @14    resid            b15 192→192 mid1152 r48 k5 @7   resid
   b8  80→80   mid480 r20 k3 @14    resid            b16 192→320 mid1152 r48 k3 @7   exp(no-resid)
 
-Padding: the 3×3/s2 stem pads at the XLA-`SAME` phase; the four strided depthwises (b2, b4, b6,
-b12) pad symmetrically, not TF `SAME`. So the spec is neither timm's `efficientnet_b0` nor
-`tf_efficientnet_b0` at those four layers.
+Padding: the 3×3/s2 stem AND the four strided depthwises (b2, b4, b6, b12) pad at the XLA-`SAME`
+phase — TF's `SAME` at every strided conv, so the spec is `tf_efficientnet_b0`'s. (Until D3,
+2026-10-12, the four depthwises padded symmetrically, a hybrid neither timm net computes;
+`scripts/parity/enet_timm_parity.py --pad hybrid` still measures that distance.)
 
 **Precision is a flag on the graph.** The block builders (`EfficientNetStagesPC`, `mbExpGraphB`
 here) choose every conv and depthwise constructor through the renderers' switch
@@ -256,7 +257,7 @@ noncomputable def mbExpWHasVJP (N h w : Nat) {ic mid oc kh kw r : Nat} (p : MBW 
 -- ════════════════════════════════════════════════════════════════
 
 /-- The B0 forward every B0 capstone is stated against: the stem 3×3/s2 at the XLA-`SAME` phase,
-    the sixteen MBConv blocks with symmetrically padded strided depthwises (not TF `SAME`), SE
+    the sixteen MBConv blocks with their four strided depthwises at that phase too (TF `SAME`), SE
     width `ic/4`, batch BatchNorm, then the head. No drop-path or dropout; the drop-carrying
     forward is `EfficientNetFullB0Drop`'s. -/
 noncomputable def efficientnetForwardBFull (N : Nat) {nCls : Nat} (w : B0Weights nCls)
@@ -337,7 +338,7 @@ theorem mbExpGraphW_faithful (pfx epsStr : String) (N h w : Nat) {ic mid oc kh k
     MBConv blocks (the real `[t,c,n,s,k]` spec, 3×3 and 5×5 depthwise, true batch-norm, squeeze-excite,
     4 stride-2 downsamples, identity residuals where `s=1 ∧ ic=oc`) → head → GAP → dense. `bf16`
     selects the conv and depthwise kinds at every site (`.convAt` / `.convStridedXlaAt` /
-    `.depthwiseAt` / `.depthwiseStridedAt`, `StableHLO.PrecisionSwitch`): `false` is the f32
+    `.depthwiseAt` / `.depthwiseStridedXlaAt`, `StableHLO.PrecisionSwitch`): `false` is the f32
     artifacts' graph, `true` the bf16 ones'; the squeeze-excite and the dense stay f32 in both. -/
 def efficientnetFwdGraphBFull (N : Nat) (epsStr : String) {nCls : Nat} (w : B0Weights nCls)
     (bf16 : Bool) (x : Vec (N * (3 * 224 * 224))) : SHlo (N * nCls) :=

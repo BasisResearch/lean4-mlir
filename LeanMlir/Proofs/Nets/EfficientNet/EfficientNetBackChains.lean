@@ -10,9 +10,9 @@ endpoints, so that the certified tie (`EfficientNetFullWholeBackCertifiedTie`) i
 about a NAMED chain of the forward's shape.
 
 Note: the stem is XLA-`SAME` (`flatConvStride2XlaBack`, the odd-phase scatter), the TF-origin
-convention; the strided depthwises inside the blocks are symmetric and sit in the supplied block
-backwards. B0 has no stem pool, so every batched endpoint is `StableHLO.batchMap N` of a
-per-example leaf.
+convention, and so are the four strided depthwises inside the blocks (`depthwiseStride2FlatXlaBack`,
+since D3 on 2026-10-12), which sit in the supplied block backwards. B0 has no stem pool, so every
+batched endpoint is `StableHLO.batchMap N` of a per-example leaf.
 
 No number is stated about this chain. -/
 

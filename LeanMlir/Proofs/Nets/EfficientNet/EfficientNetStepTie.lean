@@ -18,7 +18,7 @@ skip and the squeeze-excite gate fan-in included. The batched, un-fused peer (ti
   `seBackBatched` value), and the SE dense parameters' cotangents come from `seReduceB` (the gate
   cotangent `Σ_{h,w}(x⊙dy)`) through `sigmoidBack → denseRowBack(W₂) → swishBack`;
 * **true batch-norm** backward (`bnBackB`, the `bnBatchLA` VJP), batch-coupled;
-* the strided depthwise back (`dStridedInB`); `reassocB` bridges the conv/swish `(oc·h·w)` and
+* the strided depthwise back (`dStridedXlaInB`); `reassocB` bridges the conv/swish `(oc·h·w)` and
   BN `(oc·(h·w))` layouts.
 
 `EfficientNetChainClose`'s whole-net backward is `vjpComp` of the per-block `HasVJP`s, so the
@@ -157,8 +157,8 @@ theorem enet_exp_tied {N ic mid oc h w r kHd kWd : Nat}
 /-! ## Strided downsampling MBConv block — all 16 params tied (b2/b4/b6/b12)
 
 Same as the expand block EXCEPT the expand stage lives at the block-input grid `2h×2w` and the
-depthwise is strided (`depthwiseStridedWeightSgdB`, the expand-side cotangent `cotEr` upsamples `h→2h`
-via `dStridedInB`). No skip (spatial+channels change). -/
+depthwise is strided (`depthwiseStridedXlaWeightSgdB`, the expand-side cotangent `cotEr` upsamples `h→2h`
+via `dStridedXlaInB`). No skip (spatial+channels change). -/
 
 /-- **Strided downsampling MBConv block, tied.** All 16 params at the real forward (expand at `2h×2w`,
     strided depthwise `2h→h`) + the chain cotangents driven by `dyOut`. -/
@@ -174,7 +174,7 @@ def enetStridedTied {N ic mid oc h w r kHd kWd : Nat}
   let ec : Vec (N * (mid * (2 * h) * (2 * w))) := batchMap N (flatConv We be) xin
   let en : Vec (N * (mid * (2 * h) * (2 * w))) := bnBatchLA N mid (2 * h) (2 * w) εe γe βe ec
   let er : Vec (N * (mid * (2 * h) * (2 * w))) := swish (N * (mid * (2 * h) * (2 * w))) en
-  let dc : Vec (N * (mid * h * w)) := batchMap N (depthwiseStride2Flat Wd bd) er
+  let dc : Vec (N * (mid * h * w)) := batchMap N (depthwiseStride2FlatXla Wd bd) er
   let dn : Vec (N * (mid * h * w)) := bnBatchLA N mid h w εd γd βd dc
   let dr : Vec (N * (mid * h * w)) := swish (N * (mid * h * w)) dn
   let s  : Vec (N * mid) := batchMap N (globalAvgPoolFlat mid h w) dr
@@ -193,7 +193,7 @@ def enetStridedTied {N ic mid oc h w r kHd kWd : Nat}
   let cotDxSe : Vec (N * (mid * h * w)) := seInB N (h := h) (w := w) Wz1 bz1 Wz2 bz2 dr cotSeOut
   let cotDn : Vec (N * (mid * h * w)) := swBackB (N * (mid * h * w)) dn cotDxSe
   let cotDc : Vec (N * (mid * h * w)) := bnBackB N mid h w εd hεd γd βd dc cotDn
-  let cotEr : Vec (N * (mid * (2 * h) * (2 * w))) := dStridedInB N Wd bd cotDc
+  let cotEr : Vec (N * (mid * (2 * h) * (2 * w))) := dStridedXlaInB N Wd bd cotDc
   let cotEn : Vec (N * (mid * (2 * h) * (2 * w))) := swBackB (N * (mid * (2 * h) * (2 * w))) en cotEr
   let cotEc : Vec (N * (mid * (2 * h) * (2 * w))) := bnBackB N mid (2 * h) (2 * w) εe hεe γe βe ec cotEn
   -- expand 1×1 conv (ic → mid, at 2h×2w), cot = cotEc
@@ -203,10 +203,10 @@ def enetStridedTied {N ic mid oc h w r kHd kWd : Nat}
         (reassocB N mid (2 * h) (2 * w) ec) (reassocB N mid (2 * h) (2 * w) cotEn) lr
   -- strided depthwise (kHd×kWd, 2h→h), cot = cotDc
   ∧ (∀ idx : Fin (mid * kHd * kWd),
-        den (SHlo.depthwiseStridedWeightSgdB xN wN lrStr bd er Wd lr (.operand cotN cotDc)) idx
+        den (SHlo.depthwiseStridedXlaWeightSgdB xN wN lrStr bd er Wd lr (.operand cotN cotDc)) idx
           = Tensor3.flatten Wd idx - lr * ∑ n : Fin N, ∑ j : Fin (mid * h * w),
               pdiv (fun v' : Vec (mid * kHd * kWd) =>
-                      depthwiseStride2Flat (Tensor3.unflatten v') bd (batchSlice N (mid * (2 * h) * (2 * w)) er n))
+                      depthwiseStride2FlatXla (Tensor3.unflatten v') bd (batchSlice N (mid * (2 * h) * (2 * w)) er n))
                    (Tensor3.flatten Wd) idx j * batchSlice N (mid * h * w) cotDc n j)
   ∧ ConvBBetaSgdTied N h w bN lrStr cotN εd bd cotDc lr
   ∧ EnetFold.BnSgdPairTiedB N mid h w gN vN epsStr bN lrStr cotN εd γd βd (reassocB N mid h w dc)
@@ -239,7 +239,7 @@ theorem enet_strided_tied {N ic mid oc h w r kHd kWd : Nat}
   · exact convWSgdTiedB_holds
   · exact convBBetaSgdTied_holds
   · exact bnSgdPairTiedB_holds
-  · intro idx; exact EnetFold.depthwiseStridedWB_den xN wN lrStr cotN bd er Wd cotDc lr idx
+  · intro idx; exact EnetFold.depthwiseStridedXlaWB_den xN wN lrStr cotN bd er Wd cotDc lr idx
   · exact convBBetaSgdTied_holds
   · exact bnSgdPairTiedB_holds
   · exact denseWSgdTiedB_holds

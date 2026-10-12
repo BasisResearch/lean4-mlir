@@ -8,11 +8,12 @@ themselves go in the user's ROI order (ResNet → ViT → MNv2 → EfficientNet 
 the user's word. `imagenet_parity.md` §10 holds the F-items (cross-net) and D-items (per-net) this doc
 cites; the method is the ResNet A3/A2 prep of 2026-10-11 (4d612bb9), repeated per net.
 
-**Next (2026-10-12, later still): §7, EfficientNet-B0.** §1–§6 are in code (§9); nothing has run. §7
-opens on D3 (SAME padding through the T2 / T3 ties, or symmetric padding disclosed — the user's call)
-and inherits §6's `OptRecipe.rmspropTf` for D13 (B0's `enetRmsHyper` on the same arm) and the
-`wdExcludeDepthwise` / `rankWdDecaysNoDw` pair if TF's EfficientNet skips the depthwise too (read
-`utils.py`'s `weight_decay` filter first; it excludes BN and biases by name, not the depthwise).
+**Next (2026-10-12, later still): §7, EfficientNet-B0 — D3 is done; the rest of §7 follows.** §1–§6
+are in code (§9); nothing has run. §7 opened on D3 (the user: proofs) and that half is in (§7's
+"Done" paragraph); what remains inherits §6's `OptRecipe.rmspropTf` for D13 (B0's `enetRmsHyper` on
+the same arm) and the `wdExcludeDepthwise` / `rankWdDecaysNoDw` pair if TF's EfficientNet skips the
+depthwise too (read `utils.py`'s `weight_decay` filter first; it excludes BN and biases by name, not
+the depthwise).
 
 ## 1. Done, 2026-10-11
 
@@ -62,7 +63,7 @@ What "done" means, per net, and what each later section repeats:
 | 2 | ConvNeXt-T, then S / B (ch 8) | 1½ days | accumulating no-clip renders | none |
 | 3 | MNv4-Conv-M (ch 6) | 1 day — DONE 2026-10-12 | the `mnv4in256` renders (final side 8) | the paper's own yaml is the source of truth; D7 settled by it, D8 withdrawn, D9/D10 corrected (§5) |
 | 4 | MNv2 (ch 6) | 1 day — DONE 2026-10-12 | `rmspropTf` recipe + `rmsBufNextTfF`, the `dw` decay set, the first EMA MNv2 render; the slim pipeline + init on the emitter | D12's reference = a numpy twin (the user); the recipe = the README's command, every row, 0.12 @ 256 / ×0.98 per 2.5 ep / 420 ep (the user) |
-| 5 | EfficientNet-B0 (ch 7) | 3–4 days | RMSProp op (shared), SAME padding through the ties | D3's scope |
+| 5 | EfficientNet-B0 (ch 7) | 3–4 days — D3 DONE 2026-10-12 | RMSProp op (shared); SAME padding through the ties turned out to be a re-pointing onto MNv2's Xla op family, not new math | D3: proofs (the user) |
 
 About two weeks of code against about two weeks of ResNet and ViT runs on the two boxes. Each step
 ends in one commit per net (code + confs + smokes), the chapter untouched until its pair lands.
@@ -406,8 +407,8 @@ Marker (ch 7): the final pair — the staircase floored on the global step from 
 biases, drop-connect 0.2·i/16, BN ε 1e-3, AutoAugment v0 with bicubic geometry, TensorFlow's crop
 sampler without its centre-crop fallback, the fp32 classifier head, synchronised BatchNorm,
 TensorFlow's classifier init U(±1/√1000) with the depthwise and squeeze-excite fan inits, RMSProp's
-learning rate inside the momentum term, and SAME padding on the strided depthwise convolutions, which
-moves the T2/T3 ties; `enet-full-jax-4gpu` / `enet-default-4gpu`, ~47 + 80 h.
+learning rate inside the momentum term, and SAME padding on the strided depthwise convolutions;
+`enet-full-jax-4gpu` / `enet-default-4gpu`, ~47 + 80 h.
 
 Today (`jax/MainEfficientNetImagenet.lean`): RMSProp lr 0.016 at 256, `wdExcludeNormBias`, dropout
 0.2, drop-path 0.2, AutoAugment, EMA, f32 head, clip 0; BN ε 1e-3 and the bicubic v0 geometry landed
@@ -437,6 +438,44 @@ landed 2026-10-07. Of the marker's list, owed in code:
 8. Decision: do D3 now (the pair is "the paper's", ~2 days of proofs) or run the pair at symmetric
    padding with the marker keeping that one clause. The user's call before §7 starts.
 
+**D3 done 2026-10-12 (the user: proofs).** Item 5's estimate was stale: the XLA-`SAME` strided-depthwise
+op family — `depthwiseStridedXla{,Bf16,F,Back,BackBatched,WeightGradB,BiasGradB,…}` with
+`depthwiseStride2FlatXla`, its input / weight / bias VJPs, the bias split, the batched back-link
+faithfulness, the `*TiedBAt` / `_hasGradAt` predicates and the erasure lemmas — had landed with
+MobileNetV2's switch (3d9b14d6, 2026-08-08: "the asymmetry is a decimation PHASE"), and B0's render
+simply used the symmetric tokens at its four strided sites. So the verified half is a re-pointing. One
+new op: `depthwiseStridedXlaWeightSgdB`, the fused-SGD-B form for the Imagenette SGD-inline artifact
+(constructor, `den`, `_eq_grad`, skel and printer arms; a `TestBatchedEmitTie` row). MNv2's private
+copies of the Xla helpers moved into the kit so both nets share them: `dStridedXlaInB` with its `den`
+lemma, `_eq_batchMapBackward`, `_smul`, `_shard` (`BackLinks`, `ParamGradNodes`, `SyncKit`),
+`hasGradAt_depthwiseStridedXla`, `den_allReduceMeanF_depthwiseStridedXlaWeightGradB_shard`,
+`DepthwiseStridedXlaWSync{,At}` with their `_of_scaled`; new for the swish stage, `dwbsSXlaB` with its
+`_differentiable` / `HasVJP`, `dwbsSXlaBackBatchedGraph{,_faithful}`, `dwbsSXlaB_back_eq`. The 13 B0
+proof files and the writer are restated on the Xla forms (a whole-word sweep, `depthwiseStrided →
+depthwiseStridedXla`, `depthwiseStride2Flat → …Xla`, `dwbsSB → dwbsSXlaB`, `dStridedInB →
+dStridedXlaInB`; the one hand fix was the bias split's namespace, `Bf16Fold.`), and every tie built
+unchanged — `efficientnet_net_tiedG`, `efficientnet_net_syncTiedG`, `enet_net_lossGrad`,
+`efficientnetInputGradBFull_correct`, the fused Imagenette tie — the stage ties were generic in the op
+all along and the apex binds its tokens. The render's forward now prints TF's literal `SAME` pads
+(`[[0, 1]]` at k = 3, `[[1, 2]]` at k = 5), the dgrad `[[2, 0]]` / `[[3, 1]]` and the wgrad `[[0, 2]]` /
+`[[1, 3]]`, as MNv2's; 36 B0 artifacts re-rendered (Imagenette and ImageNet; `MANIFEST.md` follows).
+JAX: `mbconv_block` pads its depthwise `'SAME'` under `NetSpec.convPadStyle` (`.xlaSame` is B0's
+default; MNv4's blocks are `uib_block` / `fused_mbconv_block` and keep timm's symmetric pad), so only
+the B0 emitters move. Gates: `enet_timm_parity.py` defaults to `--pad tf` with the old hybrid as a
+red control (ImageNet 1.7e-6 / 7.3e-7; hybrid 4.8e-2, symmetric 4.6e-2, ε 5.8e-3). Also green:
+`regen_verified_mlir check`, manifest, parse 372, arity 281, `fwd-tie efficientnet` and `--eval` bit-exact,
+`TestBatchedEmitTie` (a `depthwiseStridedXlaWeightGradB` / `…SgdB` prefix row added), `TestXlaPadOps`,
+`TestVariantPredicates`, `AuditAxioms` (the moved MNv2 lemma re-pointed to `Proofs.SyncKit`),
+`efficientnet-dp-check` (forward bit-exact, gradient 8.1e-4 ≤ 1e-2) and `efficientnet-syncbn-check`
+at `PJRT_REPLICAS=2`, comment_numbers, module_refs, repo_shape, target names, docstring-checkrefs,
+book_xrefs, both DRY_RUN prechecks; preview PDF 0 errors, overfull 82 → 82, 232 pages, 2 changed
+paragraphs. Pre-existing and not D3's: `enet_forward_tie.py` fails its absolute 1e-4 at 2.9e-4 after and
+1.9e-4 before (A/B: the HEAD render against a symmetric-patched reference), 200× under its padding
+control. As at MNv2's switch (c4d07bd8, "switch and re-run"), the Imagenette B0 pair is re-run on
+the faithful net — the chapter's 89.96 % was trained on the symmetric artifact (41 min a half). The
+marker's "which moves the T2 / T3 ties" clause is gone (process, not a recipe gap); the padding item
+stays in it until the pair lands. Items 1–4, 6 and 7 are the rest of §7.
+
 ## 8. What this does not cover
 
 * The runs' order and boxes (`imagenet_parity.md` §10.4): A3 pair first, ViT-Ti, then A2, MNv2 … as
@@ -456,4 +495,4 @@ landed 2026-10-07. Of the marker's list, owed in code:
 | ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | a0c125b3 | pending | stands |
 | MNv4-Conv-M | done (the paper's yaml) | done | done (`mnv4in256`, five) | done | green | done | 263da67a | pending | stands, rewritten |
 | MNv2 | done (the README's command) | done | done (the first `rmstf` + EMA MNv2 render) | done | green | done | — | pending | stands, rewritten |
-| EfficientNet-B0 | NEXT — §7 | | | | | | | | |
+| EfficientNet-B0 | D3 done (JAX `mbconv_block` SAME) — rest NEXT | — | done (`depthwiseStridedXla*` at the four sites, 36 artifacts) | — | parity gate at `--pad tf` | — | — | pending | stands; T2/T3 clause dropped |

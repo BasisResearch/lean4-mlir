@@ -17,7 +17,7 @@ at the renderer's two optional sites (below). `GradNodesB` is the fold each conj
 `efficientnetin_emarmsdp64dropdowxeps0001bf16`, whose conv and depthwise weight gradients are the
 bf16 kinds (`convWeightGradBBf16`, `depthwiseWeightGradBBf16`, …; `Foundation.Bf16GradNodes`).
 Every conv and depthwise weight node below is stated on the renderers' switch — `ConvWTiedBAt bf16`
-/ `ConvStridedXlaWTiedBAt bf16` / `DepthwiseWTiedBAt bf16` / `DepthwiseStridedWTiedBAt bf16`
+/ `ConvStridedXlaWTiedBAt bf16` / `DepthwiseWTiedBAt bf16` / `DepthwiseStridedXlaWTiedBAt bf16`
 (`Foundation.GradNodesBAt`): `bf16 := false` is the f32 node, `bf16 := true` the bf16 one — and
 the capstone `efficientnet_net_tiedG` takes `bf16`, so it reaches the bf16 artifacts' gradient
 nodes read over ℝ exactly as it reads the f32 ones (`Bf16Erasure`: at the identity rounding the
@@ -59,8 +59,9 @@ The per-block ties are `forall cot` statements and were already loss-agnostic, s
 the capstone differ.
 
 **Conventions carried unchanged from the fused file**: batch BatchNorm (`bnBatchLA`), XLA-`SAME`
-at the 3x3/s2 stem and symmetric at the strided depthwises, swish (no kink, so no smoothness
-hypothesis anywhere), and the SE gate's fan-in folded into the block VJPs.
+at the 3x3/s2 stem and at the four strided depthwises (TF's padding at every strided conv since
+D3, 2026-10-12), swish (no kink, so no smoothness hypothesis anywhere), and the SE gate's fan-in
+folded into the block VJPs.
 
 **One replica.** Every statement here is at one replica's node. Every B0 data-parallel render
 synchronises BatchNorm; its all-reduced gradients are `efficientnet_net_syncTiedG`
@@ -72,10 +73,10 @@ open Proofs Proofs.StableHLO Proofs.IR
 namespace Proofs.EnetTieG
 
 open scoped BigOperators
-open Proofs.BackLinks (reassocB bnBackB swBackB sigBackB cInB dInB dStridedInB gapInB seInB
+open Proofs.BackLinks (reassocB bnBackB swBackB sigBackB cInB dInB dStridedXlaInB gapInB seInB
   gateCotB)
 open Proofs.GradNodeB (bnPairTiedB_holds convStridedXlaWTiedBAt_holds convWTiedBAt_holds
-  denseBTiedB_holds denseWTiedB_holds depthwiseStridedWTiedBAt_holds depthwiseWTiedBAt_holds)
+  denseBTiedB_holds denseWTiedB_holds depthwiseStridedXlaWTiedBAt_holds depthwiseWTiedBAt_holds)
 
 /-- **A conv or depthwise bias, tied.** A bias gradient is the channel sum of the conv-output
     cotangent `cot` (network layout), which is what the emitted `bnBetaGradB` node computes; the
@@ -166,8 +167,8 @@ theorem enet_exp_tiedG {N ic mid oc h w r kHd kWd : Nat}
 /-! ## Strided downsampling MBConv block — all 16 params tied (b2/b4/b6/b12)
 
 Same as the expand block EXCEPT the expand stage lives at the block-input grid `2h×2w` and the
-depthwise is strided (`depthwiseStridedWeightGradB`, the expand-side cotangent `cotEr` upsamples
-`h→2h` via `dStridedInB`). No skip (spatial+channels change). -/
+depthwise is strided (`depthwiseStridedXlaWeightGradB`, the expand-side cotangent `cotEr` upsamples
+`h→2h` via `dStridedXlaInB`). No skip (spatial+channels change). -/
 
 /-- **Strided downsampling MBConv block, tied.** All 16 params at the real forward (expand at `2h×2w`,
     strided depthwise `2h→h`) + the chain cotangents driven by `dyOut`. -/
@@ -183,7 +184,7 @@ def enetStridedTiedG {N ic mid oc h w r kHd kWd : Nat}
   let ec : Vec (N * (mid * (2 * h) * (2 * w))) := batchMap N (flatConv We be) xin
   let en : Vec (N * (mid * (2 * h) * (2 * w))) := bnBatchLA N mid (2 * h) (2 * w) εe γe βe ec
   let er : Vec (N * (mid * (2 * h) * (2 * w))) := swish (N * (mid * (2 * h) * (2 * w))) en
-  let dc : Vec (N * (mid * h * w)) := batchMap N (depthwiseStride2Flat Wd bd) er
+  let dc : Vec (N * (mid * h * w)) := batchMap N (depthwiseStride2FlatXla Wd bd) er
   let dn : Vec (N * (mid * h * w)) := bnBatchLA N mid h w εd γd βd dc
   let dr : Vec (N * (mid * h * w)) := swish (N * (mid * h * w)) dn
   let s  : Vec (N * mid) := batchMap N (globalAvgPoolFlat mid h w) dr
@@ -202,7 +203,7 @@ def enetStridedTiedG {N ic mid oc h w r kHd kWd : Nat}
   let cotDxSe : Vec (N * (mid * h * w)) := seInB N (h := h) (w := w) Wz1 bz1 Wz2 bz2 dr cotSeOut
   let cotDn : Vec (N * (mid * h * w)) := swBackB (N * (mid * h * w)) dn cotDxSe
   let cotDc : Vec (N * (mid * h * w)) := bnBackB N mid h w εd hεd γd βd dc cotDn
-  let cotEr : Vec (N * (mid * (2 * h) * (2 * w))) := dStridedInB N Wd bd cotDc
+  let cotEr : Vec (N * (mid * (2 * h) * (2 * w))) := dStridedXlaInB N Wd bd cotDc
   let cotEn : Vec (N * (mid * (2 * h) * (2 * w))) := swBackB (N * (mid * (2 * h) * (2 * w))) en cotEr
   let cotEc : Vec (N * (mid * (2 * h) * (2 * w))) := bnBackB N mid (2 * h) (2 * w) εe hεe γe βe ec cotEn
   -- expand 1×1 conv (ic → mid, at 2h×2w), cot = cotEc
@@ -211,7 +212,7 @@ def enetStridedTiedG {N ic mid oc h w r kHd kWd : Nat}
   ∧ GradNodeB.BnPairTiedB N mid (2 * h) (2 * w) vN epsStr cotN εe γe βe
         (reassocB N mid (2 * h) (2 * w) ec) (reassocB N mid (2 * h) (2 * w) cotEn)
   -- strided depthwise (kHd×kWd, 2h→h), cot = cotDc
-  ∧ GradNodeB.DepthwiseStridedWTiedBAt bf16 N h w xN cotN bd er Wd cotDc
+  ∧ GradNodeB.DepthwiseStridedXlaWTiedBAt bf16 N h w xN cotN bd er Wd cotDc
   ∧ ConvBBetaTiedB N h w cotN εd bd cotDc
   ∧ GradNodeB.BnPairTiedB N mid h w vN epsStr cotN εd γd βd (reassocB N mid h w dc)
         (reassocB N mid h w cotDn)
@@ -237,7 +238,7 @@ theorem enet_strided_tiedG {N ic mid oc h w r kHd kWd : Nat}
     enetStridedTiedG xN vN epsStr cotN εe hεe εd hεd εp hεp
       We be γe βe Wd bd γd βd Wz1 bz1 Wz2 bz2 Wp bp γp βp bf16 xin dyOut := by
   unfold enetStridedTiedG
-  exact ⟨convWTiedBAt_holds bf16, convBBetaTiedB_holds, bnPairTiedB_holds, depthwiseStridedWTiedBAt_holds bf16,
+  exact ⟨convWTiedBAt_holds bf16, convBBetaTiedB_holds, bnPairTiedB_holds, depthwiseStridedXlaWTiedBAt_holds bf16,
     convBBetaTiedB_holds, bnPairTiedB_holds, denseWTiedB_holds, denseBTiedB_holds,
     denseWTiedB_holds, denseBTiedB_holds, convWTiedBAt_holds bf16, convBBetaTiedB_holds, bnPairTiedB_holds⟩
 

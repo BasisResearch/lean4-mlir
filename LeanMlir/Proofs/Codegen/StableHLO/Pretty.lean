@@ -791,6 +791,8 @@ def skel : {k : Nat} → SHlo k → Raw
       .batched "layerScaleChGammaGrad" [xN] [c, h, w] (skel e)
   | _, .depthwiseStridedWeightSgdB (N := N) (c := c) (h := h) (w := w) (kH := kH) (kW := kW) xN wN lrS _ _ _ _ e =>
       .batched "depthwiseStridedWeightSgd" [xN, wN, lrS] [N, c, h, w, kH, kW] (skel e)
+  | _, .depthwiseStridedXlaWeightSgdB (N := N) (c := c) (h := h) (w := w) (kH := kH) (kW := kW) xN wN lrS _ _ _ _ e =>
+      .batched "depthwiseStridedXlaWeightSgd" [xN, wN, lrS] [N, c, h, w, kH, kW] (skel e)
 
 /-- One serialized token: an opcode with shapes/names; operands are positional. -/
 inductive Tok where
@@ -4264,6 +4266,29 @@ def emitTok (B : Nat) : Tok → List String → StateM EmitS (String × List Str
             s!"    {raw} = stablehlo.convolution({xt}, {dt})\n" ++
             "      dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],\n" ++
             s!"      window = " ++ "{" ++ s!"stride = [1, 1], pad = [[{pH}, {pH}], [{pW}, {pW}]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]" ++ "}\n" ++
+            "      {batch_group_count = " ++ toString c ++ " : i64, feature_group_count = 1 : i64}" ++
+            s!" : ({ty [c,B,2*h,2*w]}, {ty [c,B,2*h,2*w]}) -> {ty [1,c,kH,kW]}\n" ++
+            s!"    {g} = stablehlo.reshape {raw} : ({ty [1,c,kH,kW]}) -> {ty [c,1,kH,kW]}\n" ++
+            s!"    {lW} = stablehlo.constant dense<{lrS}> : {ty [c,1,kH,kW]}\n" ++
+            s!"    {sW} = stablehlo.multiply {g}, {lW} : {ty [c,1,kH,kW]}\n" ++
+            s!"    {o} = stablehlo.subtract {wN}, {sW} : {ty [c,1,kH,kW]}\n", o :: st)
+      -- The XLA-`SAME` peer: `depthwiseStridedWeightSgd`'s text with the weight-grad correlation
+      -- pad shifted one position (`[p-1, p+1]`, as `depthwiseStridedXlaWeightGrad` keeps it) —
+      -- B0's SGD-inline Imagenette artifact since its strided depthwises pad as TF's.
+      | "depthwiseStridedXlaWeightSgd", [xN, wN, lrS], [_N, c, h, w, kH, kW] => do
+          let pH := (kH - 1) / 2; let pW := (kW - 1) / 2
+          let xr ← fresh; let dr ← fresh; let z ← fresh; let du ← fresh; let xt ← fresh; let dt ← fresh
+          let raw ← fresh; let g ← fresh; let lW ← fresh; let sW ← fresh; let o ← fresh
+          pure (
+            s!"    {xr} = stablehlo.reshape {xN} : ({ty [B, c*(2*h)*(2*w)]}) -> {ty [B,c,2*h,2*w]}\n" ++
+            s!"    {dr} = stablehlo.reshape {r} : ({ty [B, c*h*w]}) -> {ty [B,c,h,w]}\n" ++
+            s!"    {z} = stablehlo.constant dense<0.0> : tensor<f32>\n" ++
+            s!"    {du} = stablehlo.pad {dr}, {z}, low = [0, 0, 0, 0], high = [0, 0, 1, 1], interior = [0, 0, 1, 1] : ({ty [B,c,h,w]}, tensor<f32>) -> {ty [B,c,2*h,2*w]}\n" ++
+            s!"    {xt} = stablehlo.transpose {xr}, dims = [1, 0, 2, 3] : ({ty [B,c,2*h,2*w]}) -> {ty [c,B,2*h,2*w]}\n" ++
+            s!"    {dt} = stablehlo.transpose {du}, dims = [1, 0, 2, 3] : ({ty [B,c,2*h,2*w]}) -> {ty [c,B,2*h,2*w]}\n" ++
+            s!"    {raw} = stablehlo.convolution({xt}, {dt})\n" ++
+            "      dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],\n" ++
+            s!"      window = " ++ "{" ++ s!"stride = [1, 1], pad = [[{pH-1}, {pH+1}], [{pW-1}, {pW+1}]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]" ++ "}\n" ++
             "      {batch_group_count = " ++ toString c ++ " : i64, feature_group_count = 1 : i64}" ++
             s!" : ({ty [c,B,2*h,2*w]}, {ty [c,B,2*h,2*w]}) -> {ty [1,c,kH,kW]}\n" ++
             s!"    {g} = stablehlo.reshape {raw} : ({ty [1,c,kH,kW]}) -> {ty [c,1,kH,kW]}\n" ++

@@ -4,12 +4,14 @@
 The third and last net in the padding sweep (`planning/archive/mnv4_verified.md` §3d(d) listed it as
 "structurally exposed, NOT measured" — this is the measurement, and it CORRECTS that entry).
 
-⭐ WHAT READING THE GENERATOR ALREADY SETTLED. §3c/§3d inferred EfficientNet was exposed at all
-five of its stride-2 convolutions, by analogy with MobileNetV2's `depthwise_conv` default. It is
-not: `mbconv_block` computes `pad = ((ksize-1)//2, (ksize-1)//2)` and passes it EXPLICITLY
-(generated_efficientnet_b0.py:144), exactly as MobileNetV4's `uib_block` does. So its depthwises
-are symmetric and the render's `[[1,1]]` (k=3) / `[[2,2]]` (k=5) are already right. **Only the stem
-is exposed** — one site, like MNv4, not five like MNv2.
+⭐ WHAT READING THE GENERATOR ALREADY SETTLED (2026-08-08). §3c/§3d inferred EfficientNet was
+exposed at all five of its stride-2 convolutions, by analogy with MobileNetV2's `depthwise_conv`
+default. It was not: `mbconv_block` computed `pad = ((ksize-1)//2, (ksize-1)//2)` and passed it
+EXPLICITLY, exactly as MobileNetV4's `uib_block` does, so its depthwises were symmetric on BOTH
+paths and only the stem was exposed. Since 2026-10-12 (D3, planning/imagenet_parity.md §9.2) the
+four strided depthwises pad as TF's `SAME` on both paths too — `mbconv_block` passes `'SAME'`
+under the net's `convPadStyle`, the render emits the `depthwiseStridedXla*` tokens — so the two
+sides still agree, now on the paper's net rather than on a hybrid of it.
 
 ⚠ The interesting parameter-layout wrinkles, both handled explicitly rather than absorbed into a
 loose tolerance:

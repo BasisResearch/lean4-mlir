@@ -50,7 +50,7 @@ open Proofs Proofs.StableHLO
 
 namespace Proofs.EnetTieG
 
-open Proofs.BackLinks (reassocB bnBackB swBackB sigBackB cInB dInB dStridedInB gapInB seInB
+open Proofs.BackLinks (reassocB bnBackB swBackB sigBackB cInB dInB dStridedXlaInB gapInB seInB
   gateCotB rowB unrowB seGateMulB seGateMulBHasVJP seGateMulB_differentiable)
 open scoped BigOperators
 
@@ -428,7 +428,7 @@ theorem enet_resid_lossTiedG {c : Nat} (xN vN epsStr cotN : String) (p : MBW c m
 end Exp
 
 -- ════════════════════════════════════════════════════════════════
--- § The stride-2 block (b2, b4, b6, b12) — expand at `2h × 2w`, the symmetric strided depthwise
+-- § The stride-2 block (b2, b4, b6, b12) — expand at `2h × 2w`, the XLA-`SAME` strided depthwise
 -- ════════════════════════════════════════════════════════════════
 
 section Strided
@@ -448,13 +448,13 @@ noncomputable def enetStrEr (p : MBW ic mid oc r kh kw) (xin : Vec (N * (ic * (2
 /-- The strided depthwise conv's output. -/
 noncomputable def enetStrDc (p : MBW ic mid oc r kh kw) (xin : Vec (N * (ic * (2 * h) * (2 * w)))) :
     Vec (N * (mid * h * w)) :=
-  batchMap N (depthwiseStride2Flat p.dW p.db) (enetStrEr N h w p xin)
+  batchMap N (depthwiseStride2FlatXla p.dW p.db) (enetStrEr N h w p xin)
 
 /-- The loss at the expand BN's output. -/
 noncomputable def enetStrGEn (Gb : Vec (N * (oc * h * w)) → Vec 1) (p : MBW ic mid oc r kh kw) :
     Vec (N * (mid * (2 * h) * (2 * w))) → Vec 1 :=
   fun u => enetTailGDc N h w Gb p.toEnTail
-    (batchMap N (depthwiseStride2Flat p.dW p.db) (swish (N * (mid * (2 * h) * (2 * w))) u))
+    (batchMap N (depthwiseStride2FlatXla p.dW p.db) (swish (N * (mid * (2 * h) * (2 * w))) u))
 
 /-- The loss at the expand conv's output. -/
 noncomputable def enetStrGEc (Gb : Vec (N * (oc * h * w)) → Vec 1) (p : MBW ic mid oc r kh kw) :
@@ -469,19 +469,19 @@ theorem enetStr_hasGradAt (p : MBW ic mid oc r kh kw) (hq : p.EpsPos)
     let cotDc := enetTailCotDc N h w p.toEnTail hq.d hq.p (enetStrDc N h w p xin) dy
     let cotEn := swBackB (N * (mid * (2 * h) * (2 * w)))
       (bnBatchLA N mid (2 * h) (2 * w) p.eε p.eγ p.eβ (enetStrEc N h w p xin))
-      (dStridedInB N p.dW p.db cotDc)
+      (dStridedXlaInB N p.dW p.db cotDc)
     HasGradAt (enetStrGEn N h w Gb p)
         (bnBatchLA N mid (2 * h) (2 * w) p.eε p.eγ p.eβ (enetStrEc N h w p xin)) cotEn
       ∧ HasGradAt (enetStrGEc N h w Gb p) (enetStrEc N h w p xin)
           (bnBackB N mid (2 * h) (2 * w) p.eε hq.e p.eγ p.eβ (enetStrEc N h w p xin) cotEn) := by
   intro cotDc cotEn
   obtain ⟨-, -, -, hDc⟩ := enetTail_hasGradAt p.toEnTail hq.d hq.p (enetStrDc N h w p xin) hGb
-  have hEr := GradNodeB.hasGradAt_depthwiseStrided (h := h) (w := w) p.dW p.db _ hDc
+  have hEr := GradNodeB.hasGradAt_depthwiseStridedXla (h := h) (w := w) p.dW p.db _ hDc
   have hEn := GradNodeB.hasGradAt_swish _ hEr
   exact ⟨hEn, GradNodeB.hasGradAt_bnBackB p.eε hq.e p.eγ p.eβ _ hEn⟩
 
 /-- **Stride-2 block, every parameter node a loss derivative** — the thirteen nodes
-    `enetStridedTiedG` ties; the depthwise nodes are the symmetric strided ones. -/
+    `enetStridedTiedG` ties; the depthwise nodes are the XLA-`SAME` strided ones. -/
 def enetStridedLossTiedG (xN vN epsStr cotN : String) (p : MBW ic mid oc r kh kw) (hq : p.EpsPos)
     (bf16 : Bool) (xin : Vec (N * (ic * (2 * h) * (2 * w)))) (Φ : MBW ic mid oc r kh kw → Vec 1)
     (dyOut : Vec (N * (oc * h * w))) : Prop :=
@@ -489,7 +489,7 @@ def enetStridedLossTiedG (xN vN epsStr cotN : String) (p : MBW ic mid oc r kh kw
   let ec : Vec (N * (mid * (2 * h) * (2 * w))) := batchMap N (flatConv p.eW p.eb) xin
   let en : Vec (N * (mid * (2 * h) * (2 * w))) := bnBatchLA N mid (2 * h) (2 * w) p.eε p.eγ p.eβ ec
   let er : Vec (N * (mid * (2 * h) * (2 * w))) := swish (N * (mid * (2 * h) * (2 * w))) en
-  let dc : Vec (N * (mid * h * w)) := batchMap N (depthwiseStride2Flat p.dW p.db) er
+  let dc : Vec (N * (mid * h * w)) := batchMap N (depthwiseStride2FlatXla p.dW p.db) er
   let dn : Vec (N * (mid * h * w)) := bnBatchLA N mid h w p.dε p.dγ p.dβ dc
   let dr : Vec (N * (mid * h * w)) := swish (N * (mid * h * w)) dn
   let se : Vec (N * (mid * h * w)) := seB N (h := h) (w := w) p.z1 p.zb1 p.z2 p.zb2 dr
@@ -500,7 +500,7 @@ def enetStridedLossTiedG (xN vN epsStr cotN : String) (p : MBW ic mid oc r kh kw
   let cotDxSe : Vec (N * (mid * h * w)) := seInB N (h := h) (w := w) p.z1 p.zb1 p.z2 p.zb2 dr cotSeOut
   let cotDn : Vec (N * (mid * h * w)) := swBackB (N * (mid * h * w)) dn cotDxSe
   let cotDc : Vec (N * (mid * h * w)) := bnBackB N mid h w p.dε hq.d p.dγ p.dβ dc cotDn
-  let cotEr : Vec (N * (mid * (2 * h) * (2 * w))) := dStridedInB N p.dW p.db cotDc
+  let cotEr : Vec (N * (mid * (2 * h) * (2 * w))) := dStridedXlaInB N p.dW p.db cotDc
   let cotEn : Vec (N * (mid * (2 * h) * (2 * w))) := swBackB (N * (mid * (2 * h) * (2 * w))) en cotEr
   let cotEc : Vec (N * (mid * (2 * h) * (2 * w))) :=
     bnBackB N mid (2 * h) (2 * w) p.eε hq.e p.eγ p.eβ ec cotEn
@@ -518,7 +518,7 @@ def enetStridedLossTiedG (xN vN epsStr cotN : String) (p : MBW ic mid oc r kh kw
           (.operand cotN (reassocB N mid (2 * h) (2 * w) cotEn)))))
   -- strided depthwise (2h → h), cot = cotDc
   ∧ (HasGradAt (fun θ => Φ { p with dW := Tensor3.unflatten θ }) (Tensor3.flatten p.dW)
-        (den (SHlo.depthwiseStridedWeightGradBAt bf16 id xN p.db er p.dW (.operand cotN cotDc))))
+        (den (SHlo.depthwiseStridedXlaWeightGradBAt bf16 id xN p.db er p.dW (.operand cotN cotDc))))
   ∧ (HasGradAt (fun θ => Φ { p with db := θ }) p.db
         (den (SHlo.bnBetaGradB (N := N) (oc := mid) (h := h) (w := w)
           (.operand cotN (reassocB N mid h w cotDc)))))
@@ -563,9 +563,9 @@ theorem enet_strided_lossTiedG (xN vN epsStr cotN : String) (p : MBW ic mid oc r
       (GradNodeB.flatConv_bias_split p.eW) xin p.eb hEc,
     GradNodeB.bnGamma_hasGradAt vN epsStr cotN p.eε p.eγ p.eβ _ hEn,
     GradNodeB.bnBeta_hasGradAt cotN p.eε p.eγ p.eβ _ hEn,
-    GradNodeB.depthwiseStridedWAt_hasGradAt bf16 xN cotN p.db _ p.dW hDc,
-    GradNodeB.biasBeta_hasGradAt cotN (fun θ y => depthwiseStride2Flat p.dW θ y)
-      (GradNodeB.depthwiseStride2Flat_bias_split p.dW) _ p.db hDc,
+    GradNodeB.depthwiseStridedXlaWAt_hasGradAt bf16 xN cotN p.db _ p.dW hDc,
+    GradNodeB.biasBeta_hasGradAt cotN (fun θ y => depthwiseStride2FlatXla p.dW θ y)
+      (Bf16Fold.depthwiseStride2FlatXla_bias_split p.dW) _ p.db hDc,
     GradNodeB.bnGamma_hasGradAt vN epsStr cotN p.dε p.dγ p.dβ _ hDn,
     GradNodeB.bnBeta_hasGradAt cotN p.dε p.dγ p.dβ _ hDn,
     hSeB,

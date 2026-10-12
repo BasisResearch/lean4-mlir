@@ -337,14 +337,14 @@ and `gen_mlir_manifest.py --selftest` replays those collisions through this deco
 
 | file | kind | variant | decoded | MB | writer | runs |
 |---|---|---|---|---|---|---|
-| `mobilenetv2in_fwd.mlir` | fwd | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | 6 |
+| `mobilenetv2in_fwd.mlir` | fwd | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | 7 |
 | `mobilenetv2in_fwd_eval.mlir` | fwd_eval | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | 2 |
-| `mobilenetv2in_fwd_eval_eps0001.mlir` | fwd_eval BN ε 0.001 | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | 4 |
+| `mobilenetv2in_fwd_eval_eps0001.mlir` | fwd_eval BN ε 0.001 | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | 5 |
 | `mobilenetv2in_adam64_train_step.mlir` | train_step | `adam64` | AdamW, batch 64 | 1.0 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | — |
 | `mobilenetv2in_adam64bf16_train_step.mlir` | train_step | `adam64bf16` | AdamW, bf16, batch 64 | 1.1 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | — |
 | `mobilenetv2in_adamdp64_train_step.mlir` | train_step | `adamdp64` | AdamW, data-parallel, batch 64 per replica | 1.2 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | — |
 | `mobilenetv2in_adamdp64bf16_train_step.mlir` | train_step | `adamdp64bf16` | AdamW, data-parallel, bf16, batch 64 per replica | 1.2 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | — |
-| `mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_train_step.mlir` | train_step | `emarmstfdp64wxdwdoeps0001bf16` | EMA shadow (4-region blob), RMSProp, data-parallel, classifier dropout, no decay on norm/bias, bf16, norm ε 0.001, batch 64 per replica | 1.2 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | — |
+| `mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_train_step.mlir` | train_step | `emarmstfdp64wxdwdoeps0001bf16` | EMA shadow (4-region blob), RMSProp, data-parallel, classifier dropout, no decay on norm/bias, bf16, norm ε 0.001, batch 64 per replica | 1.2 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | 1 |
 | `mobilenetv2in_rms64_train_step.mlir` | train_step | `rms64` | RMSProp, batch 64 | 0.9 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | — |
 | `mobilenetv2in_rmsdp128_train_step.mlir` | train_step | `rmsdp128` | RMSProp, data-parallel, batch 128 per replica | 1.1 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | — |
 | `mobilenetv2in_rmsdp64_train_step.mlir` | train_step | `rmsdp64` | RMSProp, data-parallel, batch 64 per replica | 1.1 | `LeanMlir/Proofs/Codegen/MobileNetV2RenderB.lean` | — |

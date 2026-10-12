@@ -530,7 +530,7 @@ end Proofs.SyncKit
 namespace Proofs.SyncKit
 
 open scoped BigOperators
-open Proofs.BackLinks (dInB dStridedInB gapInB)
+open Proofs.BackLinks (dInB dStridedInB dStridedXlaInB gapInB)
 
 -- ════════════════════════════════════════════════════════════════
 -- § 1. Homogeneity — linear in the cotangent
@@ -542,6 +542,10 @@ theorem dInB_smul (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW) (b
 
 theorem dStridedInB_smul (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW) (b : Vec c) :
     IsHomog (dStridedInB N (h := h) (w := w) W b) :=
+  batchMap_smul _ (HasVJP.backward_smul _ _)
+
+theorem dStridedXlaInB_smul (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
+    (b : Vec c) : IsHomog (dStridedXlaInB N (h := h) (w := w) W b) :=
   batchMap_smul _ (HasVJP.backward_smul _ _)
 
 theorem gapInB_smul (N c h w : Nat) : IsHomog (gapInB N c h w) :=
@@ -610,6 +614,12 @@ theorem dStridedInB_shard {R N : Nat} {c h w kH kW : Nat} (W : DepthwiseKernel c
       = batchShard R N (c * (2 * h) * (2 * w)) (dStridedInB (R * N) (h := h) (w := w) W b DY) r :=
   (batchShard_batchMap _ DY r).symm
 
+theorem dStridedXlaInB_shard {R N : Nat} {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
+    (b : Vec c) (DY : Vec ((R * N) * (c * h * w))) (r : Fin R) :
+    dStridedXlaInB N (h := h) (w := w) W b (batchShard R N (c * h * w) DY r)
+      = batchShard R N (c * (2 * h) * (2 * w)) (dStridedXlaInB (R * N) (h := h) (w := w) W b DY) r :=
+  (batchShard_batchMap _ DY r).symm
+
 theorem gapInB_shard {R N : Nat} (c h w : Nat) (DY : Vec ((R * N) * c)) (r : Fin R) :
     gapInB N c h w (batchShard R N c DY r) = batchShard R N (c * h * w) (gapInB (R * N) c h w DY) r :=
   (batchShard_batchMap _ DY r).symm
@@ -649,6 +659,22 @@ theorem den_allReduceMeanF_depthwiseStridedWeightGradB_shard {N c h w kH kW : Na
           (fun r => .depthwiseStridedWeightGradB xN b (batchShard R N (c * (2 * h) * (2 * w)) X r) W
             (dy r))) idx
       = (1 / (R : ℝ)) * den (.depthwiseStridedWeightGradB xN b X W (.operand cotN DY)) idx := by
+  simp only [den_allReduceMeanF]
+  congr 1
+  simp only [denStep, denStepApp, hdy]
+  shard_sum
+
+/-- **P4 at the XLA-`SAME` strided depthwise weight** (MobileNetV2's `b2` / `b4` / `b7` / `b14`,
+    EfficientNet-B0's `b2` / `b4` / `b6` / `b12`). -/
+theorem den_allReduceMeanF_depthwiseStridedXlaWeightGradB_shard {N c h w kH kW : Nat} (R : Nat)
+    (hR : 0 < R) (t xN cotN : String) (ds : List Nat) (b : Vec c) (W : DepthwiseKernel c kH kW)
+    (X : Vec ((R * N) * (c * (2 * h) * (2 * w)))) (DY : Vec ((R * N) * (c * h * w)))
+    (dy : Fin R → SHlo (N * (c * h * w)))
+    (hdy : ∀ r, den (dy r) = batchShard R N (c * h * w) DY r) (idx : Fin (c * kH * kW)) :
+    den (.allReduceMeanF R hR t ds
+          (fun r => .depthwiseStridedXlaWeightGradB xN b
+            (batchShard R N (c * (2 * h) * (2 * w)) X r) W (dy r))) idx
+      = (1 / (R : ℝ)) * den (.depthwiseStridedXlaWeightGradB xN b X W (.operand cotN DY)) idx := by
   simp only [den_allReduceMeanF]
   congr 1
   simp only [denStep, denStepApp, hdy]
@@ -725,6 +751,28 @@ theorem depthwiseStridedWSync_of_scaled (R : Nat) (hR : 0 < R) (N h w : Nat) {c 
   rw [den_allReduceMeanF_depthwiseStridedWeightGradB_shard R hR t xN cotN _ b W X
       (fun i => (R : ℝ) * COT i) (fun r => .operand cotN (cots r)) (fun r => hc r) idx,
     depthwiseStridedWeightGradB_smul, inv_mul_R R hR]
+
+/-- The XLA-`SAME` strided depthwise weight, DP-tied. -/
+def DepthwiseStridedXlaWSync (R : Nat) (hR : 0 < R) (N h w : Nat) {c kH kW : Nat}
+    (t xN cotN : String) (b : Vec c) (X : Vec ((R * N) * (c * (2 * h) * (2 * w))))
+    (W : DepthwiseKernel c kH kW) (cots : Fin R → Vec (N * (c * h * w)))
+    (COT : Vec ((R * N) * (c * h * w))) : Prop :=
+  ∀ idx : Fin (c * kH * kW),
+    den (.allReduceMeanF R hR t [c, 1, kH, kW] (fun r =>
+          .depthwiseStridedXlaWeightGradB xN b (batchShard R N (c * (2 * h) * (2 * w)) X r) W
+            (.operand cotN (cots r)))) idx
+      = den (.depthwiseStridedXlaWeightGradB xN b X W (.operand cotN COT)) idx
+
+theorem depthwiseStridedXlaWSync_of_scaled (R : Nat) (hR : 0 < R) (N h w : Nat) {c kH kW : Nat}
+    (t xN cotN : String) (b : Vec c) (X : Vec ((R * N) * (c * (2 * h) * (2 * w))))
+    (W : DepthwiseKernel c kH kW) (cots : Fin R → Vec (N * (c * h * w)))
+    (COT : Vec ((R * N) * (c * h * w)))
+    (hc : ∀ r, cots r = batchShard R N (c * h * w) (fun i => (R : ℝ) * COT i) r) :
+    DepthwiseStridedXlaWSync R hR N h w t xN cotN b X W cots COT := by
+  intro idx
+  rw [den_allReduceMeanF_depthwiseStridedXlaWeightGradB_shard R hR t xN cotN _ b W X
+      (fun i => (R : ℝ) * COT i) (fun r => .operand cotN (cots r)) (fun r => hc r) idx,
+    depthwiseStridedXlaWeightGradB_smul, inv_mul_R R hR]
 
 theorem convStridedXlaWSync_of_scaled (R : Nat) (hR : 0 < R) (N h w : Nat) {ic oc kH kW : Nat}
     (t xN cotN : String) (b : Vec oc) (X : Vec ((R * N) * (ic * (2 * h) * (2 * w))))

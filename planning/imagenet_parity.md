@@ -48,7 +48,7 @@ the audit could not confirm.
 |---|---|---|---|
 | MNv2 | 71.90 / 72.0 | lr 0.045 at 256 sync (paper: 96×16 async); coupled wd 4e-5 on **all** tensors, BN and depthwise included (slim skips both); warmup 5 + continuous ×0.98 (paper: staircase, no warmup) | BN eps/decay 1e-5/0.99 vs TF 1e-3/0.997; He-uniform vs truncated normal σ .09; no colour distortion; the run predates the ReLU6 stem/head |
 | MNv4-Conv-M | 75.48 (pre-timm-parity net) / 79.9 | 100/50 ep vs 500; 224 train vs 256; eval crop 0.875 vs timm r224's 0.95; wd 0.05 vs 0.1; dropout 0.1 vs 0.2; no drop-path (paper 0.075); RandAugment N2 m9 p0.5 vs m15 p0.7 | AdamW ε 1e-8 vs 1e-7; BN decay 0.99 (timm 0.9); drop-path ramp /21 vs timm's /22; **both paths run EMA, the paper doesn't** |
-| B0 | 77.15 / 77.1 (timm 77.7) | **wd on every parameter**, BN γ/β and biases included: the RMSProp branch ignores `wdExcludeNormBias` (`Codegen.lean:2643-2660`); decay continuous and offset by warmup vs staircase from step 0 (LR runs ~6.5% high) | BN eps 1e-5 vs 1e-3 (never measured); drop-connect ramp i/15 vs i/16; SAME stem + symmetric strided depthwise (an undocumented hybrid); dense Xavier init; TF puts lr inside RMSProp's momentum |
+| B0 | 77.15 / 77.1 (timm 77.7) | **wd on every parameter**, BN γ/β and biases included: the RMSProp branch ignores `wdExcludeNormBias` (`Codegen.lean:2643-2660`); decay continuous and offset by warmup vs staircase from step 0 (LR runs ~6.5% high) | BN eps 1e-5 vs 1e-3 (never measured); drop-connect ramp i/15 vs i/16; SAME stem + symmetric strided depthwise (an undocumented hybrid — closed 2026-10-12, D3: both paths now pad every strided conv as TF's SAME); dense Xavier init; TF puts lr inside RMSProp's momentum |
 | ConvNeXt-T | 81.53 EMA / 82.1 | batch 256 @ 2.5e-4 vs 4096 @ 4e-3; grad clip 1.0 (paper: none); tanh GELU (paper: erf) | erasing zero-fill + uniform aspect vs `pixel` + log-uniform; TF inception crop; mixup/cutmix alternate by step instead of a p=0.5 switch |
 | ViT-Ti | 72.31 / 72.2 | **ls effectively 0** (H1); clip 1.0 (DeiT: none; the clip-off arm on `vitInit` never ran); scores the EMA shadow where DeiT scores the live model | LN eps 1e-5 vs 1e-6; tanh GELU; no cooldown or min_lr; repeated-aug copies spread by a shuffle window, not placed in one step; erasing zero-fill; batch 512 (scaled) |
 
@@ -181,7 +181,16 @@ interpolation where timm uses bicubic (`Codegen.lean:50-65`); random erasing fil
   ⚠ `--pad tf` against TF's all-SAME `tf_efficientnet_b0`: train 3.7e-1 / eval 4.8e-2 of scale. The
   strided-depthwise padding is a LARGE deviation from the TF net the recipe now follows; fixing it
   moves both paths (JAX `mbconv_block` + the verified render's four strided depthwise sites) and is
-  a decision for the user, not taken here.
+  a decision for the user, not taken here. **2026-10-12: taken (D3).** Both paths pad every strided
+  conv SAME; the gate's default is `--pad tf` (ImageNet train 1.7e-6 / eval 7.3e-7) and `--controls`
+  must show the old hybrid red (4.8e-2; symmetric everywhere 4.6e-2, ε 1e-5 5.8e-3).
+  ⚠ Pre-existing, not touched: `scripts/parity/enet_forward_tie.py` (the IREE llvm-cpu render
+  against the Imagenette JAX reference on CPU, batch BN, ε 1e-5) reports FAIL at max |Δ| 2.9e-4
+  against its absolute 1e-4 tolerance on logits spanning 0.57; the HEAD render against a
+  symmetric-patched copy of the same reference fails at 1.9e-4, so the gap predates D3 and is 200×
+  under its own padding control (5.6e-2). `efficientnet-adam-tie` ties the committed file against
+  itself when `efficientnet_adam_train_step_b.mlir` is absent (its hand-written emitter is retired),
+  so it is not evidence either way.
 * ✅ G3 for ViT: `scripts/parity/vit_timm_parity.py` (+ `_vit_timm_dump.py`) against `deit_tiny_patch16_224`
   at the reference's tanh GELU / LN ε 1e-5: Imagenette 4.7e-7, ImageNet 6.9e-7 at tol 1e-5 (tanh vs
   erf is only ~4e-5 of scale, so the CNN gates' 1e-3 would be blind to it); controls red (k/v swapped
@@ -477,7 +486,7 @@ did not move).
 |---|---|---|---|---|---|
 | D1 | ConvNeXt, ViT | exact-erf GELU | erf | tanh, both paths | L: erf op + Φ/FTC proof + re-render (`vit_parity_todo.md` P-A); JAX side S. Plan: `gelu_erf_and_torchvision_crop.md` §3. 2026-10-06: proofs, op, ties and the JAX flag (`geluExact`, on in the six ImageNet configs) are in; the committed renders and the reruns are §3.8–§3.9 there |
 | D2 | ConvNeXt, ViT | grad clip 1.0 | none | 1.0, both paths | S code; ~30 min clip-off JAX probe on ViT first (P-B) |
-| D3 | B0 | strided-depthwise padding | SAME (TF) | symmetric, both paths (0.37 / 0.048 of logit scale, `enet_timm_parity --pad tf`) | JAX S; verified M–L, moves the T2/T3 ties. Parked 09-25 |
+| D3 | B0 | strided-depthwise padding | SAME (TF) | symmetric, both paths (0.37 / 0.048 of logit scale, `enet_timm_parity --pad hybrid`) | ✅ 2026-10-12 (the user: proofs). The XLA-`SAME` strided-depthwise op family and its VJPs had landed with MobileNetV2 (3d9b14d6, 08-08), so the verified half is a re-pointing, not new math: the render's four strided sites emit `depthwiseStridedXla{At,BackBatchedAt,WeightGradBAt,WeightSgdB}` (the last one new, for the SGD-inline Imagenette artifact), MNv2's private Xla helpers (`dStridedXlaInB`, its `_smul` / `_shard`, `hasGradAt_depthwiseStridedXla`, the sync collective) moved into the shared kit with `dwbsSXlaB` and its back-link, and the 13 B0 proof files are restated on the Xla forms — every tie built unchanged. JAX: `mbconv_block` pads its depthwise `'SAME'` under `convPadStyle` (MNv4's blocks are not this one). The gate's default is `--pad tf`; `hybrid` is a red control. 36 B0 artifacts re-rendered; the Imagenette B0 pair (89.96 %) is re-run on the faithful net |
 | D4 | MNv2, MNv4, B0 | verified depthwise init | var 2/k² (TF/timm, = JAX) | He fan-out 2/(C·k²): 0.03–0.18× std | ✅ 2026-10-07 (the user: "flip on the constructors"): `dwFanK2 := true` in the three ImageNet drivers; `LEAN_MLIR_DW_FAN_K2=0` reproduces the landed runs. The audit now reads MNv2 0/158 and MNv4 0/233 tensors apart; B0 17/213, all of them D5's SE FCs. Each net's rerun carries it |
 | D5 | B0 | SE FC init | var 2/out | verified Glorot (reduce ~0.2×, expand 0.91×) | ✅ 2026-10-07: init kind 7 on the SE FCs (`VLayer.mbConvSE{,NB}`, `EfficientNetLayout.specs` in lockstep), `mkParam` var 2/out under `VerifiedConfig.seFanOutInit`, set in the ImageNet B0 driver; `LEAN_MLIR_SE_FAN_OUT=0` reproduces the landed run. Host-side; `E4M3Quant` quantizes kind 7 as a weight. The B0 rerun (R5) carries it with D4 |
 | D6 | B0 (+all CNNs) | classifier init | TF U(±1/√1000); torch Linear default | Glorot, both paths | S each |

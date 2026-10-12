@@ -4,7 +4,7 @@ import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
 
 The batched block forwards of B0 at the index `N·(c·h·w)` the forward graph (`EfficientNetStagesPC`)
 uses, each with a `HasVJP` composed by `vjpComp` from the batched stage VJPs (`Batched.Stages`:
-`cbsBHasVJP`, `dwbsBHasVJP`, `dwbsSBHasVJP`, `seBHasVJP`, `projBHasVJP`, and `batchMapHasVJP` for
+`cbsBHasVJP`, `dwbsBHasVJP`, `dwbsSXlaBHasVJP`, `seBHasVJP`, `projBHasVJP`, and `batchMapHasVJP` for
 the per-example ops), and a `_differentiable` lemma for each:
 
 * `mbNoExpFwdBHasVJP` — MBConv1, no expansion: `dw-bn-swish → SE → project-bn`.
@@ -53,7 +53,7 @@ theorem mbStridedFwdB_differentiable (N : Nat) {ic mid oc h w kHd kWd r : Nat}
     (Wp : Kernel4 oc mid 1 1) (bp : Vec oc) (εp : ℝ) (hεp : 0 < εp) (γp βp : Vec oc) :
     Differentiable ℝ (mbStridedFwdB N (h := h) (w := w) We be εe γe βe Wd bd εd γd βd
       Wz₁ bz₁ Wz₂ bz₂ Wp bp εp γp βp) := by
-  unfold mbStridedFwdB cbsB dwbsSB depthwiseStride2Flat swish; fun_prop (disch := assumption)
+  unfold mbStridedFwdB cbsB dwbsSXlaB depthwiseStride2FlatXla swish; fun_prop (disch := assumption)
 /-- The VJP of the strided MBConv6: the four stages' VJPs composed. -/
 noncomputable def mbStridedFwdBHasVJP (N : Nat) {ic mid oc h w kHd kWd r : Nat}
     (We : Kernel4 mid ic 1 1) (be : Vec mid) (εe : ℝ) (hεe : 0 < εe) (γe βe : Vec mid)
@@ -63,12 +63,12 @@ noncomputable def mbStridedFwdBHasVJP (N : Nat) {ic mid oc h w kHd kWd r : Nat}
     HasVJP (mbStridedFwdB N (h := h) (w := w) We be εe γe βe Wd bd εd γd βd
       Wz₁ bz₁ Wz₂ bz₂ Wp bp εp γp βp) :=
   let dE := cbsB_differentiable N (h := 2 * h) (w := 2 * w) We be εe hεe γe βe
-  let dDw := dwbsSB_differentiable N (h := h) (w := w) Wd bd εd hεd γd βd
+  let dDw := dwbsSXlaB_differentiable N (h := h) (w := w) Wd bd εd hεd γd βd
   let dSe := seB_differentiable N (h := h) (w := w) Wz₁ bz₁ Wz₂ bz₂
   vjpComp _ _ (dSe.comp (dDw.comp dE)) (projB_differentiable N (h := h) (w := w) Wp bp εp hεp γp βp)
     (vjpComp _ _ (dDw.comp dE) dSe
       (vjpComp _ _ dE dDw (cbsBHasVJP N (h := 2 * h) (w := 2 * w) We be εe hεe γe βe)
-        (dwbsSBHasVJP N (h := h) (w := w) Wd bd εd hεd γd βd))
+        (dwbsSXlaBHasVJP N (h := h) (w := w) Wd bd εd hεd γd βd))
       (seBHasVJP N (h := h) (w := w) Wz₁ bz₁ Wz₂ bz₂))
     (projBHasVJP N (h := h) (w := w) Wp bp εp hεp γp βp)
 

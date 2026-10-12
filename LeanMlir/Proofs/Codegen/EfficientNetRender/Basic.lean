@@ -36,7 +36,7 @@ batch would be sound for the ops where the batch is a *parallel* index — `batc
 `batchMap N (denOp op)`, which at `N = 1` is the per-example op, exactly what the emit applies
 across the batch. It is **not** sound for the ops where the batch is a *reduction* axis:
 `bnBatchF` and `bnBatchBack` reduce μ/var over `[0,2,3]`, and the whole `*SgdB` param family
-(`bnGammaSgdB`, `bnBetaSgdB`, `dense{Weight,Bias}SgdB`, `conv{,Strided}WeightSgdB`, `depthwise{,Strided}WeightSgdB`) sums the
+(`bnGammaSgdB`, `bnBetaSgdB`, `dense{Weight,Bias}SgdB`, `conv{,Strided}WeightSgdB`, `depthwise{,StridedXla}WeightSgdB`) sums the
 per-example gradient over `Fin N`. At `N = 1` each of those `den`s would describe a ONE-EXAMPLE
 function while the emitted text reduces over all `B`.
 
@@ -191,10 +191,10 @@ private def dwWS (adam : Bool) (B c hh ww kd : Nat) (xName wName lrStr dy : Stri
   let zk : DepthwiseKernel c kd kd := fun _ _ _ => 0
   let zd : Vec (B * (c * hh * ww)) := fun _ => 0
   if adam then
-    pretty B (.depthwiseStridedWeightGradBAt bf16 (N := B) (c := c) (h := hh) (w := ww) zrnd xName zb zx zk
+    pretty B (.depthwiseStridedXlaWeightGradBAt bf16 (N := B) (c := c) (h := hh) (w := ww) zrnd xName zb zx zk
                 (.operand dy zd))
   else
-    pretty B (.depthwiseStridedWeightSgdB (N := B) (c := c) (h := hh) (w := ww) xName wName lrStr
+    pretty B (.depthwiseStridedXlaWeightSgdB (N := B) (c := c) (h := hh) (w := ww) xName wName lrStr
                 zb zx zk 0 (.operand dy zd))
 
 /-- Dense weight (the two SE gate matrices and the classifier head). -/
@@ -419,7 +419,8 @@ def eFwdNoSkip (B ic mid oc hh kd r : Nat) (mode : BnMode) (epsStr p xName : Str
   eFwdBody B ic mid oc hh kd r mode epsStr p xName convBias bf16 replicas sync
 
 /-- **Strided MBConv forward** (b2/b4/b6/b12): expand at the input `2hh×2ww`, depthwise downsamples
-    `2hh×2ww → hh×ww`, project 1×1 at `hh×ww`. NO skip. -/
+    `2hh×2ww → hh×ww` at the XLA-`SAME` phase (`depthwiseStridedXlaAt` — TF's padding at every
+    strided conv, as the stem's; D3, 2026-10-12), project 1×1 at `hh×ww`. NO skip. -/
 def eFwdStrided (B ic mid oc hh kd r : Nat) (mode : BnMode) (epsStr p xName : String) (convBias : Bool)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) : StateM Proofs.StableHLO.EmitS EFwd := do
   let ww := hh
@@ -435,7 +436,7 @@ def eFwdStrided (B ic mid oc hh kd r : Nat) (mode : BnMode) (epsStr p xName : St
   let (cEc, nEc) ← pretty B (.batchOp (N := B) (.convAt bf16 (h := 2*hh) (w := 2*ww) zrnd s!"%{p}eW" (biasName convBias s!"%{p}eb" mid) zKe zVm) (.operand xName zIn))
   let (cEn, nEn, stE) ← bnSiteB B mid (2*hh) (2*ww) mode epsStr s!"%{p}eg" s!"%{p}ebt" s!"{p}en" nEc (replicas := replicas) (sync := sync)
   let (cEr, nEr) ← pretty B (.batchOp (.swish) (.operand nEn zMidH))
-  let (cDc, nDc) ← pretty B (.batchOp (N := B) (.depthwiseStridedAt bf16 (h := hh) (w := ww) zrnd s!"%{p}dW" (biasName convBias s!"%{p}db" mid) zDk zVm) (.operand nEr zMidH))
+  let (cDc, nDc) ← pretty B (.batchOp (N := B) (.depthwiseStridedXlaAt bf16 (h := hh) (w := ww) zrnd s!"%{p}dW" (biasName convBias s!"%{p}db" mid) zDk zVm) (.operand nEr zMidH))
   let (cDn, nDn, stD) ← bnSiteB B mid hh ww mode epsStr s!"%{p}dg" s!"%{p}dbt" s!"{p}dn" nDc (replicas := replicas) (sync := sync)
   let (cDr, nDr) ← pretty B (.batchOp (.swish) (.operand nDn zMid))
   let (cSe, nS, nE1, nZ, nE2, nSe) ← seFwd B mid hh r p nDr
@@ -547,8 +548,9 @@ private def eBackNoSkip (adam : Bool) (B ic mid oc hh kd r : Nat) (epsStr lrStr 
     (f : EFwd) (dyName : String) (convBias : Bool) (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) : StateM Proofs.StableHLO.EmitS EBack :=
   eBackBody adam B ic mid oc hh kd r epsStr lrStr p xName f dyName convBias bf16 replicas sync
 
-/-- **Strided MBConv backward** (b2/b4/b6/b12): depthwise-back upsamples `hh×ww → 2hh×2ww`; the
-    expand stage backward runs at `2hh×2ww`. NO skip. -/
+/-- **Strided MBConv backward** (b2/b4/b6/b12): depthwise-back upsamples `hh×ww → 2hh×2ww` onto
+    the odd positions (`depthwiseStridedXlaBackBatchedAt`, the forward's phase; the weight grad
+    keeps the `[p−1, p+1]` correlation pad); the expand stage backward runs at `2hh×2ww`. NO skip. -/
 private def eBackStrided (adam : Bool) (B ic mid oc hh kd r : Nat) (epsStr lrStr p xName : String)
     (f : EFwd) (dyName : String) (convBias : Bool)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) : StateM Proofs.StableHLO.EmitS EBack := do
@@ -573,7 +575,7 @@ private def eBackStrided (adam : Bool) (B ic mid oc hh kd r : Nat) (epsStr lrStr
   -- depthwise (swish + BN at hh, strided conv-back upsamples to 2hh)
   let (cDsw, nDsw) ← pretty B (.swishBackB f.dn (fun _ => 0) (.operand nDxSe zMidF))
   let (cDbn, nDbn) ← bnBackSite B mid (hh) (ww) sync replicas epsStr s!"%{p}dg" f.dc s!"{p}dgdst" nDsw f.stD
-  let (cDer, nDer) ← pretty B (.depthwiseStridedBackBatchedAt bf16 (N := B) (c := mid) (h := hh) (w := ww) zrnd s!"%{p}dW" zDk zVm (.operand nDbn zMidF))
+  let (cDer, nDer) ← pretty B (.depthwiseStridedXlaBackBatchedAt bf16 (N := B) (c := mid) (h := hh) (w := ww) zrnd s!"%{p}dW" zDk zVm (.operand nDbn zMidF))
   let (cgd, ngd) ← bnG adam B mid hh ww s!"%{p}dg" f.dc epsStr lrStr nDsw (sync := sync) (st := f.stD)
   let (ctd, ntd) ← bnBt adam B mid hh ww s!"%{p}dbt" lrStr nDsw
   let (cWd, nWd) ← dwWS adam B mid hh ww kd f.er s!"%{p}dW" lrStr nDbn (bf16 := bf16)
@@ -1030,8 +1032,9 @@ private def enetBackAll (B nClasses : Nat) (epsStr lrStr : String) (adam : Bool)
 
 /-- **EfficientNet-B0 (full 16-MBConv) SGD train step rendered ENTIRELY from the verified AST**, at
     the batched index `N·(c·h·w)`. Every emitted line is `pretty` of a verified `SHlo` node. Strided
-    stem 3×3/s2 (3→32, 224→112) → b1 (no-expand) → b2..b16 (4 strided downsamples 112→7, 9 residual
-    skips, 2 no-skip widenings) → 1×1 conv-bn-swish head (320→1280) → GAP → dense (1280→nClasses).
+    stem 3×3/s2 (3→32, 224→112) → b1 (no-expand) → b2..b16 (4 strided downsamples 112→7 at the
+    XLA-`SAME` phase like the stem, 9 residual skips, 2 no-skip widenings) → 1×1 conv-bn-swish head
+    (320→1280) → GAP → dense (1280→nClasses).
 
     The cotangent is plain `softmax − onehot` with the batch mean folded into `lrStr` — so the
     committed `lrStr = 0.05` is an effective **1.6** on the mean loss. That is a tuned value, not a

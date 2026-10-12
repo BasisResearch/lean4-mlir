@@ -28,7 +28,7 @@ gradient at the global batch.
 * **Per stage** (at variable widths): the loss read at the output of the stem, the `t = 1` block,
   the stride-1 body, the stride-2 body and the head, pulled back one stage at a time by
   `ParamGradNodes`' pull-backs (relu6's `hasGradAt_relu6`, batch BN, the conv and depthwise
-  input-VJPs) and this file's XLA-`SAME` strided depthwise `hasGradAt_depthwiseStridedXla`, so each
+  input-VJPs, the XLA-`SAME` strided depthwise's `hasGradAt_depthwiseStridedXla` among them), so each
   internal activation's gradient is the chain's own cotangent. The stride-1 body bundle covers
   both the skip blocks and the two widenings: a skip block's body sees the loss `u ↦ Gn (u + v)`,
   whose gradient at the body output is still `dyOut` (`mnv2_resid_lossTiedB`).
@@ -45,30 +45,10 @@ open Proofs Proofs.StableHLO
 
 namespace Proofs.MobileNetV2TieB
 
-open Proofs.BackLinks (bnInB bnInB_eq_bnBackB relu6MaskB cInB dInB gapInB reassocB rowB unrowB)
-open Proofs.GradNodeB (hasGradAt_bnBatchLA hasGradAt_relu6 hasGradAt_conv hasGradAt_depthwise)
+open Proofs.BackLinks (bnInB bnInB_eq_bnBackB relu6MaskB cInB dInB dStridedXlaInB gapInB reassocB rowB unrowB)
+open Proofs.GradNodeB (hasGradAt_bnBatchLA hasGradAt_relu6 hasGradAt_conv hasGradAt_depthwise
+  hasGradAt_depthwiseStridedXla)
 open scoped BigOperators
-
-/-- `dStridedXlaInB` — the emitted XLA-`SAME` strided depthwise input-cotangent — is the batched
-    strided depthwise VJP's backward, at any saved input. -/
-theorem dStridedXlaInB_eq_batchMapBackward {N c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
-    (b : Vec c) (x : Vec (N * (c * (2 * h) * (2 * w)))) (dy : Vec (N * (c * h * w))) :
-    dStridedXlaInB N W b dy
-      = (batchMapHasVJP (depthwiseStride2FlatXla W b) (depthwiseStride2FlatXlaHasVJP W b)
-          (depthwiseStride2FlatXla_differentiable W b)).backward x dy :=
-  depthwiseStridedXlaBackBatched_faithful "" W b x (.operand "" dy)
-
-/-- Back through a batched XLA-`SAME` strided depthwise: `dStridedXlaInB` (the stride-2 body's
-    stage, beside `ParamGradNodes`' symmetric `hasGradAt_depthwiseStrided`). -/
-theorem hasGradAt_depthwiseStridedXla {N c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
-    (b : Vec c) (x : Vec (N * (c * (2 * h) * (2 * w)))) {G : Vec (N * (c * h * w)) → Vec 1}
-    {dy : Vec (N * (c * h * w))} (hG : HasGradAt G (batchMap N (depthwiseStride2FlatXla W b) x) dy) :
-    HasGradAt (fun y => G (batchMap N (depthwiseStride2FlatXla W b) y)) x
-      (dStridedXlaInB N W b dy) :=
-  (hG.comp ((batchMap_differentiable _ (depthwiseStride2FlatXla_differentiable W b)) _)
-    ((batchMapHasVJP _ (depthwiseStride2FlatXlaHasVJP W b)
-      (depthwiseStride2FlatXla_differentiable W b)).toHasVJPAt _)).of_eq
-    (dStridedXlaInB_eq_batchMapBackward (h := h) (w := w) W b _ _).symm
 
 -- ════════════════════════════════════════════════════════════════
 -- § The stem — XLA-`SAME` strided conv, batch BN, relu6

@@ -310,7 +310,7 @@ module @m {
     %v193 = stablehlo.convert %b2dW : (tensor<96x1x3x3xf32>) -> tensor<96x1x3x3xbf16>
     %v194 = stablehlo.convolution(%v192, %v193)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [2, 2], pad = [[1, 1], [1, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [2, 2], pad = [[0, 1], [0, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 1 : i64, feature_group_count = 96 : i64} : (tensor<64x96x112x112xbf16>, tensor<96x1x3x3xbf16>) -> tensor<64x96x56x56xbf16>
     %v195 = stablehlo.convert %v194 : (tensor<64x96x56x56xbf16>) -> tensor<64x96x56x56xf32>
     %v196 = stablehlo.broadcast_in_dim %zb96, dims = [1] : (tensor<96xf32>) -> tensor<64x96x56x56xf32>
@@ -710,7 +710,7 @@ module @m {
     %v491 = stablehlo.convert %b4dW : (tensor<144x1x5x5xf32>) -> tensor<144x1x5x5xbf16>
     %v492 = stablehlo.convolution(%v490, %v491)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [2, 2], pad = [[2, 2], [2, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [2, 2], pad = [[1, 2], [1, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 1 : i64, feature_group_count = 144 : i64} : (tensor<64x144x56x56xbf16>, tensor<144x1x5x5xbf16>) -> tensor<64x144x28x28xbf16>
     %v493 = stablehlo.convert %v492 : (tensor<64x144x28x28xbf16>) -> tensor<64x144x28x28xf32>
     %v494 = stablehlo.broadcast_in_dim %zb144, dims = [1] : (tensor<144xf32>) -> tensor<64x144x28x28xf32>
@@ -1110,7 +1110,7 @@ module @m {
     %v789 = stablehlo.convert %b6dW : (tensor<240x1x3x3xf32>) -> tensor<240x1x3x3xbf16>
     %v790 = stablehlo.convolution(%v788, %v789)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [2, 2], pad = [[1, 1], [1, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [2, 2], pad = [[0, 1], [0, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 1 : i64, feature_group_count = 240 : i64} : (tensor<64x240x28x28xbf16>, tensor<240x1x3x3xbf16>) -> tensor<64x240x14x14xbf16>
     %v791 = stablehlo.convert %v790 : (tensor<64x240x14x14xbf16>) -> tensor<64x240x14x14xf32>
     %v792 = stablehlo.broadcast_in_dim %zb240, dims = [1] : (tensor<240xf32>) -> tensor<64x240x14x14xf32>
@@ -2314,7 +2314,7 @@ module @m {
     %v1687 = stablehlo.convert %b12dW : (tensor<672x1x5x5xf32>) -> tensor<672x1x5x5xbf16>
     %v1688 = stablehlo.convolution(%v1686, %v1687)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [2, 2], pad = [[2, 2], [2, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [2, 2], pad = [[1, 2], [1, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 1 : i64, feature_group_count = 672 : i64} : (tensor<64x672x14x14xbf16>, tensor<672x1x5x5xbf16>) -> tensor<64x672x7x7xbf16>
     %v1689 = stablehlo.convert %v1688 : (tensor<64x672x7x7xbf16>) -> tensor<64x672x7x7xf32>
     %v1690 = stablehlo.broadcast_in_dim %zb672, dims = [1] : (tensor<672xf32>) -> tensor<64x672x7x7xf32>
@@ -5100,7 +5100,7 @@ module @m {
     %v4029 = stablehlo.convert %v4027 : (tensor<672x1x5x5xf32>) -> tensor<672x1x5x5xbf16>
     %v4030 = stablehlo.convolution(%v4028, %v4029)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [1, 1], pad = [[2, 2], [2, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [1, 1], pad = [[3, 1], [3, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 1 : i64, feature_group_count = 672 : i64} : (tensor<64x672x14x14xbf16>, tensor<672x1x5x5xbf16>) -> tensor<64x672x14x14xbf16>
     %v4031 = stablehlo.convert %v4030 : (tensor<64x672x14x14xbf16>) -> tensor<64x672x14x14xf32>
     %v4032 = stablehlo.reshape %v4031 : (tensor<64x672x14x14xf32>) -> tensor<64x131712xf32>
@@ -5131,7 +5131,7 @@ module @m {
     %v4057 = stablehlo.convert %v4055 : (tensor<672x64x14x14xf32>) -> tensor<672x64x14x14xbf16>
     %v4058 = stablehlo.convolution(%v4056, %v4057)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [1, 1], pad = [[2, 2], [2, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [1, 1], pad = [[1, 3], [1, 3]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 672 : i64, feature_group_count = 1 : i64} : (tensor<672x64x14x14xbf16>, tensor<672x64x14x14xbf16>) -> tensor<1x672x5x5xbf16>
     %v4059 = stablehlo.convert %v4058 : (tensor<1x672x5x5xbf16>) -> tensor<1x672x5x5xf32>
     %v4060 = stablehlo.reshape %v4059 : (tensor<1x672x5x5xf32>) -> tensor<672x1x5x5xf32>
@@ -7250,7 +7250,7 @@ module @m {
     %v5945 = stablehlo.convert %v5943 : (tensor<240x1x3x3xf32>) -> tensor<240x1x3x3xbf16>
     %v5946 = stablehlo.convolution(%v5944, %v5945)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [1, 1], pad = [[1, 1], [1, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [1, 1], pad = [[2, 0], [2, 0]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 1 : i64, feature_group_count = 240 : i64} : (tensor<64x240x28x28xbf16>, tensor<240x1x3x3xbf16>) -> tensor<64x240x28x28xbf16>
     %v5947 = stablehlo.convert %v5946 : (tensor<64x240x28x28xbf16>) -> tensor<64x240x28x28xf32>
     %v5948 = stablehlo.reshape %v5947 : (tensor<64x240x28x28xf32>) -> tensor<64x188160xf32>
@@ -7281,7 +7281,7 @@ module @m {
     %v5973 = stablehlo.convert %v5971 : (tensor<240x64x28x28xf32>) -> tensor<240x64x28x28xbf16>
     %v5974 = stablehlo.convolution(%v5972, %v5973)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [1, 1], pad = [[1, 1], [1, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [1, 1], pad = [[0, 2], [0, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 240 : i64, feature_group_count = 1 : i64} : (tensor<240x64x28x28xbf16>, tensor<240x64x28x28xbf16>) -> tensor<1x240x3x3xbf16>
     %v5975 = stablehlo.convert %v5974 : (tensor<1x240x3x3xbf16>) -> tensor<1x240x3x3xf32>
     %v5976 = stablehlo.reshape %v5975 : (tensor<1x240x3x3xf32>) -> tensor<240x1x3x3xf32>
@@ -7968,7 +7968,7 @@ module @m {
     %v6585 = stablehlo.convert %v6583 : (tensor<144x1x5x5xf32>) -> tensor<144x1x5x5xbf16>
     %v6586 = stablehlo.convolution(%v6584, %v6585)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [1, 1], pad = [[2, 2], [2, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [1, 1], pad = [[3, 1], [3, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 1 : i64, feature_group_count = 144 : i64} : (tensor<64x144x56x56xbf16>, tensor<144x1x5x5xbf16>) -> tensor<64x144x56x56xbf16>
     %v6587 = stablehlo.convert %v6586 : (tensor<64x144x56x56xbf16>) -> tensor<64x144x56x56xf32>
     %v6588 = stablehlo.reshape %v6587 : (tensor<64x144x56x56xf32>) -> tensor<64x451584xf32>
@@ -7999,7 +7999,7 @@ module @m {
     %v6613 = stablehlo.convert %v6611 : (tensor<144x64x56x56xf32>) -> tensor<144x64x56x56xbf16>
     %v6614 = stablehlo.convolution(%v6612, %v6613)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [1, 1], pad = [[2, 2], [2, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [1, 1], pad = [[1, 3], [1, 3]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 144 : i64, feature_group_count = 1 : i64} : (tensor<144x64x56x56xbf16>, tensor<144x64x56x56xbf16>) -> tensor<1x144x5x5xbf16>
     %v6615 = stablehlo.convert %v6614 : (tensor<1x144x5x5xbf16>) -> tensor<1x144x5x5xf32>
     %v6616 = stablehlo.reshape %v6615 : (tensor<1x144x5x5xf32>) -> tensor<144x1x5x5xf32>
@@ -8686,7 +8686,7 @@ module @m {
     %v7225 = stablehlo.convert %v7223 : (tensor<96x1x3x3xf32>) -> tensor<96x1x3x3xbf16>
     %v7226 = stablehlo.convolution(%v7224, %v7225)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [1, 1], pad = [[1, 1], [1, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [1, 1], pad = [[2, 0], [2, 0]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 1 : i64, feature_group_count = 96 : i64} : (tensor<64x96x112x112xbf16>, tensor<96x1x3x3xbf16>) -> tensor<64x96x112x112xbf16>
     %v7227 = stablehlo.convert %v7226 : (tensor<64x96x112x112xbf16>) -> tensor<64x96x112x112xf32>
     %v7228 = stablehlo.reshape %v7227 : (tensor<64x96x112x112xf32>) -> tensor<64x1204224xf32>
@@ -8717,7 +8717,7 @@ module @m {
     %v7253 = stablehlo.convert %v7251 : (tensor<96x64x112x112xf32>) -> tensor<96x64x112x112xbf16>
     %v7254 = stablehlo.convolution(%v7252, %v7253)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
-      window = {stride = [1, 1], pad = [[1, 1], [1, 1]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      window = {stride = [1, 1], pad = [[0, 2], [0, 2]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
       {batch_group_count = 96 : i64, feature_group_count = 1 : i64} : (tensor<96x64x112x112xbf16>, tensor<96x64x112x112xbf16>) -> tensor<1x96x3x3xbf16>
     %v7255 = stablehlo.convert %v7254 : (tensor<1x96x3x3xbf16>) -> tensor<1x96x3x3xf32>
     %v7256 = stablehlo.reshape %v7255 : (tensor<1x96x3x3xf32>) -> tensor<96x1x3x3xf32>

@@ -62,6 +62,15 @@ noncomputable def stemB (N : Nat) {ic oc h w kH kW : Nat}
   swish (N * (c * h * w)) ∘ StableHLO.bnBatchLA N c h w ε γ β ∘
     StableHLO.batchMap N (depthwiseStride2Flat W b)
 
+/-- Batched depthwise (stride-2 downsample at XLA-`SAME`, k×k) → bn → swish — `dwbsSB` at the
+    odd decimation phase (`depthwiseStride2FlatXla`): EfficientNet-B0's four strided MBConvs
+    since their padding follows TF's. Same type as `dwbsSB`, a different function. -/
+@[reducible] noncomputable def dwbsSXlaB (N : Nat) {c h w kH kW : Nat}
+    (W : DepthwiseKernel c kH kW) (b : Vec c) (ε : ℝ) (γ β : Vec c) :
+    Vec (N * (c * (2 * h) * (2 * w))) → Vec (N * (c * h * w)) :=
+  swish (N * (c * h * w)) ∘ StableHLO.bnBatchLA N c h w ε γ β ∘
+    StableHLO.batchMap N (depthwiseStride2FlatXla W b)
+
 /-- Batched squeeze-excite block `x ⊙ gate(x)` (the proven `seBlockFull`, per example). -/
 @[reducible] noncomputable def seB (N : Nat) {c h w r : Nat}
     (W₁ : Mat c r) (b₁ : Vec r) (W₂ : Mat r c) (b₂ : Vec c) :
@@ -167,6 +176,17 @@ noncomputable def dwbsSBHasVJP (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKerne
     HasVJP (dwbsSB N (h := h) (w := w) W b ε γ β) :=
   bnSwishStageHasVJP N (depthwiseStride2Flat W b) (depthwiseStride2Flat_differentiable W b)
     (depthwiseStride2FlatHasVJP W b) ε hε γ β
+
+theorem dwbsSXlaB_differentiable (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
+    (b : Vec c) (ε : ℝ) (hε : 0 < ε) (γ β : Vec c) :
+    Differentiable ℝ (dwbsSXlaB N (h := h) (w := w) W b ε γ β) :=
+  bnSwishStage_differentiable N (depthwiseStride2FlatXla W b)
+    (depthwiseStride2FlatXla_differentiable W b) ε hε γ β
+noncomputable def dwbsSXlaBHasVJP (N : Nat) {c h w kH kW : Nat} (W : DepthwiseKernel c kH kW)
+    (b : Vec c) (ε : ℝ) (hε : 0 < ε) (γ β : Vec c) :
+    HasVJP (dwbsSXlaB N (h := h) (w := w) W b ε γ β) :=
+  bnSwishStageHasVJP N (depthwiseStride2FlatXla W b) (depthwiseStride2FlatXla_differentiable W b)
+    (depthwiseStride2FlatXlaHasVJP W b) ε hε γ β
 
 theorem seB_differentiable (N : Nat) {c h w r : Nat} (W₁ : Mat c r) (b₁ : Vec r) (W₂ : Mat r c)
     (b₂ : Vec c) :

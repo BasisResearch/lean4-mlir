@@ -1249,6 +1249,13 @@ inductive SHlo : Nat → Type where
   | depthwiseStridedWeightSgdB {N c h w kH kW : Nat} (xName wName lrStr : String)
       (b : Vec c) (x : Vec (N * (c * (2 * h) * (2 * w)))) (W : DepthwiseKernel c kH kW) (lr : ℝ)
                                                           : SHlo (N * (c * h * w)) → SHlo (c * kH * kW)
+  -- The XLA-`SAME` peer of `depthwiseStridedWeightSgdB`, for EfficientNet-B0's SGD-inline
+  -- Imagenette artifact (`efficientnet_train_step`): its four stride-2 depthwises pad as TF's
+  -- `SAME` since the D3 switch, so the fused weight op's `den` is the odd-phase weight VJP
+  -- (`depthwiseStride2XlaWeightGradHasVJP`), as `convStridedXlaWeightSgdB`'s is at the stem.
+  | depthwiseStridedXlaWeightSgdB {N c h w kH kW : Nat} (xName wName lrStr : String)
+      (b : Vec c) (x : Vec (N * (c * (2 * h) * (2 * w)))) (W : DepthwiseKernel c kH kW) (lr : ℝ)
+                                                          : SHlo (N * (c * h * w)) → SHlo (c * kH * kW)
   -- ══ PARAM GRADIENTS, un-fused from the update ══
   -- Every `*Sgd` op above computes a gradient and immediately spends it on `θ − lr·g`. That
   -- fusion is why the optimizer could never leave the trusted string emitter: Adam needs the
@@ -2005,6 +2012,10 @@ noncomputable def den : {n : Nat} → SHlo n → Vec n
   | _, .depthwiseStridedWeightSgdB (N := N) (c := c) (h := h) (w := w) _ _ _ b x W lr e =>
       fun idx => Tensor3.flatten W idx - lr * ∑ n : Fin N,
         (depthwiseStride2WeightGradHasVJP b (batchSlice N (c*(2*h)*(2*w)) x n)).backward
+          (Tensor3.flatten W) (batchSlice N (c*h*w) (den e) n) idx
+  | _, .depthwiseStridedXlaWeightSgdB (N := N) (c := c) (h := h) (w := w) _ _ _ b x W lr e =>
+      fun idx => Tensor3.flatten W idx - lr * ∑ n : Fin N,
+        (depthwiseStride2XlaWeightGradHasVJP b (batchSlice N (c*(2*h)*(2*w)) x n)).backward
           (Tensor3.flatten W) (batchSlice N (c*h*w) (den e) n) idx
   | _, .depthwiseWeightGradB (N := N) (c := c) (h := h) (w := w) _ b x W e =>
       fun idx => ∑ n : Fin N,
@@ -3195,6 +3206,12 @@ certified `vit_adam_train_step` render uses. Same `rfl` discipline. -/
     (e : SHlo (N*(c*h*w))) (idx : Fin (c*kH*kW)) :
     den (.depthwiseStridedWeightSgdB xN wN lrS b x W lr e) idx
       = Tensor3.flatten W idx - lr * den (.depthwiseStridedWeightGradB xN b x W e) idx := rfl
+
+@[simp] theorem depthwiseStridedXlaWeightSgdB_eq_grad {N c h w kH kW : Nat} (xN wN lrS : String)
+    (b : Vec c) (x : Vec (N*(c*(2*h)*(2*w)))) (W : DepthwiseKernel c kH kW) (lr : ℝ)
+    (e : SHlo (N*(c*h*w))) (idx : Fin (c*kH*kW)) :
+    den (.depthwiseStridedXlaWeightSgdB xN wN lrS b x W lr e) idx
+      = Tensor3.flatten W idx - lr * den (.depthwiseStridedXlaWeightGradB xN b x W e) idx := rfl
 
 /-! ### The depthwise BIAS gradients (MobileNetV2)
 

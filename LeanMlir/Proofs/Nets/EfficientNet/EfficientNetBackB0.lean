@@ -112,7 +112,7 @@ theorem mbBodyBackBatchedGraph_faithful {N c mid h w kHd kWd r : Nat}
 -- ════════════════════════════════════════════════════════════════
 
 /-- The batched downsample MBConv body backward graph: the four stage graphs chained
-    at their cumulative forward activations (`cbsB⁻¹ ∘ dwbsSB⁻¹ ∘ seB⁻¹ ∘ projB⁻¹`).
+    at their cumulative forward activations (`cbsB⁻¹ ∘ dwbsSXlaB⁻¹ ∘ seB⁻¹ ∘ projB⁻¹`).
     Stride-2 analogue of `mbBodyBackBatchedGraph` (strided depthwise stage graph). -/
 noncomputable def mbDownBodyBackBatchedGraph {N ic mid oc h w kHd kWd r : Nat}
     (We : Kernel4 mid ic 1 1) (be : Vec mid) (εe : ℝ) (γe βe : Vec mid)
@@ -122,16 +122,16 @@ noncomputable def mbDownBodyBackBatchedGraph {N ic mid oc h w kHd kWd r : Nat}
     (x : Vec (N * (ic * (2 * h) * (2 * w)))) (e : SHlo (N * (oc * h * w))) :
     SHlo (N * (ic * (2 * h) * (2 * w))) :=
   let xE := cbsB N (h := 2 * h) (w := 2 * w) We be εe γe βe x
-  let xD := dwbsSB N (h := h) (w := w) Wd bd εd γd βd xE
+  let xD := dwbsSXlaB N (h := h) (w := w) Wd bd εd γd βd xE
   let xS := seB N (h := h) (w := w) Wz₁ bz₁ Wz₂ bz₂ xD
   cbsBackBatchedGraph We be εe γe βe x
-    (dwbsSBackBatchedGraph Wd bd εd γd βd xE
+    (dwbsSXlaBackBatchedGraph Wd bd εd γd βd xE
       (.seBackBatched (N := N) "%seW1" "%seb1" "%seW2" "%seb2" "%seX" Wz₁ bz₁ Wz₂ bz₂ xD
         (projBackBatchedGraph Wp bp εp γp βp xS e)))
 
 /-- **CAPSTONE — the batched EfficientNet DOWNSAMPLE MBConv body: backward graph ↔
     the proven `mbStridedFwdBHasVJP`.** The four batched stage backward graphs
-    (`cbsB`/`dwbsSB`/`seB`/`projB`) chained at their forward activations, proven
+    (`cbsB`/`dwbsSXlaB`/`seB`/`projB`) chained at their forward activations, proven
     equal to the downsample-body VJP. The stride-2 analogue of
     `mbBodyBackBatchedGraph_faithful` (no residual skip — the downsample block
     changes spatial/channels, so the body alone is the block). EfficientNet uses
@@ -147,7 +147,7 @@ theorem mbDownBodyBackBatchedGraph_faithful {N ic mid oc h w kHd kWd r : Nat}
       = (mbStridedFwdBHasVJP N We be εe hεe γe βe Wd bd εd hεd γd βd
           Wz₁ bz₁ Wz₂ bz₂ Wp bp εp hεp γp βp).backward x (den e) := by
   rw [mbDownBodyBackBatchedGraph, cbsBackBatchedGraph_faithful (hε := hεe),
-      dwbsSBackBatchedGraph_faithful (hε := hεd), seBackBatched_faithful,
+      dwbsSXlaBackBatchedGraph_faithful (hε := hεd), seBackBatched_faithful,
       projBackBatchedGraph_faithful (hε := hεp)]
   simp only [mbStridedFwdBHasVJP, vjpComp_backward, Function.comp_apply]
 

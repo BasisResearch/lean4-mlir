@@ -1187,6 +1187,14 @@ private def emitHelpers (spec : NetSpec) (cfg : TrainConfig) : String := Id.run 
       "    return x * jnp.minimum(jax.nn.relu(x + 3.0), 6.0) / 6.0\n\n" ++
       "def hard_sigmoid(x):\n" ++
       "    return jnp.minimum(jax.nn.relu(x + 3.0), 6.0) / 6.0\n\n"
+  -- `mbconv_block`'s strided depthwise pads as the net's `convPadStyle` says (`NetSpec`): XLA
+  -- `'SAME'` for the TF-origin EfficientNet-B0 — the paper's padding, closed as D3 on 2026-10-12
+  -- (`planning/imagenet_parity.md` §9.2) and what the verified render's `depthwiseStridedXla*`
+  -- tokens compute — and the symmetric `(k-1)//2` under `.symmetric`. MobileNetV4's blocks are
+  -- `uib_block` / `fused_mbconv_block`, which keep timm's symmetric pad unconditionally.
+  let (dwPadLine, dwPad) := match spec.convPadStyle with
+    | .xlaSame   => ("", "'SAME'")
+    | .symmetric => ("    pad = ((ksize - 1) // 2, (ksize - 1) // 2)\n", "(pad,pad)")
   if spec.hasMbConv && cfg.runningBN then
     -- Running-BN variant: threads bn[bn_start..] through the 3 inline BNs (expand,
     -- depthwise, project) via _bn; SE has no BN. Keeps stochastic depth. Returns
@@ -1200,8 +1208,8 @@ private def emitHelpers (spec : NetSpec) (cfg : TrainConfig) : String := Id.run 
       "              dimension_numbers=('NCHW', 'OIHW', 'NCHW')).astype(jnp.float32)\n" ++
       "        x, ns = _bn(x, params[i][1], params[i][2], bn[bi], training); out.append(ns); bi += 1\n" ++
       "        x = swish(x); i += 1\n" ++
-      "    pad = ((ksize - 1) // 2, (ksize - 1) // 2)\n" ++
-      "    x = jax.lax.conv_general_dilated(convdt(x), convdt(params[i][0]), (stride,stride), (pad,pad),\n" ++
+      dwPadLine ++
+      "    x = jax.lax.conv_general_dilated(convdt(x), convdt(params[i][0]), (stride,stride), " ++ dwPad ++ ",\n" ++
       "          dimension_numbers=('NCHW', 'OIHW', 'NCHW'),\n" ++
       "          feature_group_count=x.shape[1]).astype(jnp.float32)\n" ++
       "    x, ns = _bn(x, params[i][1], params[i][2], bn[bi], training); out.append(ns); bi += 1\n" ++
@@ -1237,8 +1245,8 @@ private def emitHelpers (spec : NetSpec) (cfg : TrainConfig) : String := Id.run 
       "        x = swish(x)\n" ++
       "        i += 1\n" ++
       "    # Depthwise conv\n" ++
-      "    pad = ((ksize - 1) // 2, (ksize - 1) // 2)\n" ++
-      "    x = jax.lax.conv_general_dilated(convdt(x), convdt(params[i][0]), (stride,stride), (pad,pad),\n" ++
+      dwPadLine ++
+      "    x = jax.lax.conv_general_dilated(convdt(x), convdt(params[i][0]), (stride,stride), " ++ dwPad ++ ",\n" ++
       "          dimension_numbers=('NCHW', 'OIHW', 'NCHW'),\n" ++
       "          feature_group_count=x.shape[1]).astype(jnp.float32)\n" ++
       "    mean = jnp.mean(x, axis=(0, 2, 3), keepdims=True)\n" ++

@@ -3,7 +3,7 @@ import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
 /-! # EfficientNet-B0 — the inference (frozen-statistics) stages and block graphs
 
 The eval twin of `EfficientNetStagesPC`: the batched stage abbreviations at frozen statistics
-(`cbsBEval` / `stemBEval` / `dwbsBEval` / `dwbsSBEval`; `projBEval` is `Batched.Stages`', beside
+(`cbsBEval` / `stemBEval` / `dwbsBEval` / `dwbsSXlaBEval`; `projBEval` is `Batched.Stages`', beside
 its training twin, and `seB` is unchanged, it has no BN) and five graphs with their faithfulness (`*GraphBEval_faithful`): stem, MBConv1, strided
 MBConv6, residual MBConv6, head. The stride-1 no-skip expand block is `mbExpGraphBEval_faithful`
 in `EfficientNetFullB0Eval`, which chains them all into the shipped sixteen-block eval forward.
@@ -48,11 +48,11 @@ noncomputable def stemBEval (N : Nat) {ic oc h w kH kW : Nat}
     ∘ StableHLO.batchMap N (depthwiseFlat W b)
 
 /-- Batched depthwise (stride-2 downsample, k×k) → inference bn → swish. -/
-@[reducible] noncomputable def dwbsSBEval (N : Nat) {c h w kH kW : Nat}
+@[reducible] noncomputable def dwbsSXlaBEval (N : Nat) {c h w kH kW : Nat}
     (W : DepthwiseKernel c kH kW) (b : Vec c) (ε : ℝ) (γ β μ v : Vec c) :
     Vec (N * (c * (2 * h) * (2 * w))) → Vec (N * (c * h * w)) :=
   swish (N * (c * h * w)) ∘ StableHLO.batchMap N (bnPerChannelEvalTensor3 c h w ε γ β μ v)
-    ∘ StableHLO.batchMap N (depthwiseStride2Flat W b)
+    ∘ StableHLO.batchMap N (depthwiseStride2FlatXla W b)
 
 -- ════════════════════════════════════════════════════════════════
 -- § Block inference ℝ-forwards (`seB` is shared — squeeze-excite has no BN)
@@ -77,7 +77,7 @@ noncomputable def mbStridedFwdBEval (N : Nat) {ic mid oc h w kHd kWd r : Nat} (�
     Vec (N * (ic * (2 * h) * (2 * w))) → Vec (N * (oc * h * w)) :=
   projBEval N (h := h) (w := w) Wp bp ε γp βp μp vp ∘
     seB N (h := h) (w := w) Wz₁ bz₁ Wz₂ bz₂ ∘
-    dwbsSBEval N (h := h) (w := w) Wd bd ε γd βd μd vd ∘
+    dwbsSXlaBEval N (h := h) (w := w) Wd bd ε γd βd μd vd ∘
     cbsBEval N (h := 2 * h) (w := 2 * w) We be ε γe βe μe ve
 
 /-- MBConv6 with an identity residual skip at inference. -/
@@ -166,7 +166,7 @@ def mbStridedGraphBEval (p epsStr : String) {N ic mid oc h w kHd kWd r : Nat} (�
           Wz₁ bz₁ Wz₂ bz₂)
         (.batchOp (N := N) .swish (.batchOp (N := N) (.bnEval (h := h) (w := w) s!"%{p}dg" s!"%{p}dbt"
             s!"%{p}dnmu" s!"%{p}dnvar" epsStr ε γd βd μd vd)
-          (.batchOp (N := N) (.depthwiseStrided (h := h) (w := w) s!"%{p}dW" (biasName false "" mid) Wd bd)
+          (.batchOp (N := N) (.depthwiseStridedXla (h := h) (w := w) s!"%{p}dW" (biasName false "" mid) Wd bd)
             (.batchOp (N := N) .swish (.batchOp (N := N) (.bnEval (h := 2 * h) (w := 2 * w) s!"%{p}eg" s!"%{p}ebt"
                 s!"%{p}enmu" s!"%{p}envar" epsStr ε γe βe μe ve)
               (.batchOp (N := N) (.conv (h := 2 * h) (w := 2 * w) s!"%{p}eW" (biasName false "" mid) We be)
@@ -182,7 +182,7 @@ theorem mbStridedGraphBEval_faithful (p epsStr : String) {N ic mid oc h w kHd kW
           Wp bp γp βp μp vp e)
       = mbStridedFwdBEval N (h := h) (w := w) ε We be γe βe μe ve Wd bd γd βd μd vd
           Wz₁ bz₁ Wz₂ bz₂ Wp bp γp βp μp vp (den e) := by
-  unfold mbStridedGraphBEval mbStridedFwdBEval projBEval seB dwbsSBEval cbsBEval
+  unfold mbStridedGraphBEval mbStridedFwdBEval projBEval seB dwbsSXlaBEval cbsBEval
   simp only [den_batchOp, denOp, ↓den_batchOp_swish_eq_swishF, swishF_faithful, Function.comp_apply]
 
 /-- MBConv6 with identity residual at inference: `addV body skip`. -/
