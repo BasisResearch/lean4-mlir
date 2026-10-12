@@ -44,6 +44,13 @@
 // requirements-cuda-lock.txt), then the historical absolute paths, so a box
 // that was working before keeps working.
 static const char* const kDefaultPlugins[] = {
+#ifdef __APPLE__
+  // jax-graft's Metal plugin (deploy/MAC.md), in the venv deploy/mac_setup.sh makes. The
+  // python minor version is the venv's, so each supported one is listed.
+  ".venv/lib/python3.12/site-packages/metal_pjrt_core/pjrt_c_api_mtl_plugin.dylib",
+  ".venv/lib/python3.13/site-packages/metal_pjrt_core/pjrt_c_api_mtl_plugin.dylib",
+  ".venv/lib/python3.14/site-packages/metal_pjrt_core/pjrt_c_api_mtl_plugin.dylib",
+#endif
   ".venv/lib/python3.12/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so",
   ".venv/lib/python3.12/site-packages/jax_plugins/xla_rocm7/xla_rocm_plugin.so",
   "/home/skoonce/lean/claude_max/lean4-jax/.venv/lib/python3.12/"
@@ -542,6 +549,16 @@ static int ensure_client(void) {
     return 1;
   }
   g_api = GetPjrtApi();
+#ifdef __APPLE__
+  // JAX calls PJRT_Plugin_Initialize before creating a client; the CUDA and ROCm plugins have
+  // never needed it here, so only the macOS build calls it — jax-graft's Metal plugin is new and
+  // the Linux path stays exactly as measured.
+  if (g_api->PJRT_Plugin_Initialize) {
+    PJRT_Plugin_Initialize_Args pi = {0};
+    pi.struct_size = PJRT_Plugin_Initialize_Args_STRUCT_SIZE;
+    if (check(g_api->PJRT_Plugin_Initialize(&pi), "Plugin_Initialize")) return 1;
+  }
+#endif
 
   // ─── allocator sizing ──────────────────────────────────────────────────────
   // ⚠⚠ **WITHOUT THIS THE VERIFIED PATH CANNOT USE MOST OF THE CARD, AND NOTHING
@@ -562,7 +579,7 @@ static int ensure_client(void) {
   //
   // ▶ Unset leaves BOTH options absent, so the plugin's own defaults apply and
   // every previously-measured figure reproduces. This is opt-in.
-  PJRT_NamedValue copts[4];
+  PJRT_NamedValue copts[5];
   size_t n_copts = 0;
   float mem_fraction = 0.0f;
   {
@@ -624,6 +641,20 @@ static int ensure_client(void) {
       v->bool_value = (atoi(e) != 0);
     }
   }
+  // $LEAN_MLIR_PJRT_PLATFORM names the StreamExecutor platform the GPU client is created on. The
+  // CUDA and ROCm plugins pick theirs without it; jax-graft's Metal plugin is XLA's GPU client
+  // too and must be told "METAL" (its python package passes the same option). Unset: absent.
+  const char* platform_name = getenv("LEAN_MLIR_PJRT_PLATFORM");
+  if (platform_name && *platform_name) {
+    PJRT_NamedValue* v = &copts[n_copts++];
+    memset(v, 0, sizeof(*v));
+    v->struct_size = PJRT_NamedValue_STRUCT_SIZE;
+    v->name = "platform_name";
+    v->name_size = strlen("platform_name");
+    v->type = PJRT_NamedValue_kString;
+    v->string_value = platform_name;
+    v->value_size = strlen(platform_name);
+  }
 
   PJRT_Client_Create_Args ca = {0};
   ca.struct_size = PJRT_Client_Create_Args_STRUCT_SIZE;
@@ -635,6 +666,7 @@ static int ensure_client(void) {
     fprintf(stderr, "[pjrt_ffi] allocator: %zu create option(s)", n_copts);
     if (mem_fraction > 0.0f) fprintf(stderr, ", memory_fraction=%.3f", mem_fraction);
     if (alloc_name && *alloc_name) fprintf(stderr, ", allocator=%s", alloc_name);
+    if (platform_name && *platform_name) fprintf(stderr, ", platform_name=%s", platform_name);
     fprintf(stderr, "\n");
   }
   if (check(g_api->PJRT_Client_Create(&ca), "Client_Create")) return 1;

@@ -8,7 +8,8 @@
 #   trainer  - the lean_exe name (e.g. "resnet34-verified-adam"); a name without "-train" also
 #              resolves to "<name>-train" if that binary exists
 #   gpu      - GPU index to expose (default: 0)
-#   backend  - "cuda", "rocm" or "xpu" (default: what scripts/platform/env.sh detects on this box)
+#   backend  - "cuda", "rocm", "xpu" or "metal" (default: what scripts/platform/env.sh detects on
+#              this box; metal has one GPU, so the index is ignored there)
 #
 # Examples:
 #   ./run.sh mnist-cnn-verified
@@ -59,7 +60,8 @@ case "$backend" in
   cuda) export CUDA_VISIBLE_DEVICES="$gpu" ;;
   rocm) export HIP_VISIBLE_DEVICES="$gpu" ;;
   xpu)  export ZE_AFFINITY_MASK="$gpu" ;;
-  *)    echo "Unknown backend: $backend (expected cuda, rocm or xpu)" >&2; exit 1 ;;
+  metal) ;;
+  *)    echo "Unknown backend: $backend (expected cuda, rocm, xpu or metal)" >&2; exit 1 ;;
 esac
 
 export IREE_BACKEND="$backend"

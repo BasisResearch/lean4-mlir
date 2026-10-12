@@ -15,6 +15,7 @@ page here: it runs `lake run mnist | cifar | imagenette` as the README's tour ha
 | [`ORIN.md`](ORIN.md) | Jetson Orin Nano 8 GB (sm_87, unified memory) | the PJRT plugin built on x86 for the board (§1), device setup and the allocator recipe (§2), the suite (§3), the verified trainers and `lake run imagenette-orin` (§4), the detector on TensorRT (§5), bringing results back (§6), the camera demos (§7) |
 | [`DETECTOR.md`](DETECTOR.md) | the VisDrone detector on the Orin | the TensorRT route (`export_onnx.py` → `trtexec`, 55.9 fps) and the IREE route (`build_orin.sh`, ~0.5 fps), the frame golden gate, the two contracts a port breaks silently |
 | [`ORIN_SMOKE_TEST.md`](ORIN_SMOKE_TEST.md) | the Orin | the device brief for the detector's first measurement |
+| [`MAC.md`](MAC.md) | Apple Silicon Mac, macOS 26 (Metal through jax-graft's PJRT plugin) | the MNIST tier on the GPU, rung by rung: the box, the venv, JAX on `mtl`, the shim's smoke test, the data, the Lean build, `lake run mnist`. Prepared, not yet run |
 
 ROCm and Intel Arc get a page here when they run; until then their rows in `PLATFORMS.md`
 point at `historical/ROCM.md` and `planning/platform_integration.md` §6.
@@ -26,6 +27,7 @@ point at `historical/ROCM.md` and `planning/platform_integration.md` §6.
 | [`build_orin_pjrt_plugin.sh`](build_orin_pjrt_plugin.sh) | the training box | builds the jax PJRT CUDA plugin for sm_87 in a container (ORIN.md §1) |
 | [`orin_setup.sh`](orin_setup.sh) | the board | stages that plugin and the Tegra cuDNN under `~/pjrt`, writes `~/pjrt/orin_env.sh` (ORIN.md §2) |
 | [`orin_imagenette.sh`](orin_imagenette.sh) | the board | one Imagenette net on the board's recipe, under a memory cap, relaunching from the checkpoint — the engine behind `lake run imagenette-orin` (ORIN.md §4) |
+| [`mac_setup.sh`](mac_setup.sh) | the Mac | MAC.md's rungs as one resumable script, logged to `runs/<date>-mac-setup/` |
 | [`export_onnx.py`](export_onnx.py) | the training box | the detector checkpoint → PyTorch replica → ONNX, with the frame-golden gate (DETECTOR.md) |
 | [`orin_detect.py`](orin_detect.py) | the board | the detector runner: TensorRT, ONNX Runtime or IREE backend, `--bench` (DETECTOR.md) |
 | [`build_orin.sh`](build_orin.sh) | the training box | the IREE route: batch-1 StableHLO → vmfb (DETECTOR.md) |

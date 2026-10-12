@@ -20,6 +20,7 @@ A cell is the last run of that rung on that platform — its date and where the 
 | Jetson Orin Nano 8 GB — sm_87, JetPack 6.2, unified memory | cuda / tegra / `orin` | jax v0.11.1 built for sm_87 by [`deploy/build_orin_pjrt_plugin.sh`](deploy/build_orin_pjrt_plugin.sh), staged by `orin_setup.sh` | [deploy/ORIN.md](deploy/ORIN.md) | - | 2026-09-13 · [ORIN.md §4](deploy/ORIN.md#4-the-verified-trainers-on-the-gpu) (mnist-cnn) | 2026-09-13 · [ORIN.md §4](deploy/ORIN.md#4-the-verified-trainers-on-the-gpu) (cifar, cifar8-bn) | 2026-09-13 · [ORIN.md §4](deploy/ORIN.md#4-the-verified-trainers-on-the-gpu): ViT-Tiny 80 epochs; the six-row `lake run imagenette-orin` tier is the next run | n/a: one 8 GB board |
 | AMD ROCm — the MI300 cloud box, when it exists | rocm / desktop | `jax-rocm7-pjrt` in the pinned `.venv` | [historical/ROCM.md](historical/ROCM.md) (the 2026-08 runs; code kept, [planning/platform_integration.md §5](planning/platform_integration.md)) | - | - | - | - | - |
 | Intel Arc Pro B60 — XPU, inbound | xpu / desktop | Intel's OpenXLA PJRT plugin, its own venv | [planning/platform_integration.md §6](planning/platform_integration.md) | - | - | - | - | - |
+| Apple Silicon Mac — M1 MacBook Air, Metal, macOS 26, unified memory | metal / desktop | `jax-graft` 0.0.5 (`metal-pjrt-core`, platform `mtl`) in the repo's `.venv` | [deploy/MAC.md](deploy/MAC.md) | - | - | - | - | n/a: not a training box |
 
 ## Platform-suite runs
 

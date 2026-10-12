@@ -12,18 +12,23 @@
 # Safe under `set -eu -o pipefail` (run.sh sources it so). What it sets (every one overridable by
 # exporting it first; $PJRT_PLUGIN and $IREE_BACKEND are
 # honoured as the older spellings of the plugin and the backend):
-#   PLATFORM_BACKEND  cuda | rocm | xpu — the vendor SMI on PATH decides, nvidia first
+#   PLATFORM_BACKEND  cuda | rocm | xpu | metal — metal on macOS, else the vendor SMI on PATH
+#                     decides, nvidia first
 #   PLATFORM_KIND     desktop | tegra — a Jetson shares one DRAM between host and device
 #   PLATFORM_HOST     ares | 3060 | orin | <hostname> — the box profile the job confs key on
 #   PLATFORM_GPU      the slug the suite's baselines and PLATFORMS.md are keyed by (rtx-4060-ti,
 #                     orin-nano, …), "" when no tool on the box can name the device
-#   PLATFORM_DEVVAR   CUDA_VISIBLE_DEVICES | HIP_VISIBLE_DEVICES | ZE_AFFINITY_MASK
+#   PLATFORM_DEVVAR   CUDA_VISIBLE_DEVICES | HIP_VISIBLE_DEVICES | ZE_AFFINITY_MASK | "" (metal:
+#                     one GPU, nothing to select)
 #   PLATFORM_PLUGIN   the PJRT plugin .so the shim dlopens ("" when the platform has none installed)
 #   PLATFORM_PY       the python the JAX reference side runs with ("" on a box with no JAX)
 #   PLATFORM_SHIMPY   array, SHIM_PYTHON=<py> where the trainers' shim python is not .venv's
 #   PLATFORM_RUNBOOK  the deploy/ page for this platform ("" for the training boxes)
 # and on a Jetson, when unset, the unified-memory allocator recipe the runbook arrived at:
 #   LEAN_MLIR_PREALLOCATE=1  LEAN_MLIR_MEM_FRACTION=0.25        (deploy/ORIN.md §2; per net, §4)
+# and on a Mac, when unset, the client options jax-graft's own python passes (deploy/MAC.md):
+#   LEAN_MLIR_PJRT_PLATFORM=METAL  LEAN_MLIR_ALLOCATOR=platform  LEAN_MLIR_PREALLOCATE=0
+#   LEAN_MLIR_MEM_FRACTION=1.0  LEAN_MLIR_STAGE_H2D=0
 #
 # A box's own machine-local file (the Orin's ~/pjrt/orin_env.sh, written by deploy/orin_setup.sh:
 # plugin path, the Tegra cuDNN on LD_LIBRARY_PATH) is sourced here when it exists and PJRT_PLUGIN
@@ -35,6 +40,7 @@ PLATFORM_KIND=desktop
 # The backend: an explicit PLATFORM_BACKEND or IREE_BACKEND wins; else the SMI on PATH.
 if [ -z "${PLATFORM_BACKEND:-}" ]; then
   if [ -n "${IREE_BACKEND:-}" ]; then PLATFORM_BACKEND=$IREE_BACKEND
+  elif [ "$(uname -s)" = Darwin ]; then PLATFORM_BACKEND=metal
   elif [ "$PLATFORM_KIND" = tegra ] || command -v nvidia-smi > /dev/null 2>&1; then PLATFORM_BACKEND=cuda
   elif command -v rocm-smi > /dev/null 2>&1; then PLATFORM_BACKEND=rocm
   elif command -v xpu-smi > /dev/null 2>&1; then PLATFORM_BACKEND=xpu
@@ -96,8 +102,32 @@ case "$PLATFORM_BACKEND:$PLATFORM_KIND" in
     PLATFORM_DEVVAR=ZE_AFFINITY_MASK
     PLATFORM_PLUGIN=${PJRT_PLUGIN:-}
     ;;
+  metal:*)
+    # An Apple Silicon Mac: jax-graft's Metal PJRT plugin (the `metal-pjrt-core` wheel) in the
+    # repo's .venv, which deploy/mac_setup.sh makes. One GPU, so no device variable. The plugin is
+    # XLA's GPU client, created with the options jax_graft/__init__.py passes: the METAL
+    # StreamExecutor platform, XLA's pass-through allocator (the plugin caches and budgets buffers
+    # itself; METAL_PJRT_MEMORY_FRACTION scales that budget), no preallocation and no H2D staging
+    # on unified memory.
+    PLATFORM_HOST=$(hostname -s 2>/dev/null || echo mac)
+    PLATFORM_DEVVAR=""
+    PLATFORM_RUNBOOK=deploy/MAC.md
+    if [ -z "${PJRT_PLUGIN:-}" ]; then
+      for _p in .venv/lib/python3.*/site-packages/metal_pjrt_core/pjrt_c_api_mtl_plugin.dylib; do
+        [ -f "$_p" ] && { PJRT_PLUGIN=$_p; export PJRT_PLUGIN; break; }
+      done
+    fi
+    PLATFORM_PLUGIN=${PJRT_PLUGIN:-}
+    [ -x .venv/bin/python3 ] && PLATFORM_PY=.venv/bin/python3
+    [ -z "$PLATFORM_GPU" ] && PLATFORM_GPU=$(sysctl -n machdep.cpu.brand_string 2>/dev/null | _platform_slug) || true
+    export LEAN_MLIR_PJRT_PLATFORM=${LEAN_MLIR_PJRT_PLATFORM:-METAL} \
+           LEAN_MLIR_ALLOCATOR=${LEAN_MLIR_ALLOCATOR:-platform} \
+           LEAN_MLIR_PREALLOCATE=${LEAN_MLIR_PREALLOCATE:-0} \
+           LEAN_MLIR_MEM_FRACTION=${LEAN_MLIR_MEM_FRACTION:-1.0} \
+           LEAN_MLIR_STAGE_H2D=${LEAN_MLIR_STAGE_H2D:-0}
+    ;;
   *)
-    echo "scripts/platform/env.sh: unknown backend '$PLATFORM_BACKEND' (cuda | rocm | xpu)" >&2
+    echo "scripts/platform/env.sh: unknown backend '$PLATFORM_BACKEND' (cuda | rocm | xpu | metal)" >&2
     return 2 2>/dev/null || exit 2
     ;;
 esac
