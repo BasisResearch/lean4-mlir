@@ -38,12 +38,22 @@ def convNeXtSImagenet : NetSpec where
     except stochastic depth: the paper uses dropPath 0.4 for S (vs 0.1 for T).
     LR 2.5e-4 is 4e-3@bs4096 scaled to bs256. -/
 def convNeXtSImagenetConfig : TrainConfig where
-  learningRate   := 2.5e-4
+  -- The official recipe's batch and schedule (2026-10-12, as `convNeXtTinyImagenetConfig`, whose
+  -- docstring cites each value to facebookresearch/ConvNeXt `main.py`): lr 4e-3 at the effective
+  -- 4096 = 256 × 16 accumulated (exact without BatchNorm), min_lr 1e-6, no clip, Mixup-or-CutMix
+  -- drawn per batch, RandAugment's fill at img_mean, timm's ModelEma constant from step 0, f32 eval.
+  learningRate   := 0.004
   batchSize      := 256
+  gradAccumSteps := 16
   epochs         := 300
   optimizer      := .adam
   weightDecay    := 0.05
   wdExcludeNormBias := true
+  minLR          := 0.000001
+  mixSwitchProb  := 0.5
+  randAugmentFillMean := true
+  evalF32        := true
+  emaWarmup      := false
   cnxInit        := true    -- ConvNeXt `_init_weights`, as ConvNeXt-T: trunc_normal(0.02) on every
                             -- conv and the head, where the generic path is Xavier
   cosineDecay    := true
@@ -64,7 +74,7 @@ def convNeXtSImagenetConfig : TrainConfig where
   randomErasingProb := 0.25
   erasingPixel   := true    -- timm RandomErasing(mode='pixel'), N(0,1) fill
   labelSmoothing := 0.1
-  gradClipNorm   := 1.0
+  gradClipNorm   := 0.0     -- `--clip_grad None`
   bf16           := true
   bf16Conv       := true
   f32StemHead    := true    -- classifier head in fp32, as every verified render keeps it
@@ -82,35 +92,13 @@ def convNeXtSImagenetConfig : TrainConfig where
 def convNeXtSImagenetConfigShort : TrainConfig :=
   { convNeXtSImagenetConfig with epochs := 80, warmupEpochs := 5, dropPath := 0.2 }
 
-/-- Memory-safe variant: effective batch stays 256 (LR unchanged) as 2×128. -/
-def convNeXtSImagenetConfigAccum : TrainConfig :=
-  { convNeXtSImagenetConfig with batchSize := 128, gradAccumSteps := 2 }
-
-/-- Effective batch 512 instead of 256, as 2×256 grad-accum. LR doubles with the
-    batch under the paper's linear rule (4e-3 @ bs4096 → 5e-4 @ bs512).
-
-    Measured on 4× 16 GB: bs512 in one shot fits the default arena
-    with almost nothing to spare — and the probe does not model the tf.data
-    prefetch buffers that also live on device. The 2×256 accumulation is a
-    little slower per step and has a far lower peak, which is the version to
-    actually run. The larger batch is a win per epoch either way. -/
-def convNeXtSImagenetConfigBs512 : TrainConfig :=
-  { convNeXtSImagenetConfig with
-      batchSize := 256, gradAccumSteps := 2, learningRate := 5.0e-4 }
-
 def convNeXtSImagenetRecipes : List Recipe := [
   { name := "default", cfg := convNeXtSImagenetConfig,
     out := "generated_convnext_s_imagenet.py",
     desc := "paper-faithful 300-epoch run (dropPath 0.4)" },
   { name := "short",   cfg := convNeXtSImagenetConfigShort,
     out := "generated_convnext_s_imagenet_short.py",
-    desc := "80-epoch validation tier (dropPath pulled back to 0.2)" },
-  { name := "accum",   cfg := convNeXtSImagenetConfigAccum,
-    out := "generated_convnext_s_imagenet_accum.py",
-    desc := "300ep, effective bs256 as 2×128 grad-accum (16 GB headroom)" },
-  { name := "bs512",   cfg := convNeXtSImagenetConfigBs512,
-    out := "generated_convnext_s_imagenet_bs512.py",
-    desc := "300ep at effective bs512 (2×256 accum), LR 5e-4 — 6.91 GiB on 4 GPUs" }
+    desc := "80-epoch validation tier (dropPath pulled back to 0.2)" }
 ]
 
 def main (args : List String) : IO Unit :=

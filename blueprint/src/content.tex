@@ -11462,14 +11462,15 @@ run. All four are compute-bound.
 
 \medskip\noindent\textbf{What is queued.} Both pairs exist. The verified
 jobs are \texttt{cnx\{s,b\}-default-emabf16-4gpu}, on the renders
-\texttt{convnext\{s,b\}in\_\allowbreak emadpwxclipdropbf16}, and their
+\texttt{convnext\{s,b\}in\_\allowbreak emaaccdp16xwxdroperfbf16}, and their
 references are \texttt{cnx\{s,b\}-default-jax-4gpu}. In:
-ConvNeXt-T's recipe as its listing has it, at $64$ per replica and the
-reference's global $256$, with drop-path at the paper's $0.4$ for S and
-$0.5$ for B, EMA scored, \texttt{cnxInit} on both paths, and
-\texttt{\_fwd\_s288} forwards for \texttt{timm}'s test protocol. At $64$ per
-replica S peaks at $6.80$\,GiB and B at $9.53$ of the $11.68$\,GiB arena, so
-B needs no accumulation render.
+ConvNeXt-T's recipe as its marker has it --- the official batch $4096$ as
+$16$ accumulated micro-batches of $64$ per replica, no clip --- with
+drop-path at the paper's $0.4$ for S and $0.5$ for B, EMA scored,
+\texttt{cnxInit} on both paths, and \texttt{\_fwd\_s288} forwards for
+\texttt{timm}'s test protocol. The accumulation is the recipe's, not
+memory's: at $64$ per replica the accumulating renders peak at $7.21$\,GiB
+for S and $10.42$ for B.
 
 \noindent\textbf{[TODO: as T's; neither has run ---\\
 \texttt{cnxs-default-jax-4gpu} / \texttt{cnxs-default-emabf16-4gpu},\\

@@ -8,6 +8,10 @@ themselves go in the user's ROI order (ResNet → ViT → MNv2 → EfficientNet 
 the user's word. `imagenet_parity.md` §10 holds the F-items (cross-net) and D-items (per-net) this doc
 cites; the method is the ResNet A3/A2 prep of 2026-10-11 (4d612bb9), repeated per net.
 
+**Next (2026-10-12, later): §5, MobileNetV4-Conv-M.** §1–§4 are in code (§9); nothing has run. §5
+opens on two decisions the user owns (D7, the m15 extrapolation; the timm tag the tier reproduces),
+then a 256² render. Then §6 → §7 in the order of §2.
+
 ## 1. Done, 2026-10-11
 
 | chapter | state | commit |
@@ -15,6 +19,7 @@ cites; the method is the ResNet A3/A2 prep of 2026-10-11 (4d612bb9), repeated pe
 | ch 5 ResNet R34, R50-2018 | fp32 rescore paid the markers; R34's deleted; McNemar paired | 8a659b2f, 5be4f349 |
 | ch 5 ResNet A3, A2, A1 | timm's recipe on both paths (F1 / F3 / F4 / F5 / F8), gated, smoked; runs pending | 4d612bb9 |
 | ch 9 ViT-Ti | DeiT as timm runs it on both paths, dp256x4 no-clip render, smoked; runs pending | 320f5045, 3336f4a7 |
+| ch 9 ViT-S, ViT-B | Tiny's recipe at both widths; S one-shot 4 × 256, B the first `acc` render; both JAX refs accumulate; smoked (§3) | a39f5cf7 |
 
 What "done" means, per net, and what each later section repeats:
 
@@ -136,9 +141,9 @@ emadpwxclipdrop{erf,}bf16` (clip on, no accumulation).
    timm's `ModelEmaV2`, constant decay — `emaWarmup false`.
 2. Verified: the app passes `(emaWarmup := false)` and `minLR`; renders `convnextin_emaacc16dpwxdrop
    erfbf16` + tanh twin (accumulation 16 at 4×64 = 4096; no clip) — the first accumulating ConvNeXt
-   render. Checked 2026-10-11: `ConvNeXtRenderB.lean` has no accumulation form either; the AdamW
-   accumulation recipe of §3.2 is the prerequisite (M), after which S and B follow the same way
-   (`convnextsin_…`, `convnextbin_…`), four more artifacts.
+   render. The AdamW accumulation recipe of §3.2 now exists on ViT (a39f5cf7) and is a copy here —
+   see the hand-off below; after T, S and B follow the same way (`convnextsin_…`, `convnextbin_…`),
+   four more artifacts.
 3. D15: the T reference on file (81.53) is pre-C6; this rerun replaces both halves, so the pair is
    one-axis again. D18: `PROTOCOL=timm` on the JAX scorer; the verified half's 288 renders exist
    (`convnext{,s,b}in_fwd_s288.mlir`, checked 2026-10-11).
@@ -147,6 +152,82 @@ emadpwxclipdrop{erf,}bf16` (clip on, no accumulation).
 5. Confs: six; `LEAN_MLIR_DUMP_CORRECT` appended in the three verified prechecks.
 6. Runs: T ~77 + 107 h (10-07 re-probe), S and B larger; the ch 8 marker goes when T lands, the S/B
    marker when both land.
+
+**Done 2026-10-12.** The official values were read off facebookresearch/ConvNeXt `main.py` and `utils.py`
+before anything was set: `--lr 4e-3` at 4096, `--min_lr 1e-6`, `--warmup_epochs 20` ramped PER ITERATION from
+`cosine_scheduler`'s `start_warmup_value = 0` (so item 1's question is answered: `warmupLRInit` stays 0 and
+the schedule stays the emitter's per-step form — this is not timm's per-epoch scheduler), `--clip_grad None`,
+`--mixup_switch_prob 0.5` at `--mixup_mode batch`, timm's `ModelEma` at `--model_ema_decay 0.9999` (constant;
+`emaWarmup false`), `--model_ema_eval`. Renderer: `cnxAdamVariant` and `convNextAdamTrainStepText` take `acc`
+(trailing, default 1; every committed ConvNeXt artifact re-renders byte-identical) and spell it into the
+entry — `emaaccdp16xwxdroperfbf16`, `acc` after `ema`, `dp` inside, `16x` before `wx` (the driver's `accK`
+ends at the FIRST `x`, so `wx`'s cannot reach it; `TestVariantPredicates` pins `accK = 16`) — routing the
+tail through `optOne (.adamwAccum 16)`, the `G` region, `%aup` / `%akeep`, `optConstsB`'s `1/16` and a
+`packedTrainSig (acc := true)`; clip ∧ acc refused as on ViT. Six renders, DP only: `convnext{,s,b}in_
+emaaccdp16xwxdrop{erf,}bf16` (937 / 1,765 / 1,765 operands = 2 + 5 × P + 7 + masks), no new forwards
+(the driver opens `<slug>_erf_fwd` at 64 by name). Probed bare-device at 4 replicas: T 4.46 GiB / 194 ms a
+256-row micro-batch, S 7.21 / 300 ms, B 10.42 / 462 ms at 0.90 — the accumulation is the recipe's, not
+memory's. JAX: `convNeXt{Tiny,S,B}ImagenetConfig` carry `gradAccumSteps 16`, `learningRate 0.004`,
+`gradClipNorm 0`, `minLR`, `mixSwitchProb`, `randAugmentFillMean`, `evalF32`, `emaWarmup false`; S and B's
+legacy `accum` / `bs512` recipes are deleted with their eight generated files (batch-256 shapes that would
+have inherited the 4096 rate). Apps: `(minLR := 0.000001) (emaWarmup := false)`, the rate defaulting to
+4e-3 on an `acc` variant. Confs: the three verified ones rewritten standalone on the ViT-B template
+(`cnx-default-emabf16-4gpu` used to source `cnx-default-4gpu`, which asserts the batch-256 rate) with
+`LEAN_MLIR_G2_STEPS=4992` (trap 1: 5,004 mod 16 = 12; = the reference's 312 steps × 16, the same
+1,277,952 images) asserted together with its divisibility, `LEAN_MLIR_BASE_LR_U=4000`, the render / shim /
+app greps and the bitmaps; the three JAX ones on fresh lineages (`~/cnx_{t,s,b}_jax_2611/`) with a grep
+per emitted recipe line. Trap 2 bit once: the JAX ConvNeXt-B trainer trains at the default arena but its
+f32 VALIDATION dies RESOURCE_EXHAUSTED (7.46 GiB in `jit_eval_batch` — `evalF32`'s cost, where the one-shot
+trainer validated in bf16), so `cnxb-default-jax-4gpu` carries `XLA_PYTHON_CLIENT_MEM_FRACTION=0.97` in
+`ENV_EXTRA` and asserts it; T and S validate at the default. Smokes (`runs/2026-10-12-cnx{,s,b}-jax-smoke/`,
+two 25-step epochs each, the warmup reading 2e-4 then 4e-4 as the per-step ramp has it, the f32 eval line
+before every validation): JAX 2.83 / 3.96 / 5.63 s a 4096-row step = 177 / 247 / 352 ms a micro-batch →
+~76 / ~106 / ~151 h; verified (`runs/2026-10-12-cnx{,s,b}-default-emabf16-4gpu/`, the driver's `k = 16 …
+4992 micro-batches/epoch = 312 updates/epoch` banner, the floor and the constant decay in its schedule
+line): 242 / 323 / 491 ms a micro-step → ~109 / ~144 / ~219 h. Gates per §1.4 (`imagenet_parity.md`
+§10.4 has the list; the schedule gate is n/a per step, and `mixup_gate.py`'s "inert when off" leg cannot
+run on a shim whose mixing is on by default — the `SHIM_HASH` was taken directly: reproducible at seed 0,
+distinct at seed 1). Disclosed, not a recipe item: Mixup's λ granularity (JAX once per 4096, the shim once
+per 256, the official trainer once per 128). Found on the way: ViT-B's `emaaccdp2x128x4wxdropbf16` was in
+`TestVariantPredicates`' table but not its `accumSpellings` since a39f5cf7 (red on the unpushed branch);
+fixed. The ch 8 markers stand; the S/B "what is queued" paragraph names the new renders.
+
+**Hand-off from §3 (2026-10-12) — what §4 inherits and the order to do it in.**
+
+* *The accumulation form.* `ViTRender.lean`'s `vitAdamTrainStepText (acc : Nat := 1)` is the template:
+  `opt := if acc > 1 then .adamwAccum acc else .adamw`, `optOne opt …` per parameter with the fifth
+  return (`nA`) collected as the `G` region, `packedTrainSig` / `packedTrainRetTys` at `(acc := accOn)`,
+  the return list `θ ++ m ++ v ++ G ++ E ++ [loss, bc1, bc2] ++ [aup, akeep] ++ [emad, oemad] ++ masks`,
+  the consts `wdzConst … ++ optConstsB opt wdStr` instead of the baked `adamWConsts`, `trainStepHandNote
+  (acc := …)`, and `clip ∧ acc` refused (the reference clips the accumulated mean; DeiT and the official
+  ConvNeXt recipe do not clip). ConvNeXt's writer has the same shape — `ConvNeXtRender.lean` :996
+  (`optOne .adamw`), :1043 (`packedTrainSig (ema := ema)`), :865 (`adamWConsts`) — so it is the same
+  edit, PLUS `cnxAdamVariant` (:808) takes `acc` and spells `acc` + `dp` + `<k>x` in the optimizer slot
+  (`emaaccdp16xwxdroperfbf16`; `vitAdamVariant` has the spelling and the `#guard`s), because ConvNeXt
+  DERIVES its entry name from the variant (route (a) in that file's words) where ViT takes `funcName`.
+  Every committed ConvNeXt artifact must re-render byte-identical at `acc = 1` (`regen_verified_mlir.sh
+  check`); `vit-ema-drop-render convnextin <variant>` already accepts five regions; `TestVariantPredicates`
+  gets the spelling and the GELU-form count (106 → 110 with T's pair; S/B add four more).
+* *Trap 1 — the per-epoch micro-batch count.* The driver refuses an epoch whose micro-batch count is
+  not a multiple of k (`Train.lean` ~:2100): at 4 × 64, 1,281,167 / 256 = 5,004 micro-batches and
+  5,004 mod 16 = 12. Cap with `LEAN_MLIR_G2_STEPS=4992` in the conf (= the JAX trainer's 312 optimizer
+  steps × 16; its `steps_per_epoch = train_examples // 4096` drops the same remainder), and grep it in
+  the precheck. ViT-B's k = 2 never met this (2,502 is even).
+* *Trap 2 — the JAX trainer's arena.* The verified render and the JAX graph of one step do not peak
+  alike: ViT-S's render fit the default arena at 4 × 256 while the JAX trainer OOMed at 0.75 AND at
+  0.97 (XLA's rematerialisation spends the room it is given), and ViT-B's JAX 512 × 2 OOMed at the
+  default. So: smoke the JAX trainer's first step at the shape before writing its ETA, and the conf's
+  lever is `ENV_EXTRA=(XLA_PYTHON_CLIENT_MEM_FRACTION=0.97)` + `pc_env` (`vitb-accum-jax-4gpu.conf`).
+  ConvNeXt-T at 4 × 64 micro-batches is the shape its JAX trainer already runs, so this should be
+  moot for T; check S and B.
+* *The method, in order:* probe (`scripts/probes/bf16_peak_memory.py` / `bf16_device_step.py
+  --replicas 4` on a scratch render) → renderer `acc` → renders + `#guard`s → proofs.yml list, regen
+  rows, `gen_mlir_manifest.py` → JAX config + `regen_jax_generated.sh` write / sync / check → apps →
+  confs (fresh lineages, `LEAN_MLIR_DUMP_CORRECT`) → gates (§1.4, schedule gate n/a here) → smokes
+  (`ONCE=1 LEAN_MLIR_MAX_STEPS=400 LEAN_MLIR_PROBE_WARM=200`; the JAX three-line patch
+  `runs/2026-10-11-vits-jax-smoke/trainer_smoke_accum.patch`) → run records → `docstring-checkrefs`,
+  `comment_numbers` (cite the run dir, not the number) → stage. The driver's EMA banner reads
+  `emaWarmup` since a39f5cf7, so the smoke log says "constant from step 0" when the app passes it.
 
 ## 5. MobileNetV4-Conv-M — the paper's tier, and what is still out of it
 
@@ -261,8 +342,8 @@ landed 2026-10-07. Of the marker's list, owed in code:
 | R34, R50-2018 | — | — | — | — | — | — | 8a659b2f, 5be4f349 | landed | R34 deleted; 2018 paid |
 | R50 A3 / A2 / A1 | done | done | existing | done | green | done | 4d612bb9 | pending | stands until the runs |
 | ViT-Ti | done | done | done | done | green | done | 320f5045, 3336f4a7 | pending | stands |
-| ViT-S / B | done | done | done (B: the first `acc` render) | done | green | done | pending | pending | stands |
-| ConvNeXt-T / S / B | | | | | | | | | |
-| MNv4-Conv-M | | | | | | | | | |
+| ViT-S / B | done | done | done (B: the first `acc` render) | done | green | done | a39f5cf7 | pending | stands |
+| ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | — | pending | stands |
+| MNv4-Conv-M | NEXT — §5 | | | | | | | | |
 | MNv2 | | | | | | | | | |
 | EfficientNet-B0 | | | | | | | | | |

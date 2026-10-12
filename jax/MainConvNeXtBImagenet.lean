@@ -6,9 +6,10 @@ import Jax
     channels widened 96→128 throughout (128,256,512,1024). ~88.6M params.
     Relative to ConvNeXt-T it is both deeper (18→36 blocks) and wider.
 
-    This is the heaviest net in the sweep by a wide margin — deeper AND wider —
-    so on a 16 GB card expect to need the `accum` recipe. The stage-1 inverted
-    bottleneck alone holds 4·128 channels at 56×56 per sample per block. -/
+    This is the heaviest net in the sweep by a wide margin — deeper AND wider;
+    the stage-1 inverted bottleneck alone holds 4·128 channels at 56×56 per
+    sample per block. The official recipe's 4096 is 16 accumulated micro-batches
+    of 256 here (`gradAccumSteps`), as for T and S. -/
 
 def convNeXtBImagenet : NetSpec where
   name := "ConvNeXt-B (ImageNet, bf16)"
@@ -35,12 +36,22 @@ def convNeXtBImagenet : NetSpec where
 /-- ConvNeXt-B, 300-epoch paper schedule. Same as S except stochastic depth
     0.4 → 0.5 (the paper's B value). LR 2.5e-4 = 4e-3@bs4096 scaled to bs256. -/
 def convNeXtBImagenetConfig : TrainConfig where
-  learningRate   := 2.5e-4
+  -- The official recipe's batch and schedule (2026-10-12, as `convNeXtTinyImagenetConfig`, whose
+  -- docstring cites each value to facebookresearch/ConvNeXt `main.py`): lr 4e-3 at the effective
+  -- 4096 = 256 × 16 accumulated (exact without BatchNorm), min_lr 1e-6, no clip, Mixup-or-CutMix
+  -- drawn per batch, RandAugment's fill at img_mean, timm's ModelEma constant from step 0, f32 eval.
+  learningRate   := 0.004
   batchSize      := 256
+  gradAccumSteps := 16
   epochs         := 300
   optimizer      := .adam
   weightDecay    := 0.05
   wdExcludeNormBias := true
+  minLR          := 0.000001
+  mixSwitchProb  := 0.5
+  randAugmentFillMean := true
+  evalF32        := true
+  emaWarmup      := false
   cnxInit        := true    -- ConvNeXt `_init_weights`, as ConvNeXt-T: trunc_normal(0.02) on every
                             -- conv and the head, where the generic path is Xavier
   cosineDecay    := true
@@ -61,7 +72,7 @@ def convNeXtBImagenetConfig : TrainConfig where
   randomErasingProb := 0.25
   erasingPixel   := true    -- timm RandomErasing(mode='pixel'), N(0,1) fill
   labelSmoothing := 0.1
-  gradClipNorm   := 1.0
+  gradClipNorm   := 0.0     -- `--clip_grad None`
   bf16           := true
   bf16Conv       := true
   f32StemHead    := true    -- classifier head in fp32, as every verified render keeps it
@@ -76,35 +87,13 @@ def convNeXtBImagenetConfig : TrainConfig where
 def convNeXtBImagenetConfigShort : TrainConfig :=
   { convNeXtBImagenetConfig with epochs := 80, warmupEpochs := 5, dropPath := 0.3 }
 
-/-- Memory-safe variant: effective batch stays 256 (LR unchanged) as 4×64. -/
-def convNeXtBImagenetConfigAccum : TrainConfig :=
-  { convNeXtBImagenetConfig with batchSize := 64, gradAccumSteps := 4 }
-
-/-- Effective batch 512 instead of 256, as 4×128 grad-accum. LR doubles with the
-    batch under the paper's linear rule (4e-3 @ bs4096 → 5e-4 @ bs512).
-
-    Accumulation here is not a concession — it is strictly better. Measured on
-    4× 16 GB: one-shot bs512 fills the default arena almost to the brim and is
-    slower per step than 4×128, which peaks at about half of it. Under memory
-    pressure XLA rematerializes, and that recompute costs more than the
-    accumulation loop. Also beats bs256 per epoch. -/
-def convNeXtBImagenetConfigBs512 : TrainConfig :=
-  { convNeXtBImagenetConfig with
-      batchSize := 128, gradAccumSteps := 4, learningRate := 5.0e-4 }
-
 def convNeXtBImagenetRecipes : List Recipe := [
   { name := "default", cfg := convNeXtBImagenetConfig,
     out := "generated_convnext_b_imagenet.py",
     desc := "paper-faithful 300-epoch run (dropPath 0.5)" },
   { name := "short",   cfg := convNeXtBImagenetConfigShort,
     out := "generated_convnext_b_imagenet_short.py",
-    desc := "80-epoch validation tier (dropPath pulled back to 0.3)" },
-  { name := "accum",   cfg := convNeXtBImagenetConfigAccum,
-    out := "generated_convnext_b_imagenet_accum.py",
-    desc := "300ep, effective bs256 as 4×64 grad-accum (fits 16 GB)" },
-  { name := "bs512",   cfg := convNeXtBImagenetConfigBs512,
-    out := "generated_convnext_b_imagenet_bs512.py",
-    desc := "300ep at effective bs512 (4×128 accum), LR 5e-4 — faster AND smaller than one-shot bs512" }
+    desc := "80-epoch validation tier (dropPath pulled back to 0.3)" }
 ]
 
 def main (args : List String) : IO Unit :=

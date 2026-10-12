@@ -1,0 +1,19 @@
+ConvNeXt-S (ImageNet, bf16) · Lean 4 → JAX
+  CNXStem(3→96,4x4)+LN → ConvNeXt3(c=96) → CNXDown(96→192) → ConvNeXt3(c=192) → CNXDown(192→384) → ConvNeXt27(c=384) → CNXDown(384→768) → ConvNeXt3(c=768) → GAP → LN(768) → 768→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.004000  batch_size=4096 (4 devices x 1024)  epochs=2  params=50223688
+steps_per_epoch=25  total_steps=50
+grad-accum=16x  micro_batch=256 (4 devices x 64)  -> effective_batch=4096  (LR targets effective)
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 1] lr=0.0002 loss(train_avg)=6.9656 val_top1=50/50000 (0.001) val_top5=0.0048 val_loss=7.0645  [258.9s train, 43.4s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.0004 loss(train_avg)=6.8991 val_top1=49/50000 (0.001) val_top5=0.0048 val_loss=7.0627  [98.9s train, 38.8s val]
+saved 190 param-groups to /home/skoonce/cnx_smoke_2612/convnext_s_imagenet.bin (200894752 bytes)
+  saved full train state -> /home/skoonce/cnx_smoke_2612/convnext_s_imagenet.state.npz (1377 arrays, step=50)
+
+Done. Total time: 441.7s

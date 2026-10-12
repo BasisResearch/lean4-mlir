@@ -1,0 +1,14 @@
+--- generated/generated_convnext_tiny_imagenet_full.py	2026-10-12 01:36:17.755497744 +0000
++++ ../runs/2026-10-12-cnx-jax-smoke/trainer_smoke.py	2026-10-12 01:43:10.400066286 +0000
+@@ -1833,9 +1833,9 @@
+ 
+     MICRO_BATCH = (256 // n_devices) * n_devices or n_devices
+     BATCH_SIZE = MICRO_BATCH * GRAD_ACCUM   # effective batch = micro × accum; train_step accumulates GRAD_ACCUM micro-batches/step
+-    EPOCHS = 300
++    EPOCHS = 2   # SMOKE: two short epochs, then exit (both inside the warmup)
+     LR = 0.004000
+-    steps_per_epoch = train_examples // BATCH_SIZE
++    steps_per_epoch = 25   # SMOKE: 25 optimizer steps = 400 micro-batches an epoch
+     total_steps = steps_per_epoch * EPOCHS
+     print("lr=0.004000  batch_size=" + str(BATCH_SIZE) +
+           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +

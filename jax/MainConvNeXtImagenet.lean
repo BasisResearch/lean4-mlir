@@ -42,29 +42,42 @@ def convNeXtTinyImagenet : NetSpec where
 
 /-- ConvNeXt-T 80-epoch recipe — the full faithful regularizer
     stack on (EMA + stochastic depth) at 80 epochs, to validate those
-    features train cleanly before the ~80-hour 300ep run (bump EPOCHS to 300 +
-    re-emit for the real run). ConvNeXt needs AdamW, not SGD: decoupled weight
-    decay 0.05 (excluding norm/bias/LayerScale — timm no_weight_decay), peak LR
-    2.5e-4 at batch 256 (= the 4e-3@4096 official LR linearly scaled, 4e-3×256/4096),
-    20-epoch warmup + cosine, label smoothing 0.1, grad-clip 1.0 (cheap insurance).
+    features train cleanly before the 300-epoch run (`convNeXtTinyImagenetConfigFull`
+    is this at 300). ConvNeXt needs AdamW, not SGD: decoupled weight
+    decay 0.05 (excluding norm/bias/LayerScale — timm no_weight_decay), label smoothing 0.1,
     bf16 + bf16 conv. EMA (decay 0.9999) + stochastic depth
     (dropPath 0.1, the ConvNeXt-T paper value) on. Geometric RandAugment (N=2, M=9,
     the ConvNeXt recipe value) on — the full RandAugment(N,M) sampler over the
     color+geometric op set (shear/rotate via ImageProjectiveTransformV3). Mixup α0.8
     + CutMix α1.0 + Random Erasing p0.25 on — the full DeiT-style pack.
 
-    TODO(geo-ra): recipe CHANGE — adds geometric RandAugment vs the prior
-    no-RandAugment 80ep run (`jax/runs/convnext_tiny_imagenet_bf16_80ep/`). The blueprint named this as the
-    remaining gap to ConvNeXt-T's ~82% (with the 300ep schedule). Re-run +
-    re-eval (eval_convnext_full50k.py, supervise script unchanged) for fresh
-    numbers; RandAugment is CPU-side tf.data — watch input throughput. -/
+    **The official recipe's batch and schedule, 2026-10-12** (`planning/recipe_prep.md` §4; ch 8's
+    marker): the values are facebookresearch/ConvNeXt `main.py`'s own defaults and its README
+    command for ConvNeXt-T — `--lr 4e-3` at a total batch of 4096 (`--batch_size 128 --update_freq
+    4` on 8 cards), here 256 × `gradAccumSteps 16` (ConvNeXt has no BatchNorm, so the accumulation
+    is exact and `LR` targets the effective batch); `--min_lr 1e-6` as the cosine's floor;
+    `--warmup_epochs 20` ramped PER ITERATION from `utils.cosine_scheduler`'s `start_warmup_value
+    = 0` (the emitter's per-step form, so `schedPerEpoch` / `warmupLRInit` stay off); `--clip_grad
+    None` (no clip — the 2.5e-4 / batch-256 tier before today clipped at 1.0 as "cheap
+    insurance"); `--mixup_switch_prob 0.5` with `--mixup_mode batch` (one draw per batch decides
+    CutMix or Mixup); RandAugment's geometric fill at timm's img_mean; timm's `ModelEma` at
+    `--model_ema_decay 0.9999`, a constant decay from step 0 (`emaWarmup := false`); and the
+    validation forward in f32 (`evalF32`), as `--model_ema_eval` scores through the fp32 model.
+    The verified pair render is `convnextin_emaaccdp16xwxdroperfbf16` (4 × 64 × 16).
+    The 80-epoch tier keeps all of it at the shorter schedule. -/
 def convNeXtTinyImagenetConfig : TrainConfig where
-  learningRate   := 2.5e-4  -- 4e-3@bs4096 official LR linearly scaled to bs256
-  batchSize      := 256
+  learningRate   := 0.004   -- the official `--lr 4e-3` AT ITS BATCH of 4096 (effective, below)
+  batchSize      := 256     -- the micro-batch, 4 × 64 — what one forward sees
+  gradAccumSteps := 16      -- × 16 = 4096, the official total batch; exact without BatchNorm
   epochs         := 80
   optimizer      := .adam
   weightDecay    := 0.05
   wdExcludeNormBias := true  -- timm no_weight_decay: skip norm γ/β, biases, LayerScale γ (1-D params)
+  minLR          := 0.000001  -- `--min_lr 1e-6`, the per-step cosine's floor
+  mixSwitchProb  := 0.5       -- `--mixup_switch_prob 0.5`: CutMix with p 0.5 per batch, else Mixup
+  randAugmentFillMean := true -- the geometric ops fill with timm's img_mean (124, 116, 104), not 128
+  evalF32        := true      -- score through an f32 forward, as the verified path and timm do
+  emaWarmup      := false     -- timm ModelEma: a constant decay from step 0, no ramp-in
   cnxInit        := true    -- ConvNeXt `_init_weights`: trunc_normal(0.02) on every conv AND the
                             -- head. The generic Xavier path puts the stem at std 0.118 against the
                             -- paper's 0.02 — 5.9× too wide, the same failure `vitInit` fixes for
@@ -88,7 +101,7 @@ def convNeXtTinyImagenetConfig : TrainConfig where
   randomErasingProb := 0.25
   erasingPixel   := true    -- timm RandomErasing(mode='pixel'), N(0,1) fill
   labelSmoothing := 0.1
-  gradClipNorm   := 1.0
+  gradClipNorm   := 0.0     -- `--clip_grad None`: the official recipe does not clip
   bf16           := true
   bf16Conv       := true
   f32StemHead    := true    -- classifier head in fp32, as every verified render keeps it

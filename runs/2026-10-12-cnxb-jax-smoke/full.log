@@ -1,0 +1,21 @@
+ConvNeXt-B (ImageNet, bf16) · Lean 4 → JAX
+  CNXStem(3→128,4x4)+LN → ConvNeXt3(c=128) → CNXDown(128→256) → ConvNeXt3(c=256) → CNXDown(256→512) → ConvNeXt27(c=512) → CNXDown(512→1024) → ConvNeXt3(c=1024) → GAP → LN(1024) → 1024→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.004000  batch_size=4096 (4 devices x 1024)  epochs=2  params=88591464
+steps_per_epoch=25  total_steps=50
+grad-accum=16x  micro_batch=256 (4 devices x 64)  -> effective_batch=4096  (LR targets effective)
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+  Running validation ...
+  eval: f32 forward (evalF32)
+E1012 02:06:56.128203 2888904 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 02:06:56.798577 2888904 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[Epoch 1] lr=0.0002 loss(train_avg)=6.9785 val_top1=57/50000 (0.0011) val_top5=0.0051 val_loss=7.1121  [299.3s train, 61.4s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.0004 loss(train_avg)=6.9079 val_top1=57/50000 (0.0011) val_top5=0.0052 val_loss=7.1097  [140.7s train, 55.0s val]
+saved 190 param-groups to /home/skoonce/cnx_smoke_2612/convnext_b_imagenet.bin (354365856 bytes)
+  saved full train state -> /home/skoonce/cnx_smoke_2612/convnext_b_imagenet.state.npz (1377 arrays, step=50)
+
+Done. Total time: 558.7s

@@ -147,6 +147,11 @@ private def table : List (String × Bool × Bool × Bool) :=
     -- `k`. (The committed spelling adds `eps0000001erf` before `bf16`; the ε marker is not a
     -- predicate and stays out of this table.)
   , ("emaaccdp2x128x4wxdropbf16", true, false, true)
+    -- ConvNeXt's official-batch renders (2026-10-12, planning/recipe_prep.md §4): EMA × accumulation
+    -- × `wx` × stochastic depth × bf16 at both GELU forms, 4 × 64 × 16 = 4096. ConvNeXt has NO batch
+    -- suffix, so `16x` meets `wx` directly — `accK` ends at the FIRST `x` and `wx`'s cannot reach it.
+  , ("emaaccdp16xwxdroperfbf16", true, false, true)
+  , ("emaaccdp16xwxdropbf16", true, false, true)
     -- MobileNetV2's reference recipe: RMSProp × `wx` × dropout × α = 0 × bf16.
     -- `do` is followed by `ls0`, and `rms` ++ `dp` must still not read as stochastic depth.
   , ("rmsdp64wxdols0bf16", false, true, false)
@@ -382,6 +387,11 @@ private def accumSpellings : List String :=
    -- RSB-A2/A1 without the EMA shadow, and MobileNetV4's paper tier
    "lambaccdp4x128wxclipdropbcebf16", "lambaccdp4x128wxclipdropbce",
    "lambaccdp4x128wxclipdropbcewd001bf16", "lambaccdp4x128wxclipdropbcewd001",
+   -- ViT-B's DeiT-recipe render, 2 × (4 × 128) — in the table since 2026-10-11, in this list since
+   -- 2026-10-12 (the partition guard below read red on the unpushed branch until then)
+   "emaaccdp2x128x4wxdropbf16",
+   -- ConvNeXt's official batch, 16 × (4 × 64), at both GELU forms
+   "emaaccdp16xwxdroperfbf16", "emaaccdp16xwxdropbf16",
    "accdp8x128wxdropdowd01bf16", "acc8x128wxdropdowd01bf16"]
 #guard table.all (fun (v, _, _, _) => accOn v == accumSpellings.contains v)
 -- MobileNetV4's recipe: k = 8 read back past `dp`, and nothing else read into it
@@ -389,6 +399,11 @@ private def accumSpellings : List String :=
 #guard accK "emaacc8x128wxdowd005bf16" == 8
 #guard accK "accdp8x128wxdropdowd01bf16" == 8
 #guard accK "lambaccdp4x128wxclipdropbcewd001bf16" == 4
+-- ConvNeXt's k = 16 with `wx` RIGHT AFTER `16x`: the first `x` ends k, and the second (`wx`) is
+-- never reached — two digits, no batch between them and the marker.
+#guard accK "emaaccdp2x128x4wxdropbf16" == 2
+#guard accK "emaaccdp16xwxdroperfbf16" == 16
+#guard accK "emaaccdp16xwxdropbf16" == 16
 #guard lambOn "emaaccdp8x128wxdowd005bf16" == false
 #guard bceOn "emaaccdp8x128wxdowd005bf16" == false
 #guard accumSpellings.all (fun v => table.any (fun (t, _, _, _) => t == v))
@@ -631,7 +646,8 @@ private def erfSpellings : List String :=
    "adam128erf", "adamdp128x4erf", "ema128erf", "emadp128x4erf", "adam128wxerf",
    "adam128wxcliperf", "adamdp128x4wxcliperf", "adamdp128x4wxclipdroperf",
    "adamdp128x2wxclipdroperf", "adamdp256x2wxclipdroperf", "adam128wxclipdroperf",
-   "adam128wxclipdroperfbf16", "adamdp128x4wxclipdroperfbf16", "emadp128x4wxclipdroperfbf16"]
+   "adam128wxclipdroperfbf16", "adamdp128x4wxclipdroperfbf16", "emadp128x4wxclipdroperfbf16",
+   "emaaccdp16xwxdroperfbf16"]
 #guard table.all (fun (v, _, _, _) => erfOn v == erfSpellings.contains v)
 #guard erfSpellings.all (fun v => table.any (fun (t, _, _, _) => t == v))
 -- The form adds no region, scalar or mask: an exact spelling packs as its tanh partner does.
@@ -686,10 +702,10 @@ private def erfSpellings : List String :=
     ].mapM refused
   unless mixed.all id do
     throw <| IO.userError s!"checkGeluWorld accepted a mixed pair: refusals {mixed}"
-  -- 53 at each form since the ViT-S / ViT-B DeiT-recipe pairs (`vitsin_emadp256x4wxdropeps0000001{erf,}bf16`,
-  -- `vitbin_emaaccdp2x128x4wxdropeps0000001{erf,}bf16`, 2026-10-11, after Ti's 51); a new ImageNet
-  -- ViT / ConvNeXt render lands with its twin, so the two counts stay equal.
-  unless pairs == 106 && erfs == 53 do
-    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 106 (53 at each form)"
+  -- 56 at each form since ConvNeXt's official-batch pairs (`convnext{,s,b}in_emaaccdp16xwxdrop{erf,}bf16`,
+  -- 2026-10-12), after the ViT-S / ViT-B DeiT-recipe pairs' 53 (2026-10-11) and Ti's 51; a new
+  -- ImageNet ViT / ConvNeXt render lands with its twin, so the two counts stay equal.
+  unless pairs == 112 && erfs == 56 do
+    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 112 (56 at each form)"
   IO.println s!"✓ checkGeluWorld: {pairs} train steps ({erfs} erf, {pairs - erfs} tanh) score through a forward at their own form; \
 3 mixed pairs refused"

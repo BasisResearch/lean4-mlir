@@ -1,0 +1,12 @@
+── A. peak at the default (11.68 GiB), 4 replicas ──
+E1012 01:37:20.662914 2863788 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+  budget 11.68 GiB/card · replicas 4 · XLA_PYTHON_CLIENT_MEM_FRACTION=unset (plugin default 0.75)
+  artifact                                                  peak      args      temp   of budget
+  -----------------------------------------------------------------------------------------------
+  convnextsin_emaaccdp16xwxdroperfbf16_train_step.mlir    7.21 G    0.97 G    5.30 G         62 %
+
+── C. EXECUTION ──
+E1012 01:37:43.285577 2864927 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 01:37:46.889193 2864937 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+    300.50 ms/step  (min 299.65, p10-p90 299.85-301.21, 1765 inputs, 5 interleaved reps)   convnextsin_emaaccdp16xwxdroperfbf16_train_step.mlir
+DONE

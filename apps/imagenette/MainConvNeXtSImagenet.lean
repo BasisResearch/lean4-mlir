@@ -32,10 +32,12 @@ so `LEAN_MLIR_DROP_RATE_U` retunes it without touching an artifact. At the 80-ep
 `LEAN_MLIR_DROP_RATE_U=200000` (0.2): the paper's 0.4 underfits on the short schedule
 (measured on the JAX side).
 
-**Batch is 64 per device** for the pair, ConvNeXt-T's rescope: global 256 and 5,004 steps/epoch,
-the paper's batch scaled as the LR is. The pair variant is `emadpwxclipdroperfbf16` (the EMA
-shadow the reference scores, the exact GELU, bf16), with `emawxclipdroperfbf16` its single-device
-peer and the default here. The `adam*wxclipdroperf{,bf16}` siblings are rendered at 32 and need
+**Batch is 64 per device** for the pair, ConvNeXt-T's rescope, and since 2026-10-12 the pair
+accumulates 16 of them into the official recipe's 4096: the pair variant is
+`emaaccdp16xwxdroperfbf16` (the EMA shadow the reference scores, no clip, the exact GELU, bf16;
+`OptRecipe.adamwAccum 16` read off the name by `VerifiedVariant.accK`, 4,992 micro-batches an
+epoch under `LEAN_MLIR_G2_STEPS`, lr 4e-3 — `planning/recipe_prep.md` §4), with
+`emawxclipdroperfbf16`, the one-shot global-256 recipe's single-device peer, the default here. The `adam*wxclipdroperf{,bf16}` siblings are rendered at 32 and need
 `LEAN_MLIR_BATCH=32`. `erf` is the exact GELU `x · Φ(x)`, ConvNeXt's own and the JAX reference's
 (`geluExact`); each render also exists without the marker, at the tanh approximation.
 
@@ -71,13 +73,15 @@ def convnextSImagenetConfig : VerifiedConfig where
 /-- Entry point. Defaults to the SINGLE-DEVICE `emawxclipdroperfbf16` at 64, the pair recipe's
     single-device peer: a DP default makes a plain invocation fail at the first step with a
     replica-count refusal, which reads as a broken build rather than a missing flag. The job is
-    `scripts/jobs/cnxs-default-emabf16-4gpu.conf` (`emadpwxclipdroperfbf16`). -/
+    `scripts/jobs/cnxs-default-emabf16-4gpu.conf` (`emaaccdp16xwxdroperfbf16`). -/
 def runConvNeXtSImagenet (argv : List String) : IO Unit := do
   let variant := (← IO.getEnv "LEAN_MLIR_VARIANT").getD "emawxclipdroperfbf16"
   let bs := ((← IO.getEnv "LEAN_MLIR_BATCH").bind (·.toNat?)).getD convnextSImagenetConfig.batchSize
   let baseLR := match (← IO.getEnv "LEAN_MLIR_BASE_LR_U").bind (·.toNat?) with
     | some u => u.toFloat * 1e-6
-    | none   => 0.00025   -- `convNeXtTinyImagenetConfig.learningRate`: 4e-3@bs4096 scaled to bs256.
+    -- As the T driver: an accumulating variant (`emaaccdp16x…`, 4 × 64 × 16 = 4096) takes the
+    -- official `--lr 4e-3` at its own batch; every other variant is at global 256, 2.5e-4.
+    | none   => if VerifiedVariant.accOn variant then 0.004 else 0.00025
                           -- NOT retuned for S, and that matches the reference: the ConvNeXt paper
                           -- uses one LR across T/S/B and varies only the stochastic-depth rate.
                           -- At 64 × 4 this is global 256, the batch the rate is scaled to.
@@ -101,6 +105,9 @@ def runConvNeXtSImagenet (argv : List String) : IO Unit := do
   dropNet.trainAdamSched
     { convnextSImagenetConfig with batchSize := bs, epochs := epochs }
     (argv.head?.getD "data") baseLR 0.9 0.999 20 variant
+    -- The official schedule's floor and EMA, as the T driver (2026-10-12): `--min_lr 1e-6` on the
+    -- per-step cosine, timm's `ModelEma` constant from step 0. Host-side: no re-render.
+    (minLR := 0.000001) (emaWarmup := false)
     -- warmup 20 epochs, not 5: `convNeXtTinyImagenetConfig.warmupEpochs := 20` is a ConvNeXt-paper
     -- value and differs from every other net in this repo. It does not move with model size.
 

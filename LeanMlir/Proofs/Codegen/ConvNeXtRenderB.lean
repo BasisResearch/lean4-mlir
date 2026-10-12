@@ -616,7 +616,13 @@ def convNextAdamTrainStepBText (gf : GeluForm) (alphaStr negAlphaKStr bStr : Str
     -- and for the same reason: a caller able to set the two independently is the defect. At the
     -- default every committed artifact is byte-identical; the ImageNet `#eval`s below pass 64 so
     -- the verified job pairs with its JAX reference's global 256 (4 × 64).
-    (bB : Nat := 32) : String :=
+    (bB : Nat := 32)
+    -- Gradient accumulation over `acc` micro-batches (`convNextAdamTrainStepText`'s `acc`),
+    -- TRAILING and defaulted to 1. The traversal does not see it: the accumulator is
+    -- parameter-space, one `momVNextF` per gradient in the AdamW tail, so the batched backward is
+    -- the same at any `k`. It reaches the wrapper, which spells it into the ENTRY NAME through
+    -- `cnxAdamVariant` — the `#guard`s beside the accumulating `#eval`s below pin the path.
+    (acc : Nat := 1) : String :=
   let negAK := if negAlphaKStr.isEmpty then "-" ++ alphaOverK nClasses 0.1 else negAlphaKStr
   convNextAdamTrainStepText gf alphaStr negAlphaKStr bStr replicas nClasses slug ema
     wdExclude wdStr clip clipStr
@@ -632,7 +638,7 @@ def convNextAdamTrainStepBText (gf : GeluForm) (alphaStr negAlphaKStr bStr : Str
     -- AND HERE. `bf16` reaching the traversal above but not this line is the entry-name defect
     -- in its most convincing form — the graph really would be bf16, every other check would pass,
     -- and only the artifact's declared name would be wrong.
-    (sd := sd) (V := V) (bf16 := bf16) (cBS := bB)
+    (sd := sd) (V := V) (bf16 := bf16) (cBS := bB) (acc := acc)
 
 /-- The drop-free forward's banner — the line `ConvNeXtRender.convNextFwdText` emits, restated
     here so the byte tie can demand **byte-identity** rather than "identical apart from a comment".
@@ -1400,3 +1406,88 @@ end Proofs.StableHLO
 -- At the tanh form every committed spelling is untouched, and none reads as exact.
 #guard Proofs.StableHLO.cnxAdamVariant 4 true true true true true .tanh == "emadpwxclipdropbf16"
 #guard !(Proofs.StableHLO.cnxAdamVariant 4 true true true true true).contains "erf"
+
+-- ════════════════════════════════════════════════════════════════════════════════════════
+-- § THE OFFICIAL RECIPE'S BATCH — 4096 as 16 ACCUMULATED micro-batches of 4 × 64 (2026-10-12)
+-- ════════════════════════════════════════════════════════════════════════════════════════
+--
+-- The pair renders of `planning/recipe_prep.md` §4 (ch 8's `[TODO: …]` marker): ConvNeXt's official
+-- recipe trains at batch 4096 (`--batch_size 128 --update_freq 4` on 8 cards, lr 4e-3), and the
+-- renders above at 4 × 64 = 256 paired against a reference at 256 with the rate scaled down. This
+-- block is the same net at the paper's batch: `acc := 16` — 4 × 64 × 16 = 4096 — through
+-- `convNextAdamTrainStepText`'s `acc`, i.e. `OptRecipe.adamwAccum 16`, the mechanism ViT-B's
+-- `vitbin_emaaccdp2x128x4…` render (2026-10-11) took from ResNet-50 and MobileNetV4: a fifth
+-- `[θ|m|v|G|E]` region, the `%aup` / `%akeep` scalars, `1/16` folded into `%ob1` / `%ob2`. ConvNeXt
+-- has no BatchNorm, so sixteen micro-batches of 256 ARE one batch of 4096 — exact, not Ghost-BN —
+-- and the JAX reference accumulates the same way (`gradAccumSteps := 16`, `lax.scan`). No clip
+-- (`--clip_grad` None; the composition is refused by the writer), EMA 0.9999 constant from step 0,
+-- wd 0.05 off norm/bias, drop-path at each size's paper rate, the exact GELU, bf16; the tanh twin
+-- of each for the GELU-form twin audit, not run. Only the four-replica form is rendered: the
+-- accumulating single-device spelling would be a batch-1024 recipe nothing pairs with.
+--
+-- The eval forward is the drop-free `<slug>_erf_fwd` at 64 the driver already opens by name (the
+-- variant has no `_fwd` of its own; `fwdStem`), so no new forward lands here.
+--
+-- The driver reads the 16 off the name (`emaaccdp16x…`, `VerifiedVariant.accK`: the digits after
+-- `accdp` up to the FIRST `x` — `wx`'s `x` is two markers on) and applies on every sixteenth
+-- micro-batch; `vit-ema-drop-render convnextin <variant>` reconciles the artifact's operands
+-- (2 + 5 × 182 + 7 + 18 = 937 for T; 2 + 5 × 344 + 7 + 36 = 1765 for S and B) with that reading.
+-- An epoch of 5,004 micro-batches is not a multiple of 16: the driver refuses it, and the confs cap
+-- at `LEAN_MLIR_G2_STEPS=4992` = the reference's 312 optimizer steps × 16 (its
+-- `steps_per_epoch = train_examples // 4096` drops the same remainder).
+--
+-- The `#guard`s pin each path against `cnxAdamVariant` — ConvNeXt DERIVES its entry name from the
+-- variant, so a flag that reached the writer but not the name would be an artifact whose entry
+-- disagrees with its path — and against the driver's predicates (`ema` leads, `acc` is a
+-- substring, `k` parses to 16, no `do`, one `drop`, one `erf`).
+
+-- ── ConvNeXt-T at 16 × (4 × 64), accumulated, no clip ──
+#eval IO.FS.writeFile "verified_mlir/convnextin_emaaccdp16xwxdroperfbf16_train_step.mlir"
+  (Proofs.StableHLO.convNextAdamTrainStepBText .erf "0.100000" "" s!"{cnxInBS}.0" 4 1000 "convnextin"
+    (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (bf16 := true) (bB := cnxInBS) (acc := 16))
+#guard "convnextin_emaaccdp16xwxdroperfbf16_train_step" ==
+  "convnextin_" ++ Proofs.StableHLO.cnxAdamVariant 4 true true false true true .erf 16 ++ "_train_step"
+-- the driver's reading of the name, spelled as its predicates spell it (this module does not
+-- import the driver); `tests/TestVariantPredicates.lean` runs the real predicates over it
+-- (5 regions, 7 scalars, shadow at index 4, `accK` = 16).
+#guard "emaaccdp16xwxdroperfbf16".startsWith "ema"
+#guard "emaaccdp16xwxdroperfbf16".contains "acc"
+#guard ((("emaaccdp16xwxdroperfbf16".splitOn "acc").getD 1 "").drop 2
+          |>.takeWhile (· != 'x')) == "16"
+#guard !"emaaccdp16xwxdroperfbf16".contains "do"
+#guard !"emaaccdp16xwxdroperfbf16".contains "sd"
+#guard ("emaaccdp16xwxdroperfbf16".splitOn "drop").length == 2
+#guard ("emaaccdp16xwxdroperfbf16".splitOn "erf").length == 2
+-- its tanh twin
+#eval IO.FS.writeFile "verified_mlir/convnextin_emaaccdp16xwxdropbf16_train_step.mlir"
+  (Proofs.StableHLO.convNextAdamTrainStepBText .tanh "0.100000" "" s!"{cnxInBS}.0" 4 1000 "convnextin"
+    (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (bf16 := true) (bB := cnxInBS) (acc := 16))
+#guard "convnextin_emaaccdp16xwxdropbf16_train_step" ==
+  "convnextin_" ++ Proofs.StableHLO.cnxAdamVariant 4 true true false true true .tanh 16 ++ "_train_step"
+#guard !"emaaccdp16xwxdropbf16".contains "erf"
+
+-- ── ConvNeXt-S, the same at drop-path 0.4 (the spec's ramp; the render carries the sites) ──
+#eval IO.FS.writeFile "verified_mlir/convnextsin_emaaccdp16xwxdroperfbf16_train_step.mlir"
+  (Proofs.StableHLO.convNextAdamTrainStepBText .erf "0.100000" "" s!"{cnxInBS}.0" 4 1000 "convnextsin"
+    (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (V := Proofs.StableHLO.cnxSmall) (bf16 := true) (bB := cnxInBS) (acc := 16))
+#eval IO.FS.writeFile "verified_mlir/convnextsin_emaaccdp16xwxdropbf16_train_step.mlir"
+  (Proofs.StableHLO.convNextAdamTrainStepBText .tanh "0.100000" "" s!"{cnxInBS}.0" 4 1000 "convnextsin"
+    (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (V := Proofs.StableHLO.cnxSmall) (bf16 := true) (bB := cnxInBS) (acc := 16))
+
+-- ── ConvNeXt-B, the same at drop-path 0.5 ──
+#eval IO.FS.writeFile "verified_mlir/convnextbin_emaaccdp16xwxdroperfbf16_train_step.mlir"
+  (Proofs.StableHLO.convNextAdamTrainStepBText .erf "0.100000" "" s!"{cnxInBS}.0" 4 1000 "convnextbin"
+    (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (V := Proofs.StableHLO.cnxBase) (bf16 := true) (bB := cnxInBS) (acc := 16))
+#eval IO.FS.writeFile "verified_mlir/convnextbin_emaaccdp16xwxdropbf16_train_step.mlir"
+  (Proofs.StableHLO.convNextAdamTrainStepBText .tanh "0.100000" "" s!"{cnxInBS}.0" 4 1000 "convnextbin"
+    (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (V := Proofs.StableHLO.cnxBase) (bf16 := true) (bB := cnxInBS) (acc := 16))
+
+-- At `acc := 1` the pair spelling of 2026-10-06 is untouched — byte-identity, stated on the name
+-- as well as on the bytes (`scripts/regen_verified_mlir.sh check`).
+#guard Proofs.StableHLO.cnxAdamVariant 4 true true true true true .erf == "emadpwxclipdroperfbf16"

@@ -1,0 +1,4 @@
+[sup] 2026-10-12 02:10:23 START job=cnx-default-emabf16-4gpu devs=0,1,2,3 epochs=300 rest_after=[none] temp_max=78 stall=1800s logs=runs/2026-10-12-cnx-default-emabf16-4gpu
+[sup] 2026-10-12 02:10:23 cmd: .lake/build/bin/convnext-imagenet-verified data
+[sup] 2026-10-12 02:10:23 eta: bf16 ~? h on 4x 4060 Ti — SMOKE PENDING (2026-10-12); the one-shot 4 x 64 EMA render read 237 ms/step median on 2026-09-25 (runs/2026-09-25-*), and the accumulating render does the same forward/backward per micro-batch plus one parameter-sized add, so ~4,992 x ~0.24 s + ~105 s eval/ckpt an epoch, ~107 h for 300 ep is the expectation until the smoke replaces it
+[sup] 2026-10-12 02:10:23 ONCE — one foreground run, no restart policy

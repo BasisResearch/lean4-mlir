@@ -1,0 +1,24 @@
+ConvNeXt-T (ImageNet, bf16) · Lean 4 → JAX
+  CNXStem(3→96,4x4)+LN → ConvNeXt3(c=96) → CNXDown(96→192) → ConvNeXt3(c=192) → CNXDown(192→384) → ConvNeXt9(c=384) → CNXDown(384→768) → ConvNeXt3(c=768) → GAP → LN(768) → 768→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.004000  batch_size=4096 (4 devices x 1024)  epochs=2  params=28589128
+steps_per_epoch=25  total_steps=50
+grad-accum=16x  micro_batch=256 (4 devices x 64)  -> effective_batch=4096  (LR targets effective)
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+  Running validation ...
+  eval: f32 forward (evalF32)
+E1012 01:46:51.429947 2873374 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 01:46:51.680019 2873378 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 01:46:52.671232 2873379 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 01:47:19.099349 2873373 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 01:47:19.307285 2873363 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[Epoch 1] lr=0.0002 loss(train_avg)=6.9647 val_top1=50/50000 (0.001) val_top5=0.0045 val_loss=7.0593  [207.2s train, 31.2s val]
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.0004 loss(train_avg)=6.8999 val_top1=49/50000 (0.001) val_top5=0.0045 val_loss=7.0576  [70.7s train, 25.3s val]
+saved 100 param-groups to /home/skoonce/cnx_smoke_2612/convnext_tiny_imagenet_full.bin (114356512 bytes)
+  saved full train state -> /home/skoonce/cnx_smoke_2612/convnext_tiny_imagenet_full.state.npz (729 arrays, step=50)
+
+Done. Total time: 335.4s

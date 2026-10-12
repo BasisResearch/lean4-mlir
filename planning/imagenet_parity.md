@@ -726,6 +726,40 @@ check` (12 ViT-S/B files moved, 62 byte-identical), `regen_verified_mlir check`,
 `runs/2026-10-11-vit{s,b}-default-emabf16-4gpu/` and `runs/2026-10-11-vit{s,b}-jax-smoke/`. Still out,
 disclosed in ch 9's marker: the patch-embed bias (all three ViTs). No run launched.
 
+**ConvNeXt-T / S / B status (2026-10-12; `planning/recipe_prep.md` §4).** The official recipe on both
+paths, the values read off facebookresearch/ConvNeXt `main.py` and its README command: batch 4096 as 16
+accumulated micro-batches of 4 × 64 (`--batch_size 128 --update_freq 4` on 8 cards there; exact without
+BatchNorm), `--lr 4e-3` at that batch, `--min_lr 1e-6` on the per-ITERATION cosine with the 20-epoch
+warmup from `start_warmup_value = 0` (so `schedPerEpoch` / `warmupLRInit` stay off — this is not timm's
+per-epoch form), `--clip_grad None` (D2 for ConvNeXt: the clip is gone), `--mixup_switch_prob 0.5`,
+RandAugment's fill at img_mean, timm's `ModelEma` constant from step 0 at 0.9999, `evalF32`. JAX:
+`convNeXt{Tiny,S,B}ImagenetConfig` carry `gradAccumSteps 16`, `learningRate 0.004`, `gradClipNorm 0`,
+`minLR`, `mixSwitchProb`, `randAugmentFillMean`, `evalF32`, `emaWarmup false`; S and B's legacy
+`accum` / `bs512` recipes (batch-256 shapes that would have inherited the 4096 rate) are deleted with
+their generated files. Verified: `cnxAdamVariant` / `convNextAdamTrainStepText` take `acc` (ViT-B's
+`OptRecipe.adamwAccum` route on this renderer; clip ∧ acc refused; every committed ConvNeXt artifact
+re-renders byte-identical) and spell it into the ENTRY — `convnext{,s,b}in_emaaccdp16xwxdrop{erf,}bf16`,
+six renders, DP only (937 / 1,765 / 1,765 operands = 2 + 5 × P + 7 + masks), no new forwards (the
+driver's `<slug>_erf_fwd` at 64 serves); the apps pass `(minLR := 0.000001) (emaWarmup := false)` and
+default the rate to 4e-3 on an `acc` variant. Probed bare-device at 4 replicas
+(`runs/2026-10-12-cnx{,s,b}-default-emabf16-4gpu/device_probe.log`): T 4.46 GiB / 194 ms a 256-row
+micro-batch, S 7.21 / 300 ms, B 10.42 / 462 ms at 0.90 — all fit; the accumulation is the recipe's, not
+memory's. Trap: 5,004 micro-batches an epoch is not a multiple of 16, so the verified confs cap at
+`LEAN_MLIR_G2_STEPS=4992` (= the reference's 312 steps × 16, the same 1,277,952 images) and assert the
+divisibility. Confs: the three verified ones rewritten standalone on the ViT-B template (fresh
+checkpoint names by variant, `LEAN_MLIR_BASE_LR_U=4000`, render / shim / app greps, bitmaps appended);
+the three JAX ones on fresh lineages (`~/cnx_{t,s,b}_jax_2611/`) with a grep per emitted recipe line.
+Disclosed, not a recipe item: Mixup's λ is drawn once per 4096-row effective batch on the JAX side,
+once per 256-row micro-batch in the shim, once per 128-row per-GPU batch in the official trainer.
+Gates: `vit-ema-drop-render` on the three renders, `TestVariantPredicates` (134 spellings, 112 / 56
+GELU-form pairs; also picked up ViT-B's `emaaccdp2x128x4wxdropbf16` missing from `accumSpellings`
+since 10-11), `regen_verified_mlir check`, manifest, arity, parse (366 artifacts),
+`regen_jax_generated` write / sync / check, the fill check on the four shims and the T trainer, the
+shim hash reproducible at seed 0 and distinct at seed 1 (`SHIM_DETERMINISM=1`; `mixup_gate.py`'s
+"inert when off" leg does not apply to a shim whose mixing is on by default), `TestBatchedEmitTie`,
+`docstring-checkrefs`, six DRY_RUN prechecks. Smokes in `runs/2026-10-12-cnx{,s,b}-jax-smoke/` and
+`runs/2026-10-12-cnx{,s,b}-default-emabf16-4gpu/`. No run launched.
+
 ### 10.5 Phase 5: book
 
 Each chapter's pair table is generated from the manifest and reads "paper recipe, except: …". Ch 5 goes

@@ -814,8 +814,21 @@ def cnxAdamVariant (replicas : Nat) (ema : Bool := false) (wdExclude : Bool := f
     (bf16 : Bool := false)
     -- The form of the GELU, defaulted to the tanh form of every committed spelling. Its marker
     -- (`geluMarker`: `erf` at the exact form) goes before `bf16`, where the ε marker goes on ViT.
-    (gf : GeluForm := .tanh) : String :=
-  (if ema then "ema" else "adam") ++ (if replicas ≤ 1 then "" else "dp")
+    (gf : GeluForm := .tanh)
+    -- `acc` = AdamW over `acc` ACCUMULATED micro-batches (`OptRecipe.adamwAccum`), TRAILING and
+    -- defaulted to 1 so every committed spelling is untouched. Spelled as `vitAdamVariant` spells
+    -- it and as `OptRecipe.slug` does for the other nets: `acc` in the optimizer slot (after
+    -- `ema`, replacing `adam`), `dp` INSIDE, then `<k>x` — `emaaccdp16xwxdroperfbf16` is "EMA,
+    -- accumulated over 16, data-parallel, no decay on norm/bias, drop-path, exact GELU, bf16", the
+    -- official recipe's 4096 as 4 × 64 × 16 (`planning/recipe_prep.md` §4). ConvNeXt has no batch
+    -- suffix, so `16x` meets `wx` directly: the driver's `VerifiedVariant.accK` takes the digits
+    -- after `acc`/`accdp` up to the FIRST `x`, which is `16x`'s, and `wx`'s cannot reach it.
+    -- `accOn` is a substring test, so the marker may follow `ema` (`tests/TestVariantPredicates`).
+    (acc : Nat := 1) : String :=
+  (if ema then "ema" else if acc > 1 then "" else "adam")
+    ++ (if acc > 1 then "acc" else "")
+    ++ (if replicas ≤ 1 then "" else "dp")
+    ++ (if acc > 1 then s!"{acc}x" else "")
     -- `wx` = timm no_weight_decay; TRAILING, and checked against every CONCATENATION in
     -- `tests/TestVariantPredicates.lean` rather than against the other markers one at a time.
     -- It needs no driver predicate: excluding a param changes no arity, type or region.
@@ -860,9 +873,13 @@ def cnxAdamVariant (replicas : Nat) (ema : Bool := false) (wdExclude : Bool := f
     `convnextTinyImagenetConfig.weightDecay := 0.05`. The default is unchanged, so every committed
     artifact keeps its bytes; only the ImageNet `wx` render passes 0.05. -/
 private def convnextAdamConsts (nClasses : Nat) (V : CnxDims) (wdExclude : Bool := false)
-    (wdStr : String := "0.0001") : String :=
+    (wdStr : String := "0.0001")
+    -- `.adamw` emits `adamWConsts wdStr`, byte for byte; `.adamwAccum k` emits the `%aup`-computed
+    -- β block (`accumScalarConsts`) with `1/k` folded into `%ob1` / `%ob2`. `optConstsB` owns that
+    -- choice for every net, so the accumulating render does not carry a second copy of it.
+    (opt : OptRecipe := .adamw) : String :=
   let (d, z) := cnxWdCounts nClasses V
-  wdzConst wdExclude s!"{z} of {d + z} params" ++ adamWConsts wdStr
+  wdzConst wdExclude s!"{z} of {d + z} params" ++ optConstsB opt wdStr
 
 /-- The hand-written block the AdamW train-step banners name beside `trainStepHandNote`'s list:
     the GAP backward (`%dgi` … `%dgapf`) on the gradient path. -/
@@ -938,7 +955,27 @@ def convNextAdamTrainStepText (gf : GeluForm) (alphaStr negAlphaKStr bStr : Stri
     -- disagreement is not silent: the wrapper declares `tensor<B₁×…>` over a body computing at
     -- `N := B₂` and the lowerer rejects the module.
     (cBS : Nat := 32)
-    : String := Id.run do
+    -- GRADIENT ACCUMULATION over `acc` micro-batches, TRAILING and defaulted to 1 (no accumulation,
+    -- every committed artifact byte-identical). At `acc > 1` the optimizer is `OptRecipe.adamwAccum
+    -- acc` — RenderKit's mechanism exactly as ViT-B, ResNet-50 and MobileNetV4 render it: a fourth
+    -- `[θ|m|v|G|E]` region `%<p>a` holding the running gradient sum, two more scalars `%aup` /
+    -- `%akeep` deciding per micro-batch whether this invoke accumulates or applies, `1/k` folded
+    -- into `%ob1` / `%ob2` by `optConstsB`, and one op per parameter (`momVNextF` at
+    -- `(μ := %akeep, v := G)`) — no new constructor, and the AdamW tail is parameter-space, so the
+    -- batched traversal is the same at any `k`. The driver reads `k` off the variant name
+    -- (`cnxAdamVariant`'s `acc`, which spells the ENTRY here), and `vit-ema-drop-render convnextin
+    -- <variant>` reconciles the artifact's arity with what the driver packs from that string.
+    -- ⛔ NOT composable with `clip`: the reference clips the MEAN ACCUMULATED gradient, which needs
+    -- the hoisted-accumulator route (`optAllParams`'s `accIn`); this writer's clip is per
+    -- micro-batch. The official ConvNeXt recipe does not clip (`--clip_grad` None), so the
+    -- composition is refused rather than rendered wrong.
+    (acc : Nat := 1)
+    : String :=
+  if clip && acc > 1 then
+    panic! "convNextAdamTrainStepText: `clip` composed with `acc` would clip each micro-batch's \
+gradient where the reference clips the accumulated mean (`optAllParams`'s `accIn` route); the \
+official ConvNeXt recipe does not clip (--clip_grad None) — render with (clip := false)"
+  else Id.run do
   -- `negAlphaKStr` is DERIVED from `nClasses` when the caller leaves it empty, and only honoured
   -- verbatim otherwise. Passing −α/K as a string independent of K is the two-writers-for-one-fact
   -- shape: an `α/K` hardcoded at the K=10 value sits ON THE GRADIENT PATH of a K=1000 render, and
@@ -948,6 +985,8 @@ def convNextAdamTrainStepText (gf : GeluForm) (alphaStr negAlphaKStr bStr : Stri
   let negAK := if negAlphaKStr.isEmpty then "-" ++ alphaOverK nClasses 0.1 else negAlphaKStr
   let trav := traversal.getD (convNextBackAll gf true (some (alphaStr, negAK, bStr)) nClasses V (cBS := cBS))
   let (body, gradMap, nSm) := trav.run' (0, [])
+  let accOn := acc > 1
+  let opt : OptRecipe := if accOn then .adamwAccum acc else .adamw
   let go : StateM Proofs.StableHLO.EmitS String := do
     -- GLOBAL-NORM GRADIENT CLIPPING — ConvNeXt's half. Structurally the ViT block, and it has to be
     -- a second copy only because the two renderers thread their gradients differently (a `gradMap`
@@ -987,16 +1026,20 @@ def convNextAdamTrainStepText (gf : GeluForm) (alphaStr negAlphaKStr bStr : Stri
     let mut thetaN : List String := []
     let mut mN : List String := []
     let mut vN : List String := []
+    let mut aN : List String := []
     let mut eN : List String := []
     for (nm, ds) in allParams nClasses V do
       let g0 := (gradMap.lookup nm).getD s!"%d{nm}"
       let g := if clip then (clipped.lookup nm).getD g0 else g0
       -- The wd operand comes from the SAME `allParams` entry that names the site (the slot rule).
       let wdN := wdNameBy wdExclude nm ds
-      let (c, nT, nM, nV, _, nE) ← optOne .adamw cBS replicas ⟨nm, g, ds⟩ wdN (preAvg := clip)
+      -- `opt` is `.adamw` or `.adamwAccum acc`; the accumulator's output name comes back fifth
+      -- (`some` only under accumulation) and rides out as the `G` region, before the shadow.
+      let (c, nT, nM, nV, nA, nE) ← optOne opt cBS replicas ⟨nm, g, ds⟩ wdN (preAvg := clip)
                                       (ema := ema)
       adamCode := adamCode ++ c
       thetaN := thetaN ++ [nT]; mN := mN ++ [nM]; vN := vN ++ [nV]
+      match nA with | some a => aN := aN ++ [a] | none => pure ()
       match nE with | some e => eN := eN ++ [e] | none => pure ()
     -- `%loss`: the report-only smoothed CE (`reportSmoothedCeLoss`), gated by `convnext-adam-tie`.
     -- ConvNeXt has no BN, so — as with ViT — this is the ONLY output that reads the forward directly.
@@ -1016,31 +1059,44 @@ def convNextAdamTrainStepText (gf : GeluForm) (alphaStr negAlphaKStr bStr : Stri
     -- round.
     let dpNames := if sd then (List.range (cnxDropSites V)).map dpName else []
     let dpTys   := if sd then (List.range (cnxDropSites V)).map (fun _ => ty [cBS]) else []
-    let retVals := thetaN ++ mN ++ vN ++ eN ++ ["%loss", "%bc1", "%bc2"]
+    -- `[θ|m|v|G|E]`, then `%loss, %bc1, %bc2`, then `%aup, %akeep` (accumulation) and
+    -- `%emad, %oemad` (EMA) handed back as passthroughs — `packedTrainSig`'s order, region for
+    -- region and scalar for scalar, so `#out = #in − 2` holds at every combination of the axes.
+    let retVals := thetaN ++ mN ++ vN ++ aN ++ eN ++ ["%loss", "%bc1", "%bc2"]
+                     ++ (if accOn then ["%aup", "%akeep"] else [])
                      ++ (if ema then ["%emad", "%oemad"] else []) ++ dpNames
-    let retTys := packedTrainRetTys pTy (ema := ema) ++ dpTys
+    let retTys := packedTrainRetTys pTy (acc := accOn) (ema := ema) ++ dpTys
     pure <|
       (if replicas ≤ 1 then
-        s!"    // ── {cnxModelName V} AdamW train step: {trainStepHandNote (hand := cnxGapBackNote)} ──\n" ++
+        s!"    // ── {cnxModelName V} AdamW train step: {trainStepHandNote (acc := accOn) (hand := cnxGapBackNote)} ──\n" ++
         s!"    // All {(allParams nClasses V).length} params, including the stem 4x4/s4 patchify and the 2x2/s2 downsample\n" ++
         "    // WEIGHT GRADIENTS (flatConvStride4WeightGradHasVJP; emit-side odd/even split sWGradGeom).\n"
        else
         s!"    // ── {cnxModelName V} AdamW train step, DATA-PARALLEL over {replicas} replicas ──\n" ++
-        s!"    // {trainStepHandNote (hand := cnxGapBackNote)}.\n" ++
+        s!"    // {trainStepHandNote (acc := accOn) (hand := cnxGapBackNote)}.\n" ++
         "    // Every other gradient and update op is pretty(verified AST node), the per-parameter `%arsum*` all_reduce /\n" ++
         "    // `%armean*` blocks included: pretty(allReduceMeanF), whose den is the replica MEAN of\n" ++
         "    // the per-replica gradient nodes. Each replica evaluates the same tied graph\n" ++
         "    // at the batch it was rendered for; the collective averages that function's gradients\n" ++
         "    // over disjoint equal batches. Unlike the BN nets, ConvNeXt normalises with LayerNorm\n" ++
         "    // — within one example, never across the batch — so N x b IS 1 x (N.b) here.\n") ++
-      body ++ convnextAdamConsts nClasses V wdExclude wdStr ++ adamCode ++ lossCode ++
+      (if accOn then
+        s!"    // ── GRADIENT ACCUMULATION over {acc} micro-batches: a [θ|m|v|G|E] region %<p>a holds the\n" ++
+        "    // running sum (momVNextF at μ := %akeep); the β scalars are computed from %aup, so an\n" ++
+        "    // accumulate micro-batch is an exact passthrough (b1 = b2 = 1, lr = 0 from the driver)\n" ++
+        "    // and the apply micro-batch consumes Gt/k through %ob1 = (1−β₁)/k, %ob2 = (1−β₂)/k².\n" ++
+        "    // pretty(verified AST) throughout — OptRecipe.adamwAccum, as ViT-B, ResNet-50 and MobileNetV4.\n" ++
+        "    // No BatchNorm, so the k micro-batches ARE one batch of k·N·b: exact, not Ghost-BN.\n"
+       else "") ++
+      body ++ convnextAdamConsts nClasses V wdExclude wdStr opt ++ adamCode ++ lossCode ++
       s!"    return {String.intercalate ", " retVals} : {String.intercalate ", " retTys}\n"
   -- The AdamW body continues the SGD traversal's fresh-name counter. `convNextBackAll` consumed
   -- names 0..k, so the Adam ops must start at k — otherwise they collide with the backward's SSAs.
   let used := (trav.run (0, [])).2
   let inner : String := go.run' used
   let argSig := ("%x: " ++ ty [cBS, 3*224*224]) ++ ", " ++
-    packedTrainSig ((allParams nClasses V).map fun (nm, d) => (s!"%{nm}", ty d)) (ema := ema) ++
+    packedTrainSig ((allParams nClasses V).map fun (nm, d) => (s!"%{nm}", ty d))
+      (acc := accOn) (ema := ema) ++
     -- The drop scales go LAST, after the scalars and before `%onehot` is appended, matching the
     -- driver's blob layout (`[θ|m|v|scalars|drops]`, `%x` and `%onehot` passed separately) and
     -- `convNextFwdRenderB`'s placement. Inserted mid-list they would capture an existing positional
@@ -1049,7 +1105,7 @@ def convNextAdamTrainStepText (gf : GeluForm) (alphaStr negAlphaKStr bStr : Stri
     ", %onehot: " ++ ty [cBS,nClasses]
   let pTy := (allParams nClasses V).map (fun p => ty p.2)
   let retTyL := String.intercalate ", "
-    (packedTrainRetTys pTy (ema := ema)
+    (packedTrainRetTys pTy (acc := accOn) (ema := ema)
        ++ (if sd then (List.range (cnxDropSites V)).map (fun _ => ty [cBS]) else []))
   -- The slug matters exactly as it does on R34 and ViT: a 1000-class render
   -- emitted under the `convnext` slug would collide with the artifacts the Imagenette runs
@@ -1066,8 +1122,11 @@ def convNextAdamTrainStepText (gf : GeluForm) (alphaStr negAlphaKStr bStr : Stri
   -- `adam` path's artifact name and checkpoint. `#guard`s below pin every spelling.
   -- `bf16` is the FOURTH flag that must reach the variant here, after `wdExclude`, `clip` and
   -- `sd`, and `gf` the fifth: an exact-GELU graph under a tanh name would overwrite the artifact a
-  -- landed run trained on.
-  let funcName := s!"{slug}_{cnxAdamVariant replicas ema wdExclude clip sd bf16 gf}_train_step"
+  -- landed run trained on. `acc` is the SIXTH, and it changes the ARITY as `sd` does (a fifth
+  -- region and two scalars): a name that dropped it would put the accumulating graph behind the
+  -- four-region artifact's name and checkpoint, and the driver — which reads `k` off the name —
+  -- would pack four regions into a five-region signature.
+  let funcName := s!"{slug}_{cnxAdamVariant replicas ema wdExclude clip sd bf16 gf acc}_train_step"
   return "module @m {\n" ++ s!"  func.func @{funcName}({argSig}) -> ({retTyL}) " ++ "{\n" ++
     "    %sc = stablehlo.constant dense<0.0> : tensor<f32>\n" ++
     s!"    %bsc = stablehlo.constant dense<{cBS}.0> : {ty [cBS,nClasses]}\n" ++
@@ -1110,3 +1169,11 @@ end Proofs.StableHLO
 #guard Proofs.StableHLO.cnxAdamVariant 1 false true true == "adamwxclip"
 #guard Proofs.StableHLO.cnxAdamVariant 4 false true true == "adamdpwxclip"
 #guard Proofs.StableHLO.cnxAdamVariant 1 true false true == "emaclip"
+-- The accumulating spellings (2026-10-12, `planning/recipe_prep.md` §4): `acc` in the optimizer
+-- slot after `ema`, `dp` inside, `<k>x` before `wx` — and at `acc := 1` every spelling above is
+-- untouched. The `#guard`s beside the writers in `ConvNeXtRenderB.lean` pin the artifact paths.
+#guard Proofs.StableHLO.cnxAdamVariant 4 true true false true true .erf 16 == "emaaccdp16xwxdroperfbf16"
+#guard Proofs.StableHLO.cnxAdamVariant 4 true true false true true .tanh 16 == "emaaccdp16xwxdropbf16"
+#guard Proofs.StableHLO.cnxAdamVariant 1 true true false true true .erf 16 == "emaacc16xwxdroperfbf16"
+#guard Proofs.StableHLO.cnxAdamVariant 4 false false false false false .tanh 16 == "accdp16x"
+#guard Proofs.StableHLO.cnxAdamVariant 4 true true true true true .erf 1 == "emadpwxclipdroperfbf16"

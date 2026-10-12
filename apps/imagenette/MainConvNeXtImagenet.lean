@@ -56,10 +56,13 @@ def runConvNeXtImagenet (argv : List String) : IO Unit := do
   let bs := ((← IO.getEnv "LEAN_MLIR_BATCH").bind (·.toNat?)).getD convnextImagenetConfig.batchSize
   let baseLR := match (← IO.getEnv "LEAN_MLIR_BASE_LR_U").bind (·.toNat?) with
     | some u => u.toFloat * 1e-6
-    | none   => 0.00025   -- `convNeXtTinyImagenetConfig.learningRate`: 4e-3@bs4096 scaled to bs256.
-                          -- This needs no override: the run is at global 256 (4 × 64), so 2.5e-4 is both the
-                          -- linear-scaling value AND the reference's own knob
-                          -- (its banner: `lr=0.000250  batch_size=256 (4 devices x 64)`).
+    -- The rate follows the EFFECTIVE batch, which the variant name decides. An accumulating
+    -- variant (`emaaccdp16x…`, 4 × 64 × 16 = 4096) is the official recipe at its own batch:
+    -- `--lr 4e-3`, `convNeXtTinyImagenetConfig.learningRate` since 2026-10-12. Every other
+    -- variant is at global 256 (4 × 64), where 2.5e-4 is the linear-scaling value and the landed
+    -- reference's own knob (its banner: `lr=0.000250  batch_size=256 (4 devices x 64)`). The
+    -- pair conf sets it explicitly as well and asserts it (`LEAN_MLIR_BASE_LR_U=4000`).
+    | none   => if VerifiedVariant.accOn variant then 0.004 else 0.00025
   -- `LEAN_MLIR_EPOCHS` SETS the schedule where `LEAN_MLIR_MAX_EPOCHS` only CAPS it
   -- (`min n cfg.epochs`). `totalSteps := cfg.epochs * nb / accK` is what the cosine anneals over,
   -- so EPOCHS=80 is a complete 80-epoch experiment while MAX_EPOCHS=80 is a PREFIX of the committed
@@ -72,6 +75,12 @@ def runConvNeXtImagenet (argv : List String) : IO Unit := do
     { convnextImagenetConfig with batchSize := bs, epochs := epochs }
     (argv.head?.getD "data") baseLR 0.9 0.999 20 variant
     -- warmup 20 epochs, not 5: `convNeXtTinyImagenetConfig.warmupEpochs := 20` is a ConvNeXt-paper
-    -- value and differs from every other net in this repo.
+    -- value and differs from every other net in this repo. The warmup is per STEP from 0, as the
+    -- official `utils.cosine_scheduler` ramps it (`start_warmup_value = 0`), so `schedPerEpoch`
+    -- stays off; `minLR` is its `--min_lr 1e-6`, the cosine's floor (the reference's
+    -- `convNeXtTinyImagenetConfig.minLR`), and `emaWarmup := false` is timm's `ModelEma` as the
+    -- official trainer scores it — a constant decay from step 0, no ramp-in. Both host-side: no
+    -- re-render (2026-10-12, planning/recipe_prep.md §4).
+    (minLR := 0.000001) (emaWarmup := false)
 
 def main (argv : List String) : IO Unit := runConvNeXtImagenet argv

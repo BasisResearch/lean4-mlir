@@ -3,8 +3,8 @@
 #
 #   systemd-run --user --unit=cnx-verified --working-directory="$PWD" ./scripts/jobs/run_cnx_verified.sh [JOB]
 #
-# JOB defaults to `cnx-default-emabf16-4gpu`, the EMA peer (`emadpwxclipdroperfbf16`: AdamW + wd off
-# norm/bias + clip + drop-path + the EMA shadow the reference scores, bf16, 4x64). The non-EMA job,
+# JOB defaults to `cnx-default-emabf16-4gpu`, the EMA peer (`emaaccdp16xwxdroperfbf16` since 2026-10-12: the official
+# recipe at 4096 as 16 accumulated micro-batches of 4x64, no clip, EMA, bf16). The non-EMA job,
 # `cnx-default-4gpu`, finished in runs/2026-09-18-cnx-verified-300ep; this script used to hard-code
 # that job and RUNDIR, so running it again would have resumed into the finished run.
 # RUNDIR: set it to pin the log directory; otherwise supervise.sh reuses the newest

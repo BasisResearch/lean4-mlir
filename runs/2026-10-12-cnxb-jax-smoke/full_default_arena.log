@@ -1,0 +1,44 @@
+ConvNeXt-B (ImageNet, bf16) · Lean 4 → JAX
+  CNXStem(3→128,4x4)+LN → ConvNeXt3(c=128) → CNXDown(128→256) → ConvNeXt3(c=256) → CNXDown(256→512) → ConvNeXt27(c=512) → CNXDown(512→1024) → ConvNeXt3(c=1024) → GAP → LN(1024) → 1024→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.004000  batch_size=4096 (4 devices x 1024)  epochs=2  params=88591464
+steps_per_epoch=25  total_steps=50
+grad-accum=16x  micro_batch=256 (4 devices x 64)  -> effective_batch=4096  (LR targets effective)
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+W1012 01:59:01.040439 2885145 bfc_allocator.cc:590] Allocator (GPU_1_bfc) ran out of memory trying to allocate 7.46GiB (rounded to 8012493824) from the lower end requested by op 
+If this is caused by memory fragmentation, the environment variable 'TF_GPU_ALLOCATOR=cuda_malloc_async' may improve the situation.
+Current allocation summary follows.
+W1012 01:59:01.040452 2885142 bfc_allocator.cc:590] Allocator (GPU_0_bfc) ran out of memory trying to allocate 7.46GiB (rounded to 8012493824) from the lower end requested by op 
+If this is caused by memory fragmentation, the environment variable 'TF_GPU_ALLOCATOR=cuda_malloc_async' may improve the situation.
+Current allocation summary follows.
+W1012 01:59:01.040854 2885151 bfc_allocator.cc:590] Allocator (GPU_3_bfc) ran out of memory trying to allocate 7.46GiB (rounded to 8012493824) from the lower end requested by op 
+If this is caused by memory fragmentation, the environment variable 'TF_GPU_ALLOCATOR=cuda_malloc_async' may improve the situation.
+Current allocation summary follows.
+W1012 01:59:01.041504 2885148 bfc_allocator.cc:590] Allocator (GPU_2_bfc) ran out of memory trying to allocate 7.46GiB (rounded to 8012493824) from the lower end requested by op 
+If this is caused by memory fragmentation, the environment variable 'TF_GPU_ALLOCATOR=cuda_malloc_async' may improve the situation.
+Current allocation summary follows.
+W1012 01:59:01.043952 2885145 bfc_allocator.cc:601] ***************************************_____________________________________________________________
+W1012 01:59:01.044766 2885148 bfc_allocator.cc:601] ***************************************_____________________________________________________________
+W1012 01:59:01.046461 2885151 bfc_allocator.cc:601] ***************************************_____________________________________________________________
+W1012 01:59:01.047253 2885142 bfc_allocator.cc:601] ***************************************_____________________________________________________________
+  Running validation ...
+  eval: f32 forward (evalF32)
+E1012 02:00:37.198897 2885172 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 02:00:37.482718 2885171 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 02:00:37.782464 2885154 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+Traceback (most recent call last):
+  File "/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/jax/../runs/2026-10-12-cnxb-jax-smoke/trainer_smoke.py", line 2899, in <module>
+    correct1 += int(c1)
+                ^^^^^^^
+  File "/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/jax/_src/array.py", line 304, in __int__
+    return self._value.__int__()
+           ^^^^^^^^^^^
+  File "/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/jax/_src/profiler.py", line 420, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/jax/_src/array.py", line 642, in _value
+    npy_value, did_copy = self._single_device_array_to_np_array_did_copy()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jax.errors.JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 7.46GiB. [executable_name='jit_eval_batch'] [tf-allocator-allocation-error='']

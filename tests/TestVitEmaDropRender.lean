@@ -48,6 +48,8 @@ accumulates as well (`vitAdamTrainStepText`'s `acc`): a fifth `[θ|m|v|G|E]` reg
 `%akeep` scalars ahead of the EMA pair. The same reconciliation covers it — the expected regions,
 scalars and shadow index come from the variant string through the driver's own predicates, so the
 check reads 5 / 7 / 4 there and 4 / 5 / 3 on the clip renders, and the named scalar tail grows by two.
+ConvNeXt's official-batch renders (2026-10-12, `convnext{,s,b}in_emaaccdp16xwxdroperfbf16`, 4 × 64 × 16)
+are the same three axes on the other renderer, and the confs pass them as the second argument.
 -/
 
 open Proofs.StableHLO

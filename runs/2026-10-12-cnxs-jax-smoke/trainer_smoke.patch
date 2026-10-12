@@ -1,0 +1,23 @@
+--- generated/generated_convnext_s_imagenet.py	2026-10-12 01:36:17.754497728 +0000
++++ ../runs/2026-10-12-cnxs-jax-smoke/trainer_smoke.py	2026-10-12 01:49:01.831663847 +0000
+@@ -2769,9 +2769,9 @@
+ 
+     MICRO_BATCH = (256 // n_devices) * n_devices or n_devices
+     BATCH_SIZE = MICRO_BATCH * GRAD_ACCUM   # effective batch = micro × accum; train_step accumulates GRAD_ACCUM micro-batches/step
+-    EPOCHS = 300
++    EPOCHS = 2   # SMOKE: two short epochs, then exit (both inside the warmup)
+     LR = 0.004000
+-    steps_per_epoch = train_examples // BATCH_SIZE
++    steps_per_epoch = 25   # SMOKE: 25 optimizer steps = 400 micro-batches an epoch
+     total_steps = steps_per_epoch * EPOCHS
+     print("lr=0.004000  batch_size=" + str(BATCH_SIZE) +
+           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +
+@@ -2878,7 +2878,7 @@
+ 
+         train_secs = time.time() - ep_t0  # train-only wall time (measured before validation)
+         # Validate every 5 epochs (+ always the final epoch); ImageNet val is data-loading-bound.
+-        _do_val = ((epoch + 1) % 5 == 0) or ((epoch + 1) == EPOCHS)
++        _do_val = True   # SMOKE: validate after every (short) epoch
+         correct1 = 0; correct5 = 0; total = 0; total_eval_loss = 0.0; v_batches = 0
+         ev_t0 = time.time()
+         if _do_val:
