@@ -59,7 +59,7 @@ on:
     # certificate. Halving the cron moves 5 runs in 30; dropping `lakefile.lean`
     # would move the other 24. Left in place deliberately — a lakefile change CAN
     # change what `CertsHeavy` builds — but the cost is now written down.
-    - cron: '47 9 1,15 * *'
+    - cron: '47 6 1,15 * *'   # 1:47 am US Central (CDT; 12:47 am CST) on the 1st and 15th
   workflow_dispatch:
 
 concurrency:

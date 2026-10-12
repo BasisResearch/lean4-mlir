@@ -51,7 +51,7 @@ on:
   schedule:
     # Backstop: catches anything the workflow_run trigger missed (renamed workflows,
     # runs on forks, manual cache writes).
-    - cron: '17 5 * * *'
+    - cron: '17 6 * * *'   # 1:17 am US Central (CDT; 12:17 am CST) — first of the nightlies, so the builds after it start with room
   workflow_dispatch:
     inputs:
       keep:
