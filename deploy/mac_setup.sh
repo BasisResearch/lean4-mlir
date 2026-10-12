@@ -153,10 +153,12 @@ if want jax; then
 import jax, jax.numpy as jnp
 d = jax.devices()[0]
 assert d.platform == "mtl", f"default device is {d.platform}, not mtl"
-x = jnp.arange(12.0, dtype=jnp.float32).reshape(3, 4)
-got = float((x @ x.T).sum())
-assert got == 1848.0, got
-print(f"  ✓ {d} ({d.device_kind}): (x @ x.T).sum() = {got}, as on the CPU")
+import numpy as np
+xs = np.arange(12.0, dtype=np.float32).reshape(3, 4)
+want = float((xs @ xs.T).sum())                      # the host's answer, not a constant
+got = float((jnp.asarray(xs) @ jnp.asarray(xs).T).sum())
+assert got == want, f"mtl gave {got}, numpy on the CPU {want}"
+print(f"  ✓ {d} ({d.device_kind}): (x @ x.T).sum() = {got}, as numpy on the CPU")
 EOF
 fi
 
