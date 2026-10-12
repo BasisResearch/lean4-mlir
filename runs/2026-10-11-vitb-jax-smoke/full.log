@@ -1,0 +1,24 @@
+ViT-B/16 (ImageNet, bf16) · Lean 4 → JAX
+  Patch(3→768,16x16) → Trans(12x[12h,768]) → 768→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.001000  batch_size=1024 (4 devices x 256)  epochs=2  params=86567656
+steps_per_epoch=200  total_steps=400
+grad-accum=2x  micro_batch=512 (4 devices x 128)  -> effective_batch=1024  (LR targets effective)
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+repeated-aug=3x (timm RASampler placement: the copies adjacent, in one optimizer step)
+Starting training...
+  step 100/400  loss=6.9949  lr=0.0  (1730.0ms/step avg)
+  step 200/400  loss=6.9456  lr=0.0  (1682.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 1] lr=1e-06 loss(train_avg)=7.0028 val_top1=42/50000 (0.0008) val_top5=0.0045 val_loss=7.0579  [336.4s train, 48.1s val]
+  step 300/400  loss=6.9038  lr=0.0002  (1826.0ms/step avg)
+  step 400/400  loss=6.9089  lr=0.0002  (1778.0ms/step avg)
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 2] lr=0.000201 loss(train_avg)=6.9258 val_top1=42/50000 (0.0008) val_top5=0.0046 val_loss=7.0465  [326.7s train, 37.7s val]
+saved 101 param-groups to /home/skoonce/vit_smoke_2611/vit_b_imagenet_accum.bin (346270624 bytes)
+  saved full train state -> /home/skoonce/vit_smoke_2611/vit_b_imagenet_accum.state.npz (801 arrays, step=400)
+
+Done. Total time: 751.4s

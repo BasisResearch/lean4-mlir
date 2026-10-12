@@ -1,0 +1,20 @@
+── A. peak at the DEFAULT budget (11.68 GiB), 4 replicas ──
+  budget 11.68 GiB/card · replicas 4 · XLA_PYTHON_CLIENT_MEM_FRACTION=unset (plugin default 0.75)
+  artifact                                                  peak      args      temp   of budget
+  -----------------------------------------------------------------------------------------------
+  vitsin_emadp256x4wxdropeps0000001erfbf16_train_step.mlir   10.75 G    0.47 G    9.95 G         92 %
+
+── B. peak at 0.97 (15.11 GiB) ──
+  budget 15.11 GiB/card · replicas 4 · XLA_PYTHON_CLIENT_MEM_FRACTION=0.97
+  artifact                                                  peak      args      temp   of budget
+  -----------------------------------------------------------------------------------------------
+  vitsin_emadp256x4wxdropeps0000001erfbf16_train_step.mlir   14.22 G    0.47 G   13.41 G         94 %
+
+── C. EXECUTION at the default ──
+E1011 23:25:24.447442 2795526 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1011 23:25:24.532533 2795526 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+    587.04 ms/step  (min 585.83, p10-p90 585.93-587.26, 831 inputs, 5 interleaved reps)   vitsin_emadp256x4wxdropeps0000001erfbf16_train_step.mlir
+
+── D. EXECUTION at 0.97 ──
+    579.84 ms/step  (min 577.38, p10-p90 577.98-580.09, 831 inputs, 5 interleaved reps)   vitsin_emadp256x4wxdropeps0000001erfbf16_train_step.mlir
+DONE

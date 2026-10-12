@@ -587,7 +587,11 @@ def vitAdamTrainStepBText (gf : GeluForm) (funcName : String := "vit_adam_train_
     -- LayerNorm ε, TRAILING and defaulted (`vBlockFwdB`'s note). Its name marker is
     -- `bnEpsMarker eps` (`eps0000001` at 1e-6), spelled into `funcName` by the caller — the
     -- `#guard`s under each `#eval` pin the two.
-    (eps : String := vEPS) : String :=
+    (eps : String := vEPS)
+    -- Gradient accumulation over `acc` micro-batches (`vitAdamTrainStepText`'s `acc`), TRAILING
+    -- and defaulted to 1. The traversal does not see it: the accumulator is parameter-space, one
+    -- `momVNextF` per gradient in the AdamW tail, so the batched backward is the same at any `k`.
+    (acc : Nat := 1) : String :=
   let alphaStr := fmt6 alpha
   let negAlphaKStr := "-" ++ alphaOverK nClasses alpha
   -- `sd` IS SPELLED ONCE AND REACHES BOTH HALVES FROM HERE — the traversal (which places the 24
@@ -600,6 +604,7 @@ def vitAdamTrainStepBText (gf : GeluForm) (funcName : String := "vit_adam_train_
     (traversal := some (vitBackAllB gf vbB nClasses (some (alphaStr, negAlphaKStr, bStr)) sd V bf16 bf16Conv bf16ConvW eps))
     (V := V)
     (sd := sd)
+    (acc := acc)
 
 end Proofs.StableHLO
 
@@ -829,7 +834,7 @@ end Proofs.StableHLO
   "vitsin_" ++ Proofs.StableHLO.vitAdamVariant 128 4 false true true true ++ "bf16" ++ "_train_step"
 
 -- S's pair render: Tiny's `vitin_emadp128x4wxclipdropbf16` at `vitSDims`. EMA **and** wx + clip +
--- drop, since the S reference (`vits-default-jax-4gpu`) trains with EMA and the non-EMA
+-- drop, since the S reference (`vits-accum-jax-4gpu`) trains with EMA and the non-EMA
 -- `adamdp` renders above would give it up. `vit-ema-drop-render vitsin` gates the layout.
 #eval IO.FS.writeFile "verified_mlir/vitsin_emadp128x4wxclipdropbf16_train_step.mlir"
   (Proofs.StableHLO.vitAdamTrainStepBText .tanh "vitsin_emadp128x4wxclipdropbf16_train_step" "128.0" 4
@@ -1468,6 +1473,97 @@ end Proofs.StableHLO
 
 #eval IO.FS.writeFile "verified_mlir/vitbin_emadp128x4wxclipdropeps0000001erfbf16_fwd.mlir"
   (Proofs.StableHLO.vitFwdRenderB .erf "vitbin_emadp128x4wxclipdropeps0000001erfbf16_fwd" 1000
+    (V := Proofs.StableHLO.vitBDims) (eps := "1.0e-6"))
+
+-- ════════════════════════════════════════════════════════════════════════════════════════
+-- § ViT-S and ViT-B as DeiT runs them (2026-10-11; ch 9's S/B marker, `planning/recipe_prep.md` §3)
+-- ════════════════════════════════════════════════════════════════════════════════════════
+--
+-- Tiny's DeiT-recipe render (`vitin_emadp256x4wxdropeps0000001erfbf16`, above) at the two widths:
+-- DeiT's global batch 1024, no gradient clipping (`--clip-grad` None; D2), EMA, wx, drop-path,
+-- LN ε 1e-6, the exact GELU, bf16. DeiT uses one recipe for Ti/S/B, so the three renders differ
+-- in `V` and in how 1024 is laid on four cards:
+--
+--   * **S: four replicas of 256, one shot** — the same shape as Tiny's. Probed 2026-10-11 as a
+--     bare device executable at 4 replicas (`scripts/probes/bf16_peak_memory.py` /
+--     `bf16_device_step.py`, `runs/2026-10-11-vits-default-emabf16-4gpu/device_probe.log`): it
+--     peaks inside the DEFAULT arena and executes there, so no accumulation and no
+--     `LEAN_MLIR_MEM_FRACTION`, which the S driver's docstring says not to set.
+--   * **B: two ACCUMULATED micro-batches of 4 × 128** — DeiT-B's 8 × 128 does not fit the four
+--     cards one-shot (its 4 × 128 EMA render already peaks over the default arena,
+--     `runs/2026-08-27-vitb-global512/`; this render's own peaks are in
+--     `runs/2026-10-11-vitb-default-emabf16-4gpu/device_probe.log`). `acc := 2` is the first
+--     accumulating ViT render:
+--     `OptRecipe.adamwAccum 2` through `vitAdamTrainStepText`'s `acc`, a fifth `[θ|m|v|G|E]` region
+--     and the `%aup` / `%akeep` scalars, exact under LayerNorm (no batch statistic sees the
+--     micro-batch). The driver reads the 2 off the name (`emaaccdp2x128x4…`, `VerifiedVariant.accK`)
+--     and applies on every second micro-batch; `vit-ema-drop-render vitbin <variant>` reconciles the
+--     artifact's 1033 operands (2 + 5 × 200 + 7 + 24) with that reading.
+--
+-- Each has its own eval forward (drop-free f32 at DeiT's ε — S at B = 256 as Tiny's, B at this
+-- net's B = 32 geometry) and its tanh twin for the GELU-form twin audit; the twins are not run.
+-- Their references: `vits-accum-jax-4gpu` and `vitb-accum-jax-4gpu` (`vit{S,B}ImagenetConfigAccum`,
+-- 512 × 2 both — the JAX trainer at S's one-shot 4 × 256 dies RESOURCE_EXHAUSTED even at the raised
+-- arena, `runs/2026-10-11-vits-jax-smoke/`, where this render fits the default: the two compilers lay
+-- the backward out differently, and the accumulation is exact under LayerNorm either way). The
+-- `#guard`s pin the artifact path against
+-- `vitAdamVariant` and against the driver's predicates (`ema` leads, `acc` is a substring, no `do`,
+-- one `drop`).
+
+-- ── ViT-S at 4 × 256, no clip ──
+#eval IO.FS.writeFile "verified_mlir/vitsin_emadp256x4wxdropeps0000001erfbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitsin_emadp256x4wxdropeps0000001erfbf16_train_step"
+    "256.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 256) (V := Proofs.StableHLO.vitSDims) (bf16 := true) (eps := "1.0e-6"))
+#guard "vitsin_emadp256x4wxdropeps0000001erfbf16_train_step" ==
+  "vitsin_" ++ Proofs.StableHLO.vitAdamVariant 256 4 true true false true ++
+    Proofs.StableHLO.bnEpsMarker "1.0e-6" ++ "erf" ++ "bf16" ++ "_train_step"
+#guard "emadp256x4wxdropeps0000001erfbf16".startsWith "ema"
+#guard !"emadp256x4wxdropeps0000001erfbf16".contains "do"
+#guard !"emadp256x4wxdropeps0000001erfbf16".contains "acc"
+#guard ("emadp256x4wxdropeps0000001erfbf16".splitOn "drop").length == 2
+#eval IO.FS.writeFile "verified_mlir/vitsin_emadp256x4wxdropeps0000001erfbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .erf "vitsin_emadp256x4wxdropeps0000001erfbf16_fwd" 1000 (vbB := 256)
+    (V := Proofs.StableHLO.vitSDims) (eps := "1.0e-6"))
+-- its tanh twin
+#eval IO.FS.writeFile "verified_mlir/vitsin_emadp256x4wxdropeps0000001bf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .tanh "vitsin_emadp256x4wxdropeps0000001bf16_train_step"
+    "256.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 256) (V := Proofs.StableHLO.vitSDims) (bf16 := true) (eps := "1.0e-6"))
+#eval IO.FS.writeFile "verified_mlir/vitsin_emadp256x4wxdropeps0000001bf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .tanh "vitsin_emadp256x4wxdropeps0000001bf16_fwd" 1000 (vbB := 256)
+    (V := Proofs.StableHLO.vitSDims) (eps := "1.0e-6"))
+
+-- ── ViT-B at 2 × (4 × 128), accumulated, no clip ──
+#eval IO.FS.writeFile "verified_mlir/vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_train_step"
+    "128.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 128) (V := Proofs.StableHLO.vitBDims) (bf16 := true) (eps := "1.0e-6")
+    (acc := 2))
+#guard "vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_train_step" ==
+  "vitbin_" ++ Proofs.StableHLO.vitAdamVariant 128 4 true true false true (acc := 2) ++
+    Proofs.StableHLO.bnEpsMarker "1.0e-6" ++ "erf" ++ "bf16" ++ "_train_step"
+-- the driver's reading of the name, spelled as its predicates spell it (this module does not
+-- import the driver): `ema` leads, `acc` is a substring, `k` is the digits after `accdp` up to
+-- the first `x` (`VerifiedVariant.accK`), 24 masks, no `do`. `tests/TestVariantPredicates.lean`
+-- runs the real predicates over this spelling (5 regions, 7 scalars, shadow at index 4).
+#guard "emaaccdp2x128x4wxdropeps0000001erfbf16".startsWith "ema"
+#guard "emaaccdp2x128x4wxdropeps0000001erfbf16".contains "acc"
+#guard ((("emaaccdp2x128x4wxdropeps0000001erfbf16".splitOn "acc").getD 1 "").drop 2
+          |>.takeWhile (· != 'x')) == "2"
+#guard !"emaaccdp2x128x4wxdropeps0000001erfbf16".contains "do"
+#guard ("emaaccdp2x128x4wxdropeps0000001erfbf16".splitOn "drop").length == 2
+#eval IO.FS.writeFile "verified_mlir/vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .erf "vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_fwd" 1000
+    (V := Proofs.StableHLO.vitBDims) (eps := "1.0e-6"))
+-- its tanh twin
+#eval IO.FS.writeFile "verified_mlir/vitbin_emaaccdp2x128x4wxdropeps0000001bf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .tanh "vitbin_emaaccdp2x128x4wxdropeps0000001bf16_train_step"
+    "128.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 128) (V := Proofs.StableHLO.vitBDims) (bf16 := true) (eps := "1.0e-6")
+    (acc := 2))
+#eval IO.FS.writeFile "verified_mlir/vitbin_emaaccdp2x128x4wxdropeps0000001bf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .tanh "vitbin_emaaccdp2x128x4wxdropeps0000001bf16_fwd" 1000
     (V := Proofs.StableHLO.vitBDims) (eps := "1.0e-6"))
 
 #eval IO.FS.writeFile "verified_mlir/vitbin_adam128wxclipdroperf_train_step.mlir"

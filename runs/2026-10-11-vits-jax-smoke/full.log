@@ -1,0 +1,39 @@
+ViT-S/16 (ImageNet, bf16) · Lean 4 → JAX
+  Patch(3→384,16x16) → Trans(12x[6h,384]) → 384→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.001000  batch_size=1024 (4 devices x 256)  epochs=2  params=22050664
+steps_per_epoch=200  total_steps=400
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+repeated-aug=3x (timm RASampler placement: the copies adjacent, in one optimizer step)
+Starting training...
+W1011 23:59:51.134120 2827588 bfc_allocator.cc:590] Allocator (GPU_2_bfc) ran out of memory trying to allocate 14.32GiB (rounded to 15372194816) from the lower end requested by op 
+If this is caused by memory fragmentation, the environment variable 'TF_GPU_ALLOCATOR=cuda_malloc_async' may improve the situation.
+Current allocation summary follows.
+W1011 23:59:51.134556 2827591 bfc_allocator.cc:590] Allocator (GPU_3_bfc) ran out of memory trying to allocate 14.32GiB (rounded to 15372194816) from the lower end requested by op 
+If this is caused by memory fragmentation, the environment variable 'TF_GPU_ALLOCATOR=cuda_malloc_async' may improve the situation.
+Current allocation summary follows.
+W1011 23:59:51.134553 2827585 bfc_allocator.cc:590] Allocator (GPU_1_bfc) ran out of memory trying to allocate 14.32GiB (rounded to 15372194816) from the lower end requested by op 
+If this is caused by memory fragmentation, the environment variable 'TF_GPU_ALLOCATOR=cuda_malloc_async' may improve the situation.
+Current allocation summary follows.
+W1011 23:59:51.134557 2827582 bfc_allocator.cc:590] Allocator (GPU_0_bfc) ran out of memory trying to allocate 14.32GiB (rounded to 15372194816) from the lower end requested by op 
+If this is caused by memory fragmentation, the environment variable 'TF_GPU_ALLOCATOR=cuda_malloc_async' may improve the situation.
+Current allocation summary follows.
+W1011 23:59:51.135415 2827588 bfc_allocator.cc:601] ******______________________________________________________________________________________________
+W1011 23:59:51.135831 2827585 bfc_allocator.cc:601] ******______________________________________________________________________________________________
+W1011 23:59:51.135897 2827591 bfc_allocator.cc:601] ******______________________________________________________________________________________________
+W1011 23:59:51.136486 2827582 bfc_allocator.cc:601] ******______________________________________________________________________________________________
+Traceback (most recent call last):
+  File "/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/jax/../runs/2026-10-11-vits-jax-smoke/trainer_smoke.py", line 1988, in <module>
+    "  loss=" + str(round(float(loss), 4)) +
+                          ^^^^^^^^^^^
+  File "/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/jax/_src/array.py", line 300, in __float__
+    return self._value.__float__()
+           ^^^^^^^^^^^
+  File "/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/jax/_src/profiler.py", line 420, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/jax/_src/array.py", line 642, in _value
+    npy_value, did_copy = self._single_device_array_to_np_array_did_copy()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jax.errors.JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 14.32GiB. [executable_name='jit_train_step'] [tf-allocator-allocation-error='']

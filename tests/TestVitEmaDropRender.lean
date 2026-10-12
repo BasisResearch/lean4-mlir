@@ -42,6 +42,12 @@ arity and passes here (`trainAdamSched`'s `emaDecay` defaults to 0.9999 against 
 
 No GPU — it is a parse and three counts, so it belongs in a pre-commit sweep rather than behind a
 device.
+
+**Three axes since 2026-10-11.** ViT-B's DeiT-recipe render `vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16`
+accumulates as well (`vitAdamTrainStepText`'s `acc`): a fifth `[θ|m|v|G|E]` region and the `%aup` /
+`%akeep` scalars ahead of the EMA pair. The same reconciliation covers it — the expected regions,
+scalars and shadow index come from the variant string through the driver's own predicates, so the
+check reads 5 / 7 / 4 there and 4 / 5 / 3 on the clip renders, and the named scalar tail grows by two.
 -/
 
 open Proofs.StableHLO
@@ -110,16 +116,22 @@ def main (args : List String) : IO Unit := do
     bad := bad ++ [s!"emaOn '{variantUnderTest}' is FALSE — this file would gate nothing"]
   unless VerifiedVariant.sdOn variantUnderTest do
     bad := bad ++ [s!"sdOn '{variantUnderTest}' is FALSE — this file would gate nothing"]
-  unless wantRegions == 4 do
-    bad := bad ++ [s!"nRegions = {wantRegions}, expected 4 ([θ|m|v|ema])"]
-  unless wantScalars == 5 do
-    bad := bad ++ [s!"nScalars = {wantScalars}, expected 5 (lr,bc1,bc2,emad,oemad)"]
-  unless wantEmaReg == some 3 do
-    bad := bad ++ [s!"emaRegion = {wantEmaReg}, expected some 3"]
+  -- Under gradient accumulation (`emaaccdp2x128x4…`, the ViT-B DeiT-recipe render, 2026-10-11) the
+  -- accumulator `G` is a region of its own between `v` and the shadow, with `%aup`/`%akeep` ahead
+  -- of the EMA pair — `[θ|m|v|G|E]`, 5 regions, 7 scalars, the shadow at index 4. Both layouts are
+  -- the driver's (`VerifiedVariant.nRegions` / `nScalars` / `emaRegion`); this pins which one.
+  let accOn := VerifiedVariant.accOn variantUnderTest
+  let (wantR, wantS, wantE) := if accOn then (5, 7, 4) else (4, 5, 3)
+  unless wantRegions == wantR do
+    bad := bad ++ [s!"nRegions = {wantRegions}, expected {wantR} ({if accOn then "[θ|m|v|G|ema]" else "[θ|m|v|ema]"})"]
+  unless wantScalars == wantS do
+    bad := bad ++ [s!"nScalars = {wantScalars}, expected {wantS} (lr,bc1,bc2,{if accOn then "aup,akeep," else ""}emad,oemad)"]
+  unless wantEmaReg == some wantE do
+    bad := bad ++ [s!"emaRegion = {wantEmaReg}, expected some {wantE}"]
 
   -- 2. The scalar tail is NAMED in the artifact, so check the names rather than only the count —
   --    five scalars in the wrong order packs the same width and misreads every one of them.
-  let tail := ["lr", "bc1", "bc2", "emad", "oemad"]
+  let tail := ["lr", "bc1", "bc2"] ++ (if accOn then ["aup", "akeep"] else []) ++ ["emad", "oemad"]
   for s in tail do
     unless names.contains s do
       bad := bad ++ [s!"scalar operand %{s} is missing from the artifact"]

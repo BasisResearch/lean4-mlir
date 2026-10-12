@@ -1,0 +1,16 @@
+── A. peak at 0.97 (15.11 GiB), 4 replicas ──
+  budget 15.11 GiB/card · replicas 4 · XLA_PYTHON_CLIENT_MEM_FRACTION=0.97
+  artifact                                                  peak      args      temp   of budget
+  -----------------------------------------------------------------------------------------------
+  vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_train_step.mlir   13.83 G    1.68 G   10.53 G         92 %
+
+── B. peak at the default (11.68 GiB) ──
+W1011 23:34:48.575471 2804147 hlo_rematerialization.cc:3282] Can't reduce memory use below 9.58GiB (10283981107 bytes) by rematerialization; only reduced to 9.81GiB (10530648004 bytes), down from 16.13GiB (17323594792 bytes) originally
+  budget 11.68 GiB/card · replicas 4 · XLA_PYTHON_CLIENT_MEM_FRACTION=unset (plugin default 0.75)
+  artifact                                                  peak      args      temp   of budget
+  -----------------------------------------------------------------------------------------------
+  vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_train_step.mlir   11.13 G    1.68 G    7.83 G         95 %
+
+── C. EXECUTION at 0.97 ──
+    813.38 ms/step  (min 812.17, p10-p90 812.48-813.60, 1033 inputs, 5 interleaved reps)   vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_train_step.mlir
+DONE

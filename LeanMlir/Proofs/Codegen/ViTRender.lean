@@ -597,9 +597,19 @@ def vitTrainStepRenderV (gf : GeluForm) (funcName : String := "vit_train_step") 
     make both predicates substring tests first. -/
 def vitAdamVariant (bs : Nat := 32) (replicas : Nat := 1) (ema : Bool := false)
     (wdExclude : Bool := false) (clip : Bool := false)  (sd : Bool := false)
+    -- `acc` = AdamW over `acc` ACCUMULATED micro-batches (`OptRecipe.adamwAccum`), TRAILING and
+    -- defaulted to 1 so every committed spelling is untouched. Spelled as `OptRecipe.slug` spells
+    -- it for the other nets — `acc` in the optimizer slot (after `ema`, replacing `adam`), `dp`
+    -- inside, then `<k>x` — followed by ViT's own `<B>x<replicas>`: `emaaccdp2x128x4` is "EMA,
+    -- accumulated over 2, data-parallel, 128 per replica × 4". The driver's `VerifiedVariant.accK`
+    -- parses `k` from after `acc`/`accdp` up to the first `x`, and `accOn` is a substring test, so
+    -- the marker may follow `ema` (defect #4 in `tests/TestVariantPredicates.lean`).
+    (acc : Nat := 1)
     : String :=
-  (if ema then "ema" else "adam")
+  (if ema then "ema" else if acc > 1 then "" else "adam")
+    ++ (if acc > 1 then "acc" else "")
     ++ (if replicas ≤ 1 then "" else "dp")
+    ++ (if acc > 1 then s!"{acc}x" else "")
     ++ (if bs == 32 && replicas ≤ 2 then "" else toString bs)
     ++ (if replicas > 2 then s!"x{replicas}" else "")
     -- `wx` = timm no_weight_decay. TRAILING, and checked against every CONCATENATION rather than
@@ -681,12 +691,32 @@ def vitAdamTrainStepText (gf : GeluForm) (funcName : String := "vit_adam_train_s
     -- it to both. If they ever disagreed the failure is LOUD both ways: sites without inputs emit
     -- an undeclared `%dp<i>` (the lowerer rejects it); inputs without sites leave an unused
     -- argument (an arity mismatch at the driver). Neither is silent.
-    (sd : Bool := false) : String :=
+    (sd : Bool := false)
+    -- GRADIENT ACCUMULATION over `acc` micro-batches, TRAILING and defaulted to 1 (no accumulation,
+    -- every committed artifact byte-identical). At `acc > 1` the optimizer is `OptRecipe.adamwAccum
+    -- acc` — RenderKit's mechanism exactly as ResNet-50 and MobileNetV4 render it: a fourth
+    -- `[θ|m|v|G|E]` region `%<p>a` holding the running gradient sum, two more scalars `%aup` /
+    -- `%akeep` deciding per micro-batch whether this invoke accumulates or applies, `1/k` folded
+    -- into `%ob1` / `%ob2` by `optConstsB`, and one op per parameter (`momVNextF` at
+    -- `(μ := %akeep, v := G)`) — no new constructor. The driver reads `k` off the variant name
+    -- (`vitAdamVariant`'s `acc`), and `tests/TestVitEmaDropRender.lean` reconciles the artifact's
+    -- arity with what the driver packs from that string.
+    -- ⛔ NOT composable with `clip`: the reference clips the MEAN ACCUMULATED gradient, which needs
+    -- the hoisted-accumulator route (`optAllParams`'s `accIn`); this writer's clip is per
+    -- micro-batch. DeiT does not clip, so the composition is refused rather than rendered wrong.
+    (acc : Nat := 1) : String :=
   -- α and K are the ONLY knobs; every emitted smoothing constant is derived from them here.
   -- Passing the cotangent's `−α/K` as a separate string would be two writers for one fact: the
   -- two agree until someone changes K, and then the gradient and the loss disagree silently.
   let alphaStr := fmt6 alpha
   let negAlphaKStr := "-" ++ alphaOverK nClasses alpha
+  let accOn := acc > 1
+  let opt : OptRecipe := if accOn then .adamwAccum acc else .adamw
+  if clip && accOn then
+    panic! "vitAdamTrainStepText: `clip` composed with `acc` would clip each micro-batch's \
+gradient where the reference clips the accumulated mean (`optAllParams`'s `accIn` route); DeiT \
+does not clip — render with (clip := false)"
+  else
   let go : StateM Proofs.StableHLO.EmitS String := do
     let (code, gradNames, nSm) ←
       traversal.getD (vitBackAll gf bs nClasses "0.0" true (some (alphaStr, negAlphaKStr, bStr)))
@@ -745,6 +775,7 @@ def vitAdamTrainStepText (gf : GeluForm) (funcName : String := "vit_adam_train_s
     let mut thetaN : List String := []
     let mut mN : List String := []
     let mut vN : List String := []
+    let mut aN : List String := []
     let mut eN : List String := []
     for i in [0:(vitParamSig nClasses V).length] do
       let (nm, ds) := (vitParamSig nClasses V)[i]!
@@ -753,10 +784,13 @@ def vitAdamTrainStepText (gf : GeluForm) (funcName : String := "vit_adam_train_s
       -- and nothing in the arity, the types or the prefix audit would notice.
       let wdN := wdNameBy wdExclude nm ds vitWdDecays
       let gSSA := if clip then clipped[i]! else gradNames[i]!
-      let (c, nT, nM, nV, _, nE) ← optOne .adamw bs replicas ⟨nm, gSSA, ds⟩ wdN (preAvg := clip)
+      -- `opt` is `.adamw` or `.adamwAccum acc`; the accumulator's output name comes back fifth
+      -- (`some` only under accumulation) and rides out as the `G` region, before the shadow.
+      let (c, nT, nM, nV, nA, nE) ← optOne opt bs replicas ⟨nm, gSSA, ds⟩ wdN (preAvg := clip)
                                       (ema := ema)
       adamCode := adamCode ++ c
       thetaN := thetaN ++ [nT]; mN := mN ++ [nM]; vN := vN ++ [nV]
+      match nA with | some a => aN := aN ++ [a] | none => pure ()
       match nE with | some e => eN := eN ++ [e] | none => pure ()
     -- `%loss`: the report-only smoothed CE (`reportSmoothedCeLoss`).
     let lossCode := reportSmoothedCeLoss bs nClasses nSm
@@ -774,16 +808,20 @@ def vitAdamTrainStepText (gf : GeluForm) (funcName : String := "vit_adam_train_s
     -- the call before a single step runs. Loud, and the right way round.
     let dpNames := if sd then (List.range vitDropSites).map dpName else []
     let dpTys := if sd then (List.range vitDropSites).map (fun _ => ty [bs]) else []
-    let retVals := thetaN ++ mN ++ vN ++ eN ++ ["%loss", "%bc1", "%bc2"]
+    -- `[θ|m|v|G|E]`, then `%loss, %bc1, %bc2`, then `%aup, %akeep` (accumulation) and
+    -- `%emad, %oemad` (EMA) handed back as passthroughs — `packedTrainSig`'s order, region for
+    -- region and scalar for scalar, so `#out = #in − 2` holds at every combination of the axes.
+    let retVals := thetaN ++ mN ++ vN ++ aN ++ eN ++ ["%loss", "%bc1", "%bc2"]
+                     ++ (if accOn then ["%aup", "%akeep"] else [])
                      ++ (if ema then ["%emad", "%oemad"] else []) ++ dpNames
-    let retTys := packedTrainRetTys pTy (ema := ema) ++ dpTys
+    let retTys := packedTrainRetTys pTy (acc := accOn) (ema := ema) ++ dpTys
     pure <|
       (if replicas <= 1 then
-        s!"    // ── ViT-Tiny depth-12 AdamW train step: {trainStepHandNote (hand := vitInputReshapeNote)} ──\n"
+        s!"    // ── ViT-Tiny depth-12 AdamW train step: {trainStepHandNote (acc := accOn) (hand := vitInputReshapeNote)} ──\n"
        else
         "    // ── ViT-Tiny depth-12 AdamW train step, DATA-PARALLEL over " ++ toString replicas ++
         " replicas ──\n" ++
-        s!"    // {trainStepHandNote (hand := vitInputReshapeNote)}.\n" ++
+        s!"    // {trainStepHandNote (acc := accOn) (hand := vitInputReshapeNote)}.\n" ++
         "    // The gradients, the per-parameter all_reduce(add)/N between them and the AdamW\n" ++
         "    // triple are all pretty(verified AST): the collective is allReduceMeanF, whose den is\n" ++
         "    // the replica MEAN of the per-replica gradient nodes.\n") ++
@@ -795,16 +833,27 @@ def vitAdamTrainStepText (gf : GeluForm) (funcName : String := "vit_adam_train_s
         "    // per parameter at (β₁ := %emad) on the UPDATED weight. It is pretty(verified AST)\n" ++
         "    // like the rest of the optimizer — NOT a carve-out. EVAL AND CHECKPOINTS SCORE IT.\n"
        else "") ++
-      code ++ vitAdamConsts wdExclude wdStr ++ adamCode ++ lossCode ++
+      (if accOn then
+        s!"    // ── GRADIENT ACCUMULATION over {acc} micro-batches: a [θ|m|v|G|E] region %<p>a holds the\n" ++
+        "    // running sum (momVNextF at μ := %akeep); the β scalars are computed from %aup, so an\n" ++
+        "    // accumulate micro-batch is an exact passthrough (b1 = b2 = 1, lr = 0 from the driver)\n" ++
+        "    // and the apply micro-batch consumes Gt/k through %ob1 = (1−β₁)/k, %ob2 = (1−β₂)/k².\n" ++
+        "    // pretty(verified AST) throughout — OptRecipe.adamwAccum, as ResNet-50 and MobileNetV4.\n"
+       else "") ++
+      -- Under accumulation the β block is `accumScalarConsts` (computed from `%aup`), not the four
+      -- baked constants `adamWConsts` emits; `optConstsB` owns that choice for every net.
+      code ++ (if accOn then wdzConst wdExclude "126 of 200 params" ++ optConstsB opt wdStr
+               else vitAdamConsts wdExclude wdStr) ++ adamCode ++ lossCode ++
       s!"    return {String.intercalate ", " retVals} : {String.intercalate ", " retTys}\n"
   let argSig := s!"%x: {ty [bs, 3*224*224]}, " ++
-    packedTrainSig ((vitParamSig nClasses V).map fun (nm, ds) => (s!"%{nm}", ty ds)) (ema := ema) ++
+    packedTrainSig ((vitParamSig nClasses V).map fun (nm, ds) => (s!"%{nm}", ty ds))
+      (acc := accOn) (ema := ema) ++
     -- The drop scales go LAST, after the scalars and before `%onehot`, matching the driver's blob
     -- layout and `vitFwdRenderB`'s placement. Mid-list they capture an existing positional slot.
     vitDropSig bs sd ++
     s!", %onehot: {ty [bs, nClasses]}"
   let pTy := (vitParamSig nClasses V).map (fun (_, ds) => ty ds)
-  let retTys := packedTrainRetTys pTy (ema := ema)
+  let retTys := packedTrainRetTys pTy (acc := accOn) (ema := ema)
     ++ (if sd then (List.range vitDropSites).map (fun _ => ty [bs]) else [])
   let body : String := go.run' (0, [])
   "module @m {\n" ++

@@ -142,6 +142,11 @@ private def table : List (String × Bool × Bool × Bool) :=
     -- followed by `wd`, and `wd005` must not reach `accK`.
   , ("emaaccdp8x128wxdowd005bf16", true, false, false)
   , ("emaacc8x128wxdowd005bf16", true, false, false)
+    -- ViT-B's DeiT-recipe render (2026-10-11): EMA × accumulation × `wx` × stochastic depth × bf16,
+    -- with ViT's own `<B>x<replicas>` after `acc<k>x` — `2x128x4` has TWO `x`s and the first ends
+    -- `k`. (The committed spelling adds `eps0000001erf` before `bf16`; the ε marker is not a
+    -- predicate and stays out of this table.)
+  , ("emaaccdp2x128x4wxdropbf16", true, false, true)
     -- MobileNetV2's reference recipe: RMSProp × `wx` × dropout × α = 0 × bf16.
     -- `do` is followed by `ls0`, and `rms` ++ `dp` must still not read as stochastic depth.
   , ("rmsdp64wxdols0bf16", false, true, false)
@@ -497,6 +502,18 @@ private def accumSpellings : List String :=
 #guard accK "emalambaccdp8x64wxclipdropbcewd001" == 8
 #guard accK "emalambaccdp8x64wxclipdropbcewd001" != 64
 #guard nRegions "emalambaccdp8x64wxclipdropbcewd001" == 5
+-- **ViT-B's `emaaccdp2x128x4…` (2026-10-11): `k` ends at the FIRST `x`, not ViT's replica `x`.**
+-- `2x128x4` is `acc` 2 × per-replica 128 × 4 replicas; a parse that took the digits up to the
+-- LAST `x` would read k = 2x128 → 0 and the driver would refuse at load (`accK < 1`), which is the
+-- loud direction, but the pin is here so the spelling cannot drift toward a quiet one.
+#guard accK "emaaccdp2x128x4wxdropbf16" == 2
+#guard accK "emaaccdp2x128x4wxdropeps0000001erfbf16" == 2
+#guard nRegions "emaaccdp2x128x4wxdropbf16" == 5
+#guard nScalars "emaaccdp2x128x4wxdropbf16" == 7
+#guard emaRegion "emaaccdp2x128x4wxdropbf16" == some 4
+#guard emaScalarOff "emaaccdp2x128x4wxdropbf16" == 5
+#guard sdOn "emaaccdp2x128x4wxdropbf16" == true
+#guard cdOn "emaaccdp2x128x4wxdropbf16" == false
 -- THE COUNTERFACTUAL FOR `drop`'s ADJACENCIES, run rather than reasoned about — the collisions
 -- in this naming live in a PAIR of markers meeting, never in the marker alone.
 #guard cdOn "wxclipdrop" == false
@@ -669,9 +686,10 @@ private def erfSpellings : List String :=
     ].mapM refused
   unless mixed.all id do
     throw <| IO.userError s!"checkGeluWorld accepted a mixed pair: refusals {mixed}"
-  -- 51 at each form since the ViT-Ti DeiT-recipe pair (`vitin_emadp256x4wxdropeps0000001{erf,}bf16`,
-  -- 2026-10-11); a new ImageNet ViT / ConvNeXt render lands with its twin, so the two counts stay equal.
-  unless pairs == 102 && erfs == 51 do
-    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 102 (51 at each form)"
+  -- 53 at each form since the ViT-S / ViT-B DeiT-recipe pairs (`vitsin_emadp256x4wxdropeps0000001{erf,}bf16`,
+  -- `vitbin_emaaccdp2x128x4wxdropeps0000001{erf,}bf16`, 2026-10-11, after Ti's 51); a new ImageNet
+  -- ViT / ConvNeXt render lands with its twin, so the two counts stay equal.
+  unless pairs == 106 && erfs == 53 do
+    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 106 (53 at each form)"
   IO.println s!"✓ checkGeluWorld: {pairs} train steps ({erfs} erf, {pairs - erfs} tanh) score through a forward at their own form; \
 3 mixed pairs refused"

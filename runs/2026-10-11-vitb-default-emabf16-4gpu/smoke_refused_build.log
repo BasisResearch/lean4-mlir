@@ -1,0 +1,11 @@
+box=ares plugin=.venv/lib/python3.12/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so python=.venv/bin/python3
+⛔ lake build vit-b-imagenet-verified failed:
+   ✖ [25/29] Building LeanMlir.Verified.Train (2.4s)
+   trace: .> LEAN_PATH=/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/Cli/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/batteries/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/Qq/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/aesop/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/proofwidgets/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/importGraph/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/LeanSearchClient/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/plausible/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/mathlib/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/packages/checkdecls/.lake/build/lib/lean:/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/lib/lean /home/skoonce/.elan/toolchains/leanprover--lean4---v4.34.0/bin/lean /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/LeanMlir/Verified/Train.lean -o /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/lib/lean/LeanMlir/Verified/Train.olean -i /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/lib/lean/LeanMlir/Verified/Train.ilean -c /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/ir/LeanMlir/Verified/Train.c --setup /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/ir/LeanMlir/Verified/Train.setup.json --json
+   error: LeanMlir/Verified/Train.lean:2071:76: unexpected token 'else'; expected term
+   error: LeanMlir/Verified/Train.lean:2111:66: unexpected token '-'; expected 'abbrev' or identifier
+   Some required targets logged failures:
+   - LeanMlir.Verified.Train
+   error: build failed
+  per-image bitmaps -> runs/2026-10-11-vitb-default-emabf16-4gpu/bitmaps/vitb_emaaccdp2x128x4wxdropeps0000001erfbf16_e{N}.bin (LEAN_MLIR_DUMP_CORRECT)
+[sup] 2026-10-11 23:47:53 ⛔ PRECHECK failed — refusing to start

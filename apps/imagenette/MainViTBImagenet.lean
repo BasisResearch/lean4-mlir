@@ -37,8 +37,9 @@ per epoch, each less than four times the cost, so the 300-epoch schedule is shor
 precisions (the trainer probes and wall-clock table are in the run's README). Same
 per-invoke-overhead amortisation R50's `4×128` shows over `8×64`.
 
-**The LR.** `baseLR = 5e-4` is DeiT's **batch-512** rate. At 128×4 it is simply correct, and
-nothing needs rescaling.
+**The LR.** `baseLR = 1e-3` is DeiT's rate at ITS batch of 1024 (5e-4 · 1024/512). The pair render
+accumulates two micro-batches of 4 × 128 into one optimizer step of 1024, so nothing needs
+rescaling; the clip renders at a single 4 × 128 = 512 are the batch-512 rate's, 5e-4, by hand.
 
 **Only 4-replica variants are rendered for the DeiT batches**, so unlike the other ImageNet
 drivers this one has no single-device default to fall back to. (`vitbin_adam128wxclipdrop` and its
@@ -57,9 +58,16 @@ to start without them:
 scripts/supervise.sh vitb-default-emabf16-4gpu
 DRY_RUN=1 scripts/supervise.sh vitb-default-emabf16-4gpu   # print the plan, run nothing
 ```
-`vitb-default-emabf16-4gpu` is the pair job: `vitbin_emadp128x4wxclipdropeps0000001erfbf16`, Tiny's
-pair recipe (EMA 0.99996, timm/DeiT init, bf16, DeiT's LayerNorm ε 1e-6, min lr 1e-5 and exact
-GELU) at this width; its eval forward is `vitbin_emadp128x4wxclipdropeps0000001erfbf16_fwd.mlir`.
+`vitb-default-emabf16-4gpu` is the pair job: `vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16`, Tiny's
+pair recipe as DeiT runs it (2026-10-11): DeiT-B's batch 1024 as TWO ACCUMULATED micro-batches of
+4 × 128 (exact under LayerNorm; the `2` is read off the name by `VerifiedVariant.accK` and the graph
+applies on every second micro-batch — the first accumulating ViT render), no gradient clip, EMA
+0.99996 constant from step 0, timm's per-epoch cosine from 1e-6, timm/DeiT init, bf16, DeiT's
+LayerNorm ε 1e-6, min lr 1e-5 and the exact GELU at this width; its eval forward is
+`vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_fwd.mlir`. Its reference is `vitb-accum-jax-4gpu`
+(`vitBImagenetConfigAccum`, 512 × 2). The 4 × 128 clip render
+`vitbin_emadp128x4wxclipdropeps0000001erfbf16` (the 10-06 recipe) stays committed; a checkpoint
+under it cannot be resumed into this one (five blob regions against four).
 `vitb-default-g512-4gpu` is the non-EMA f32 sibling. The `erf` marker is the exact GELU
 `x · Φ(x)`, DeiT's own and the JAX reference's (`geluExact`); each render also exists without it,
 at the tanh approximation the table above was measured on (the two forms cost the same).
@@ -142,9 +150,10 @@ def runViTBImagenet (argv : List String) : IO Unit := do
   let bs := ((← IO.getEnv "LEAN_MLIR_BATCH").bind (·.toNat?)).getD vitBImagenetConfig.batchSize
   let baseLR := match (← IO.getEnv "LEAN_MLIR_BASE_LR_U").bind (·.toNat?) with
     | some u => u.toFloat * 1e-6
-    | none   => 0.0005   -- the DeiT batch-512 rate, as the Tiny driver uses. NOT retuned for S:
-                         -- DeiT-S uses the same 5e-4 at batch 512, so this matches the reference
-                         -- rather than being an untuned carry-over.
+    | none   => 0.001    -- `vitBImagenetConfig.learningRate`: DeiT's 5e-4 · B/512 at its batch of
+                         -- 1024, which the pair render reaches as 2 accumulated micro-batches of
+                         -- 4 × 128. NOT retuned for B: DeiT-B uses the same rate. (The single
+                         -- 4 × 128 clip renders are batch 512: pass LEAN_MLIR_BASE_LR_U=500 by hand.)
   let epochs := ((← IO.getEnv "LEAN_MLIR_EPOCHS").bind (·.toNat?)).getD vitBImagenetConfig.epochs
   -- DeiT's EMA decay, named because `trainAdamSched` defaults to 0.9999 (see the Tiny driver).
   -- Inert unless the variant starts with `ema`.
@@ -153,5 +162,9 @@ def runViTBImagenet (argv : List String) : IO Unit := do
     (argv.head?.getD "data") baseLR 0.9 0.999 5 variant (emaDecay := 0.99996)
     -- DeiT `--min-lr 1e-5`, the reference's `vitBImagenetConfig.minLR`, as the Tiny driver.
     (minLR := 0.00001)
+    -- DeiT's ModelEma holds its decay from step 0 (`vitBImagenetConfig.emaWarmup := false`), and
+    -- its scheduler is timm's, stepped once an epoch from `--warmup-lr 1e-6` with the cosine over all
+    -- 300 epochs (`schedPerEpoch` / `warmupLRInit`, 2026-10-11). Both are host-side: no re-render.
+    (emaWarmup := false) (schedPerEpoch := true) (warmupLRInit := 0.000001)
 
 def main (argv : List String) : IO Unit := runViTBImagenet argv

@@ -2063,9 +2063,14 @@ host-drawn per step at seed+999983, 1/keep folded in. Eval is the identity (drop
   if emaOn then
     -- It names the region INDEX, not "the 4th", because under accumulation it is the 5th — and a
     -- banner that says the wrong slot is worse than none when the failure mode is a mis-sliced blob.
+    -- The decay as the loop below computes it (`emaD`): the banner reads the same flag, because a
+    -- banner saying "warmup-corrected" over a constant-decay run (the DeiT recipe, `emaWarmup :=
+    -- false`) misdescribed the ViT-Ti smoke of 2026-10-11.
+    let emaDecayNote := if emaWarmup then s!"min({emaDecay}, (1+t)/(10+t)) — TF warmup-corrected"
+      else s!"{emaDecay} constant from step 0 (timm ModelEma, as DeiT scores; emaWarmup := false)"
     IO.println s!"  ▸ EMA: region {(VerifiedVariant.emaRegion variant).getD 3} of {nRegions} \
-[θ|m|v{if accOn then "|G" else ""}|ema], shadow starts AT the weights, decay \
-min({emaDecay}, (1+t)/(10+t)) — TF warmup-corrected. EVAL AND CHECKPOINT SCORE THE SHADOW.\
+[θ|m|v{if accOn then "|G" else ""}|ema], shadow starts AT the weights, decay {emaDecayNote}. \
+EVAL AND CHECKPOINT SCORE THE SHADOW.\
 {if accOn then " ⚠ It advances on APPLY micro-batches only — once per optimizer step, as the reference does." else ""}"
   if accOn then
     -- IT ANNOUNCES ITSELF, and here that is not politeness either: a run with the wrong `k`

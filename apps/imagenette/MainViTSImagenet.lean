@@ -32,10 +32,13 @@ policy:
 scripts/supervise.sh vits-default-emabf16-4gpu
 DRY_RUN=1 scripts/supervise.sh vits-default-emabf16-4gpu   # print the plan, run nothing
 ```
-`vits-default-emabf16-4gpu` is the pair job: `vitsin_emadp128x4wxclipdropeps0000001erfbf16`, Tiny's
-pair recipe (EMA 0.99996, timm/DeiT init, bf16, DeiT's LayerNorm ε 1e-6, min lr 1e-5 and exact
-GELU) at this width; its eval forward is `vitsin_emadp128x4wxclipdropeps0000001erfbf16_fwd.mlir`.
-`vits-default-g512-4gpu` is the non-EMA f32 sibling.
+`vits-default-emabf16-4gpu` is the pair job: `vitsin_emadp256x4wxdropeps0000001erfbf16`, Tiny's
+pair recipe as DeiT runs it (2026-10-11): DeiT's batch 1024 as 4 × 256 (one shot, exact under
+LayerNorm), no gradient clip, EMA 0.99996 constant from step 0, timm's per-epoch cosine from 1e-6,
+timm/DeiT init, bf16, DeiT's LayerNorm ε 1e-6, min lr 1e-5 and the exact GELU at this width; its
+eval forward is `vitsin_emadp256x4wxdropeps0000001erfbf16_fwd.mlir`. The 4 × 128 clip render
+`vitsin_emadp128x4wxclipdropeps0000001erfbf16` (the 10-06 recipe) stays committed; a checkpoint
+under it cannot be resumed into this one. `vits-default-g512-4gpu` is the non-EMA f32 sibling.
 
 By hand (4 GPUs — BOTH replica knobs are required):
 ```
@@ -45,7 +48,9 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PJRT_REPLICAS=4 LEAN_MLIR_REPLICAS=4 \
   .lake/build/bin/vit-s-imagenet-verified data
 ```
 **DO NOT SET `LEAN_MLIR_MEM_FRACTION` FOR THIS NET.** S's graph
-fits the plugin's default arena; ViT-B's does not, which is why B's driver refuses
+fits the plugin's default arena — at 4 × 256 too: the pair render peaks inside it and executes there
+(bare device, 4 replicas, `runs/2026-10-11-vits-default-emabf16-4gpu/device_probe.log`); ViT-B's does
+not, which is why B's driver refuses
 without the option. Setting it here looks like free headroom. It is not free: on ConvNeXt-S
 and -B the same 0.97 makes both bf16 arms die
 `CUDA_ERROR_OUT_OF_MEMORY` in `d2h(res)` — B with a core dump — where the identical runs complete
@@ -55,11 +60,12 @@ it buys nothing. The rule: raise the fraction for a graph that does not otherwis
 leave it alone for one that does. `runs/2026-08-28-convnext-sb-jobs/`.
 -/
 
-/-- 300 epochs at 128 per device — the DeiT schedule length, and at four replicas the reference's
-    global batch of 512. Same config as the Tiny driver: S changes the width, not the recipe. -/
+/-- 300 epochs at 256 per device — the DeiT schedule length, and at four replicas DeiT's own
+    global batch of 1024 (`vitSImagenetConfig.batchSize` on the JAX side). Same config as the
+    Tiny driver: S changes the width, not the recipe. -/
 def vitSImagenetConfig : VerifiedConfig where
   epochs    := 300
-  batchSize := 128
+  batchSize := 256   -- PER REPLICA: 4 × 256 = DeiT's global 1024, as the Tiny driver since 2026-10-11
   -- timm/DeiT init, as the Tiny driver and the JAX reference (`vitInit := true` in every JAX
   -- ViT base config since VT-1). Without it every transformer Linear is Glorot. Host-side, so no
   -- re-render.
@@ -75,9 +81,10 @@ def runViTSImagenet (argv : List String) : IO Unit := do
   let bs := ((← IO.getEnv "LEAN_MLIR_BATCH").bind (·.toNat?)).getD vitSImagenetConfig.batchSize
   let baseLR := match (← IO.getEnv "LEAN_MLIR_BASE_LR_U").bind (·.toNat?) with
     | some u => u.toFloat * 1e-6
-    | none   => 0.0005   -- the DeiT batch-512 rate, as the Tiny driver uses. NOT retuned for S:
-                         -- DeiT-S uses the same 5e-4 at batch 512, so this matches the reference
-                         -- rather than being an untuned carry-over.
+    | none   => 0.001    -- `vitSImagenetConfig.learningRate`: DeiT's 5e-4 · B/512 at its batch of
+                         -- 1024 (4 × 256 here), as the Tiny driver. NOT retuned for S: DeiT-S uses
+                         -- the same rate, so this matches the reference rather than being an
+                         -- untuned carry-over.
   let epochs := ((← IO.getEnv "LEAN_MLIR_EPOCHS").bind (·.toNat?)).getD vitSImagenetConfig.epochs
   -- DeiT's EMA decay, named because `trainAdamSched` defaults to 0.9999 (see the Tiny driver).
   -- Inert unless the variant starts with `ema`.
@@ -86,5 +93,9 @@ def runViTSImagenet (argv : List String) : IO Unit := do
     (argv.head?.getD "data") baseLR 0.9 0.999 5 variant (emaDecay := 0.99996)
     -- DeiT `--min-lr 1e-5`, the reference's `vitSImagenetConfig.minLR`, as the Tiny driver.
     (minLR := 0.00001)
+    -- DeiT's ModelEma holds its decay from step 0 (`vitSImagenetConfig.emaWarmup := false`), and
+    -- its scheduler is timm's, stepped once an epoch from `--warmup-lr 1e-6` with the cosine over all
+    -- 300 epochs (`schedPerEpoch` / `warmupLRInit`, 2026-10-11). Both are host-side: no re-render.
+    (emaWarmup := false) (schedPerEpoch := true) (warmupLRInit := 0.000001)
 
 def main (argv : List String) : IO Unit := runViTSImagenet argv

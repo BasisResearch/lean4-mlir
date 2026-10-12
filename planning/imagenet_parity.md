@@ -700,6 +700,32 @@ lr 1e-3; the verified render is `vitin_emadp256x4wxdropeps0000001erfbf16` (+ its
 clip decided by `runs/2026-10-11-vit-clipoff-probe/` (D2). Not done: the patch-embed bias at PyTorch's
 default (disclosed). Both confs rewritten; smokes and ETAs next, then mars = JAX, ares = verified.
 
+**ViT-S / ViT-B status (2026-10-11, later; `planning/recipe_prep.md` §3).** Tiny's recipe at the two
+widths, on both paths: `vitSImagenetConfig` / `vitBImagenetConfig` carry Tiny's lines verbatim (batch
+1024, lr 1e-3, clip 0, `schedPerEpoch` + `warmupLRInit` 1e-6, `mixSwitchProb` 0.5, `randAugmentFillMean`,
+`repeatedAugAdjacent`, `emaWarmup` off, `evalF32`); the verified drivers pass the three host-side
+arguments. How 1024 lies on four cards was probed, not assumed: **S one-shot at 4 × 256** (the render
+peaks at 10.75 GiB of the 11.68 GiB default arena and executes, 587 ms a step bare-device,
+`runs/2026-10-11-vits-default-emabf16-4gpu/device_probe.log`); **B as two accumulated micro-batches of
+4 × 128** (13.83 GiB of 15.11 at 0.97, 813 ms a micro-batch; 11.13 of 11.68 at the default after XLA
+reports it cannot rematerialise below 9.58 — too tight). B's render is the first accumulating ViT
+render: `vitAdamTrainStepText` / `vitAdamVariant` take `acc`, which routes the AdamW tail through
+RenderKit's `OptRecipe.adamwAccum` (the fifth `[θ|m|v|G|E]` region, `%aup` / `%akeep`, `1/k` in
+`optConstsB`) — the shared prerequisite recipe_prep §3.2 named, so ConvNeXt's `k = 16` is the same
+`acc` on its own writer. Renders `vitsin_emadp256x4wxdropeps0000001{erf,}bf16` and
+`vitbin_emaaccdp2x128x4wxdropeps0000001{erf,}bf16` (+ eval forwards); `vit-ema-drop-render` accepts the
+five-region layout (1033 = 2 + 5 × 200 + 7 + 24); `TestVariantPredicates` pins `accK "emaaccdp2x128x4…"
+= 2` (the FIRST `x` ends k) and the GELU-form count 106 / 53. JAX: both references accumulate,
+`vit{S,B}ImagenetConfigAccum` = 512 × 2 (`vits-accum-jax-4gpu`, renamed from `…-default-…`, and
+`vitb-accum-jax-4gpu`): the JAX ViT-S trainer at the one-shot 4 × 256 dies RESOURCE_EXHAUSTED at the
+default arena (12.08 GiB asked of 11.68) and at 0.97 (14.32 of 15.11), where the verified render of the
+same step fits the default — one function under LayerNorm either way. Gates: `sched_timm_gate` 0 on both
+trainers, `repeated_aug_gate` 0.681 / control 0.000 on both shims, the fill check, `regen_jax_generated
+check` (12 ViT-S/B files moved, 62 byte-identical), `regen_verified_mlir check`, the four confs' prechecks
+(new lineages `~/vit_s_jax_2611/`, `~/vit_b_jax_2611/`; `LEAN_MLIR_DUMP_CORRECT` appended). Smokes in
+`runs/2026-10-11-vit{s,b}-default-emabf16-4gpu/` and `runs/2026-10-11-vit{s,b}-jax-smoke/`. Still out,
+disclosed in ch 9's marker: the patch-embed bias (all three ViTs). No run launched.
+
 ### 10.5 Phase 5: book
 
 Each chapter's pair table is generated from the manifest and reads "paper recipe, except: …". Ch 5 goes

@@ -51,7 +51,7 @@ What "done" means, per net, and what each later section repeats:
 
 | step | net | code | new in the emitter / renders | decision needed |
 |---|---|---|---|---|
-| 1 | ViT-S, ViT-B (ch 9 side quest) | ½ day | two no-clip renders | ViT-S micro-batch |
+| 1 | ViT-S, ViT-B (ch 9 side quest) | ½ day — DONE 2026-10-11 | S one-shot at 4 × 256; B the first accumulating ViT render (`acc`) | ViT-S micro-batch — probed: one-shot |
 | 2 | ConvNeXt-T, then S / B (ch 8) | 1½ days | accumulating no-clip renders | none |
 | 3 | MNv4-Conv-M (ch 6) | 1 day | a 256² render | D7, the timm tag |
 | 4 | MNv2 (ch 6) | 2–3 days | decay mask, colour distortion, RMSProp op + tie, an init | D12's reference |
@@ -90,6 +90,31 @@ eps0000001{erf,}bf16` (4×128, clip on).
    here if the ViT renders move anyway, since it is a render change).
 6. Runs: ~S and ~B ETAs on file are 10-05 probes; re-probe. The ch 9 side-quest marker goes when both
    pairs land.
+
+**Done 2026-10-11.** The decision in 3 went to a probe before any render was chosen: ViT-S at 4 × 256
+peaks at 10.75 GiB of the 11.68 GiB default arena and executes (587 ms a step, bare device at 4
+replicas, `runs/2026-10-11-vits-default-emabf16-4gpu/device_probe.log`), so S is one-shot as Tiny is and
+the S conf keeps its "no `LEAN_MLIR_MEM_FRACTION`" rule. B is the accumulating one: `vitAdamVariant` and
+`vitAdamTrainStepText` (`ViTRender.lean`) take `acc`, trailing and defaulted to 1 (every committed ViT
+artifact re-renders byte-identical), and at `acc > 1` hand the per-parameter tail to RenderKit's
+`optOne (.adamwAccum k)` with `optConstsB`'s `%aup`-computed β block and `packedTrainSig`'s `G` region —
+the "one real piece of code" of 2, ~40 lines, and the same `acc` serves ConvNeXt's writer in §4 (its
+`cnxAdamVariant` derives the entry name, so the marker goes through that). The clip is refused in
+composition (the reference clips the accumulated mean; `optAllParams`'s `accIn` route would be needed,
+and DeiT does not clip). Renders: `vitsin_emadp256x4wxdropeps0000001{erf,}bf16`,
+`vitbin_emaaccdp2x128x4wxdropeps0000001{erf,}bf16`, each with its eval forward (S at B = 256 as Tiny's,
+B at its 32) and `#guard`s on the spelling; B's probe 13.83 GiB of 15.11 at 0.97 and 813 ms a 512-row
+micro-batch (`runs/2026-10-11-vitb-default-emabf16-4gpu/device_probe.log`). `tests/TestVitEmaDropRender`
+accepts the five-region layout; `TestVariantPredicates` pins the spelling (k from the FIRST `x`) and
+106 / 53 GELU-form pairs. JAX: Tiny's lines verbatim on both configs, and BOTH references accumulate,
+`vit{S,B}ImagenetConfigAccum` = 512 × 2 — the JAX ViT-S trainer at the one-shot 4 × 256 dies
+RESOURCE_EXHAUSTED at the default arena (12.08 GiB asked) and at 0.97 (14.32), where the verified render
+of the same step fits the default; the two compilers lay the backward out differently, and under LayerNorm
+the pair is one function either way. So the JAX S conf is `vits-accum-jax-4gpu` (renamed; the marker
+and §9.6's conf names follow), `vitb-accum-jax-4gpu` keeps its name at 512 × 2, and both JAX confs raise
+`XLA_PYTHON_CLIENT_MEM_FRACTION` where their smoke needed it. Confs: the four, on the Ti confs' blocks,
+fresh lineages, bitmaps appended. Gates and smokes per §1.4–1.5 (`imagenet_parity.md` §10.4 has the
+numbers). Item 5 (the patch-embed bias) stays out, disclosed.
 
 ## 4. ConvNeXt-T, then S and B — the official recipe in four places
 
@@ -236,7 +261,7 @@ landed 2026-10-07. Of the marker's list, owed in code:
 | R34, R50-2018 | — | — | — | — | — | — | 8a659b2f, 5be4f349 | landed | R34 deleted; 2018 paid |
 | R50 A3 / A2 / A1 | done | done | existing | done | green | done | 4d612bb9 | pending | stands until the runs |
 | ViT-Ti | done | done | done | done | green | done | 320f5045, 3336f4a7 | pending | stands |
-| ViT-S / B | | | | | | | | | |
+| ViT-S / B | done | done | done (B: the first `acc` render) | done | green | done | pending | pending | stands |
 | ConvNeXt-T / S / B | | | | | | | | | |
 | MNv4-Conv-M | | | | | | | | | |
 | MNv2 | | | | | | | | | |

@@ -13662,13 +13662,13 @@ wxclipdropeps0000001bf16} --- Tiny's recipe as its listing has it:
 \texttt{vitInit}, LayerNorm $\varepsilon = 10^{-6}$, the $10^{-5}$
 learning-rate floor, EMA at $0.99996$, the clip, bf16 under an fp32 patch
 embedding and head --- and their references are
-\texttt{vits-default-jax-4gpu} and \texttt{vitb-accum-jax-4gpu}, the latter
-accumulating $4\times128$ to DeiT's $512$. ViT-B's EMA render peaks at
+\texttt{vits-accum-jax-4gpu} and \texttt{vitb-accum-jax-4gpu}, both
+accumulating $2\times512$ to DeiT's $1024$. ViT-B's EMA render peaks at
 $13.19$\,GiB, over the $11.68$\,GiB default arena, so its job raises the
 allocator fraction to $0.97$ ($15.11$\,GiB); S fits the default at $10.27$.
 
 \noindent\textbf{[TODO: as Tiny's; neither has run ---\\
-\texttt{vits-default-jax-4gpu} / \texttt{vits-default-emabf16-4gpu},\\
+\texttt{vits-accum-jax-4gpu} / \texttt{vits-default-emabf16-4gpu},\\
 \texttt{vitb-accum-jax-4gpu} / \texttt{vitb-default-emabf16-4gpu}.]}
 
 \subsection*{What Part 1 has established}

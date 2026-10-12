@@ -207,6 +207,9 @@ def _autoaugment(img):
     idx = tf.random.uniform([], 0, len(_AA_POLICY), dtype=tf.int32)
     out = tf.switch_case(idx, branches)
     return tf.cast(out, tf.float32)
+# timm's RandAugment fills the out-of-image region with img_mean = round(255 * mean) (randAugmentFillMean)
+_RA_FILL = tf.constant([124.0, 116.0, 104.0])
+
 # ── timm's geometric ops run PIL BICUBIC, and TF has no bicubic
 #    projective warp (ImageProjectiveTransformV3 takes NEAREST/BILINEAR only and LOGS, not raises,
 #    on anything else). So the warp is written out: PIL's own affine sampler, a = -1 cubic (PIL's
@@ -240,7 +243,7 @@ def _aa_transform(img, vec):
         for j in range(4):
             row += wx[:, :, j:j+1] * tf.gather(flat, yi[:, :, i] * W + xi[:, :, j])
         out += wy[:, :, i:i+1] * row
-    out = tf.where(inside[..., None], out, 128.0)
+    out = tf.where(inside[..., None], out, _RA_FILL)
     return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
 
 # Shear and translate move pixels along ONE axis, where the other axis lands on integer rows
@@ -270,7 +273,7 @@ def _aa_warp1d(img, a, c, axis):
         tap = tf.clip_by_value(tf.cast(u0, tf.int32) + (k - 1), 0, n - 1)
         idx = iy * W + tap if axis == 1 else tap * W + ix
         out += wts[k][:, :, None] * tf.gather(flat, idx)
-    out = tf.where(inside[..., None], out, 128.0)
+    out = tf.where(inside[..., None], out, _RA_FILL)
     return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
 
 # PIL's affine data is in pixel-CENTRE coordinates: timm's shear (1, f, 0, 0, 1, 0) is
@@ -421,6 +424,11 @@ def prefetch_to_device(it, sharding, depth=2):
 # returns fp32; master weights / LayerNorm / softmax stay fp32.
 # Helps matmul-bound nets (ViT/transformers ~2.7-3.6x on gfx1100).
 DT = jnp.bfloat16
+# evalF32: `evaluate()` and the validation loop score in f32 by rebinding the module globals
+# DT / CONV_DT around the eval forward. `mm` / `convdt` read them at TRACE time; `eval_batch` is
+# traced once, on its first call, while they hold float32, and `train_step` under DT. Neither
+# retraces: fixed shapes, and `take` is traced. The names stay the module's, so a script that
+# sets `mod.DT = jnp.float32` (scripts/parity/vit_timm_parity.py) still gets the f32 forward.
 def mm(a, b):
     return (a.astype(DT) @ b.astype(DT)).astype(jnp.float32)
 
@@ -1674,7 +1682,7 @@ def augment_batch(x, rng):
 #  Training  (Adam + cosine LR)
 # ═══════════════════════════════════════════════════════════════════════
 
-LR = 0.000500
+LR = 0.001000
 WD = 0.050000
 _WD_POS_SHAPE = (197, 384)
 def _wd_mask(params):
@@ -1689,8 +1697,6 @@ def _wd_mask(params):
 @jit
 def train_step(params, opt_state, x, y, lr, drop_key=None):
     loss, grads = value_and_grad(loss_fn)(params, x, y, drop_key)
-    gn = jnp.sqrt(sum(jnp.sum(g * g) for g in jax.tree.leaves(grads)))
-    grads = jax.tree.map(lambda g: g * jnp.minimum(1.0, 1.000000 / (gn + 1e-6)), grads)
     m, v, t = opt_state
     t = t + 1
     m = jax.tree.map(lambda mi, g: 0.9 * mi + 0.1 * g, m, grads)
@@ -1720,7 +1726,7 @@ EMA_DECAY = 0.999960
 # (ENet-B0 350ep = 175 tau) are unaffected either way; short/grad-accum tiers need it.
 @jit
 def ema_update(ema, params, step):
-    d = jnp.minimum(EMA_DECAY, (1.0 + step) / (10.0 + step))
+    d = EMA_DECAY   # emaWarmup off: constant from step 0 (timm ModelEma, as DeiT scores)
     return jax.tree.map(lambda e, p: d * e + (1.0 - d) * p, ema, params)
 
 @jit
@@ -1771,7 +1777,11 @@ def eval_batch(params, x, y, take):
     return correct1, correct5, loss
 
 def evaluate(params, images, labels, batch_size=512):
+    global DT, CONV_DT
     batch_size = (batch_size // n_devices) * n_devices or n_devices
+    _dt_saved = (DT, CONV_DT)
+    DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
+    print('  eval: f32 forward (evalF32)')
     _p = np.random.default_rng(12345).permutation(len(labels))
     images, labels = images[_p], labels[_p]
     correct1 = 0
@@ -1794,6 +1804,7 @@ def evaluate(params, images, labels, batch_size=512):
         total_loss += float(l)
         n_batches += 1
     evaluated = len(labels)
+    DT, CONV_DT = _dt_saved
     return correct1, correct5, evaluated, total_loss / max(n_batches, 1)
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1863,12 +1874,12 @@ if __name__ == "__main__":
     train_examples = 1281167
     val_examples   = 50000
 
-    BATCH_SIZE = (512 // n_devices) * n_devices or n_devices
+    BATCH_SIZE = (1024 // n_devices) * n_devices or n_devices
     EPOCHS = 80
-    LR = 0.000500
+    LR = 0.001000
     steps_per_epoch = train_examples // BATCH_SIZE
     total_steps = steps_per_epoch * EPOCHS
-    print("lr=0.000500  batch_size=" + str(BATCH_SIZE) +
+    print("lr=0.001000  batch_size=" + str(BATCH_SIZE) +
           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +
           "  epochs=" + str(EPOCHS) + "  params=22050664")
     print("steps_per_epoch=" + str(steps_per_epoch) + "  total_steps=" + str(total_steps))
@@ -1895,7 +1906,7 @@ if __name__ == "__main__":
             'kind': 'header', 'phase': 'phase2',
             'netspec_name': "ViT-S/16 (ImageNet, bf16)",
             'config': {
-                'lr': 0.000500, 'batch_size': 512, 'epochs': 80,
+                'lr': 0.001000, 'batch_size': 1024, 'epochs': 80,
                 'use_adam': True,
                 'weight_decay': 0.050000,
                 'cosine': True,
@@ -1935,24 +1946,23 @@ if __name__ == "__main__":
         _start_epoch = _global_step // steps_per_epoch
         print(f'Resumed full train state from {_resume}: step={_global_step} (epoch {_start_epoch + 1}/{EPOCHS})')
     for epoch in range(_start_epoch, EPOCHS):
-        # Per-step LR (computed inside the inner loop below)
-        pass
+        # timm CosineLRScheduler, t_in_epochs (DeiT / RSB): set ONCE PER EPOCH — warmup linear from
+        # warmup_lr, then the cosine over ALL EPOCHS counted from epoch 0 (warmup_prefix=False),
+        # floored at lr_min. schedPerEpoch: the per-step form is not emitted.
+        if epoch < 5:
+            lr = jnp.float32(0.000001 + epoch * (LR - 0.000001) / 5)
+        else:
+            lr = jnp.float32(0.000010 + 0.5 * (LR - 0.000010) * (1 + np.cos(np.pi * epoch / EPOCHS)))
         ep_t0 = time.time()
         epoch_loss = 0.0
         n_batches = 0
         for _ in range(steps_per_epoch):
             x, y = next(train_iter)
-            # Per-step LR (warmup → cosine)
-            warmup_steps = steps_per_epoch * 5
-            if _global_step < warmup_steps:
-                lr = jnp.float32(LR * (_global_step + 1) / warmup_steps)
-            else:
-                prog = (_global_step - warmup_steps) / max(total_steps - warmup_steps, 1)
-                lr = jnp.float32(0.000010 + (LR - 0.000010) * 0.5 * (1 + np.cos(np.pi * min(prog, 1.0))))   # timm lr_min floor
-            if _global_step % 2 == 0:
-                x, y = _mixup(x, y, jax.random.fold_in(jax.random.PRNGKey(314159), _global_step))
-            else:
+            # timm Mixup(switch_prob): CutMix with probability p per batch, seeded from (seed, step)
+            if np.random.default_rng([314159, _global_step]).random() < 0.500000:
                 x, y = _cutmix(x, y, jax.random.fold_in(jax.random.PRNGKey(314159), _global_step))
+            else:
+                x, y = _mixup(x, y, jax.random.fold_in(jax.random.PRNGKey(314159), _global_step))
             params, opt_state, loss = train_step(params, opt_state, x, y, lr, jax.random.fold_in(_drop_base, _global_step))
             epoch_loss += loss  # jax scalar: defer the device sync to epoch end
             n_batches += 1
@@ -1976,6 +1986,14 @@ if __name__ == "__main__":
         ev_t0 = time.time()
         if _do_val:
             print("  Running validation ...")
+            # evalF32: score through an f32 forward. `eval_batch` is traced HERE, on its first call, so
+            # the swap must precede any trace of it — asserted, not assumed.
+            if not getattr(eval_batch, '_f32_traced', False):
+                assert getattr(eval_batch, '_cache_size', lambda: 0)() == 0, 'eval_batch traced before the evalF32 swap'
+                eval_batch._f32_traced = True
+            _dt_saved = (DT, CONV_DT)
+            DT = jnp.float32; CONV_DT = jnp.float32   # evalF32: see mm
+            print('  eval: f32 forward (evalF32)')
             v_iter = prefetch_to_device(
                 iter(build_imagenet_iter('validation', BATCH_SIZE, training=False, augment=False)),
                 data_sharding)
@@ -1986,6 +2004,7 @@ if __name__ == "__main__":
                 total   += y.shape[0]
                 total_eval_loss += float(l)
                 v_batches += 1
+            DT, CONV_DT = _dt_saved
         acc1 = correct1 / max(total, 1)
         acc5 = correct5 / max(total, 1)
         val_secs = time.time() - ev_t0

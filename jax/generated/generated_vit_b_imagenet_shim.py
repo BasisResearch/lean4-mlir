@@ -19,7 +19,8 @@
 #       SHIM_HASH=<n>  -> hash n batches to stderr and exit, streaming nothing
 #       SHIM_NCLASSES=K -> wire v2: float32[B,K] target distributions instead of int32[B]
 #       SHIM_MIX=off|mixup|cutmix|both  -> mixup/cutmix on the PRODUCER side (needs v2).
-#                       'both' alternates per step, as the reference does. Default is this
+#                       'both' draws CutMix with p 0.500000 per batch, else Mixup
+#                       (timm Mixup's switch_prob), as the reference does. Default is this
 #                       config's own useMixup/useCutmix. SHIM_MIXUP_ALPHA / SHIM_CUTMIX_ALPHA
 #                       override the Beta shapes. The lambda stream is numpy's, NOT the
 #                       reference's jax.random one — same distribution, different numbers.
@@ -231,6 +232,9 @@ def _autoaugment(img):
     idx = tf.random.uniform([], 0, len(_AA_POLICY), dtype=tf.int32)
     out = tf.switch_case(idx, branches)
     return tf.cast(out, tf.float32)
+# timm's RandAugment fills the out-of-image region with img_mean = round(255 * mean) (randAugmentFillMean)
+_RA_FILL = tf.constant([124.0, 116.0, 104.0])
+
 # ── timm's geometric ops run PIL BICUBIC, and TF has no bicubic
 #    projective warp (ImageProjectiveTransformV3 takes NEAREST/BILINEAR only and LOGS, not raises,
 #    on anything else). So the warp is written out: PIL's own affine sampler, a = -1 cubic (PIL's
@@ -264,7 +268,7 @@ def _aa_transform(img, vec):
         for j in range(4):
             row += wx[:, :, j:j+1] * tf.gather(flat, yi[:, :, i] * W + xi[:, :, j])
         out += wy[:, :, i:i+1] * row
-    out = tf.where(inside[..., None], out, 128.0)
+    out = tf.where(inside[..., None], out, _RA_FILL)
     return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
 
 # Shear and translate move pixels along ONE axis, where the other axis lands on integer rows
@@ -294,7 +298,7 @@ def _aa_warp1d(img, a, c, axis):
         tap = tf.clip_by_value(tf.cast(u0, tf.int32) + (k - 1), 0, n - 1)
         idx = iy * W + tap if axis == 1 else tap * W + ix
         out += wts[k][:, :, None] * tf.gather(flat, idx)
-    out = tf.where(inside[..., None], out, 128.0)
+    out = tf.where(inside[..., None], out, _RA_FILL)
     return tf.cast(tf.clip_by_value(tf.floor(out), 0.0, 255.0), tf.uint8)
 
 # PIL's affine data is in pixel-CENTRE coordinates: timm's shear (1, f, 0, 0, 1, 0) is
@@ -431,7 +435,8 @@ def build_imagenet_iter(split, batch_size, training, augment, shard=None):
         # timm's exact index-level RASampler. steps_per_epoch is unchanged,
         # so an epoch sees ~1/K unique images ×K views (the RSB recipe).
         ds = ds.flat_map(lambda ex: tf.data.Dataset.from_tensors(ex).repeat(3))
-        ds = ds.shuffle(8192, seed=43, reshuffle_each_iteration=True)
+        # repeatedAugAdjacent: no re-shuffle — the K copies stay adjacent, in one optimizer
+        # step, as timm's RASampler places them (its 3 indices of an image are consecutive).
     ds = ds.map(_pp, num_parallel_calls=tf.data.AUTOTUNE)
     ds = ds.batch(batch_size, drop_remainder=training)
     ds = ds.prefetch(tf.data.AUTOTUNE)
@@ -544,8 +549,8 @@ def _main():
         # Seeded from (SHIM_SEED, step), like `augSeed`: an unseeded or wall-clock-seeded
         # draw makes the run unreproducible and breaks every gate that replays a batch.
         rng = np.random.default_rng([_SHIM_SEED, step])
-        # `both` alternates per step, matching the reference's `if _global_step % 2 == 0`.
-        cut = (_MIX_MODE == 'cutmix') or (_MIX_MODE == 'both' and (step % 2) == 1)
+        # `both` draws CutMix with probability p per batch (timm Mixup switch_prob), as the reference.
+        cut = (_MIX_MODE == 'cutmix') or (_MIX_MODE == 'both' and rng.random() < 0.500000)
         if not cut:
             lam = np.float32(rng.beta(_MIX_A, _MIX_A))
             om = np.float32(1.0) - lam
