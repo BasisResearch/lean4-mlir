@@ -378,13 +378,20 @@ lean_lib «ComparatorTests» where
   srcDir := "tests/comparator"
   roots := #[`Challenge, `Solution, `ChallengeArch, `SolutionArch, `ChallengeTier, `SolutionTier]
 
+-- The three C objects below are compiled by the system `cc` and linked by Lean's bundled clang
+-- against Lean's own (older) glibc. gcc 15 (Ubuntu 26.04) defaults to C23, under which glibc's
+-- headers redirect `strtol` & co. to `__isoc23_*`, symbols Lean's glibc lacks — every trainer then
+-- failed to link with `undefined symbol: __isoc23_strtol`. `-std=gnu17` keeps the plain symbols on
+-- every compiler (gcc 13 on CI already defaulted to gnu17; Apple clang accepts the flag).
+private def ffiCFlags : Array String := #["-std=gnu17", "-fPIC", "-O2"]
+
 -- IREE FFI shim: Lean ↔ C bridge for libiree_ffi.so (see ffi/).
 target ireeLeanFfiO pkg : System.FilePath := do
   let oFile := pkg.buildDir / "ffi" / "iree_lean_ffi.o"
   let srcJob ← inputTextFile <| pkg.dir / "ffi" / "iree_lean_ffi.c"
   let weakArgs := #["-I", (← getLeanIncludeDir).toString,
                     "-I", (pkg.dir / "ffi").toString]
-  let traceArgs := #["-fPIC", "-O2"]
+  let traceArgs := ffiCFlags
   buildO oFile srcJob weakArgs traceArgs
 
 -- F32 ByteArray helpers (He init, argmax, data loading — all in C for speed).
@@ -392,7 +399,7 @@ target f32HelpersO pkg : System.FilePath := do
   let oFile := pkg.buildDir / "ffi" / "f32_helpers.o"
   let srcJob ← inputTextFile <| pkg.dir / "ffi" / "f32_helpers.c"
   let weakArgs := #["-I", (← getLeanIncludeDir).toString]
-  let traceArgs := #["-fPIC", "-O2"]
+  let traceArgs := ffiCFlags
   buildO oFile srcJob weakArgs traceArgs
 
 -- Runtime lowerer dispatch: dlopens libpjrt_ffi.so / libiree_ffi.so and resolves
@@ -402,7 +409,7 @@ target lowererO pkg : System.FilePath := do
   let oFile := pkg.buildDir / "ffi" / "lowerer.o"
   let srcJob ← inputTextFile <| pkg.dir / "ffi" / "lowerer.c"
   let weakArgs := #["-I", (pkg.dir / "ffi").toString]
-  let traceArgs := #["-fPIC", "-O2"]
+  let traceArgs := ffiCFlags
   buildO oFile srcJob weakArgs traceArgs
 
 extern_lib libireeffi pkg := do
