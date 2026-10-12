@@ -27,6 +27,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Under Rosetta (a Terminal set to "Open using Rosetta", or an Intel bash first on PATH) an
+# Apple Silicon Mac reports x86_64, and everything this script starts would be Intel too. The
+# plugin is arm64-only, so re-run natively; /bin/bash is a universal binary.
+if [ "$(uname -s)" = Darwin ] && [ "$(sysctl -n sysctl.proc_translated 2>/dev/null)" = 1 ]; then
+  if [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ]; then
+    echo "mac_setup: this shell runs under Rosetta (x86_64); re-running natively as arm64"
+    exec arch -arm64 /bin/bash "$0" "$@"
+  fi
+fi
+
 ALL="check venv jax smoke data lean mnist"
 JAX_GRAFT_SPEC=${JAX_GRAFT_SPEC:-jax-graft==0.0.5}   # the release this runbook was written against
 
@@ -49,11 +59,13 @@ ok ()   { printf '  ✓ %s\n' "$*"; }
 die ()  { printf '\n  ✗ %s\n\n  The log is %s. Fix the above, then resume with:\n    bash deploy/mac_setup.sh %s\n' "$1" "$LOG" "$STAGE" >&2; exit 1; }
 want () { case " $STAGES " in *" $1 "*) STAGE=$1; return 0 ;; *) return 1 ;; esac; }
 
-# The newest python >= 3.12 on PATH (jax-graft's floor), or "" if there is none.
+# The newest native (arm64) python >= 3.12 on PATH (jax-graft's floor), or "" if there is none.
+# An Intel python (an old /usr/local Homebrew) runs under Rosetta even from a native shell, and
+# pip would then look for an x86_64 wheel of the plugin, which does not exist.
 find_python () {
   for p in python3.14 python3.13 python3.12 python3; do
     command -v "$p" > /dev/null 2>&1 || continue
-    if "$p" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' 2> /dev/null; then
+    if "$p" -c 'import platform, sys; sys.exit(0 if sys.version_info >= (3, 12) and platform.machine() == "arm64" else 1)' 2> /dev/null; then
       command -v "$p"; return 0
     fi
   done
@@ -64,7 +76,7 @@ find_python () {
 if want check; then
   say "check: the box"
   [ "$(uname -s)" = Darwin ] || die "not macOS ($(uname -s)) — this script is for a Mac"
-  [ "$(uname -m)" = arm64 ] || die "not Apple Silicon ($(uname -m)) — jax-graft needs an M-series Mac"
+  [ "$(uname -m)" = arm64 ] || die "not Apple Silicon ($(uname -m), and not Rosetta on an M-series Mac, which re-runs natively) — jax-graft needs an M-series Mac"
   ok "Apple Silicon: $(sysctl -n machdep.cpu.brand_string), $(( $(sysctl -n hw.memsize) / 1073741824 )) GB"
   macos=$(sw_vers -productVersion)
   [ "${macos%%.*}" -ge 26 ] || die "macOS $macos — jax-graft needs macOS 26 or later (System Settings → General → Software Update)"
@@ -73,16 +85,22 @@ if want check; then
   command -v cc > /dev/null || die "no C compiler on PATH, though xcode-select -p is set — reinstall the command-line tools"
   ok "C compiler: $(cc --version | head -1)"
   PY=$(find_python)
-  if [ -n "$PY" ]; then ok "python: $PY ($("$PY" -V 2>&1))"
+  if [ -n "$PY" ]; then ok "python: $PY ($("$PY" -V 2>&1), arm64)"
   elif command -v uv > /dev/null 2>&1; then ok "no python >= 3.12 on PATH; uv is, and the venv stage will use it"
-  else die "no python >= 3.12 on PATH and no uv — install one: brew install python@3.13 (or https://docs.astral.sh/uv/)"
+  else die "no native (arm64) python >= 3.12 on PATH, and no uv. An Intel python (e.g. an old Homebrew in /usr/local) does not count: the plugin has no x86_64 wheel. Install one: brew install python@3.13 with Homebrew in /opt/homebrew (or https://docs.astral.sh/uv/)"
   fi
   if ! command -v lake > /dev/null 2>&1 && [ ! -x "$HOME/.elan/bin/lake" ]; then
     die "no elan/lake — install it with:
     curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
   then open a new terminal (or: source ~/.elan/env)"
   fi
-  ok "elan: $(command -v lake || echo "$HOME/.elan/bin/lake")"
+  elan_bin=$(command -v elan || echo "$HOME/.elan/bin/elan")
+  case "$(lipo -archs "$elan_bin" 2>/dev/null)" in
+    *arm64*) ;;
+    "") ;;   # lipo could not read it: let the lean stage find out
+    *) die "elan at $elan_bin is an Intel binary ($(lipo -archs "$elan_bin")), so it would install an Intel Lean whose trainers cannot load the arm64 plugin. Reinstall it from a native shell: rm -rf ~/.elan, then the elan-init.sh line above" ;;
+  esac
+  ok "elan: $elan_bin"
   free_gb=$(df -g . | awk 'NR==2 {print $4}')
   [ "$free_gb" -ge 15 ] || die "only ${free_gb} GB free here — Mathlib's cache and the build want ~15 GB"
   ok "disk: ${free_gb} GB free"
@@ -97,7 +115,10 @@ if want venv; then
     else uv venv --python 3.13 .venv || die "uv venv failed"
     fi
     ok "created .venv ($(.venv/bin/python3 -V))"
-  else ok "reusing .venv ($(.venv/bin/python3 -V))"
+  else
+    [ "$(.venv/bin/python3 -c 'import platform; print(platform.machine())')" = arm64 ] \
+      || die ".venv's python is not arm64 (made under Rosetta?) — remove it (rm -rf .venv) and rerun this stage"
+    ok "reusing .venv ($(.venv/bin/python3 -V))"
   fi
   if [ -x .venv/bin/pip ]; then
     .venv/bin/pip install -q -U pip
