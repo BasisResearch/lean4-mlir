@@ -1,0 +1,14 @@
+--- jax/generated/generated_mobilenet_v2_imagenet_full.py	2026-10-12 15:21:58.138361066 +0000
++++ runs/2026-10-12-mnv2-jax-smoke-evalcrop/trainer_smoke.py	2026-10-12 15:30:01.135091436 +0000
+@@ -1252,9 +1252,9 @@
+     val_examples   = 50000
+ 
+     BATCH_SIZE = (256 // n_devices) * n_devices or n_devices
+-    EPOCHS = 420
++    EPOCHS = 1   # SMOKE: one short epoch, then exit
+     LR = 0.120000
+-    steps_per_epoch = train_examples // BATCH_SIZE
++    steps_per_epoch = 50   # SMOKE: 50 optimizer steps of 256, then the full f32 validation through slim's eval decode
+     total_steps = steps_per_epoch * EPOCHS
+     print("lr=0.120000  batch_size=" + str(BATCH_SIZE) +
+           " (" + str(n_devices) + " devices x " + str(BATCH_SIZE // n_devices) + ")" +

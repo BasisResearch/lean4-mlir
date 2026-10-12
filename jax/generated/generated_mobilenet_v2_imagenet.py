@@ -39,8 +39,7 @@ def _imagenet_decode_random_crop_flip(image_bytes):
     th, tw, _ = tf.unstack(bbox_size)
     window = tf.stack([oy, ox, th, tw])
     img = tf.io.decode_and_crop_jpeg(image_bytes, window, channels=3)
-    img = tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
-                          method=tf.image.ResizeMethod.BILINEAR, antialias=False)[0]
+    img = tf.compat.v1.image.resize_bilinear([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bilinear: no antialias, corner-aligned (resizeLegacyTf1)
     img = tf.image.random_flip_left_right(img, seed=_AUG_SEED)
     # TF-slim inception_preprocessing.distort_color, fast_mode (colorDistortSlim): on [0, 1],
     # brightness ±32/255 then saturation ×U(0.5, 1.5), one order, clipped; back to 0..255.
@@ -50,7 +49,7 @@ def _imagenet_decode_random_crop_flip(image_bytes):
     img = tf.clip_by_value(img, 0.0, 1.0) * 255.0
     return img
 
-def _imagenet_decode_center_crop(image_bytes):
+def _imagenet_decode_center_crop_timm(image_bytes):
     img = tf.io.decode_jpeg(image_bytes, channels=3)
     shape = tf.shape(img)
     h, w = shape[0], shape[1]
@@ -63,6 +62,20 @@ def _imagenet_decode_center_crop(image_bytes):
     oy = (nh - _IMG_SIZE) // 2
     ox = (nw - _IMG_SIZE) // 2
     return tf.image.crop_to_bounding_box(img, oy, ox, _IMG_SIZE, _IMG_SIZE)
+
+def _imagenet_decode_center_crop(image_bytes):
+    # TF-slim inception_preprocessing.preprocess_for_eval (evalCropSlim): tf.image.central_crop keeps the
+    # centred _CROP_PCT of BOTH sides (offsets int(h * (1 - _CROP_PCT) / 2) in float64, sizes h - 2 * offset),
+    # so the window has the JPEG's own aspect; then resize_bilinear to _IMG_SIZE x _IMG_SIZE, which does not
+    # keep it. Decoded whole, as slim's decoder did: decode_and_crop_jpeg differs by a column at an
+    # unaligned window. _imagenet_decode_center_crop_timm above is timm's protocol, swapped in under SHIM_EVAL_SIZE.
+    img = tf.io.decode_jpeg(image_bytes, channels=3)
+    shape = tf.shape(img)
+    hd, wd = tf.cast(shape[0], tf.float64), tf.cast(shape[1], tf.float64)
+    oy = tf.cast((hd - hd * _CROP_PCT) / 2, tf.int32)
+    ox = tf.cast((wd - wd * _CROP_PCT) / 2, tf.int32)
+    img = tf.image.crop_to_bounding_box(img, oy, ox, shape[0] - 2 * oy, shape[1] - 2 * ox)
+    return tf.compat.v1.image.resize_bilinear([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bilinear (resizeLegacyTf1)
 
 def build_imagenet_iter(split, batch_size, training, augment, shard=None):
     ds = tfds.load('imagenet2012', split=split,

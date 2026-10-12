@@ -787,11 +787,13 @@ structure TrainConfig where
       measured close to a point of top-1 on RSB-A3 without it); off is `tf.image.resize`'s own
       default, which tf-models' classification pipeline runs — the MobileNetV4 paper's config. -/
   resizeAntialias : Bool := true
-  /-- TF 1's `tf.image.resize_bicubic` (`tf.compat.v1.image.resize_bicubic`) on the train crop's
-      resize and the eval resize, TF TPU EfficientNet's `_resize_image` default: no antialias and
-      `half_pixel_centers=False` — the sampling grid aligned to pixel corners, where
-      `tf.image.resize` centres it on half pixels. Off keeps `tf.image.resize` with
-      `resizeAntialias`, byte by byte. `trainResize := .bicubic` only. -/
+  /-- TF 1's resize kernels (`tf.compat.v1.image.resize_bicubic` under `trainResize := .bicubic`,
+      `resize_bilinear` under `.bilinear`) on the train crop's resize and the eval resize: no
+      antialias and `half_pixel_centers=False` — the sampling grid aligned to pixel corners, where
+      `tf.image.resize` centres it on half pixels. The bicubic is TF TPU EfficientNet's
+      `_resize_image` default; the bilinear is what TF-slim's `tf.image.resize_images` ran in the
+      TF 1 that trained MobileNetV2. Off keeps `tf.image.resize` with `resizeAntialias`, byte by
+      byte; `.random` (timm's coin) keeps it regardless. -/
   resizeLegacyTf1 : Bool := false
   /-- The train crop's resize kernel. `.bicubic`, the default, keeps every generated file
       byte-identical. -/
@@ -903,6 +905,14 @@ structure TrainConfig where
       resizes bilinear — the same arithmetic the train side's `cropFallbackCenter` uses. Off keeps
       tf-models' form, byte for byte. -/
   evalCropTfEfficientNet : Bool := false
+  /-- With `evalCropTf`: TF-slim's `inception_preprocessing.preprocess_for_eval`, the validation
+      MobileNetV2's README command scores through, in place of tf-models' form.
+      `tf.image.central_crop(image, 0.875)` keeps the centred `_CROP_PCT` of BOTH sides — the
+      offsets `int(h · (1 − _CROP_PCT) / 2)` in float64, the sizes `h − 2 · offset` — so the window
+      has the JPEG's own aspect; then `resize_bilinear` takes it to `_IMG_SIZE` × `_IMG_SIZE`, which
+      does not keep it (TF 1's kernel under `resizeLegacyTf1`). tf-models' form crops a square of the
+      SHORTER side; timm's resizes first. Off keeps tf-models' form, byte for byte. -/
+  evalCropSlim : Bool := false
   /-- Stochastic depth (Huang et al. 2016): drop each residual block's
       branch with a probability that ramps linearly from 0 to `dropPath`
       across the network's residual blocks; surviving branches are scaled

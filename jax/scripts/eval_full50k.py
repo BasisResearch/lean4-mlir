@@ -209,7 +209,7 @@ def _score(size, crop, timm_crop=False):
   _crop_fn = m._imagenet_decode_center_crop
   if timm_crop and hasattr(m, "_imagenet_decode_center_crop_timm"):
       _crop_fn = m._imagenet_decode_center_crop_timm
-      print("   crop: timm's resize-then-crop (_imagenet_decode_center_crop_timm); the module's own is tf-models' crop-then-resize")
+      print("   crop: timm's resize-then-crop (_imagenet_decode_center_crop_timm); the module's own is its recipe's crop-then-resize (evalCropTf: tf-models', TF TPU EfficientNet's or TF-slim's)")
   ds = tfds.load('imagenet2012', split='validation',
                  decoders={'image': tfds.decode.SkipDecoding()},
                  data_dir=os.environ.get('TFDS_DATA_DIR'))

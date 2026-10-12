@@ -103,8 +103,11 @@ def mobilenetV2ImagenetConfig : TrainConfig where
   cropAspectHi   := 1.33
   trainResize    := .bilinear -- resize_images, fast_mode: bilinear
   resizeAntialias := false    -- tf.image.resize_images: no antialias
+  resizeLegacyTf1 := true     -- …and TF 1's resize_bilinear kernel (half_pixel_centers=False), which resize_images was; train and eval
   colorDistortSlim := true    -- distort_color fast_mode: brightness ±32/255 then saturation 0.5–1.5 (D12)
   inputScalePm1  := true      -- (x − 0.5) × 2
+  evalCropTf     := true      -- preprocess_for_eval: crop first, then resize (timm's resize-then-crop kept beside it for PROTOCOL=timm)
+  evalCropSlim   := true      -- …central_crop(0.875) of BOTH sides, then resize_bilinear to 224 × 224 — slim's window, not tf-models' shorter-side square
   useAutoAugment := false     -- none in slim's pipeline
   labelSmoothing := 0.1       -- README: --label_smoothing=0.1
   useEMA         := true      -- README: --moving_average_decay=0.9999

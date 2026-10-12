@@ -11,7 +11,10 @@ cites; the method is the ResNet A3/A2 prep of 2026-10-11 (4d612bb9), repeated pe
 **All seven sections are in code (2026-10-12; §9).** Nothing has run. §7 closed in two halves — D3
 (a89fa9af) and the rest as TF's own code has it (its second "Done" paragraph): `main.py`'s filter
 excludes BN alone, so the biases decay and the depthwise does too (no `dw`); D13 rides on §6's
-`OptRecipe.rmspropTf`. What is left is the runs, in the user's ROI order, each on the user's word.
+`OptRecipe.rmspropTf`. §6's two rows that had stayed disclosed — slim's validation crop and TF 1's
+bilinear kernel — landed later the same day (its addendum; D23), so MobileNetV2 is the README's
+every row like MNv4 and B0. What is left is the runs, in the user's ROI order, each on the user's word —
+and the four rows the markers still call "disclosed", costed in §10 (R1–R4), each on the user's word too.
 
 ## 1. Done, 2026-10-11
 
@@ -60,7 +63,7 @@ What "done" means, per net, and what each later section repeats:
 | 1 | ViT-S, ViT-B (ch 9 side quest) | ½ day — DONE 2026-10-11 | S one-shot at 4 × 256; B the first accumulating ViT render (`acc`) | ViT-S micro-batch — probed: one-shot |
 | 2 | ConvNeXt-T, then S / B (ch 8) | 1½ days | accumulating no-clip renders | none |
 | 3 | MNv4-Conv-M (ch 6) | 1 day — DONE 2026-10-12 | the `mnv4in256` renders (final side 8) | the paper's own yaml is the source of truth; D7 settled by it, D8 withdrawn, D9/D10 corrected (§5) |
-| 4 | MNv2 (ch 6) | 1 day — DONE 2026-10-12 | `rmspropTf` recipe + `rmsBufNextTfF`, the `dw` decay set, the first EMA MNv2 render; the slim pipeline + init on the emitter | D12's reference = a numpy twin (the user); the recipe = the README's command, every row, 0.12 @ 256 / ×0.98 per 2.5 ep / 420 ep (the user) |
+| 4 | MNv2 (ch 6) | 1 day — DONE 2026-10-12 | `rmspropTf` recipe + `rmsBufNextTfF`, the `dw` decay set, the first EMA MNv2 render; the slim pipeline + init on the emitter; later that day `evalCropSlim` + TF 1's bilinear (D23) | D12's reference = a numpy twin (the user); the recipe = the README's command, every row, 0.12 @ 256 / ×0.98 per 2.5 ep / 420 ep (the user) |
 | 5 | EfficientNet-B0 (ch 7) | 3–4 days — DONE 2026-10-12 (D3 a89fa9af; the rest the same day) | RMSProp op (shared); SAME padding through the ties turned out to be a re-pointing onto MNv2's Xla op family, not new math; then five pipeline / init / decay flags and the `wn` decay set read off TF's own code | D3: proofs (the user) |
 
 About two weeks of code against about two weeks of ResNet and ViT runs on the two boxes. Each step
@@ -399,6 +402,37 @@ Imagenette-size `rmstf` artifact would be needed; `opt_step_tie` is the gate aga
 The ch 6 marker stands, rewritten to the README's items; D11–D13 in `imagenet_parity.md` §10.3 and the manifest
 row carry the sources. B0 inherits `rmspropTf` for its D13.
 
+**Addendum 2026-10-12 (later; D23) — the two disclosed rows, closed.** The user's call ("match MNv2 to the
+original paper, not timm's variant"): the recipe already was the README's, and the audit found exactly one
+row still timm's — the validation crop — plus one TF 2 kernel where slim ran TF 1's. Both landed, so MNv2
+is every row like MNv4 (§5) and B0 (§7). (1) slim's `preprocess_for_eval`: `tf.image.central_crop(0.875)`
+keeps the centred 0.875 of BOTH sides of the decoded image (offsets `int(h · 0.125 / 2)` in float64,
+sizes `h − 2 · offset`), so the window has the JPEG's own aspect, then `resize_bilinear` to 224 × 224,
+which does not keep it; timm's form (resize the short side to 256 bicubic + antialias, crop 224) was what
+both paths scored through. `TrainConfig.evalCropSlim` (with `evalCropTf`, as B0's `evalCropTfEfficientNet`
+is) emits it as `_imagenet_decode_center_crop`, timm's form staying under `_timm` for `SHIM_EVAL_SIZE` /
+`PROTOCOL=timm` (the post-hoc second score, like every pair); the verified eval render is untouched (a
+224² input either way), the shim carries the same function, so the pair stays matched. (2) TF 1's
+bilinear: slim's `tf.image.resize_images` in the TF 1 that trained MobileNetV2 was `resize_bilinear` with
+`half_pixel_centers=False` (the grid aligned to pixel corners), where §6 had set TF 2's `tf.image.resize`
+(half-pixel centres) — `resizeLegacyTf1`, which §7 added for B0's bicubic only, now covers `.bilinear` too
+and MNv2 sets it, on the train crop and the eval. Found by the gate's first run, and the reason the emitted
+form decodes whole then `crop_to_bounding_box`: `tf.io.decode_and_crop_jpeg` (TF TPU EfficientNet's and
+tf-models' own call, which the `evalCropTf` forms keep) is NOT the whole decode's window at an iMCU-unaligned
+window — one column differs, by up to ~20 grey levels, which the resize then spreads (5 of 8 test shapes,
+up to 0.18 of the [−1, 1] range after resizing); slim's dataset decoder decoded whole and `central_crop` cut
+the tensor. Gate: `scripts/gates/slim_eval_crop_gate.py` on the trainer and the shim — the emitted decode
+exec'd verbatim against slim's own ops (`decode_jpeg → convert_image_dtype → central_crop → resize_bilinear
+→ (x − 0.5)·2`) at 1.4e-5 of the range over eight shapes, against a numpy twin of TF 1's grid at 0.003 grey
+levels, and three red controls (TF 2's half-pixel bilinear up to 121 grey levels, timm's form 254, tf-models'
+shorter-side square 253); in jax.yml. `pc_crop` gains `tf1-bilinear`; both confs grep the two legacy calls,
+slim's comment line, `central_crop`'s arithmetic and the `_timm` form, and refuse `ResizeMethod.BILINEAR`.
+Re-emit: only the four MNv2 files moved (62 byte-identical). Smokes: `runs/2026-10-12-mnv2-jax-smoke-evalcrop/`
+(one 50-step epoch, the f32 validation over 50,000 through slim's decode in 12.4 s, exit 0) and
+`runs/2026-10-12-mnv2-verified-evalcrop-smoke/` (one capped epoch through the supervisor, the epoch-end
+validation through the shim's decode). The ch 6 marker now lists the crop and the kernel and drops "stays
+disclosed"; the manifest row and D23 in `imagenet_parity.md` carry the sources. No run launched.
+
 ## 7. EfficientNet-B0 — the final pair
 
 Marker (ch 7): the final pair — the staircase floored on the global step from step 0, no decay on BN or
@@ -558,5 +592,45 @@ f32 eval); `imagenet_parity.md` D6 / D13 / D20–D22 / F2 and §10.4 carry the s
 | ViT-S / B | done | done | done (B: the first `acc` render) | done | green | done | a39f5cf7 | pending | stands |
 | ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | a0c125b3 | pending | stands |
 | MNv4-Conv-M | done (the paper's yaml) | done | done (`mnv4in256`, five) | done | green | done | 263da67a | pending | stands, rewritten |
-| MNv2 | done (the README's command) | done | done (the first `rmstf` + EMA MNv2 render) | done | green | done | — | pending | stands, rewritten |
-| EfficientNet-B0 | done (TF's code, every row: 5 new flags + `rmspropTf` / `evalF32`) | done (`headTfUniform`) | done (D3's 36 Xla artifacts; the `emarmstfdp64dropdowneps0001bf16` render) | done | green | done | a89fa9af + — | pending | stands, rewritten to TF's rows |
+| MNv2 | done (the README's command, every row: + `evalCropSlim` / TF 1's bilinear, D23) | done | done (the first `rmstf` + EMA MNv2 render) | done | green | done | 6762494c + the D23 addendum | pending | stands, rewritten (the crop and the kernel in it) |
+| EfficientNet-B0 | done (TF's code, every row: 5 new flags + `rmspropTf` / `evalF32`) | done (`headTfUniform`) | done (D3's 36 Xla artifacts; the `emarmstfdp64dropdowneps0001bf16` render) | done | green | done | a89fa9af + dedb34f5 | pending | stands, rewritten to TF's rows |
+
+## 10. What is still disclosed, per net, and what closing each would take (2026-10-12)
+
+Every ch 5–9 marker now reads items / state / job / hours, and four of them keep a row "disclosed" that
+their rerun does not pay. Asked on 2026-10-12 what each would take, with two confirmations first:
+
+* **ResNet A2 / A1 — timm's index-level `RASampler` IS in code** (4d612bb9): `repeatedAugAdjacent := true`
+  on the A2 base config (A1 inherits it; A3 has no repeated augmentation, `repeatedAug := 1`), the
+  `a2accum` / `a1` shims carry it, and `repeated_aug_gate.py` ties the a2accum shim at 0.681 against the
+  re-shuffled control. The A2/A1 marker's item is paid by the rerun as it says.
+* **ViT-Ti at 320f5045 (the commit the pair runs from) — everything its marker lists is in it.** The only
+  ViT-Ti change after it is 3336f4a7's `evalF32` re-plumbing (module globals in place of one-element lists;
+  the trainer's own validation was f32 already — the fix was for `vit_timm_parity.py`'s forcing of
+  `mod.DT`), plus the JAX conf's grep line and a shim comment. The renders, the verified app, the verified
+  conf and `NetsCore`'s ViT parts are byte-identical to HEAD, and the reference is rescored in f32 post hoc
+  regardless (§1.6). The patch-embedding bias (R4) is in no commit, so that pair carries it disclosed.
+
+| # | net | row | the reference's own form | ours today | what it takes, both paths | size | proofs |
+|---|---|---|---|---|---|---|---|
+| R1 | MNv4 | decay on the classifier bias | the yaml excludes BN only — tf-models' L2 over every trainable variable but BN's | `wx`: norm γ/β AND biases off | JAX `wdDecayBiases := true` on `mobilenetV4ConvMImagenetConfigFull` (the structural `_wd_mask` already feeds the AdamW update's `WD * msk * p` term); verified `wn` for `wx` on the `mnv4in256` render — `rankWdDecaysKeepBias` is name-generic (BN names end `g` / `bt`), B0's count guard repeated on MNv4's signature — then MANIFEST, proofs.yml, `TestVariantPredicates`, an `opt_step_tie` row (AdamW + `wn`), both confs flipped. 1,000 floats under decoupled wd 0.1: nil on accuracy, "every row" | S, ~3–4 h | none — the decay set is a constant of the optimizer tail |
+| R2 | MNv4 | init | tf-models' initializers, to be READ off `nn_blocks.py`, `mobilenet.py`, `classification_model.py` and the yaml before anything is set (as σ 0.09 was off slim's `training_scope`); the expectation is Keras `VarianceScaling` (fan-in, truncated normal) on the conv blocks and the classifier's own rule | timm's `_init_weight_goog` with D4's depthwise fan k² | one init kind per layer class: JAX through `emitConvBnInitCfg` / `emitDwBnInitCfg` (every conv-BN and depthwise site already routes through them) and the head's init site; verified `VerifiedConfig` → `mkParam` (the templates are `truncNormalSigma`, `headTfUniform`, `seFanOutInit`), the app sets it, an INIT banner; only the MNv4 files re-emit; gates: per-tensor variance against the rule on both paths, the shim hash | S–M, about half a day | none — host-side |
+| R3 | MNv4 | head order | tf-models' block list runs `convbn 960 → 1280` at 8 × 8 and pools after | timm's: pool, then `conv_head` on the pooled vector | a different NET — BN and ReLU6 do not commute with the pool. JAX: two spec lines. Verified: a new render (the 1280 conv at 8 × 8 is a new op shape) and the whole-net ties re-pointed — `mobilenetv4ForwardBFull_eq_slots`, `mnv4InputGradB_correct`, the sync tie — D3-shaped; `mnv4_timm_parity.py` red by construction, so a tf-models-form oracle for the head; +78.6 MMAC (~8 % of Conv-M); the Imagenette twin and the landed 224 tier are then timm's net — the twin "switch and re-run" (~40 min), the 224 tier disclosed or rerun (100 epochs) | M–L, 1–2 days | yes — the apex, the slots equality and the sync tie restate on the new head |
+| R4 | ViT-Ti / S / B | patch-embedding bias | PyTorch's `Conv2d` default, `U(±1/√fan_in)` with fan_in = 3 · 16 · 16 = 768 → ±0.036 (timm's `init_weights_vit_timm` and DeiT's `_init_weights` touch `nn.Linear` only, so the Conv2d keeps the default) | 0 on both paths; `vitInit` already draws the patch WEIGHT at `U(±1/√fan_in)` | JAX: one init line under a flag (`initPatchEmbedBiasTorch`); verified: a `VerifiedConfig` flag → `mkParam` for that one bias (host-side; no render moves), the three ViT ImageNet apps set it, an INIT banner, an init-statistics check on both paths. Ti's running pair keeps it disclosed; S / B, not launched, take it | S, 1–2 h | none |
+
+**Decision, R3 first:** the paper's own MAdd count for Conv-M says which head it counted. If it is the pooled
+one, the 8 × 8 conv is tf-models' implementation and not the paper's net — leave it disclosed and say so in
+the marker. **Order proposed:** R1 + R4 (one afternoon, no proofs), R2 after the read, R3 on the MAdd
+answer. Each is the user's call, and none moves a landed number.
+
+**Still disclosed elsewhere, for the ledger** (none is a marker item):
+* MNv2 — the sixteen asynchronous workers of 96 (asynchronous SGD has no synchronous equivalent; stays).
+* B0 — the conv kernels' distribution (`tf.random_normal` at He fan-out where every init here is
+  variance-matched uniform; a normal-draw kind in `mkParam` and the JAX init would close it — S, both paths,
+  and it touches a convention every net shares), and the warmup one step ahead (`lr · step / W` from step 0
+  where ours is `(step + 1) / W`; S, the schedule emitter and the driver's warmup, with the schedule gate).
+* ConvNeXt — Mixup's λ granularity (once per 4096 / per 256 / per 128 in the official trainer); a variance
+  detail, not a row.
+* ResNet RSB — timm's `cooldown_epochs 10` (§8; disclosed in the configs).
+* The second scoring protocols (timm's for MNv4's paper tier, MNv2, B0) are post-hoc scores kept beside the
+  papers' own, not gaps.

@@ -1,0 +1,22 @@
+MobileNetV2 (ImageNet, bf16) · Lean 4 → JAX
+  Conv(3→32,3x3/2)+BN → IR1(32→16,e1,s1) → IR2(16→24,e6,s2) → IR3(24→32,e6,s2) → IR4(32→64,e6,s2) → IR3(64→96,e6,s1) → IR3(96→160,e6,s2) → IR1(160→320,e6,s1) → Conv(320→1280,1x1/1)+BN → GAP → 1280→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.120000  batch_size=256 (4 devices x 64)  epochs=1  params=3504872
+steps_per_epoch=50  total_steps=50
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+  Running validation ...
+  eval: f32 forward (evalF32)
+[Epoch 1] lr=0.12 loss(train_avg)=7.3653 val_top1=50/50000 (0.001) val_top5=0.005 val_loss=6.9581  [27.9s train, 12.4s val]
+saved 53 param-groups to /home/skoonce/mnv2_smoke_evalcrop_2612/mobilenet_v2_imagenet_full.bin (14019488 bytes)
+  saved full train state -> /home/skoonce/mnv2_smoke_evalcrop_2612/mobilenet_v2_imagenet_full.state.npz (840 arrays, step=50)
+
+Done. Total time: 40.5s
+exit 0

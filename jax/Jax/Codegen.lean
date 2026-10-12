@@ -650,6 +650,11 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
       "    img = tf.image.resize([img], " ++ sz ++ ",\n" ++
       "                          method=tf.image.ResizeMethod.BICUBIC, antialias=" ++ aa ++ ")[0]\n"
      | .bilinear =>
+      -- TF 1's `tf.image.resize_bilinear` (`resizeLegacyTf1`): what TF-slim's `resize_images` ran
+      -- for MobileNetV2 — no antialias, `half_pixel_centers=False`, as the bicubic arm above.
+      if cfg.resizeLegacyTf1 then
+      "    img = tf.compat.v1.image.resize_bilinear([img], " ++ sz ++ ")[0]   # TF1 legacy bilinear: no antialias, corner-aligned (resizeLegacyTf1)\n"
+      else
       "    img = tf.image.resize([img], " ++ sz ++ ",\n" ++
       "                          method=tf.image.ResizeMethod.BILINEAR, antialias=" ++ aa ++ ")[0]\n"
      | .random =>
@@ -736,6 +741,31 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
         "    return tf.compat.v1.image.resize_bicubic([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bicubic (resizeLegacyTf1)\n\n"
        else
         "    return tf.image.resize(img, [_IMG_SIZE, _IMG_SIZE], method=tf.image.ResizeMethod.BICUBIC,\n" ++
+        "                           antialias=" ++ (if cfg.resizeAntialias then "True" else "False") ++ ")\n\n")
+     else if cfg.evalCropTf && cfg.evalCropSlim then
+      -- TF-slim's `preprocess_for_eval` (`inception_preprocessing.py`): `tf.image.central_crop`'s
+      -- own arithmetic — offsets cast from float64, sizes `h − 2·offset`, so the window keeps the
+      -- JPEG's aspect — on the WHOLE decoded image, as slim's dataset decoder handed it over, then
+      -- `resize_bilinear` to the square (TF 1's kernel under `resizeLegacyTf1`), which does not keep
+      -- it. Not `decode_and_crop_jpeg` (TF TPU EfficientNet's and tf-models' own call above): at a
+      -- window that is not iMCU-aligned its chroma upsampling differs from the whole decode's by
+      -- one column (`scripts/gates/slim_eval_crop_gate.py` found it). The README's validation.
+      "def _imagenet_decode_center_crop(image_bytes):\n" ++
+      "    # TF-slim inception_preprocessing.preprocess_for_eval (evalCropSlim): tf.image.central_crop keeps the\n" ++
+      "    # centred _CROP_PCT of BOTH sides (offsets int(h * (1 - _CROP_PCT) / 2) in float64, sizes h - 2 * offset),\n" ++
+      "    # so the window has the JPEG's own aspect; then resize_bilinear to _IMG_SIZE x _IMG_SIZE, which does not\n" ++
+      "    # keep it. Decoded whole, as slim's decoder did: decode_and_crop_jpeg differs by a column at an\n" ++
+      "    # unaligned window. _imagenet_decode_center_crop_timm above is timm's protocol, swapped in under SHIM_EVAL_SIZE.\n" ++
+      "    img = tf.io.decode_jpeg(image_bytes, channels=3)\n" ++
+      "    shape = tf.shape(img)\n" ++
+      "    hd, wd = tf.cast(shape[0], tf.float64), tf.cast(shape[1], tf.float64)\n" ++
+      "    oy = tf.cast((hd - hd * _CROP_PCT) / 2, tf.int32)\n" ++
+      "    ox = tf.cast((wd - wd * _CROP_PCT) / 2, tf.int32)\n" ++
+      "    img = tf.image.crop_to_bounding_box(img, oy, ox, shape[0] - 2 * oy, shape[1] - 2 * ox)\n" ++
+      (if cfg.resizeLegacyTf1 then
+        "    return tf.compat.v1.image.resize_bilinear([img], [_IMG_SIZE, _IMG_SIZE])[0]   # TF1 legacy bilinear (resizeLegacyTf1)\n\n"
+       else
+        "    return tf.image.resize(img, [_IMG_SIZE, _IMG_SIZE], method=tf.image.ResizeMethod.BILINEAR,\n" ++
         "                           antialias=" ++ (if cfg.resizeAntialias then "True" else "False") ++ ")\n\n")
      else if cfg.evalCropTf then
       "def _imagenet_decode_center_crop(image_bytes):\n" ++

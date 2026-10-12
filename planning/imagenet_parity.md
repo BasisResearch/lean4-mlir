@@ -506,6 +506,7 @@ did not move).
 | D20 | B0 | AutoAugment v0's geometry | `autoaugment.py`: `contrib_image.{transform,rotate,translate}` at their default NEAREST, the `wrap`/`unwrap` fill 128, TranslateY in ABSOLUTE pixels `(l/10)·250` (`distort_image_with_autoaugment`'s `translate_const=250`), Posterize through TF's clamped shift (0 bits keeps the top bit) | timm's rendering (559a05b3): PIL bicubic at img_mean, TranslateYRel 0.45 of the side, a black image at 0 bits | ✅ 2026-10-12, TF's (recipe_prep.md §7): `autoAugmentTf` + `augNearest` + `randAugmentTranslateConst 250`, `augBicubic` off; the 25-row table was already TF's op for op. Gate `scripts/gates/aa_v0_tf_check.py` (the TF shift clamp measured on the op; the timm-form file red on 6 rows as its control) |
 | D21 | B0 | the weight-decay set | `main.py`: `weight_decay · Σ l2_loss(v)` over every trainable variable with `'batch_normalization'` not in its name — BN γ/β alone exempt, the SE and classifier biases and every kernel decayed | timm's `no_weight_decay` (BN γ/β AND biases exempt; `wx`) | ✅ 2026-10-12, TF's: JAX `wdDecayBiases` (a STRUCTURAL `_wd_mask`: `(W, γ, β)` triples vs `(W, b)` pairs), verified `rankWdDecaysKeepBias` (by name: γ ends in `g`, β in `bt`) under the `wn` marker — 98 `%wdz` bindings, 33 biases decaying, guarded on `enetSig`; `opt_step_tie.py` row `emarmstfwn` |
 | D22 | B0 | resize kernel and the eval crop | `preprocessing.py`: `tf.image.resize_bicubic` (TF 1: no antialias, `half_pixel_centers=False`) on the train crop and at eval; `_decode_and_center_crop` — side `int(224/256 · min(h, w))`, offsets `((h − side) + 1) // 2`, then the same resize; `preprocess_for_eval` has no flip | PIL-like `tf.image.resize(antialias=True)`; timm's resize-then-crop at eval | ✅ 2026-10-12, TF's: `resizeLegacyTf1` (`tf.compat.v1.image.resize_bicubic`), `evalCropTf` + `evalCropTfEfficientNet`; timm's form kept beside it (`_imagenet_decode_center_crop_timm`, `PROTOCOL=timm`, `timm_eval_protocols.json`'s `tf_efficientnet_b0.in1k` row) for the post-hoc score |
+| D23 | MNv2 | resize kernel and the eval crop | `inception_preprocessing.py`: `tf.image.resize_images` = TF 1's `resize_bilinear` (no antialias, `half_pixel_centers=False`) on the train crop; `preprocess_for_eval` = `tf.image.central_crop(0.875)` of BOTH sides of the whole decoded image (offsets `int(h · 0.125 / 2)` in float64, sizes `h − 2 · offset`), then `resize_bilinear` to 224 × 224, which does not keep the aspect | TF 2's `tf.image.resize(BILINEAR, antialias=False)` (half-pixel centres) on the train crop; timm's resize-then-crop at eval, disclosed | ✅ 2026-10-12 (later), slim's: `resizeLegacyTf1` extended to `.bilinear`, `evalCropTf` + the new `evalCropSlim` — the WHOLE decode then `crop_to_bounding_box`, not `decode_and_crop_jpeg`, which differs from the whole decode by one column at an iMCU-unaligned window (the gate found it; the `evalCropTf` forms keep TF's own call); timm's form kept beside it for `PROTOCOL=timm` / `SHIM_EVAL_SIZE`; gate `scripts/gates/slim_eval_crop_gate.py` (slim's own ops 1.4e-5 of the range, the TF 1 grid twin 0.003 grey levels, three red controls); `recipe_prep.md` §6 addendum |
 
 ### 9.3 Fleet-wide, rerun-scale (every reference moves)
 
@@ -633,7 +634,7 @@ deviations, and a gate checks this**, not prose. §7's run table is superseded b
 |---|---|---|
 | R34, R50-2018 | torchvision reference recipe | — |
 | R50-A3 | RSB (arXiv 2110.00476) + timm | the landed pair predates F1/F3/F4 (§10.3) |
-| MNv2 | TF-slim's own reproduction command, `research/slim/nets/mobilenet/README.md` ("roughly 72.0"), with the sources it runs (`train_image_classifier.py`, `mobilenet.training_scope`, `conv_blocks.expanded_conv`, `inception_preprocessing.py`, TF's `training_ops.cc`) — read 2026-10-12, `recipe_prep.md` §6. The paper's sentence ("0.045, decay 0.98 per epoch, 16 async workers of 96") is what the landed pair ran; the README's command is ×0.98 every 2.5 epochs at 0.045 per 96 images, label smoothing 0.1, EMA 0.9999, ~420 epochs | 16×96 async → 4×64 sync; slim's eval (`central_crop(0.875)` on both sides, then a non-aspect-preserving bilinear resize) — scored at timm's 224 / 0.875 like every pair |
+| MNv2 | TF-slim's own reproduction command, `research/slim/nets/mobilenet/README.md` ("roughly 72.0"), with the sources it runs (`train_image_classifier.py`, `mobilenet.training_scope`, `conv_blocks.expanded_conv`, `inception_preprocessing.py`, TF's `training_ops.cc`) — read 2026-10-12, `recipe_prep.md` §6. The paper's sentence ("0.045, decay 0.98 per epoch, 16 async workers of 96") is what the landed pair ran; the README's command is ×0.98 every 2.5 epochs at 0.045 per 96 images, label smoothing 0.1, EMA 0.9999, ~420 epochs | 16×96 async → 4×64 sync; slim's eval reproduced too (D23, later on 2026-10-12: `central_crop(0.875)` of both sides, TF 1's bilinear to 224²), timm's 224 / 0.875 kept as the post-hoc second score like every pair |
 | MNv4-Conv-M | paper Tables 9–10; timm where the paper is silent | — (500 ep is affordable: ~95 h verified, ~112 h JAX) |
 | B0 | TF EfficientNet | — |
 | ConvNeXt-T | official repo | batch 4096 by accumulation k16 (no BN, so exact), not a deviation |
@@ -728,8 +729,19 @@ first `rmstf` and the first EMA MobileNetV2 render; its ℝ reference and faithf
 counterfactuals red), `color_distort_gate.py` on the trainer and the shim, the shim hash reproducible /
 seed-distinct, parse 372, arity 281, `regen_jax_generated check` (4 MNv2 files moved, 62 byte-identical),
 `regen_verified_mlir check` 76/76, `TestVariantPredicates`, comment_numbers, module_refs,
-docstring-checkrefs, both DRY_RUN prechecks. Disclosed, not reproduced: slim's eval protocol and the
-sixteen asynchronous workers. Smokes and ETAs in the confs; no run launched.
+docstring-checkrefs, both DRY_RUN prechecks. Disclosed, not reproduced: the sixteen asynchronous workers
+(slim's eval protocol was, until the addendum below). Smokes and ETAs in the confs; no run launched.
+
+**MobileNetV2 addendum (2026-10-12, later; D23; `recipe_prep.md` §6 addendum).** The user's call — the paper's,
+not timm's variant — found the recipe already the README's and one row still timm's, the validation crop,
+plus TF 2's bilinear where slim ran TF 1's. Both closed on both paths: `evalCropSlim` (slim's
+`preprocess_for_eval`: `central_crop(0.875)` of both sides of the whole decode, TF 1's `resize_bilinear` to
+224²; timm's form under `_timm` for `PROTOCOL=timm`) and `resizeLegacyTf1` on `.bilinear` (train and eval).
+`decode_and_crop_jpeg` is not the whole decode's window at an unaligned window (one column; the gate found
+it), so the emitted form decodes whole as slim did. Gate `slim_eval_crop_gate.py` (1.4e-5 / 0.003 grey
+levels / three red controls, in jax.yml), `pc_crop tf1-bilinear`, both confs' greps, the four MNv2 files
+re-emitted (62 byte-identical), both smokes (`runs/2026-10-12-mnv2-jax-smoke-evalcrop/`,
+`runs/2026-10-12-mnv2-verified-evalcrop-smoke/`). The ch 6 marker lists the crop and the kernel. No run launched.
 
 **ViT-S / ViT-B status (2026-10-11, later; `planning/recipe_prep.md` §3).** Tiny's recipe at the two
 widths, on both paths: `vitSImagenetConfig` / `vitBImagenetConfig` carry Tiny's lines verbatim (batch

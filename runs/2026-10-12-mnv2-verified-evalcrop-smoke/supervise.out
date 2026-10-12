@@ -1,0 +1,167 @@
+box=ares plugin=.venv/lib/python3.12/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so python=.venv/bin/python3
+  per-image bitmaps -> /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/runs/2026-10-12-mnv2-verified-evalcrop-smoke/bitmaps/mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_e{N}.bin (LEAN_MLIR_DUMP_CORRECT)
+[sup] 2026-10-12 15:35:30 START job=mnv2-default-4gpu devs=0,1,2,3 epochs=420 rest_after=[none] temp_max=78 stall=1800s logs=/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/runs/2026-10-12-mnv2-verified-evalcrop-smoke
+[sup] 2026-10-12 15:35:30 cmd: .lake/build/bin/mobilenetv2-imagenet-verified data
+[sup] 2026-10-12 15:35:30 eta: ~63 h for 420 ep on 4x 4060 Ti (2026-10-12 smoke, runs/2026-10-12-mnv2-default-4gpu/: med 96 / min 90 / p90 102 ms per 256-row step at w4, starvation 6 ms; 5,004 steps + ~60 s the f32 validation and checkpoint every epoch; the retired arm read 123 ms on 2026-09-25 under timm's bicubic feed)
+[sup] 2026-10-12 15:35:30 ONCE — one foreground run, no restart policy
+I1012 15:35:30.916819 3202492 service.cc:154] XLA service 0x7bfe780517d0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1012 15:35:30.916898 3202492 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1012 15:35:30.916925 3202492 service.cc:170]   StreamExecutor [1]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1012 15:35:30.916932 3202492 service.cc:170]   StreamExecutor [2]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1012 15:35:30.916938 3202492 service.cc:170]   StreamExecutor [3]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1012 15:35:30.919518 3202492 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1012 15:35:30.919560 3202492 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 0 for BFCAllocator.
+I1012 15:35:30.919605 3202492 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 1 for BFCAllocator.
+I1012 15:35:30.919624 3202492 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 2 for BFCAllocator.
+I1012 15:35:30.919640 3202492 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 3 for BFCAllocator.
+I1012 15:35:30.929734 3202492 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 4 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+E1012 15:35:34.774359 3202553 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 15:35:34.871789 3202553 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+I1012 15:35:35.077287 3202563 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 96 bytes spill stores, 64 bytes spill loads
+
+I1012 15:35:35.288909 3202556 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 96 bytes spill stores, 64 bytes spill loads
+
+E1012 15:35:36.042962 3202553 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+I1012 15:35:37.046936 3202550 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_6', 128 bytes spill stores, 72 bytes spill loads
+
+E1012 15:35:37.758607 3202553 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1012 15:35:43.261685 3202543 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[pjrt_ffi] compiled verified_mlir/mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_train_step.mlir (@mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_train_step, 742 outputs, 4 replicas) in 30545 ms
+I1012 15:36:01.801764 3202542 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 12 bytes spill stores, 12 bytes spill loads
+
+I1012 15:36:01.930911 3202552 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 64 bytes spill stores, 64 bytes spill loads
+
+I1012 15:36:02.078495 3202544 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 128 bytes spill stores, 84 bytes spill loads
+
+E1012 15:36:02.155261 3202535 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[pjrt_ffi] compiled verified_mlir/mobilenetv2in_fwd.mlir (@mobilenetv2in_fwd, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 3838 ms
+[pjrt_ffi] compiled verified_mlir/mobilenetv2in_fwd_eval_eps0001.mlir (@mobilenetv2in_fwd_eval_eps0001, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 313 ms
+MobileNetV2 on full 1000-class ImageNet via the VERIFIED renderer → XLA/PJRT → GPU, with the tfds batch shim supplying the same augmentation the Lean→JAX reference trainer uses
+  xla/pjrt verified_mlir/mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_train_step.mlir
+  xla/pjrt verified_mlir/mobilenetv2in_fwd.mlir  (eval, SHARDED over 4 replicas)
+  xla/pjrt verified_mlir/mobilenetv2in_fwd_eval_eps0001.mlir  (eval, SHARDED over 4 replicas)
+  imagenet: val streams per pass (50,000 images at eval width 150528) — nothing is held
+  train 1281167, test 50000; bs 64, MobileNetV2 (ImageNet-1k) emarmstfdp64wxdwdoeps0001bf16 (exp x0.980000/2.500000ep staircase+warmup 0ep, baseLR 0.120000), He init
+  ▸ RMSPROP: m = momentum buffer (init 0), v = running MEAN-SQUARE (init 1.0, TF convention — this optimizer is not bias-corrected)
+  ▸ CLASSIFIER DROPOUT: keep 0.800000, mask tensor<256x1280xf32> (PER-ELEMENT, one Bernoulli per example×feature — not per-example like the drop scales), host-drawn per step at seed+999983, 1/keep folded in. Eval is the identity (drop-free forward).
+  ▸ EMA: region 3 of 4 [θ|m|v|ema], shadow starts AT the weights, decay min(0.999900, (1+t)/(10+t)) — TF warmup-corrected. EVAL AND CHECKPOINT SCORE THE SHADOW.
+  running-stats BN: 52 layers, 34112 stat floats → eval via @mobilenetv2in_fwd_eval_eps0001
+     decay 0.997000 (TF sense; = PyTorch/timm momentum 0.003000), new-batch weight 0.003000
+  DATA-PARALLEL: 4 replicas x bs 64 = global batch 256, 50 steps/epoch
+  EVAL SHARDED: 4 replicas x 64 = 256 test images per invoke, 196 invokes, last one 80 real + 176 pad
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791819366.101821 3204574 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+I0000 00:00:1791819368.088059 3204720 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791819368.827321 3204797 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+I0000 00:00:1791819370.993567 3204953 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791819371.768727 3205027 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+I0000 00:00:1791819373.943014 3205317 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791819374.543239 3205392 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+I0000 00:00:1791819376.795100 3205546 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_train_step holds 632 parameter tensors (53.5 MB) on 4 devices; they stop crossing PCIe from here
+I1012 15:36:18.893575 3202529 cuda_dnn.cc:440] Loaded cuDNN version 92302
+I1012 15:36:18.893637 3202532 cuda_dnn.cc:440] Loaded cuDNN version 92302
+I1012 15:36:18.893712 3202526 cuda_dnn.cc:440] Loaded cuDNN version 92302
+  ▸ INIT: depthwise fan = k² (the JAX reference's rule), not He fan-out C·k²
+  ▸ INIT: truncated normal σ=0.090000 on every conv kernel, depthwise and dense (TF-slim training_scope; std 0.8796σ as TF's ±2σ redraw gives), biases 0 — above the fan rules
+  imagenet shim: jax/.lake/build/generated_mobilenet_v2_imagenet_shim.py — train split, batch 256, 150528 floats/img (seed 1)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v2_imagenet_shim.py — train split, batch 256, 150528 floats/img (seed 2)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v2_imagenet_shim.py — train split, batch 256, 150528 floats/img (seed 3)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v2_imagenet_shim.py — train split, batch 256, 150528 floats/img (seed 4)
+  imagenet shim: 4 sharded producers (round-robin over batches)
+  ▸ SHIM RESPAWN: one producer every 10 epoch(s), round-robin over 4 — no loader lives past 40 epochs.
+  ▸ SHIM PREFETCH: ON (depth 4 over 4 producer handle(s) — each step's read is issued before the previous step's invoke, one in flight PER HANDLE, so every producer drains during compute instead of blocking in write()). Measured 377 → 224 ms/step on R34/ImageNet 4×bs64 for depth 1. Batch buffers are allocated and freed on the main thread; the pool only fills them.
+  step 0/50: loss=7.681537
+  step 1/50: loss=7.907222
+  step 2/50: loss=7.601536
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791819389.771419 3206267 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+I0000 00:00:1791819391.723265 3206404 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791819392.263119 3206482 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+I0000 00:00:1791819394.257544 3206626 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mobilenetv2in_fwd_eval_eps0001 holds 262 parameter tensors (13.5 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 1/420: loss=7.341317 lr=0.120000
+  imagenet shim: jax/.lake/build/generated_mobilenet_v2_imagenet_shim.py — validation split, batch 256, 150528 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v2_imagenet_shim.py — validation split, batch 256, 150528 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 1: test_acc = 50/50000 = 0.100000%  top5 = 254/50000 = 0.508000%  [95% CI 0.08–0.13]
+    per-example top-1 bitmap -> /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/runs/2026-10-12-mnv2-verified-evalcrop-smoke/bitmaps/mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_emarmstfdp64wxdwdoeps0001bf16_e1.bin (50000 bytes)
+    BN companion -> .lake/build/mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_ckpt_xla.bin.bn (34112 floats x 2, hash 9095665204152901057)
+  step 0/50: loss=7.140979
+  step 1/50: loss=7.164432
+  step 2/50: loss=7.181516
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791819430.435474 3206863 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+I0000 00:00:1791819432.443161 3207003 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791819433.000363 3207080 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+I0000 00:00:1791819435.085332 3207225 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mobilenetv2in_fwd_eval_eps0001 holds 262 parameter tensors (13.5 MB) on 4 devices; they stop crossing PCIe from here
+supervisor exit 143
+-rw-rw-r-- 1 skoonce skoonce 56077952 Oct 12 15:37 /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_ckpt_xla.bin
+-rw-rw-r-- 1 skoonce skoonce        1 Oct 12 15:37 /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/mobilenetv2in_emarmstfdp64wxdwdoeps0001bf16_ckpt_xla.bin.epoch

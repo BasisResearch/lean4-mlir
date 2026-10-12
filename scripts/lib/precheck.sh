@@ -114,8 +114,9 @@ pc_shim() {
 # pc_crop FILE KIND [RESIZE] — the train crop FILE (a trainer or a shim) samples with. KIND
 # `torchvision`: `_torchvision_rrc` (TrainConfig.cropTorchvision; R34, R50, MNv4, ConvNeXt, ViT);
 # `tf`: TF's sample_distorted_bounding_box (MNv2); `tf-centre`: that with EfficientNet's centre-crop
-# fallback (B0). RESIZE `bicubic` | `bilinear` | `random` is the train resize kernel (default bicubic).
-# Gate for the samplers themselves: scripts/gates/crop_sampler_gate.py.
+# fallback (B0). RESIZE `bicubic` | `bilinear` | `random` is the train resize kernel (default bicubic);
+# `tf1-bicubic` | `tf1-bilinear` are TF 1's legacy kernels (resizeLegacyTf1: B0's bicubic, MNv2's
+# bilinear). Gate for the samplers themselves: scripts/gates/crop_sampler_gate.py.
 pc_crop() {
   local f="$1" kind="$2" rs="${3:-bicubic}" ok=0 calls
   [ -f "$f" ] || { echo "⛔ missing $f — scripts/regen_jax_generated.sh sync"; return 1; }
@@ -131,14 +132,16 @@ pc_crop() {
         echo "⛔ $f carries EfficientNet's centre-crop fallback, which this recipe does not"; ok=1; }; fi ;;
     *) echo "⛔ pc_crop: unknown kind $kind"; return 1 ;;
   esac
-  local bil bic tf1; bil="$(grep -c 'ResizeMethod.BILINEAR' <<<"$calls")"; bic="$(grep -c 'ResizeMethod.BICUBIC' <<<"$calls")"
-  tf1="$(grep -c 'tf.compat.v1.image.resize_bicubic' <<<"$calls")"
+  local bil bic tf1 tf1b; bil="$(grep -c 'ResizeMethod.BILINEAR' <<<"$calls")"; bic="$(grep -c 'ResizeMethod.BICUBIC' <<<"$calls")"
+  tf1="$(grep -c 'tf.compat.v1.image.resize_bicubic' <<<"$calls")"; tf1b="$(grep -c 'tf.compat.v1.image.resize_bilinear' <<<"$calls")"
   case "$rs" in
-    bicubic)  [ "$bil" = 0 ] && [ "$bic" -ge 1 ] && [ "$tf1" = 0 ] ;;
-    bilinear) [ "$bil" -ge 1 ] && [ "$bic" = 0 ] ;;
+    bicubic)  [ "$bil" = 0 ] && [ "$bic" -ge 1 ] && [ "$tf1" = 0 ] && [ "$tf1b" = 0 ] ;;
+    bilinear) [ "$bil" -ge 1 ] && [ "$bic" = 0 ] && [ "$tf1b" = 0 ] ;;
     random)   [ "$bil" -ge 1 ] && [ "$bic" -ge 1 ] ;;
-    # TF 1's legacy bicubic (resizeLegacyTf1: no antialias, corner-aligned) — TF TPU EfficientNet
-    tf1-bicubic) [ "$bil" = 0 ] && [ "$bic" = 0 ] && [ "$tf1" -ge 1 ] ;;
+    # TF 1's legacy kernels (resizeLegacyTf1: no antialias, corner-aligned) — TF TPU EfficientNet's
+    # bicubic, TF-slim's bilinear (`resize_images` in the TF 1 that trained MobileNetV2)
+    tf1-bicubic)  [ "$bil" = 0 ] && [ "$bic" = 0 ] && [ "$tf1" -ge 1 ] && [ "$tf1b" = 0 ] ;;
+    tf1-bilinear) [ "$bil" = 0 ] && [ "$bic" = 0 ] && [ "$tf1" = 0 ] && [ "$tf1b" -ge 1 ] ;;
     *) false ;;
   esac || { echo "⛔ $f's train crop does not resize $rs (trainResize) — re-emit"; ok=1; }
   return $ok

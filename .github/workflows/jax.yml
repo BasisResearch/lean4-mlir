@@ -64,6 +64,7 @@ on:
       - 'scripts/gates/aug_bicubic_pil_check.py'
       - 'scripts/gates/crop_sampler_gate.py'
       - 'scripts/gates/color_distort_gate.py'
+      - 'scripts/gates/slim_eval_crop_gate.py'
       - 'scripts/gates/aa_v0_tf_check.py'
       - 'requirements-timm-lock.txt'
   pull_request:
@@ -103,6 +104,7 @@ on:
       - 'scripts/gates/aug_bicubic_pil_check.py'
       - 'scripts/gates/crop_sampler_gate.py'
       - 'scripts/gates/color_distort_gate.py'
+      - 'scripts/gates/slim_eval_crop_gate.py'
       - 'scripts/gates/aa_v0_tf_check.py'
       - 'requirements-timm-lock.txt'
   workflow_dispatch:
@@ -640,6 +642,14 @@ jobs:
         run: |
           set -o pipefail
           python3 scripts/gates/color_distort_gate.py jax/generated/generated_mobilenet_v2_imagenet_full.py 2>&1 | tee -a /tmp/parity.log
+
+      - name: TF-slim's preprocess_for_eval against TF's own ops and a TF 1 bilinear twin, on the emitted MobileNetV2 eval decode
+        # D23 (planning/recipe_prep.md §6): central_crop 0.875 of both sides of the whole decode, then
+        # TF 1's resize_bilinear; the EMITTED `_imagenet_decode_center_crop` exec'd verbatim from the
+        # trainer and the shim, with TF 2's half-pixel bilinear, timm's and tf-models' forms as red controls.
+        run: |
+          set -o pipefail
+          python3 scripts/gates/slim_eval_crop_gate.py jax/generated/generated_mobilenet_v2_imagenet_full.py jax/generated/generated_mobilenet_v2_imagenet_full_shim.py 2>&1 | tee -a /tmp/parity.log
 
       - name: EfficientNet-B0's AutoAugment as TF TPU EfficientNet's autoaugment.py applies it
         # planning/recipe_prep.md §7 (2026-10-12): the v0 table op for op, TranslateY at (l/10)·250 px,
