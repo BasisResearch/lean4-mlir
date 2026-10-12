@@ -23,7 +23,8 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    ROOT, "jax", "generated", "generated_efficientnet_b0_imagenet_full.py")
+    # RSB-A3's trainer: B0 took TF's NEAREST geometry in dedb34f5 and carries no bicubic block.
+    ROOT, "jax", "generated", "generated_resnet50_imagenet_rsbfaithful.py")
 src = open(path).read().split("\n")
 a = next(i for i, l in enumerate(src) if l.startswith("_AA_MAX"))
 b = next(i for i, l in enumerate(src) if l.startswith("def _imagenet_decode_random_crop_flip"))

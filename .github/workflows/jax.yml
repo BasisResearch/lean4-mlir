@@ -488,18 +488,18 @@ jobs:
           #   a2-accum    LAMB + no_weight_decay + global-norm clip + accumulation (wd 0.02)
           #   a1          the same at RSB-A1's wd 0.01 — the `wdStr` row
           #   adam-probe  AdamW + no_weight_decay + clip at eps 1e-8, wd 0.02 — the `.adamw` row
-          # and the RMSProp rows (2026-10-12): EfficientNet-B0's `default` (the rate OUTSIDE the
-          # momentum term, timm's mask) and MobileNetV2's `full` (TF1's placement, TF-slim's mask
-          # with the depthwise excluded, the EMA shadow).
+          # and the RMSProp rows (2026-10-12): EfficientNet-B0's `full` (TF1's placement, TF TPU
+          # EfficientNet's decay set, the EMA shadow; its `rmswx` row on `default` is retired) and
+          # MobileNetV2's `full` (TF1's placement, TF-slim's mask with the depthwise excluded, the EMA shadow).
           for r in default a2-accum a1 adam-probe; do
             lake exe resnet50-imagenet "$r" /nonexistent-so-training-cannot-start >/dev/null 2>&1 || true
           done
-          lake exe efficientnet-b0-imagenet default /nonexistent-so-training-cannot-start >/dev/null 2>&1 || true
+          lake exe efficientnet-b0-imagenet full /nonexistent-so-training-cannot-start >/dev/null 2>&1 || true
           lake exe mobilenet-v2-imagenet full /nonexistent-so-training-cannot-start >/dev/null 2>&1 || true
           missing=0
           for f in generated_resnet50_imagenet.py generated_resnet50_imagenet_a2accum.py \
                    generated_resnet50_imagenet_a1.py generated_resnet50_imagenet_adamprobe.py \
-                   generated_efficientnet_b0_imagenet.py generated_mobilenet_v2_imagenet_full.py; do
+                   generated_efficientnet_b0_imagenet_full.py generated_mobilenet_v2_imagenet_full.py; do
             if [ ! -s ".lake/build/$f" ]; then echo "::error::$f was not emitted"; missing=1; fi
           done
           [ "$missing" -eq 0 ]
