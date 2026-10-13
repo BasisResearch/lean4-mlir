@@ -19224,9 +19224,13 @@ and the empirical layer are for.
 \subsection{Independent kernel re-check (comparator)}
 
 \texttt{tests/comparator/} wires the project up to
-\href{https://github.com/leanprover/comparator}{leanprover/comparator},
+\href{https://github.com/leanprover/comparator}{leanprover/comparator}
+(\texttt{lake comparator}, bundled with Lean since 4.35),
 the Lean community's trustworthy-judge tool for projects that claim
-zero project axioms. It runs 88 theorems (the foundation rules,
+zero project axioms. It runs with \texttt{--paranoid}, so besides Lean's own
+kernel five independent checkers must accept every proof:
+\texttt{leanchecker-paranoid}, \texttt{lean4lean}, \texttt{nanoda},
+\texttt{con-leche} and \texttt{con-ron}. It runs 88 theorems (the foundation rules,
 every chapter's headline Jacobian, the public
 \texttt{*HasVJP\_correct} wrappers, three smooth-point
 pointwise variants (\texttt{reluHasVJPAt\_correct},

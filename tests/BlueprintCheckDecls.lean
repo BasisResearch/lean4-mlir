@@ -98,7 +98,7 @@ unsafe def main (args : List String) : IO UInt32 := do
   let (ws?, log) ← (loadWorkspace config).run?
   log.replay (logger := .stderr)
   let some ws := ws? | return 1
-  let coreLibs := ws.root.leanLibs.filter fun lib => lib.name != `CertsHeavy
+  let coreLibs := ws.root.leanLibs.filter fun lib => lib.name != `CertsHeavy && lib.name != `ComparatorTests
   -- Filter ROOTS, not libs: a lib that ever mixes `apps` and `LeanMlir` roots
   -- still contributes the half this workflow actually builds.
   -- `demos` is here for the same reason as `apps` — see the header. Both are trainer/demo

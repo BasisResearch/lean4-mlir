@@ -16,27 +16,21 @@ name: Comparator (independent kernel re-check)
 # itself has never reported a kernel or axiom-closure failure here. It is fit to be a
 # required check; flip it in branch protection, which is a GitHub setting, not a file.
 #
-# Sandbox note, corrected 2026-09-20. This used to read "comparator sandboxes via
-# Landlock ABI v5, which needs Linux kernel >= 6.10 ... `ubuntu-22.04` does NOT",
-# as a risk of the run failing. It is not: comparator passes `--best-effort` to
-# landrun unconditionally, so landrun enforces whatever ABI the kernel offers.
-# Verified by running all three configs green on a 6.8.0 / ABI 4 box. What an
-# older kernel costs is sandbox STRENGTH, silently — landrun does not announce
-# the downgrade. So keep `ubuntu-24.04` for the v5 profile, and read the
-# `uname -r` step below as recording which profile a given run actually got,
-# not as a failure diagnostic.
+# ⭐ 2026-10-13, Lean 4.35: `lake comparator` replaces the external toolchain. Lean now bundles
+# comparator as a Lake command, its exporter (`leanexport`, always the toolchain's own, so the
+# old lean4export olean-compatibility pin is gone), and five independent checkers beyond Lean's
+# kernel: leanchecker-paranoid, lean4lean, nanoda, con-leche and con-ron. `--paranoid` requires
+# every one of them to accept. The landrun / lean4export / comparator builds, their caches and
+# the landrun flag shim are deleted; nanoda — long "disabled pending a rebuild" — runs by default.
 #
-# Tool pinning: lean4export reads the project's `.olean`s, so its build
-# must stay olean-compatible with the project's Lean (v4.35.0-rc4). LEAN4EXPORT_REF
-# is upstream's `v4.35.0-rc4` release tag, and the `cp lean-toolchain` in the
-# build step below is what keeps that safe across a patch bump with no tag
-# (as 4.32.2 was, built from the v4.32.0 tag, and 4.34.1 is, from v4.34.0): the tagged *source* is rebuilt
-# with the project's exact Lean, and the cache key hashes lean-toolchain so a
-# bump busts it. What matters is the Lean the
-# exporter is BUILT with, not the tag it is built FROM; a mismatch shows up as
-# "incompatible header" at the export step, which looks nothing like a proof
-# failure. If a future bump breaks the build, pin LEAN4EXPORT_REF/COMPARATOR_REF
-# to the first commit that went green here.
+# Sandbox: `bwrap`, not Landlock. `/` read-only, `/home` and `/tmp` replaced by tmpfs, only the
+# project's `.lake` writable, no network after dependency resolution. bwrap needs unprivileged
+# user namespaces, which Ubuntu 24.04 gates behind AppArmor; the `Install bubblewrap` step lifts
+# that sysctl and smoke-tests bwrap, so a sandbox failure shows there and not mid-check.
+#
+# Layout: the six Challenge/Solution modules are the ROOT package's `ComparatorTests` lib. The
+# sandbox reads only the project directory, so the old nested package's `path = "../.."` require
+# could not resolve; as part of the root, the sandboxed build reuses the Certs oleans below.
 
 on:
   push:
@@ -79,30 +73,20 @@ concurrency:
 
 jobs:
   comparator:
-    runs-on: ubuntu-24.04        # kernel >= 6.10 -> Landlock ABI v5, the full sandbox profile
-    # 120, not 90: a COLD Certs build is ~42 min (`Build proof suite`) + ~11 min of
-    # run.sh, and 2026-09-20 added the 21-theorem tier pair — a third comparator pass,
-    # ~2,750 more lines of generated Lean to build, and the ~2-min generator drift check.
-    # The old 45-min cap killed the one-time cold bootstrap before it could save the
-    # `lake-certs-` cache (run #219). Cold only happens on the first run of a new
-    # Mathlib/manifest hash; warm runs were ~6 min before the tier. certs.yml uses 180.
-    timeout-minutes: 120
-    env:
-      LEAN4EXPORT_REF: 05d43a2bc773b40ecfdebb32294192a5ef756951  # tag v4.35.0-rc4
-      COMPARATOR_REF:  3afea238d63125383110f8b59acaf11d7788c3e1
-      # v0.1.14 is the first release whose CLI accepts comparator's
-      # single-dash `-ldd` / `-add-exec` (v0.1.13's urfave/cli rejects them).
-      LANDRUN_VERSION: v0.1.14
+    runs-on: ubuntu-24.04
+    # A COLD Certs build is ~42 min (`Build proof suite`), plus the ~2-min generator drift
+    # check, plus the three `--paranoid` passes: 106 s + 315 s + 1235 s on a local box
+    # (2026-10-13), the tier export being ~63k declarations through six checkers. 150 leaves
+    # room for a slower runner. The old 45-min cap killed the one-time cold bootstrap before
+    # it could save the `lake-certs-` cache (run #219). certs.yml uses 180.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
 
       - name: Free up disk space
-        # Mathlib is materialized twice here (parent `lake build Certs`, then
-        # again when tests/comparator resolves its own Mathlib) — both served
-        # from the olean cache (`lake exe cache get`), not compiled from source.
-        # Two ~2.3 GB olean trees still land on disk during the run, overflowing
-        # the runner's ~14 GB free, so reclaim the ~20+ GB of preinstalled SDKs
-        # we don't use (Android, .NET, GHC, CodeQL) up front.
+        # Mathlib is now materialized once (the nested package and its second ~2.3 GB tree
+        # are gone), but the Certs oleans plus three NDJSON exports in /tmp still crowd the
+        # runner's ~14 GB free; reclaiming the unused preinstalled SDKs is cheap headroom.
         run: |
           df -h /
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
@@ -110,8 +94,14 @@ jobs:
           sudo apt-get clean
           df -h /
 
-      - name: Show kernel (which Landlock ABI the sandbox got)
-        run: uname -r
+      - name: Install bubblewrap (the `lake comparator` sandbox)
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q bubblewrap
+          # Ubuntu 24.04 restricts unprivileged user namespaces via AppArmor; bwrap needs them.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          bwrap --version
+          bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all --die-with-parent true \
+            || { echo "::error::bwrap cannot create its namespaces on this runner"; exit 1; }
 
       - name: Install elan
         run: |
@@ -151,63 +141,8 @@ jobs:
           # re-checks corpus theorems (whole-net VJPs, seals), and `Proofs` is
           # now only the slim demo-cone slice. Certs' roots subsume it.
           lake exe cache get || true   # like the other five workflows: a cache blip is not a proof failure
-          lake build Certs
-
-      - name: Install landrun
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl -fsSL -o "$HOME/.local/bin/landrun" \
-            "https://github.com/Zouuup/landrun/releases/download/${LANDRUN_VERSION}/landrun-linux-amd64"
-          chmod +x "$HOME/.local/bin/landrun"
-          landrun --version
-          # Guard: comparator passes single-dash `-ldd`; fail loudly (rather
-          # than 40 lines into the run) if a version bump regresses that.
-          if landrun -ldd 2>&1 | grep -q 'not defined'; then
-            echo "::error::landrun ${LANDRUN_VERSION} rejects the single-dash -ldd flag comparator emits"
-            exit 1
-          fi
-
-      - name: Cache lean4export build
-        id: cache-lean4export
-        # Key includes the project toolchain: lean4export's olean reader is
-        # version-locked, so it must be rebuilt when the project's Lean
-        # changes — and this busts caches from a mismatched build.
-        uses: actions/cache@v4
-        with:
-          path: ~/lean4export
-          key: lean4export-${{ env.LEAN4EXPORT_REF }}-${{ hashFiles('lean-toolchain') }}
-
-      - name: Build lean4export (.olean -> text exporter)
-        if: steps.cache-lean4export.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/leanprover/lean4export ~/lean4export
-          git -C ~/lean4export checkout "$LEAN4EXPORT_REF"
-          # lean4export reads the project's .oleans, so it must be built with
-          # the project's exact Lean (v4.35.0-rc4) — the `cp lean-toolchain` below
-          # forces that; a mismatched build rejects our headers ("incompatible
-          # header").
-          cp lean-toolchain ~/lean4export/lean-toolchain
-          (cd ~/lean4export && lake build)
-
-      - name: Cache comparator build
-        id: cache-comparator
-        uses: actions/cache@v4
-        with:
-          path: ~/comparator
-          key: comparator-${{ env.COMPARATOR_REF }}
-
-      - name: Build comparator
-        if: steps.cache-comparator.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/leanprover/comparator ~/comparator
-          git -C ~/comparator checkout "$COMPARATOR_REF"
-          (cd ~/comparator && lake build)
-
-      - name: Link tools onto PATH
-        run: |
-          ln -sf ~/lean4export/.lake/build/bin/lean4export "$HOME/.local/bin/lean4export"
-          ln -sf ~/comparator/.lake/build/bin/comparator  "$HOME/.local/bin/comparator"
-          command -v landrun lean4export comparator
+          # `ComparatorTests` too: the sandboxed `lake comparator` build then only replays.
+          lake build Certs ComparatorTests
 
       - name: Comparator tier files match their generator
         id: tier
@@ -219,12 +154,11 @@ jobs:
         # declarations say? It re-prints every tier type and diffs, ~2 min, no sandbox.
         run: python3 scripts/gates/gen_comparator_tier.py --check
 
-      - name: Run comparator (Mathlib-only, architecture and tier configs — kernel + axiom-closure re-check)
+      - name: Run lake comparator --paranoid (Mathlib-only, architecture and tier configs)
         id: run
         run: |
           set -o pipefail
-          cd tests/comparator
-          ./run.sh 2>&1 | tee "$RUNNER_TEMP/comparator.log"
+          tests/comparator/run.sh 2>&1 | tee "$RUNNER_TEMP/comparator.log"
 
       - name: Job summary
         # The other proof workflows end in a stats table; this one ended in a bare green tick.
@@ -234,12 +168,6 @@ jobs:
         if: always()
         run: |
           log="$RUNNER_TEMP/comparator.log"
-          kern="$(uname -r)"
-          if [ "$(printf '%s\n' 6.10 "${kern%%-*}" | sort -V | head -1)" = "6.10" ]; then
-            sandbox="Landlock ABI v5, the full profile"
-          else
-            sandbox="best-effort Landlock (kernel < 6.10, a weaker profile)"
-          fi
           total=0; ok=0; rows=""
           for cfg in config.json config-arch.json config-tier.json; do
             n="$(python3 -c 'import json, sys; print(len(json.load(open(sys.argv[1]))["theorem_names"]))' "tests/comparator/$cfg")"
@@ -266,7 +194,7 @@ jobs:
             echo "## Comparator — independent kernel re-check"
             echo ""
             if [ "$ok" -eq "$total" ]; then
-              echo "✅ **All ${total} theorems re-checked by Lean's kernel**: every statement matches its challenge, and every axiom closure is within [\`propext\`, \`Quot.sound\`, \`Classical.choice\`]."
+              echo "✅ **All ${total} theorems re-checked by Lean's kernel and five independent checkers** (leanchecker-paranoid, lean4lean, nanoda, con-leche, con-ron): every statement matches its challenge, and every axiom closure is within [\`propext\`, \`Quot.sound\`, \`Classical.choice\`]."
             else
               echo "❌ **${ok} of ${total} theorems re-checked** — see the \`Run comparator\` log."
             fi
@@ -277,5 +205,5 @@ jobs:
             echo ""
             echo "$tier"
             echo ""
-            echo "**Sandbox:** Linux \`$kern\`, $sandbox · **Lean:** \`$(cat lean-toolchain)\` · lean4export \`${LEAN4EXPORT_REF:0:8}\` · comparator \`${COMPARATOR_REF:0:8}\` · landrun \`$LANDRUN_VERSION\`"
+            echo "**Sandbox:** \`$(bwrap --version)\` on Linux \`$(uname -r)\` · **Lean:** \`$(cat lean-toolchain)\` (\`lake comparator --paranoid\`; exporter and checkers bundled with the toolchain)"
           } >> "$GITHUB_STEP_SUMMARY"

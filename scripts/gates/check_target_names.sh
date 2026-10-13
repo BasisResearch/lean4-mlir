@@ -31,8 +31,7 @@
 # ▶ PACKAGES. jax/ is its own Lake package with its own targets, and jax.yml and
 # iree.yml set `working-directory: jax` per STEP rather than per job, so those files are
 # linted against BOTH lakefiles: a name live in either package is not a dead name, which is
-# all this gate claims. comparator.yml builds two repos that are not in this tree at
-# all (~/lean4export, ~/comparator); those two names are allowed below.
+# all this gate claims.
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -47,8 +46,6 @@ targets_of() {  # $1 = lakefile path; prints every name `lake` answers to there
 }
 mapfile -t ROOT_TARGETS < <(targets_of lakefile.lean; printf 'cache\n')
 mapfile -t JAX_TARGETS  < <(targets_of jax/lakefile.lean; printf 'cache\n')
-# Not targets of any lakefile in this tree — external checkouts comparator.yml clones.
-EXTERNAL="lean4export comparator"
 
 BAD=0; CHECKED=0
 FILES=$(ls scripts/*.sh scripts/*/*.sh tests/*.sh run.sh .github/workflows/*.yml 2>/dev/null | grep -v "^$SELF\$")
@@ -57,7 +54,7 @@ for f in $FILES; do
   if [ "$f" = ".github/workflows/jax.yml" ] || [ "$f" = ".github/workflows/iree.yml" ]
   then set -- "${ROOT_TARGETS[@]}" "${JAX_TARGETS[@]}"
   else set -- "${ROOT_TARGETS[@]}"; fi
-  ok=" $* $EXTERNAL "
+  ok=" $* "
   while IFS= read -r line; do
     ln=${line%%:*}; rest=${line#*:}
     # The marker is ITSELF a comment, so read it before the comment filter runs.

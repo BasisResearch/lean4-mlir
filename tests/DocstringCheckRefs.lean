@@ -325,7 +325,7 @@ unsafe def main (args : List String) : IO UInt32 := do
   let (ws?, log) ← (loadWorkspace config).run?
   log.replay (logger := .stderr)
   let some ws := ws? | return 1
-  let coreLibs := ws.root.leanLibs.filter fun lib => lib.name != `CertsHeavy
+  let coreLibs := ws.root.leanLibs.filter fun lib => lib.name != `CertsHeavy && lib.name != `ComparatorTests
   let imports := coreLibs.flatMap fun lib =>
     lib.config.roots.filterMap fun module =>
       if unbuiltTrees.any (·.isPrefixOf module) then none else some { module }

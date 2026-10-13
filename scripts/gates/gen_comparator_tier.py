@@ -27,11 +27,10 @@ linter's own warnings, and rewrites exactly the binders it names (`x` → `_`, `
 USAGE:  python3 scripts/gates/gen_comparator_tier.py            # regenerate + verify
         python3 scripts/gates/gen_comparator_tier.py --check    # fail if the files would change
 
-VERIFY. The default run elaborates the generated solution inside the PARENT package (where
-every olean already exists) rather than the nested comparator package, so the check costs
-seconds and needs no second Mathlib tree. It does not replace the comparator run
-(`tests/comparator/run.sh`), which needs the landrun / lean4export / comparator toolchain and
-its own Mathlib tree.
+VERIFY. The default run elaborates the generated solution with `lake env lean` (every olean
+already exists), so the check costs seconds and needs no sandbox. It does not replace the
+comparator run (`tests/comparator/run.sh`, i.e. `lake comparator`), which rebuilds and exports
+inside a `bwrap` sandbox and re-checks with the kernel(s).
 """
 import json, re, subprocess, sys, os, tempfile
 
@@ -305,8 +304,8 @@ def main():
              'SolutionTier.lean':  render(types, True)}
     cfg = json.dumps({"challenge_module": "ChallengeTier", "solution_module": "SolutionTier",
                       "theorem_names": [f"chk_{d.split('.')[-1]}" for d in DECLS],
-                      "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"],
-                      "enable_nanoda": False}, indent=4) + '\n'
+                      "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"]},
+                     indent=4) + '\n'
     files['config-tier.json'] = cfg
 
     if check:

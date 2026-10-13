@@ -425,7 +425,9 @@ them by configuration.
 comparator
 re-runs Lean's kernel typechecker independently
 of the elaborator and verifies the transitive axiom closure of each
-proof. The configured allowlist is exactly
+proof; with `--paranoid` (as `run.sh` and CI run it), the five independent
+checkers bundled with Lean 4.35 — leanchecker-paranoid, lean4lean, nanoda,
+con-leche, con-ron — must accept each proof as well. The configured allowlist is exactly
 `{propext, Quot.sound, Classical.choice}` (Lean core); any project
 axiom in the closure would fail the run. See
 `tests/comparator/README.md` for the prereq + run instructions.

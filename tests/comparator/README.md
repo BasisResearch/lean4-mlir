@@ -1,8 +1,8 @@
 # Comparator-based independent kernel re-check
 
 This directory holds an end-to-end verification of 87 theorems from the
-proof suite using
-[leanprover/comparator](https://github.com/leanprover/comparator) — the
+proof suite using `lake comparator` — Lean's bundled frontend (since 4.35) to
+[leanprover/comparator](https://github.com/leanprover/comparator), the
 trustworthy-judge tool the Lean Zulip community recommended for projects
 that claim "zero project axioms".
 
@@ -10,9 +10,10 @@ that claim "zero project axioms".
 share a trust path with whatever the elaborator did. **comparator
 re-runs Lean's kernel typechecker independently and verifies the
 transitive axiom closure of each theorem statically**, sandboxed in
-landlock, with the option to pile on the
-[nanoda](https://github.com/ammkrn/nanoda_lib) kernel as a second
-opinion.
+`bwrap`. `run.sh` passes `--paranoid`, so five independent checkers that ship
+with the toolchain must accept each solution as well: `leanchecker-paranoid`
+(Lean's kernel on a hardened allocator), `lean4lean`,
+[nanoda](https://github.com/ammkrn/nanoda_lib), `con-leche` and `con-ron`.
 
 ## Three challenge files
 
@@ -95,8 +96,9 @@ For each, comparator confirms:
 2. The Solution's proof uses **only** `propext`, `Quot.sound`,
    `Classical.choice` — no project axioms anywhere in the transitive
    closure.
-3. The Solution typechecks against Lean's kernel, re-run from the
-   compiled `.olean` independently of the elaborator.
+3. The Solution typechecks against Lean's kernel, re-run from an export of the
+   compiled `.olean` independently of the elaborator — and against each of the
+   five bundled checkers above.
 
 `reluHasVJPAt_correct`, `mlpHasVJPAt_correct` and
 `maxPool2HasVJPAt3_correct` are pointwise (smooth-input) variants whose
@@ -109,96 +111,63 @@ them. They are in both now.
 
 ## Prerequisites (one-time)
 
-- **A kernel with Landlock.** ⚠ This used to read "Linux kernel ≥ 6.10 for
-  Landlock ABI v5", as a hard requirement. It is not one: comparator passes
-  `--best-effort` to landrun unconditionally (`Main.lean:83`), so landrun
-  enforces whatever ABI the running kernel offers instead of refusing.
-  **Measured 2026-09-20 on Ubuntu 24.04.4 / kernel 6.8.0-138 / Landlock ABI 4:
-  all three configs run to `Your solution is okay!`** — the kernel re-check and
-  the axiom-closure check are unaffected, because neither depends on the
-  sandbox.
+- **The project toolchain** (Lean ≥ 4.35). `lake comparator`, the exporter and
+  every checker come with it; nothing else is cloned or built.
+- **bubblewrap** (`bwrap`) on `PATH`, able to create user namespaces:
+  ```
+  sudo apt install bubblewrap
+  bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all true && echo ok
+  ```
+  If that fails with a permission error, the distribution restricts
+  unprivileged user namespaces; on Ubuntu 24.04 that is
+  `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`, or install
+  `bwrap` setuid root. CI does the former (`comparator.yml`).
 
-  What the older kernel costs is sandbox STRENGTH, and it costs it silently:
-  landrun prints nothing about the downgrade, so a green run here is not
-  evidence that the ABI v5 profile held. If the sandbox is what you are
-  relying on — a judge you do not trust not to be tampered with — get v5:
-  ```
-  uname -r                                        # what you have
-  python3 -c 'import ctypes; print(ctypes.CDLL(None).syscall(444, None, 0, 1))'   # ABI version
-  sudo apt install linux-image-generic-hwe-24.04  # 24.04: 7.0 as of 2026-09
-  sudo reboot
-  ```
-- **landrun** ≥ v0.1.13 — sandbox runner using Linux Landlock LSM:
-  ```
-  curl -fsSL -o ~/.local/bin/landrun \
-    https://github.com/Zouuup/landrun/releases/latest/download/landrun-linux-amd64
-  chmod +x ~/.local/bin/landrun
-  ```
-- **lean4export** — Lean's `.olean` → text exporter:
-  ```
-  git clone --depth=1 https://github.com/leanprover/lean4export ~/lean4export
-  (cd ~/lean4export && lake build)
-  ln -sf ~/lean4export/.lake/build/bin/lean4export ~/.local/bin/lean4export
-  ```
-- **comparator** itself:
-  ```
-  git clone --depth=1 https://github.com/leanprover/comparator ~/comparator
-  (cd ~/comparator && lake build)
-  ln -sf ~/comparator/.lake/build/bin/comparator ~/.local/bin/comparator
-  ```
+## Layout
 
-`landrun`, `lean4export`, and `comparator` must be on `PATH` (they
-should be after the `ln -sf` lines above if `~/.local/bin` is on PATH).
-Alternatively comparator reads `COMPARATOR_LANDRUN`, `COMPARATOR_LEAN4EXPORT`
-and `COMPARATOR_NANODA` (`Main.lean:286-288`) — pointing those at absolute paths
-is tidier than the `PATH` juggling `run.sh` does, and would let the landrun shim
-below be passed directly rather than shadowed onto `PATH`.
+The six modules are the **root package's** `ComparatorTests` lib
+(`lakefile.lean`), not a nested package. `lake comparator` resolves, builds and
+exports inside a sandbox that mounts `/` read-only, hides `/home` and `/tmp`,
+and lets the build write only the project's `.lake` — so a nested package's
+`path = "../.."` require cannot be seen from inside it. As part of the root
+package the sandboxed build reuses the workspace's own oleans; build them first
+(`lake build Certs ComparatorTests`) or the sandbox compiles the corpus itself.
 
-⚠ The v0.1.14 release binary self-reports `landrun version 0.1.13`; that is
-upstream's metadata, not a wrong download. It accepts comparator's single-dash
-`-ldd` / `-add-exec`, so the shim's flag translation is a no-op against this
-version — it is kept for older ones. The `--rox /usr` half is still needed.
+`Challenge*` and `Solution*` declare the same theorem names, so the two halves
+of a pair must never be imported into one environment;
+`tests/BlueprintCheckDecls.lean` and `tests/DocstringCheckRefs.lean`, which
+import every lib's roots, skip `ComparatorTests` by name.
 
 ## Running
 
 ```
-./run.sh
+tests/comparator/run.sh                 # all three configs, --paranoid
+tests/comparator/run.sh --no-paranoid   # Lean's kernel only
+lake comparator --paranoid --config tests/comparator/config.json   # one config
 ```
 
-`run.sh` runs all three configs in order and stops at the first failure
-(`set -e`). Expected output (full Mathlib decompress on the first run,
-~5 minutes; seconds on subsequent runs):
+`run.sh` runs the three configs in order from the repo root and stops at the
+first failure (`set -e`). Expected output per config:
 
 ```
-[1/3] lake update (resolving Mathlib)…
-[2/3] lake build Solution (outside sandbox)…
-[3/3] lake env comparator config.json…
+Resolving dependencies
 Building Challenge
 …
 Exporting #[chk_pdiv_comp, …, propext, Quot.sound, Classical.choice, …] from Solution
-Running Lean default kernel on solution.
+Running Lean paranoid kernel on solution
+…
+Running nanoda kernel on solution
+nanoda kernel accepts the solution
+…
 Lean default kernel accepts the solution
 Your solution is okay!
+[comparator] config.json: 13 theorems OK in … s
 ```
 
 The `Exporting` line is the audit list. The only allowed axioms are
 `propext`, `Quot.sound`, `Classical.choice` (Lean core); everything
 else in that list is a `Nat.*` primitive or `String.ofList` (also Lean
 core, present in any non-trivial Lean program).
-
-## Notes on the wrapper hack
-
-`run.sh` injects a shim around `landrun` that does two things:
-
-1. Translates single-dash flags `-ldd` and `-add-exec` (which comparator
-   emits) into the double-dash form (`--ldd`, `--add-exec`) that
-   landrun's CLI parser expects.
-2. Prepends `--rox /usr` to the sandbox config — comparator only allows
-   `/usr/bin/git`, but `lake` does generic path lookups in `/usr` and
-   needs that broader exec permission.
-
-Both look like upstream comparator/landrun polish items; the workaround
-keeps the audit reproducible until they land.
 
 ## What's *not* covered
 
@@ -218,6 +187,3 @@ keeps the audit reproducible until they land.
   and the per-architecture `*HasVJPAt_correct`) **are** in the suite
   above. `#print axioms` on the underlying defs confirms the same
   allowlist closure for the composition shortcuts.
-- **nanoda second-kernel re-check.** Set `enable_nanoda: true` in
-  `config.json` and add nanoda to PATH (Rust build, ~5 min) for that
-  upgrade.

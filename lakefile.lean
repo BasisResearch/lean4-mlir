@@ -344,9 +344,9 @@ lean_lib «Reference» where
     binary, and there are hundreds of them); elaborating their modules is not, which is the whole
     reason this is a `lean_lib` over the same sources rather than a `lake build <exe>` loop.
 
-    Covers `apps/` and `demos/`, and NOT `tests/`, which holds
-    `tests/comparator/`, a nested Lake package with its own toolchain whose modules a
-    `.submodules` glob would try to elaborate here. The test exes CI already names
+    Covers `apps/` and `demos/`, and NOT `tests/`, which holds `tests/comparator/` (the
+    `ComparatorTests` lib below, whose `Challenge*`/`Solution*` pairs clash if imported
+    together) and the `lake env lean tests/…` scripts. The test exes CI already names
     (`argmax-check`, `label-check`, `opt-step-fixtures`, `bestiary-*`) keep their own
     explicit builds. The NAME-level companion is `scripts/gates/check_target_names.sh`. -/
 lean_lib «Apps» where
@@ -364,6 +364,19 @@ lean_lib «Apps» where
 lean_lib «TestSupport» where
   srcDir := "."
   roots := #[`tests.ViTRender]
+
+/-- **`lake comparator --config tests/comparator/<config>.json`** — the three challenge/solution
+    pairs (`tests/comparator/README.md`). They live in the ROOT package, not a nested one:
+    `lake comparator` builds and exports inside a `bwrap` sandbox that can read only the project
+    directory, so a nested package's `path = "../.."` require cannot be resolved there. Here the
+    sandboxed build reuses this workspace's `.lake` instead of a second Mathlib tree.
+
+    `Challenge*` and `Solution*` declare the same theorem names, so they must never be imported
+    together: `BlueprintCheckDecls` and `DocstringCheckRefs`, which import every lib's roots,
+    skip this lib by name. -/
+lean_lib «ComparatorTests» where
+  srcDir := "tests/comparator"
+  roots := #[`Challenge, `Solution, `ChallengeArch, `SolutionArch, `ChallengeTier, `SolutionTier]
 
 -- IREE FFI shim: Lean ↔ C bridge for libiree_ffi.so (see ffi/).
 target ireeLeanFfiO pkg : System.FilePath := do
