@@ -383,7 +383,14 @@ lean_lib «ComparatorTests» where
 -- headers redirect `strtol` & co. to `__isoc23_*`, symbols Lean's glibc lacks — every trainer then
 -- failed to link with `undefined symbol: __isoc23_strtol`. `-std=gnu17` keeps the plain symbols on
 -- every compiler (gcc 13 on CI already defaulted to gnu17; Apple clang accepts the flag).
-private def ffiCFlags : Array String := #["-std=gnu17", "-fPIC", "-O2"]
+-- On macOS `cc` targets whatever architecture IT runs as, so a Rosetta shell yields x86_64
+-- objects that the toolchain's arm64 link skips (`undefined symbol: lean_f32_*`). `-arch` pins
+-- them to Lean's own architecture, and being a trace arg it also rebuilds any stale ones.
+private def ffiCFlags : Array String :=
+  #["-std=gnu17", "-fPIC", "-O2"] ++
+    (if System.Platform.isOSX then
+      #["-arch", if System.Platform.target.startsWith "x86_64" then "x86_64" else "arm64"]
+    else #[])
 
 -- IREE FFI shim: Lean ↔ C bridge for libiree_ffi.so (see ffi/).
 target ireeLeanFfiO pkg : System.FilePath := do
