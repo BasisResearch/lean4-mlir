@@ -791,7 +791,7 @@ theorem Rr_continuous : Continuous Rr := by
       | unfold Aaq | unfold Zae | unfold Aae | unfold Zad | unfold Aad | unfold Zaz | unfold Aaz
       | unfold Zbq | unfold Abq | unfold Zbe | unfold Abe | unfold Zbd | unfold Abd | unfold Zbz
       | unfold Abz | unfold Zcq | unfold Acq | unfold Zce | unfold Ace | unfold Zcd | unfold Acd
-      | unfold Zcz | unfold Acz | unfold Zh1 | unfold Ah1 | unfold Pl | unfold Zh2 | unfold Ah2)
+      | unfold Zcz | unfold Acz | unfold Zh1 | unfold Ah1 | unfold Pl | unfold Zh2)
   unfold sealX
   fun_prop (disch := exact one_pos)
 

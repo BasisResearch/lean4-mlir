@@ -211,7 +211,7 @@ noncomputable def c1V : Tensor3 2 12 12 :=
 theorem conv1_eq_r0_0 : ∀ wi : Fin 12,
     conv2d W1 b1 T0 (⟨0, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi = c1V (⟨0, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi := by
   intro wi
-  fin_cases wi <;> (simp [conv2d, W1, b1, T0, c1V, Fin.sum_univ_succ]; try norm_num)
+  fin_cases wi <;> (simp [conv2d, W1, b1, T0, c1V, Fin.sum_univ_succ])
 
 theorem conv1_eq_r0_1 : ∀ wi : Fin 12,
     conv2d W1 b1 T0 (⟨0, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi = c1V (⟨0, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi := by
@@ -271,7 +271,7 @@ theorem conv1_eq_r0_11 : ∀ wi : Fin 12,
 theorem conv1_eq_r1_0 : ∀ wi : Fin 12,
     conv2d W1 b1 T0 (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi = c1V (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi := by
   intro wi
-  fin_cases wi <;> (simp [conv2d, W1, b1, T0, c1V, Fin.sum_univ_succ]; try norm_num)
+  fin_cases wi <;> (simp [conv2d, W1, b1, T0, c1V, Fin.sum_univ_succ])
 
 theorem conv1_eq_r1_1 : ∀ wi : Fin 12,
     conv2d W1 b1 T0 (⟨1, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi = c1V (⟨1, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi := by
@@ -386,99 +386,99 @@ noncomputable def x1V : Tensor3 2 12 12 :=
 
 theorem x1_cell_r0_0 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_1 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_2 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_3 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_4 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_5 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_6 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_7 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_8 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_9 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_10 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r0_11 : ∀ wi : Fin 12, x1V (⟨0, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi = if c1V (⟨0, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨0, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_0 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_1 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_2 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_3 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_4 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_5 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_6 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_7 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_8 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_9 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_10 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell_r1_11 : ∀ wi : Fin 12, x1V (⟨1, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi = if c1V (⟨1, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi > 0 then c1V (⟨1, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c1V, x1V]; try norm_num)
+  fin_cases wi <;> (simp [c1V, x1V])
 
 theorem x1_cell : ∀ (o : Fin 2) (hi wi : Fin 12), x1V o hi wi = if c1V o hi wi > 0 then c1V o hi wi else 0 := by
   intro o hi wi
@@ -975,99 +975,99 @@ noncomputable def r2V : Tensor3 2 12 12 :=
 
 theorem r2_cell_r0_0 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_1 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_2 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_3 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_4 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_5 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_6 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_7 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_8 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_9 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_10 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r0_11 : ∀ wi : Fin 12, r2V (⟨0, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi = if c2V (⟨0, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨0, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_0 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_1 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨1, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_2 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_3 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_4 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_5 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_6 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨6, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_7 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨7, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_8 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨8, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_9 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨9, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_10 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨10, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell_r1_11 : ∀ wi : Fin 12, r2V (⟨1, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi = if c2V (⟨1, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi > 0 then c2V (⟨1, by norm_num⟩ : Fin 2) (⟨11, by norm_num⟩ : Fin 12) wi else 0 := by
   intro wi
-  fin_cases wi <;> (simp [c2V, r2V]; try norm_num)
+  fin_cases wi <;> (simp [c2V, r2V])
 
 theorem r2_cell : ∀ (o : Fin 2) (hi wi : Fin 12), r2V o hi wi = if c2V o hi wi > 0 then c2V o hi wi else 0 := by
   intro o hi wi
@@ -1189,7 +1189,6 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨0, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 6) (⟨0, by norm_num⟩ : Fin 6)
         = (0 : ℝ)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨0, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 6) (⟨1, by norm_num⟩ : Fin 6)
         = ((26387 : ℝ)/3342336)
     simp [maxPool2, r2V, max_def]
@@ -1213,7 +1212,6 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 6) (⟨0, by norm_num⟩ : Fin 6)
         = (0 : ℝ)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 6) (⟨1, by norm_num⟩ : Fin 6)
         = ((117251 : ℝ)/1044480)
     simp [maxPool2, r2V, max_def]
@@ -1233,11 +1231,9 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨0, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 6) (⟨5, by norm_num⟩ : Fin 6)
         = (0 : ℝ)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 6) (⟨0, by norm_num⟩ : Fin 6)
         = (0 : ℝ)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 6) (⟨1, by norm_num⟩ : Fin 6)
         = ((4251221 : ℝ)/16711680)
     simp [maxPool2, r2V, max_def]
@@ -1257,7 +1253,6 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨0, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 6) (⟨5, by norm_num⟩ : Fin 6)
         = (0 : ℝ)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨0, by norm_num⟩ : Fin 6) (⟨0, by norm_num⟩ : Fin 6)
         = ((5856391 : ℝ)/5570560)
     simp [maxPool2, r2V, max_def]
@@ -1309,11 +1304,9 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 6) (⟨0, by norm_num⟩ : Fin 6)
         = (0 : ℝ)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 6) (⟨1, by norm_num⟩ : Fin 6)
         = (0 : ℝ)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨2, by norm_num⟩ : Fin 6) (⟨2, by norm_num⟩ : Fin 6)
         = ((1263853 : ℝ)/2785280)
     simp [maxPool2, r2V, max_def]
@@ -1333,7 +1326,6 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 6) (⟨0, by norm_num⟩ : Fin 6)
         = ((63 : ℝ)/2048)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨3, by norm_num⟩ : Fin 6) (⟨1, by norm_num⟩ : Fin 6)
         = ((3068179 : ℝ)/16711680)
     simp [maxPool2, r2V, max_def]
@@ -1357,7 +1349,6 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 6) (⟨0, by norm_num⟩ : Fin 6)
         = ((63 : ℝ)/2048)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 6) (⟨1, by norm_num⟩ : Fin 6)
         = ((30872789 : ℝ)/16711680)
     simp [maxPool2, r2V, max_def]
@@ -1377,11 +1368,9 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨4, by norm_num⟩ : Fin 6) (⟨5, by norm_num⟩ : Fin 6)
         = ((63 : ℝ)/2048)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 6) (⟨0, by norm_num⟩ : Fin 6)
         = ((63 : ℝ)/2048)
     simp [maxPool2, r2V, max_def]
-    try norm_num
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 6) (⟨1, by norm_num⟩ : Fin 6)
         = ((6953417 : ℝ)/3342336)
     simp [maxPool2, r2V, max_def]
@@ -1401,7 +1390,6 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   · show maxPool2 (c := 2) (h := 6) (w := 6) r2V (⟨1, by norm_num⟩ : Fin 2) (⟨5, by norm_num⟩ : Fin 6) (⟨5, by norm_num⟩ : Fin 6)
         = ((63 : ℝ)/2048)
     simp [maxPool2, r2V, max_def]
-    try norm_num
 
 -- ════════════════════════════════════════════════════════════════
 -- § The pool margin up to twins: tied windows read all-zero patches
@@ -2187,7 +2175,7 @@ theorem r3_eq : relu 8 (dense W3 b3 p2f) = r3V := by
   funext k
   show (if dense W3 b3 p2f k > 0 then dense W3 b3 p2f k else 0) = r3V k
   rw [d3_eq]
-  fin_cases k <;> (simp [d3V, r3V]; try norm_num)
+  fin_cases k <;> (simp [d3V, r3V])
 
 /-- dense4 pre-activations at the image, exact. -/
 noncomputable def d4V : Fin 8 → ℝ := ![((-1223902639417 : ℝ)/273804165120), ((1765409865991 : ℝ)/273804165120), ((1398122901 : ℝ)/1342177280), ((-499372496747 : ℝ)/273804165120), ((-1230364319 : ℝ)/536870912), ((1762079771867 : ℝ)/273804165120), ((186374164871 : ℝ)/45634027520), ((387232922929 : ℝ)/273804165120)]
