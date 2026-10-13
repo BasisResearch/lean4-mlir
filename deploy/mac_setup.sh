@@ -188,6 +188,19 @@ if want lean; then
   [ -x "$HOME/.elan/bin/lake" ] && export PATH="$HOME/.elan/bin:$PATH"
   lake --version || die "elan could not install the toolchain in lean-toolchain ($(cat lean-toolchain))"
   lake exe cache get || die "Mathlib's prebuilt cache did not download"
+  # Lake's trace hashes the C source and flags, not the architecture, so objects that a
+  # Rosetta shell's `cc` once built stay "up to date" here and ld64.lld skips them as
+  # x86_64 ("incompatible with target architecture arm64" → undefined lean_f32_*).
+  # Rebuild them rather than trust them.
+  for o in .lake/build/ffi/*.o; do
+    [ -f "$o" ] || continue
+    case "$(lipo -archs "$o" 2>/dev/null)" in
+      arm64) ;;
+      *) echo "  ▸ $o is $(lipo -archs "$o" 2>/dev/null || echo unreadable), not arm64: rebuilding the C objects"
+         rm -f .lake/build/ffi/*.o .lake/build/ffi/*.o.* .lake/build/lib/libireeffi.a
+         break ;;
+    esac
+  done
   for t in mnist-linear-verified mnist-mlp-verified mnist-cnn-verified; do
     echo "  ▸ lake build $t"
     lake build "$t" || die "lake build $t failed"

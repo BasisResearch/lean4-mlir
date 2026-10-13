@@ -28,6 +28,11 @@ bash deploy/mac_setup.sh                 # every rung, in order
 bash deploy/mac_setup.sh smoke           # resume from a rung after fixing it
 ```
 
+If `uname -m` prints `x86_64`, the terminal itself runs under Rosetta. The script re-execs
+itself as arm64, but a bare `lake build` typed in that terminal compiles the C helpers as
+x86_64, and the arm64 link then skips them (`undefined symbol: lean_f32_*`). The `lean` rung
+rebuilds any such objects. To build by hand, open a native shell first: `arch -arm64 zsh`.
+
 | rung | proves | when it fails, the problem is in |
 |---|---|---|
 | `check` | arm64, macOS 26+, compiler, Python, elan, disk | the box |
