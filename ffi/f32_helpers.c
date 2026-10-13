@@ -1683,8 +1683,8 @@ LEAN_EXPORT lean_obj_res lean_f32_shuffle(lean_obj_arg img_obj, lean_obj_arg lbl
                                           size_t n, size_t pixels_per,
                                           size_t label_stride, size_t seed) {
     // Ensure exclusive ownership (rc == 1) for in-place mutation
-    if (!lean_is_exclusive(img_obj)) img_obj = lean_copy_byte_array(img_obj);
-    if (!lean_is_exclusive(lbl_obj)) lbl_obj = lean_copy_byte_array(lbl_obj);
+    img_obj = lean_sarray_ensure_exclusive(img_obj);
+    lbl_obj = lean_sarray_ensure_exclusive(lbl_obj);
     uint8_t* img = lean_sarray_cptr(img_obj);
     uint8_t* lbl = lean_sarray_cptr(lbl_obj);
     size_t img_stride = pixels_per * 4;
@@ -1739,8 +1739,8 @@ LEAN_EXPORT lean_obj_res lean_f32_shuffle(lean_obj_arg img_obj, lean_obj_arg lbl
 LEAN_EXPORT lean_obj_res lean_f32_shuffle_u8(lean_obj_arg img_obj, lean_obj_arg lbl_obj,
                                              size_t n, size_t pixels_per,
                                              size_t label_stride, size_t seed) {
-    if (!lean_is_exclusive(img_obj)) img_obj = lean_copy_byte_array(img_obj);
-    if (!lean_is_exclusive(lbl_obj)) lbl_obj = lean_copy_byte_array(lbl_obj);
+    img_obj = lean_sarray_ensure_exclusive(img_obj);
+    lbl_obj = lean_sarray_ensure_exclusive(lbl_obj);
     uint8_t* img = lean_sarray_cptr(img_obj);
     uint8_t* lbl = lean_sarray_cptr(lbl_obj);
     size_t img_stride = pixels_per;  // 1 byte per element

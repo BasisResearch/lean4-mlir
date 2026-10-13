@@ -225,8 +225,7 @@ theorem den_allReduceMeanF_convStridedWeightGradBBf16_shard {N ic oc h w kH kW :
             (batchShard R N (ic * (2 * h) * (2 * w)) X r) W (dy r))) idx
       = (1 / (R : ℝ)) * ∑ r : Fin R, rnd (convStridedWGradShardSum rnd xN cotN b X W DY r idx) := by
   simp only [den_allReduceMeanF]
-  congr 1
-  apply Finset.sum_congr rfl; intro r _
+  refine congrArg ((1 / (R : ℝ)) * ·) (Finset.sum_congr rfl fun r _ => ?_)
   rw [den_convStridedWeightGradBBf16_eq_rnd rnd xN cotN, hdy]
   rfl
 

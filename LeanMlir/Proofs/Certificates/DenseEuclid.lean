@@ -151,8 +151,9 @@ theorem reluE_lipschitzL2 {n : ℕ} : LipschitzL2 1 (reluE (n := n)) := by
     rw [h1, h2, ← sq_abs (max (u i) 0 - max (w i) 0), ← sq_abs (u i - w i)]
     exact pow_le_pow_left₀ (abs_nonneg _) habs 2
   have := Real.sqrt_le_sqrt hsq
-  rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (norm_nonneg _),
-       one_mul] at *
+  rw [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (norm_nonneg _),
+      one_mul] at *
+  assumption
 
 
 -- ════════════════════════════════════════════════════════════
