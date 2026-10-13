@@ -440,7 +440,9 @@ extern_lib libireeffi pkg := do
     `ffi/libiree_ffi.so` fails at startup, not at link. `ensurePjrtShim` builds the PJRT one on
     demand. When checking a binary's link with `nm -D`, `lake build` it first: an old binary on
     disk can carry an older link scheme. -/
-private def lowererLink : Array String := #["-ldl"]
+-- macOS has no separate libdl: `dlopen` lives in libSystem, and the toolchain's own link (Lean's
+-- clang + ld64.lld, not Apple's SDK) has no `libdl.tbd` stub, so `-ldl` is "library not found".
+private def lowererLink : Array String := if System.Platform.isOSX then #[] else #["-ldl"]
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- THE TOUR — the canonical set: the four
