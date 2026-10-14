@@ -1,0 +1,10 @@
+⚠ other resnet50in160 checkpoints present — they must NOT be resumed into this run:
+   .lake/build/resnet50in160_lambacc8x64bce_ckpt_xla_prof1gpu.bin
+   .lake/build/resnet50in160_lambaccdp8x64wxclipbce_ckpt_xla.bin
+  per-image bitmaps -> runs/2026-10-12-r50-a3-rsb-bf16/bitmaps/a3_lambaccdp4x128wxclipbcebf16_e{N}.bin (LEAN_MLIR_DUMP_CORRECT)
+[sup] 2026-10-13 06:39:19 START job=r50-a3-wxclip4x128-bf16-4gpu devs=0,1,2,3 epochs=100 rest_after=[none] temp_max=78 stall=1800s logs=runs/2026-10-12-r50-a3-rsb-bf16
+[sup] 2026-10-13 06:39:19 cmd: .lake/build/bin/resnet50-imagenet-verified data
+[sup] 2026-10-13 06:39:19 eta: bf16 ~22 h on 4x 4060 Ti at the median (282-285 ms/step fed, 232 synth, 2500 steps/ep + ~92 s eval/ckpt, 100 ep); the 09-21 stall tail (means 404-546) was the DIMM throttle, gone since the 10-05 fans; 3060 box unmeasured, peak 4.39 GiB fits its arena
+[sup] 2026-10-13 06:39:19 attempt 1: resuming at epoch 0/100 (next rest: 999)
+[sup] 2026-10-13 06:39:19   launched PID=3416361 PGID=3416361
+[sup] 2026-10-14 04:33:22 ✅ COMPLETE — 100/100 epochs
