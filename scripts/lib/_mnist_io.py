@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data"
+DATA = ROOT / "data" / "mnist"
 _FILES = {"train": ("train-images-idx3-ubyte", "train-labels-idx1-ubyte"),
           "test": ("t10k-images-idx3-ubyte", "t10k-labels-idx1-ubyte")}
 

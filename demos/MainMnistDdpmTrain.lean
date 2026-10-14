@@ -36,8 +36,8 @@ def main (args : List String) : IO Unit := do
   let words := args.filter (· != "raw")
   let epochsOverride : Option Nat := (words.filterMap String.toNat?).head?
   let dataDir := (words.filter (·.toNat?.isNone)).head?.getD "data"
-  unless ← System.FilePath.pathExists s!"{dataDir}/train-images-idx3-ubyte" do
-    throw <| IO.userError s!"no MNIST at {dataDir}/train-images-idx3-ubyte — run \
+  unless ← System.FilePath.pathExists s!"{dataDir}/mnist/train-images-idx3-ubyte" do
+    throw <| IO.userError s!"no MNIST at {dataDir}/mnist/train-images-idx3-ubyte — run \
 ./scripts/datasets/download_mnist.sh, or pass the directory that holds it"
   -- `raw` trains on UNCENTRED [0,1] data. It exists as an ABLATION ARM, not a
   -- fallback: the centring claim in `runs/2026-08-28-mnist-ddpm-verified-score/`
@@ -74,7 +74,7 @@ def main (args : List String) : IO Unit := do
 
   -- ── Load MNIST (60K × 28×28 f32 in [0, 1]) ──
   IO.eprintln "Loading MNIST..."
-  let (trainImgRaw, nTrain) ← F32.loadIdxImages s!"{dataDir}/train-images-idx3-ubyte"
+  let (trainImgRaw, nTrain) ← F32.loadIdxImages s!"{dataDir}/mnist/train-images-idx3-ubyte"
   -- CENTRE TO [-1, 1], as all three CIFAR DDPM trainers do. The reverse process
   -- drives toward `N(0, I)`; fitting it against data with mean 0.13 on [0, 1] is
   -- a distribution mismatch the sampler cannot undo: the uncentred checkpoint

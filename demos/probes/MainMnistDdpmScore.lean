@@ -227,8 +227,8 @@ lake exe mnist-cnn-verified data"
   -- The control: the same classifier on the real test split. Its accuracy is
   -- also the check that the weights loaded correctly — a mispacked blob scores
   -- at chance, and every number below would then be measuring nothing.
-  let (testImg, nTest) ← F32.loadIdxImages s!"{dataDir}/t10k-images-idx3-ubyte"
-  let (testLbl, _)     ← F32.loadIdxLabels s!"{dataDir}/t10k-labels-idx1-ubyte"
+  let (testImg, nTest) ← F32.loadIdxImages s!"{dataDir}/mnist/t10k-images-idx3-ubyte"
+  let (testLbl, _)     ← F32.loadIdxLabels s!"{dataDir}/mnist/t10k-labels-idx1-ubyte"
   IO.eprintln s!"classifying {nTest} real test images (control)..."
   let logitsReal ← classify testImg nTest
 

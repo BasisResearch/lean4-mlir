@@ -31,7 +31,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))  # 
 from _mnist_io import images as load_images, labels as load_labels  # noqa: E402
 
 DATA = sys.argv[1] if len(sys.argv) > 1 else \
-    str(pathlib.Path(__file__).resolve().parents[2] / "data")
+    str(pathlib.Path(__file__).resolve().parents[2] / "data" / "mnist")
 
 
 

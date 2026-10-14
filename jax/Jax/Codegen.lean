@@ -3309,12 +3309,12 @@ private def emitDataLoadCalls (ds : DatasetKind) (dataDir : String) (spec : NetS
   | .mnist =>
     "    data_dir = \"" ++ dataDir ++ "\"\n" ++
     "    print(\"Loading training set …\")\n" ++
-    "    train_images = load_mnist_images(os.path.join(data_dir, \"train-images-idx3-ubyte\"))\n" ++
-    "    train_labels = load_mnist_labels(os.path.join(data_dir, \"train-labels-idx1-ubyte\"))\n" ++
+    "    train_images = load_mnist_images(os.path.join(data_dir, \"mnist\", \"train-images-idx3-ubyte\"))\n" ++
+    "    train_labels = load_mnist_labels(os.path.join(data_dir, \"mnist\", \"train-labels-idx1-ubyte\"))\n" ++
     "    print(\"  \" + str(len(train_images)) + \" images, " ++ imgDesc ++ "\")\n\n" ++
     "    print(\"Loading test set …\")\n" ++
-    "    test_images = load_mnist_images(os.path.join(data_dir, \"t10k-images-idx3-ubyte\"))\n" ++
-    "    test_labels = load_mnist_labels(os.path.join(data_dir, \"t10k-labels-idx1-ubyte\"))\n" ++
+    "    test_images = load_mnist_images(os.path.join(data_dir, \"mnist\", \"t10k-images-idx3-ubyte\"))\n" ++
+    "    test_labels = load_mnist_labels(os.path.join(data_dir, \"mnist\", \"t10k-labels-idx1-ubyte\"))\n" ++
     "    print(\"  \" + str(len(test_images)) + \" images, " ++ imgDesc ++ "\")\n\n"
   | .cifar10 =>
     "    data_dir = \"" ++ dataDir ++ "\"\n" ++

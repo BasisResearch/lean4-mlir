@@ -9,7 +9,7 @@
 # Usage: tests/vjp_oracle/run.sh [case1 case2 ...]
 # Runs the JAX side on whatever JAX_PLATFORMS resolves to, and the IREE side
 # on $IREE_BACKEND (LeanMlir/Train.lean's default: cuda).
-# Data: MNIST IDX files in $VJP_ORACLE_DATA (default data/). The diff reads steps 1-2 only, so
+# Data: MNIST IDX files in $VJP_ORACLE_DATA/mnist/ (default data/mnist/). The diff reads steps 1-2 only, so
 # CI points it at jax/tests/vjp_oracle/make_tiny_mnist.py's synthetic set.
 set -u
 cd "$(dirname "$0")/../.."  # → repo root

@@ -2479,7 +2479,7 @@ end ImagenetBuild
     downloaded)`. MNIST + CIFAR feed the benchmark's dense/conv probes; Imagenette
     feeds the ViT/attn probe and the `lake run imagenette-iree` tier. -/
 def coreDatasets : List (String × String × String) :=
-  [ ("MNIST",      "scripts/datasets/download_mnist.sh",      "data/train-images-idx3-ubyte"),
+  [ ("MNIST",      "scripts/datasets/download_mnist.sh",      "data/mnist/train-images-idx3-ubyte"),
     ("CIFAR-10",   "scripts/datasets/download_cifar.sh",      "data/cifar-10/data_batch_1.bin"),
     ("Imagenette", "scripts/datasets/download_imagenette.sh", "data/imagenette/train.bin") ]
 

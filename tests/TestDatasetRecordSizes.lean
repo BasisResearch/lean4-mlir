@@ -66,11 +66,11 @@ def main : IO UInt32 := do
   IO.println "=== declared record size vs loaded record size ==="
   let cases : List Case := [
     -- Classification: one int32 class id per record.
-    { name := "mnist (train)", path := "data/train-images-idx3-ubyte"
+    { name := "mnist (train)", path := "data/mnist/train-images-idx3-ubyte"
       pixels := 1 * 28 * 28, labelBytes := 4
       load := do
-        let (imgs, n) ← F32.loadIdxImages "data/train-images-idx3-ubyte"
-        let (lbls, _) ← F32.loadIdxLabels "data/train-labels-idx1-ubyte"
+        let (imgs, n) ← F32.loadIdxImages "data/mnist/train-images-idx3-ubyte"
+        let (lbls, _) ← F32.loadIdxLabels "data/mnist/train-labels-idx1-ubyte"
         return (imgs, lbls, n) },
     { name := "imagenette (val, 224)", path := "data/imagenette/val.bin"
       pixels := 3 * 224 * 224, labelBytes := 4

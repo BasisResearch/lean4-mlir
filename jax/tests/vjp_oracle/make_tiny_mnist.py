@@ -24,6 +24,8 @@ train split only needs to exceed the net's batchSize (4 in every oracle
 case), so 64 gives 16 steps.
 
 Usage: make_tiny_mnist.py <out_dir> [n_train] [n_test]
+
+The files land in <out_dir>/mnist/, where every MNIST loader looks under its data root.
 """
 import os
 import struct
@@ -49,13 +51,13 @@ def main() -> int:
     out = sys.argv[1] if len(sys.argv) > 1 else "data-tiny"
     n_train = int(sys.argv[2]) if len(sys.argv) > 2 else 64
     n_test = int(sys.argv[3]) if len(sys.argv) > 3 else 512
-    os.makedirs(out, exist_ok=True)
+    os.makedirs(os.path.join(out, "mnist"), exist_ok=True)
     rng = np.random.default_rng(0)
     for split, n in (("train", n_train), ("t10k", n_test)):
         imgs = rng.integers(0, 256, size=(n, 28, 28), dtype=np.uint8)
         lbls = rng.integers(0, 10, size=n, dtype=np.uint8)
-        write_images(os.path.join(out, f"{split}-images-idx3-ubyte"), imgs)
-        write_labels(os.path.join(out, f"{split}-labels-idx1-ubyte"), lbls)
+        write_images(os.path.join(out, "mnist", f"{split}-images-idx3-ubyte"), imgs)
+        write_labels(os.path.join(out, "mnist", f"{split}-labels-idx1-ubyte"), lbls)
     print(f"tiny mnist: {n_train} train / {n_test} test -> {out}")
     return 0
 

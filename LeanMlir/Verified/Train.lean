@@ -1252,11 +1252,11 @@ def loadData (net : VerifiedNet) (dataDir : String) (evalD0 : Nat := 0)
     return (trI, trL, nTr, evI, evL, nEv, 3 * px * px, px == 256)
   | .mnist =>
     let (trI, nTr) ← if evalOnly then pure (ByteArray.empty, 0)
-                     else F32.loadIdxImages (dataDir ++ "/train-images-idx3-ubyte")
+                     else F32.loadIdxImages (dataDir ++ "/mnist/train-images-idx3-ubyte")
     let (trL, _)   ← if evalOnly then pure (ByteArray.empty, 0)
-                     else F32.loadIdxLabels (dataDir ++ "/train-labels-idx1-ubyte")
-    let (evI, nEv) ← F32.loadIdxImages (dataDir ++ "/t10k-images-idx3-ubyte")
-    let (evL, _)   ← F32.loadIdxLabels (dataDir ++ "/t10k-labels-idx1-ubyte")
+                     else F32.loadIdxLabels (dataDir ++ "/mnist/train-labels-idx1-ubyte")
+    let (evI, nEv) ← F32.loadIdxImages (dataDir ++ "/mnist/t10k-images-idx3-ubyte")
+    let (evL, _)   ← F32.loadIdxLabels (dataDir ++ "/mnist/t10k-labels-idx1-ubyte")
     return (trI, trL, nTr, evI, evL, nEv, d0, false)
   | .cifar =>
     let cdir := dataDir ++ "/cifar-10"

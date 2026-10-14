@@ -33,7 +33,7 @@ lake build vjp-oracle-dense
 ```
 
 Phase 2 runs on whatever JAX targets by default (CUDA here); phase 3 on
-`$IREE_BACKEND` (default cuda). `$VJP_ORACLE_DATA` points at the MNIST directory (default `data/`).
+`$IREE_BACKEND` (default cuda). `$VJP_ORACLE_DATA` points at the data root, with MNIST under its `mnist/` (default `data/mnist/`).
 
 On CPU, as `iree.yml`'s `vjp-oracle` job runs it (its summary has the per-case Δs):
 

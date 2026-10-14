@@ -145,7 +145,7 @@ def main (args : List String) : IO Unit := do
     -- FORWARD: x_t = √ᾱ_t · x_0 + √(1-ᾱ_t) · ε on ONE real MNIST digit.
     -- `ddimStep` is exactly `a·x + b·eps`, so the same primitive the reverse loop
     -- uses builds the forward strip — no second implementation of the schedule.
-    let (imgs, nImgs) ← F32.loadIdxImages s!"{dataDir}/train-images-idx3-ubyte"
+    let (imgs, nImgs) ← F32.loadIdxImages s!"{dataDir}/mnist/train-images-idx3-ubyte"
     IO.eprintln s!"  forward strip: {nImgs} MNIST images available, using #{fwdIdx}"
     let x0raw := F32.sliceImages imgs fwdIdx 1 nPix
     -- The trainer centres to [-1,1]; the strip must live in the same space as the

@@ -412,12 +412,12 @@ private def mnistIO : DatasetIO where
   valPixels   := 1 * 28 * 28
   channels    := 1
   loadTrain := fun dir => do
-    let (imgs, n) ← F32.loadIdxImages (dir ++ "/train-images-idx3-ubyte")
-    let (lbls, _) ← F32.loadIdxLabels (dir ++ "/train-labels-idx1-ubyte")
+    let (imgs, n) ← F32.loadIdxImages (dir ++ "/mnist/train-images-idx3-ubyte")
+    let (lbls, _) ← F32.loadIdxLabels (dir ++ "/mnist/train-labels-idx1-ubyte")
     return (imgs, lbls, n)
   loadVal := fun dir => do
-    let (imgs, n) ← F32.loadIdxImages (dir ++ "/t10k-images-idx3-ubyte")
-    let (lbls, _) ← F32.loadIdxLabels (dir ++ "/t10k-labels-idx1-ubyte")
+    let (imgs, n) ← F32.loadIdxImages (dir ++ "/mnist/t10k-images-idx3-ubyte")
+    let (lbls, _) ← F32.loadIdxLabels (dir ++ "/mnist/t10k-labels-idx1-ubyte")
     return (imgs, lbls, n)
   augmentBatch := fun raw _ _ => return raw
 
