@@ -3,6 +3,55 @@
 Release history for *Lean 4 → MLIR → GPU*. The README keeps only the current
 version; older entries live here.
 
+## v0.7.2 — The pairs read paired, and five platforms
+
+The ImageNet pairs are read the way the field reads them. Every reference
+number is its final checkpoint scored over all 50,000 validation images
+through an fp32 forward, every verified run writes a per-image bitmap, and the
+two paths are compared by McNemar on the same images rather than by two
+confidence intervals. ResNet got the full treatment — the fp32 head, zero-γ,
+BN decay 0.9, timm's BCE target threshold, torchvision's crop, then timm's own
+schedule (the cosine stepped once an epoch from 1e-4 to a floor of 1e-6, Mixup
+or CutMix drawn per batch, RandAugment's fill at the image mean), on both paths
+at once: ResNet-34 **74.17%** against the reference's 74.14 (not separable),
+ResNet-50 **77.09%** against 76.76 on the 2018 recipe (p = 0.015) and
+**78.08%** against 77.61 on RSB-A3 (p = 0.0002, the verified checkpoint ahead
+on both). MobileNetV2's 350-epoch pair lands **71.12%** against 71.63,
+MobileNetV4-Conv-M **76.68%** against 76.57, and ViT-Tiny **72.42%** against
+72.07 with a six-item ledger of what the two paths still do differently. The
+other chapters were audited line by line against the code that trained the
+papers' numbers — TF-slim's MobileNetV2 command, TF TPU EfficientNet's B0 with
+`SAME` padding carried through the ties, MobileNetV4's own config, the
+ConvNeXt and DeiT recipes — and wired on both paths behind gates and smokes;
+each chapter carries a `[TODO]` marker that names exactly what its rerun will
+close, and the runs are queued. Lean 4.35.0.
+
+Every parameter-gradient node of the seven ImageNet nets IS the loss's
+derivative, stated as a theorem per net; the ties reach the bf16 renders by
+erasure and the training masks (stochastic depth, classifier dropout); the
+exact GELU x·Φ(x) joins the tanh form through erf and erfc, with an exact twin
+of every ViT and ConvNeXt artifact; the pooling condition is "each window's
+max attained at one cell"; Appendix C scopes the proofs to the gradient and
+the theorem statements take the Lamport form. Behind that, the rubric review,
+the API-design pass and the placement cleanup: 71 modules into 11 group
+directories, 939 same-file helpers made private, docstrings that state their
+statements, `TRUST.md`, a README in every directory a first visit opens, and
+the comparator re-run as `lake comparator --paranoid`.
+
+Platforms are a suite and a matrix — `scripts/platform/check.sh`,
+`PLATFORMS.md`, one profile — on CUDA 12 and 13, ROCm, the Jetson Orin Nano
+(a runbook from fresh JetPack to `lake run imagenette-orin` at 8 GB) and,
+new, Apple Silicon on Metal through jax-graft's PJRT plugin, the MNIST tier
+matching CUDA on an M1 Air; device residency is the default and the shims
+carry a uint8 wire. Chapter 10 grows to sixteen demos: remote sensing (which
+Sentinel-2 bands travel from Europe to the Amazon and the Cerrado), a CASP16
+distogram ResNet scored against the field, and a game-theory section with an
+exact instrument for each game — DQN from pixels on a Pong written in Lean,
+above its own state twin; Deep CFR on Leduc hold'em against the exact best
+response; AlphaZero on tic-tac-toe against the solved game, up to 5×5 — while
+BraTS carries its 3D verdict on two seeds a side. The book gains a rendered
+preview diff (`scripts/book/blueprint_preview.py`) and its Platforms table.
+
 ## v0.7.1 — The verified path runs the paper recipes
 
 The verified path runs the paper recipes to the end. Six of the seven chapter

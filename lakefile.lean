@@ -2,7 +2,7 @@ import Lake
 open Lake DSL
 
 package «lean4-mlir» where
-  version := v!"0.7.1"
+  version := v!"0.7.2"
   buildType := .release
   -- Mathlib v4.35 sets `requiresModuleSystem`, so Lake warns on every non-`module` file that
   -- imports it — here, all of them. Opt out until the corpus moves to the module system.
