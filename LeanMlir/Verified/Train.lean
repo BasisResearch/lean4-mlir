@@ -2493,6 +2493,21 @@ This measures t_rest (compute + params + host blob patching), NOT a full step."
   if noAug then
     IO.println "  ▸ NO AUGMENTATION (LEAN_MLIR_NO_AUG): centre crop, no random crop, no hflip \
 — the ablation arm. The rendered train step is unchanged."
+  -- LEAN_MLIR_STEP_DIAG=<dir>: a divergence probe. Every step it appends the loss, ‖g‖ and ‖θ‖
+  -- to `<dir>/steps.tsv` and each tensor's ‖g‖ to `<dir>/grad_tensors.tsv`; on the first
+  -- non-finite loss or ‖g‖ it writes the step's INPUT blob (θ|m|v|scalars|drop masks), the batch
+  -- and the labels to `<dir>/`, then exits 3, so that one step can be replayed in isolation.
+  -- ‖g‖ comes off Adam's first moment, not the graph: m' = β1·m + (1−β1)·g ⇒
+  -- ‖g‖² = (‖m'‖² − 2β1⟨m',m⟩ + β1²‖m‖²)/(1−β1)², per tensor, accumulated in f64 by `dotSlice`.
+  -- That needs m on the host on both sides of the step, so it REQUIRES `PJRT_FFI_RESIDENT=0`:
+  -- under residency the output's [θ|m|v] prefix is never read back.
+  let stepDiag := (← IO.getEnv "LEAN_MLIR_STEP_DIAG").filter (· ≠ "")
+  if let some d := stepDiag then
+    if (← IO.getEnv "PJRT_FFI_RESIDENT") != some "0" then
+      throw <| IO.userError "LEAN_MLIR_STEP_DIAG needs PJRT_FFI_RESIDENT=0 (m must reach the host)"
+    IO.FS.createDirAll d
+    IO.println s!"  ▸ STEP DIAG → {d}: per-step loss / ‖g‖ / ‖θ‖, dump + exit 3 on the first non-finite"
+  let diagSizes : Array Nat := net.paramShapes.map (·.foldl (·*·) 1)
   let probeSteps := (← IO.getEnv "LEAN_MLIR_MAX_STEPS").bind (·.toNat?)
   -- LEAN_MLIR_PROBE_WARM: the step the probe clock STARTS at. Default 8 preserves every
   -- committed number. 8 IS TOO EARLY TO BE A PRODUCTION RATE. `SHIM PREFETCH` keeps one
@@ -2903,6 +2918,8 @@ gate's control, not a configuration.")
                       else F32.randomHFlip xbRaw gbs.toUSize 3 32 32 augSeed
           | _ => pure xbRaw
         xb := x; yb := if synth then curLbl else F32.sliceLabels curLbl (bi * gbs) gbs
+      -- The step's input, kept only for LEAN_MLIR_STEP_DIAG (m before the step, and the dump).
+      let pPrev := if stepDiag.isSome then pbuf else ByteArray.empty
       let inv0 ← IO.monoMsNow
       let out ← if replicas > 1
         -- `nDrop` is the SHARDED TAIL. The drop masks are per-EXAMPLE, so under data parallelism
@@ -2922,6 +2939,38 @@ gate's control, not a configuration.")
       if bi < 3 || bi % 100 == 0 then
         IO.println s!"  step {bi}/{nb}: loss={stepLoss}"
         (← IO.getStdout).flush
+      if let some d := stepDiag then
+        let nP := net.nParams
+        let mut off := 0
+        let mut g2Tot := 0.0
+        let mut t2Tot := 0.0
+        let mut row := s!"{gstep}"
+        for n in diagSizes do
+          let mo := (nP + off).toUSize
+          let mm := F32.dotSlice out mo out mo n.toUSize
+          let mp := F32.dotSlice out mo pPrev mo n.toUSize
+          let pp := F32.dotSlice pPrev mo pPrev mo n.toUSize
+          let g2 := (mm - 2.0 * β1 * mp + β1 * β1 * pp) / ((1.0 - β1) * (1.0 - β1))
+          g2Tot := g2Tot + g2
+          t2Tot := t2Tot + F32.dotSlice out off.toUSize out off.toUSize n.toUSize
+          row := row ++ s!"\t{Float.sqrt (max g2 0.0)}"
+          off := off + n
+        let gn := Float.sqrt (max g2Tot 0.0)
+        let h ← IO.FS.Handle.mk (System.FilePath.mk d / "steps.tsv") .append
+        h.putStrLn s!"{ep + 1}\t{bi}\t{gstep}\t{lrt}\t{stepLoss}\t{gn}\t{Float.sqrt t2Tot}"
+        h.flush
+        let ht ← IO.FS.Handle.mk (System.FilePath.mk d / "grad_tensors.tsv") .append
+        ht.putStrLn row
+        ht.flush
+        let bad (x : Float) := x.isNaN || x.isInf
+        if bad stepLoss || bad g2Tot || bad t2Tot then
+          IO.FS.writeBinFile (System.FilePath.mk d / "step_input.bin") pPrev
+          IO.FS.writeBinFile (System.FilePath.mk d / "step_x.bin") xb
+          IO.FS.writeBinFile (System.FilePath.mk d / "step_y.bin") yb
+          IO.println s!"  ▸ STEP DIAG: non-finite at epoch {ep + 1} step {bi} (gstep {gstep}, lr {lrt}): \
+loss={stepLoss} ‖g‖²={g2Tot} ‖θ‖²={t2Tot}; input blob + batch written to {d}, exiting 3"
+          (← IO.getStdout).flush
+          IO.Process.exit 3
       -- EMA the batch BN stats (in the passthrough slots after [θ'|m'|v'|loss|bc1|bc2]).
       -- This slice is small (nBnStats floats), unlike the [θ|m|v] prefix.
       if hasBn then
