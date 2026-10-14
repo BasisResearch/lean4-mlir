@@ -15,7 +15,7 @@ page here: it runs `lake run mnist | cifar | imagenette` as the README's tour ha
 | [`ORIN.md`](ORIN.md) | Jetson Orin Nano 8 GB (sm_87, unified memory) | the PJRT plugin built on x86 for the board (§1), device setup and the allocator recipe (§2), the suite (§3), the verified trainers and `lake run imagenette-orin` (§4), the detector on TensorRT (§5), bringing results back (§6), the camera demos (§7) |
 | [`DETECTOR.md`](DETECTOR.md) | the VisDrone detector on the Orin | the TensorRT route (`export_onnx.py` → `trtexec`, 55.9 fps) and the IREE route (`build_orin.sh`, ~0.5 fps), the frame golden gate, the two contracts a port breaks silently |
 | [`ORIN_SMOKE_TEST.md`](ORIN_SMOKE_TEST.md) | the Orin | the device brief for the detector's first measurement |
-| [`MAC.md`](MAC.md) | Apple Silicon Mac, macOS 26 (Metal through jax-graft's PJRT plugin) | the MNIST tier on the GPU, rung by rung: the box, the venv, JAX on `mtl`, the shim's smoke test, the data, the Lean build, `lake run mnist`. Prepared, not yet run |
+| [`MAC.md`](MAC.md) | Apple Silicon Mac, macOS 26 (Metal through jax-graft's PJRT plugin) | the MNIST tier on the GPU, rung by rung: the box, the venv, JAX on `mtl`, the shim's smoke test, the data, the Lean build, `lake run mnist`. Works on an M1 Air, MNIST matching CUDA; TODO: full runs |
 
 ROCm and Intel Arc get a page here when they run; until then their rows in `PLATFORMS.md`
 point at `historical/ROCM.md` and `planning/platform_integration.md` §6.

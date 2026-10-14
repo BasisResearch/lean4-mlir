@@ -1,7 +1,8 @@
 # Apple Silicon Mac — the verified MNIST tier on Metal
 
-**Status: prepared, not yet run.** Everything Mac-side below was written on Linux. The script
-stops at the first rung that fails, and that rung's log is what fixes the next revision.
+**Status: works — every rung green on an M1 MacBook Air (2026-10-13). TODO: full runs.** The
+MNIST tier trains end to end and matches CUDA; CIFAR-10 and ResNet-34 on Imagenette train, but
+only partial runs have been done so far (§ Measured).
 
 The trainers reach a GPU through a PJRT plugin that the shim (`ffi/pjrt_ffi.c`) `dlopen`s, so a
 Mac needs a Metal plugin and nothing else. The plugin is
@@ -65,6 +66,28 @@ macOS and package versions in `manifest.txt` beside it. Each trainer's own log l
   everywhere else. On macOS only, it calls `PJRT_Plugin_Initialize` before creating the client,
   as JAX does, and searches the venv's plugin path by default. The Linux build is unchanged.
 - **`run.sh`** accepts the `metal` backend. There is one GPU, so the index argument is ignored.
+
+## Measured
+
+M1 MacBook Air, 8-core GPU, 16 GB, macOS 26.3.1; jax-graft 0.0.5 (jax 0.11.2); one run at a
+time (two at once share the GPU and roughly halve each).
+
+| | per epoch | result | CUDA (README) |
+|---|---|---|---|
+| `smoke`: `linear_fwd` vs the host | — | max error 6.4e-06; all six MNIST renders compile | — |
+| MNIST linear, 12 ep | ~0.35–0.5 s | **92.10 %** | 92.10 % |
+| MNIST MLP, 12 ep | ~1.4 s | **97.79 %** | 97.78 % (median of 30) |
+| MNIST CNN, 12 ep | ~13.4 s | **98.71 %** | 98.78 % (median of 30) |
+| CIFAR-10 `lake run cifar` | — | trains; TODO: full run | 76.3 % |
+| ResNet-34, Imagenette 224² | ~5.7 min | 46.0 % val at epoch 3 (stopped); ~7.5–8 h for 80 ep. TODO: full run | 89.99 % |
+
+The seven Imagenette nets (ResNet-34/50, MobileNetV2/V4, EfficientNet-B0, ConvNeXt-T, ViT-Tiny)
+all compile on Metal, ConvNeXt's and ViT's ~550–600-output train steps in ~1.4 s. On a 16 GB
+machine train with `LEAN_MLIR_IMAGENETTE_STREAM=1`: the resident f32 train split alone is
+~7.4 GB of the memory the GPU shares.
+
+**TODO: full runs.** `lake run cifar` and an 80-epoch ResNet-34 to completion, then the other
+Imagenette nets; a newer Mac (M4/M5) for a second row.
 
 ## What to expect
 

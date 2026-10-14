@@ -15,7 +15,7 @@
 #   smoke  ffi/libpjrt_ffi.so (our PJRT shim) and ffi/test_pjrt_smoke.c: load the plugin, create
 #          a Metal client, run verified_mlir/linear_fwd.mlir against the host's answer, compile
 #          the other five MNIST renders — the shim works before any Lean
-#   data   MNIST into data/
+#   data   MNIST into data/mnist/
 #   lean   the toolchain (elan installs it from lean-toolchain), Mathlib's prebuilt cache, and
 #          the three MNIST trainers
 #   mnist  `lake run mnist`: linear, MLP and CNN on the GPU
@@ -179,7 +179,7 @@ fi
 if want data; then
   say "data: MNIST"
   bash scripts/datasets/download_mnist.sh > /dev/null || die "the MNIST download failed"
-  ok "$(ls data/*-ubyte | wc -l | tr -d ' ') MNIST files in data/"
+  ok "$(ls data/mnist/*-ubyte | wc -l | tr -d ' ') MNIST files in data/mnist/"
 fi
 
 # ─── lean ────────────────────────────────────────────────────────────────────
