@@ -686,7 +686,8 @@ private def erfSpellings : List String :=
 -- The max-shifted attention softmax (2026-10-14): `smx` between the ε digits and `erf`. It is a
 -- render choice like the GELU form — no region, scalar or mask — so every predicate reads the
 -- `smx` spelling as it reads the one without it, and `evalTag`'s digit read stops at `s`.
-#guard ["emadp256x4wxdropeps0000001smxerfbf16", "emadp256x4wxdropeps0000001smxbf16"].all (fun v =>
+#guard ["emadp256x4wxdropeps0000001smxerfbf16", "emadp256x4wxdropeps0000001smxbf16",
+    "emaaccdp2x128x4wxdropeps0000001smxerfbf16", "emaaccdp2x128x4wxdropeps0000001smxbf16"].all (fun v =>
   let t := v.replace "smx" ""
   nRegions v == nRegions t && nScalars v == nScalars t && emaRegion v == emaRegion t &&
   sdOn v == sdOn t && cdOn v == cdOn t && accOn v == accOn t && rmsOn v == rmsOn t &&
@@ -733,11 +734,11 @@ private def erfSpellings : List String :=
     ].mapM refused
   unless mixed.all id do
     throw <| IO.userError s!"checkGeluWorld accepted a mixed pair: refusals {mixed}"
-  -- 57 at each form since Ti's max-shifted-softmax pair (`vitin_emadp256x4wxdropeps0000001smx{erf,}bf16`,
-  -- 2026-10-14), after ConvNeXt's official-batch pairs' 56 (2026-10-12), the ViT-S / ViT-B
+  -- 59 at each form since ViT-S's and ViT-B's max-shifted-softmax pairs
+  -- (`vit{s,b}in_…eps0000001smx{erf,}bf16`, 2026-10-14), after Ti's 57 (the same day), after ConvNeXt's official-batch pairs' 56 (2026-10-12), the ViT-S / ViT-B
   -- DeiT-recipe pairs' 53 (2026-10-11) and Ti's 51; a new ImageNet ViT / ConvNeXt render lands with
   -- its twin, so the two counts stay equal.
-  unless pairs == 114 && erfs == 57 do
-    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 114 (57 at each form)"
+  unless pairs == 118 && erfs == 59 do
+    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 118 (59 at each form)"
   IO.println s!"✓ checkGeluWorld: {pairs} train steps ({erfs} erf, {pairs - erfs} tanh) score through a forward at their own form; \
 3 mixed pairs refused"

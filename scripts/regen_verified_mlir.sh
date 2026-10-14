@@ -282,6 +282,18 @@ NO_PARTNER = {
   "vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_fwd.mlir":
                            "the same at the exact GELU; its only step is the no-clip bf16 drop "
                            "accumulated 2 x at 4 x 128",
+  "vitsin_emadp256x4wxdropeps0000001smxbf16_fwd.mlir":
+                           "ViT-S's DeiT's-batch eval forward with the attention softmax max-shifted "
+                           "(2026-10-14): drop-free f32 at B=256; its only step is the smx bf16 drop at 4 x 256",
+  "vitsin_emadp256x4wxdropeps0000001smxerfbf16_fwd.mlir":
+                           "the same at the exact GELU; its only step is the smx bf16 drop at 4 x 256",
+  "vitbin_emaaccdp2x128x4wxdropeps0000001smxbf16_fwd.mlir":
+                           "ViT-B's DeiT's-batch eval forward with the attention softmax max-shifted "
+                           "(2026-10-14): drop-free f32 at B=32; its only step is the smx bf16 drop "
+                           "accumulated 2 x at 4 x 128",
+  "vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16_fwd.mlir":
+                           "the same at the exact GELU; its only step is the smx bf16 drop "
+                           "accumulated 2 x at 4 x 128",
   "vitsin_emadp128x4wxclipdropeps0000001bf16_fwd.mlir":
                            "the LN-ε-1e-6 eval forward: drop-free f32 at B=32, vitsin_fwd.mlir's "
                            "geometry at DeiT's ε; its only step is bf16 drop at B=128",

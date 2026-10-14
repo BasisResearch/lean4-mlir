@@ -1626,6 +1626,60 @@ end Proofs.StableHLO
   (Proofs.StableHLO.vitFwdRenderB .tanh "vitbin_emaaccdp2x128x4wxdropeps0000001bf16_fwd" 1000
     (V := Proofs.StableHLO.vitBDims) (eps := "1.0e-6"))
 
+-- **The ViT-S and ViT-B renders above with the attention softmax MAX-SHIFTED (2026-10-14),
+-- marker `smx`** — the fix the Tiny render took after its NaN at epoch 3 (see the `smx` block
+-- after `vitin_emadp256x4wxdropeps0000001erfbf16`). Both carry the same unshifted `exp(s)/Σexp(s)`
+-- in every head, with more heads per block than Tiny (6 and 12 vs 3), so each is the render above with one row-max `reduce … maximum` per forward and
+-- backward-recompute softmax added and nothing else. Same function (`rowSoftmaxShiftFlat_eq`,
+-- `den_softmaxRowBackShiftB_eq`). The eval forwards carry the shift; the tanh twins follow.
+
+-- ── ViT-S at 4 × 256, no clip, `smx` ──
+#eval IO.FS.writeFile "verified_mlir/vitsin_emadp256x4wxdropeps0000001smxerfbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitsin_emadp256x4wxdropeps0000001smxerfbf16_train_step"
+    "256.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 256) (V := Proofs.StableHLO.vitSDims) (bf16 := true) (eps := "1.0e-6")
+    (smShift := true))
+#guard "vitsin_emadp256x4wxdropeps0000001smxerfbf16_train_step" ==
+  "vitsin_" ++ Proofs.StableHLO.vitAdamVariant 256 4 true true false true ++
+    Proofs.StableHLO.bnEpsMarker "1.0e-6" ++ "smx" ++ "erf" ++ "bf16" ++ "_train_step"
+#eval IO.FS.writeFile "verified_mlir/vitsin_emadp256x4wxdropeps0000001smxerfbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .erf "vitsin_emadp256x4wxdropeps0000001smxerfbf16_fwd" 1000 (vbB := 256)
+    (V := Proofs.StableHLO.vitSDims) (eps := "1.0e-6") (smShift := true))
+-- its tanh twin
+#eval IO.FS.writeFile "verified_mlir/vitsin_emadp256x4wxdropeps0000001smxbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .tanh "vitsin_emadp256x4wxdropeps0000001smxbf16_train_step"
+    "256.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 256) (V := Proofs.StableHLO.vitSDims) (bf16 := true) (eps := "1.0e-6")
+    (smShift := true))
+#eval IO.FS.writeFile "verified_mlir/vitsin_emadp256x4wxdropeps0000001smxbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .tanh "vitsin_emadp256x4wxdropeps0000001smxbf16_fwd" 1000 (vbB := 256)
+    (V := Proofs.StableHLO.vitSDims) (eps := "1.0e-6") (smShift := true))
+
+-- ── ViT-B at 2 × (4 × 128), accumulated, no clip, `smx` ──
+#eval IO.FS.writeFile "verified_mlir/vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16_train_step"
+    "128.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 128) (V := Proofs.StableHLO.vitBDims) (bf16 := true) (eps := "1.0e-6")
+    (acc := 2) (smShift := true))
+#guard "vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16_train_step" ==
+  "vitbin_" ++ Proofs.StableHLO.vitAdamVariant 128 4 true true false true (acc := 2) ++
+    Proofs.StableHLO.bnEpsMarker "1.0e-6" ++ "smx" ++ "erf" ++ "bf16" ++ "_train_step"
+#guard ((("emaaccdp2x128x4wxdropeps0000001smxerfbf16".splitOn "acc").getD 1 "").drop 2
+          |>.takeWhile (· != 'x')) == "2"
+#guard ("emaaccdp2x128x4wxdropeps0000001smxerfbf16".splitOn "drop").length == 2
+#eval IO.FS.writeFile "verified_mlir/vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .erf "vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16_fwd" 1000
+    (V := Proofs.StableHLO.vitBDims) (eps := "1.0e-6") (smShift := true))
+-- its tanh twin
+#eval IO.FS.writeFile "verified_mlir/vitbin_emaaccdp2x128x4wxdropeps0000001smxbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .tanh "vitbin_emaaccdp2x128x4wxdropeps0000001smxbf16_train_step"
+    "128.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 128) (V := Proofs.StableHLO.vitBDims) (bf16 := true) (eps := "1.0e-6")
+    (acc := 2) (smShift := true))
+#eval IO.FS.writeFile "verified_mlir/vitbin_emaaccdp2x128x4wxdropeps0000001smxbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .tanh "vitbin_emaaccdp2x128x4wxdropeps0000001smxbf16_fwd" 1000
+    (V := Proofs.StableHLO.vitBDims) (eps := "1.0e-6") (smShift := true))
+
 #eval IO.FS.writeFile "verified_mlir/vitbin_adam128wxclipdroperf_train_step.mlir"
   (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitbin_adam128wxclipdroperf_train_step" "128.0" 1
     1000 0.1 (ema := false) (wdExclude := true) (wdStr := "0.05") (clip := true) (clipStr := "1.0")
