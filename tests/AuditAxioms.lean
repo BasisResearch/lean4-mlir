@@ -526,6 +526,11 @@ open Proofs
 -- ViT increment 2
 #print axioms StableHLO.den_matmulFB_per_example
 #print axioms StableHLO.den_softmaxRowBackB_per_example
+-- The max-shifted softmax (2026-10-14): the shift is exact, row by row and per example
+#print axioms StableHLO.softmax_sub_const
+#print axioms StableHLO.rowSoftmaxShiftFlat_eq
+#print axioms StableHLO.rowSoftmaxBackShiftFlat_eq
+#print axioms StableHLO.den_softmaxRowBackShiftB_eq
 -- The batch sum that is invisible at N = 1
 #print axioms StableHLO.den_posEmbedGradB_at_one
 -- CLASSIFIER DROPOUT

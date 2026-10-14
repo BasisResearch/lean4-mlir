@@ -78,6 +78,12 @@ def erf_on(v: str) -> bool:
     return "erf" in v
 
 
+def smx_on(v: str) -> bool:
+    # the attention softmax max-shifted (`ViTRenderB`'s `smShift`, 2026-10-14): `smx` after the ε
+    # marker, before `erf`
+    return "smx" in v
+
+
 def acc_k(v: str) -> int | None:
     if not acc_on(v):
         return None
@@ -134,6 +140,12 @@ def selftest() -> int:
         ("emadp128x4wxclipdropeps0000001erfbf16", batch_shape, "batch 128 per replica × 4 replicas",
          "`erf` is not a batch"),
         ("emalambaccdp8x64wxclipdropbcewd001", erf_on, False, "no other marker spells `erf`"),
+        # 7. the softmax shift: `smx` between the ε digits and `erf`.
+        ("emadp256x4wxdropeps0000001smxerfbf16", smx_on, True, "`eps0000001`++`smx`: the shifted softmax"),
+        ("emadp256x4wxdropeps0000001smxerfbf16", lambda v: decimal_marker(v, "eps"), "0.000001",
+         "...the ε digits stop at `smx`"),
+        ("emadp256x4wxdropeps0000001smxerfbf16", erf_on, True, "...and `smxerf` is still the exact GELU"),
+        ("emadp256x4wxdropeps0000001erfbf16", smx_on, False, "the unshifted render"),
     ]
     bad = 0
     for v, pred, want, why in checks:
@@ -192,6 +204,8 @@ def decode(variant: str) -> str:
         bits.append("grad clip")
     if "bce" in variant:
         bits.append("BCE loss")
+    if smx_on(variant):
+        bits.append("max-shifted softmax")
     if erf_on(variant):
         bits.append("exact GELU")
     if "bf16" in variant:
@@ -368,6 +382,7 @@ def build() -> str:
         "| weight decay | `wd<d…>` | first digit the integer part: `wd005` = 0.05, `wd00` = 0.0 |",
         "| label smoothing | `ls<d…>` | same rule: `ls0` = 0 |",
         "| GELU form | `erf` | the exact `x · Φ(x)`, before `bf16`; without it the tanh approximation |",
+        "| softmax shift | `smx` | the attention softmax max-shifted, before `erf`; without it plain `exp` (overflows above 88.72) |",
         "",
     ]
 

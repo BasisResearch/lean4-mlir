@@ -265,6 +265,11 @@ NO_PARTNER = {
                            "its only step is the no-clip bf16 drop at 4 x 256",
   "vitin_emadp256x4wxdropeps0000001erfbf16_fwd.mlir":
                            "the same at the exact GELU; its only step is the no-clip bf16 drop at 4 x 256",
+  "vitin_emadp256x4wxdropeps0000001smxbf16_fwd.mlir":
+                           "the DeiT's-batch eval forward with the attention softmax max-shifted "
+                           "(2026-10-14): drop-free f32 at B=256; its only step is the smx bf16 drop at 4 x 256",
+  "vitin_emadp256x4wxdropeps0000001smxerfbf16_fwd.mlir":
+                           "the same at the exact GELU; its only step is the smx bf16 drop at 4 x 256",
   "vitsin_emadp256x4wxdropeps0000001bf16_fwd.mlir":
                            "ViT-S's DeiT's-batch eval forward (2026-10-11): drop-free f32 at B=256 at DeiT's "
                            "ε; its only step is the no-clip bf16 drop at 4 x 256",

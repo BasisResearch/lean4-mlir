@@ -93,7 +93,13 @@ private def vBlockFwdB (gf : GeluForm) (V : VitDims) (vbB : Nat) (pfx xin : Stri
     -- certificates are generic in ε (`vit_block_tiedGB`/`vit_finalLN_tiedGB` take `epsStr` and the
     -- real ε separately, `ViTWholeBackCertifiedTieB` needs only `0 < ε`); as everywhere, nothing
     -- proves the string spells the real — the literal is trusted, at 1e-5 as at 1e-6.
-    (eps : String := vEPS) :
+    (eps : String := vEPS)
+    -- **The attention softmax MAX-SHIFTED** (`softmaxRowShift` / `softmaxRowBackShiftB`),
+    -- TRAILING and defaulted `false`, so every committed artifact re-renders byte-identically. The
+    -- plain `exp` overflows f32 above a score of 88.72; the DeiT-recipe verified ViT-Ti hit 90.0
+    -- at epoch 3 and went NaN (runs/2026-10-14-vit-deit-verified-nan-diag). Same function
+    -- (`rowSoftmaxShiftFlat_eq`, `den_softmaxRowBackShiftB_eq`); variant marker `smx`.
+    (smShift : Bool := false) :
     StateM Proofs.StableHLO.EmitS (String × BSaves) := do
   let vbTok := V.tok
   let vbD := V.d
@@ -136,7 +142,10 @@ private def vBlockFwdB (gf : GeluForm) (V : VitDims) (vbB : Nat) (pfx xin : Stri
           (.operand kt (0 : Vec (vbB*(vbHd*vbTok)))))
     let (csc, sc) ← pretty vbB (.scaleB (N := vbB) (n := vbTok*vbTok) vSCALE 0
         (.operand qk (0 : Vec (vbB*(vbTok*vbTok)))))
-    let (csm, sm) ← pretty vbB (.batchOp (N := vbB) (.softmaxRow (m := vbTok) (n := vbTok))
+    let (csm, sm) ← if smShift then
+        pretty vbB (.batchOp (N := vbB) (.softmaxRowShift (m := vbTok) (n := vbTok))
+          (.operand sc (0 : Vec (vbB*(vbTok*vbTok)))))
+      else pretty vbB (.batchOp (N := vbB) (.softmaxRow (m := vbTok) (n := vbTok))
         (.operand sc (0 : Vec (vbB*(vbTok*vbTok)))))
     let (cpv, pv) ← pretty vbB (.matmulFBAt bf16 (N := vbB) (m := vbTok) (k := vbTok) (n := vbHd)
           zrnd
@@ -204,7 +213,9 @@ def vitFwd12B (gf : GeluForm) (V : VitDims) (vbB : Nat) (nClasses : Nat) (sd : B
     -- `bf16` for exactly this class of reason.
     (bf16Conv : Bool := false)
     -- LayerNorm ε, `vBlockFwdB`'s; it reaches all 25 LN sites (2 per block + the final one).
-    (eps : String := vEPS) :
+    (eps : String := vEPS)
+    -- `vBlockFwdB`'s, to all 12 blocks.
+    (smShift : Bool := false) :
     StateM Proofs.StableHLO.EmitS (String × FwdSaves) := do
   let vbTk := V.tk
   let vbTok := V.tok
@@ -220,7 +231,7 @@ def vitFwd12B (gf : GeluForm) (V : VitDims) (vbB : Nat) (nClasses : Nat) (sd : B
   let mut cur := embed
   let mut blocks : Array BSaves := #[]
   for i in [0:vDEPTH] do
-    let (cb, sv) ← vBlockFwdB gf V vbB s!"b{i}_" cur (if sd then some i else none) bf16 eps
+    let (cb, sv) ← vBlockFwdB gf V vbB s!"b{i}_" cur (if sd then some i else none) bf16 eps smShift
     code := code ++ cb; cur := sv.bout; blocks := blocks.push sv
   let (cf, fl) ← vecLnSiteB vbB V.tok V.d eps "%gF" "%btF" cur
   -- `(N := vbTk)` is the PATCH count (196), so the operand's token axis is 197 and the result is
@@ -251,10 +262,13 @@ def vitFwdRenderB (gf : GeluForm) (funcName : String := "vit_fwd_b") (nClasses :
     -- LayerNorm ε (`vBlockFwdB`'s note). A train step at a non-default ε needs its OWN forward
     -- at that ε (`<slug>_<variant>_fwd.mlir`), or the trainer scores a different net;
     -- `checkLnEpsWorld` refuses that pairing.
-    (eps : String := vEPS) : String :=
+    (eps : String := vEPS)
+    -- `vBlockFwdB`'s. A `smx` train step scores through a `smx` forward: the eval forward has
+    -- the same overflow.
+    (smShift : Bool := false) : String :=
   let vbTok := V.tok
   let vbD := V.d
-  let (body, sv) := (vitFwd12B gf V vbB nClasses sd bf16 bf16Conv eps).run' (0, [])
+  let (body, sv) := (vitFwd12B gf V vbB nClasses sd bf16 bf16Conv eps smShift).run' (0, [])
   let res := sv.logits
   -- `fun i => blkArgSig i V`, NOT `.map blkArgSig`: the bare form passes only `i` and lets
   -- `V` fall back to its Tiny default, which renders a ViT-S body under a ViT-Tiny block
@@ -327,7 +341,10 @@ private def vBlockBackB (gf : GeluForm) (V : VitDims) (vbB : Nat) (pfx : String)
     -- look wired and buy almost nothing.
     (bf16 : Bool := false)
     -- LayerNorm ε, the forward's (`vBlockFwdB`); both LN backward sites read it.
-    (eps : String := vEPS) : StateM Proofs.StableHLO.EmitS (String × String × List String) := do
+    (eps : String := vEPS)
+    -- `vBlockFwdB`'s: the backward recomputes `p` from the saved scores, so it overflows where
+    -- the forward does.
+    (smShift : Bool := false) : StateM Proofs.StableHLO.EmitS (String × String × List String) := do
   let vbTok := V.tok
   let vbD := V.d
   let vbH := V.heads
@@ -408,7 +425,10 @@ private def vBlockBackB (gf : GeluForm) (V : VitDims) (vbB : Nat) (pfx : String)
           (.operand smT zAtt) (.operand dpv zHd))
     -- Each example's softmax backward reads its own saved scores
     -- (`den_softmaxRowBackB_per_example`), as each `matmulFB` reads its own operands.
-    let (cf, dsc) ← pretty vbB (.softmaxRowBackB (N := vbB) (m := vbTok) (n := vbTok)
+    let (cf, dsc) ← if smShift then
+        pretty vbB (.softmaxRowBackShiftB (N := vbB) (m := vbTok) (n := vbTok)
+          (sv.scs[hh]!) zAtt (.operand dsm zAtt))
+      else pretty vbB (.softmaxRowBackB (N := vbB) (m := vbTok) (n := vbTok)
         (sv.scs[hh]!) zAtt (.operand dsm zAtt))
     let (cg2, dqk) ← pretty vbB (.scaleB (N := vbB) (n := vbTok*vbTok) vSCALE 0
         (.operand dsc zAtt))
@@ -491,12 +511,15 @@ def vitBackAllB (gf : GeluForm) (vbB : Nat) (nClasses : Nat) (smooth : Option (S
     (bf16ConvW : Bool := false)
     -- LayerNorm ε (`vBlockFwdB`'s note), one string for the forward AND the backward, so the two
     -- halves of the step cannot disagree on it.
-    (eps : String := vEPS) :
+    (eps : String := vEPS)
+    -- The max-shifted attention softmax (`vBlockFwdB`'s note), one flag for both halves, for
+    -- `eps`'s reason.
+    (smShift : Bool := false) :
     StateM Proofs.StableHLO.EmitS (String × List String × String) := do
     let vbTk := V.tk
     let vbTok := V.tok
     let vbD := V.d
-    let (fwd, sv) ← vitFwd12B gf V vbB nClasses sd bf16 bf16Conv eps
+    let (fwd, sv) ← vitFwd12B gf V vbB nClasses sd bf16 bf16Conv eps smShift
     let zCls : Vec (vbB*nClasses) := fun _ => 0
     let (cSm, nSm) ← pretty vbB (.batchOp (N := vbB) (.softmaxDiv (n := nClasses))
         (.batchOp (N := vbB) (.expe (n := nClasses)) (.operand sv.logits zCls)))
@@ -520,7 +543,7 @@ def vitBackAllB (gf : GeluForm) (vbB : Nat) (nClasses : Nat) (smooth : Option (S
     for j in [0:vDEPTH] do
       let i := vDEPTH - 1 - j
       let (cb, dx, names) ← vBlockBackB gf V vbB s!"b{i}_" (sv.blocks[i]!) dcur
-        (if sd then some i else none) bf16 eps
+        (if sd then some i else none) bf16 eps smShift
       code := code ++ cb; dcur := dx; blkNames := blkNames.push names
     -- patch-embed params
     let zTok : Vec (vbB*(vbTok*vbD)) := fun _ => 0
@@ -591,7 +614,11 @@ def vitAdamTrainStepBText (gf : GeluForm) (funcName : String := "vit_adam_train_
     -- Gradient accumulation over `acc` micro-batches (`vitAdamTrainStepText`'s `acc`), TRAILING
     -- and defaulted to 1. The traversal does not see it: the accumulator is parameter-space, one
     -- `momVNextF` per gradient in the AdamW tail, so the batched backward is the same at any `k`.
-    (acc : Nat := 1) : String :=
+    (acc : Nat := 1)
+    -- The max-shifted attention softmax (`vBlockFwdB`'s note), TRAILING and defaulted. Its name
+    -- marker is `smx`, after the ε marker and before `erf`, spelled into `funcName` by the
+    -- caller and pinned by the `#guard`s under its `#eval`.
+    (smShift : Bool := false) : String :=
   let alphaStr := fmt6 alpha
   let negAlphaKStr := "-" ++ alphaOverK nClasses alpha
   -- `sd` IS SPELLED ONCE AND REACHES BOTH HALVES FROM HERE — the traversal (which places the 24
@@ -601,7 +628,7 @@ def vitAdamTrainStepBText (gf : GeluForm) (funcName : String := "vit_adam_train_
   vitAdamTrainStepText gf funcName bStr replicas vbB nClasses alpha ema wdExclude wdStr clip clipStr
     -- AND HERE. `bf16` reaching this traversal is what makes the graph bf16; nothing else in
     -- this function's body needs it, because the AdamW tail is parameter-space and stays f32.
-    (traversal := some (vitBackAllB gf vbB nClasses (some (alphaStr, negAlphaKStr, bStr)) sd V bf16 bf16Conv bf16ConvW eps))
+    (traversal := some (vitBackAllB gf vbB nClasses (some (alphaStr, negAlphaKStr, bStr)) sd V bf16 bf16Conv bf16ConvW eps smShift))
     (V := V)
     (sd := sd)
     (acc := acc)
@@ -1405,6 +1432,39 @@ end Proofs.StableHLO
 #eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001bf16_fwd.mlir"
   (Proofs.StableHLO.vitFwdRenderB .tanh "vitin_emadp256x4wxdropeps0000001bf16_fwd" 1000 (vbB := 256)
     (eps := "1.0e-6"))
+
+-- **The same render with the attention softmax MAX-SHIFTED (2026-10-14), marker `smx`.** The
+-- render above went NaN at epoch 3 of its first run: its 36 attention softmaxes are `exp(s)/Σexp(s)`
+-- and one score reached 90.0, past f32's `exp` limit of 88.72 (replayed per shard in
+-- `runs/2026-10-14-vit-deit-verified-nan-diag/`; the other three shards peaked at 64–73 on the
+-- same head). `smShift` emits `softmaxRowShift` / `softmaxRowBackShiftB`: the row max is subtracted
+-- before every `exp`, forward and backward, so no exponent exceeds 0. Same function
+-- (`rowSoftmaxShiftFlat_eq`, `den_softmaxRowBackShiftB_eq`), so it is the render above with 72
+-- `reduce … maximum`s added and nothing else; the classifier head's softmax is unchanged. `smx`
+-- sits after the ε marker and before `erf`. Its eval forward carries the shift too, and the tanh
+-- twin follows for the GELU-form audit.
+#eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001smxerfbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitin_emadp256x4wxdropeps0000001smxerfbf16_train_step"
+    "256.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 256) (bf16 := true) (eps := "1.0e-6") (smShift := true))
+#guard "vitin_emadp256x4wxdropeps0000001smxerfbf16_train_step" ==
+  "vitin_" ++ Proofs.StableHLO.vitAdamVariant 256 4 true true false true ++
+    Proofs.StableHLO.bnEpsMarker "1.0e-6" ++ "smx" ++ "erf" ++ "bf16" ++ "_train_step"
+#guard "emadp256x4wxdropeps0000001smxerfbf16".startsWith "ema"
+#guard !"emadp256x4wxdropeps0000001smxerfbf16".contains "do"
+#guard !"emadp256x4wxdropeps0000001smxerfbf16".contains "acc"
+#guard !"emadp256x4wxdropeps0000001smxerfbf16".contains "rms"
+#guard ("emadp256x4wxdropeps0000001smxerfbf16".splitOn "drop").length == 2
+#eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001smxerfbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .erf "vitin_emadp256x4wxdropeps0000001smxerfbf16_fwd" 1000 (vbB := 256)
+    (eps := "1.0e-6") (smShift := true))
+#eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001smxbf16_train_step.mlir"
+  (Proofs.StableHLO.vitAdamTrainStepBText .tanh "vitin_emadp256x4wxdropeps0000001smxbf16_train_step"
+    "256.0" 4 1000 0.1 (ema := true) (wdExclude := true) (wdStr := "0.05") (clip := false)
+    (sd := true) (vbB := 256) (bf16 := true) (eps := "1.0e-6") (smShift := true))
+#eval IO.FS.writeFile "verified_mlir/vitin_emadp256x4wxdropeps0000001smxbf16_fwd.mlir"
+  (Proofs.StableHLO.vitFwdRenderB .tanh "vitin_emadp256x4wxdropeps0000001smxbf16_fwd" 1000 (vbB := 256)
+    (eps := "1.0e-6") (smShift := true))
 
 #eval IO.FS.writeFile "verified_mlir/vitin_adamdp256x2wxclipdroperf_train_step.mlir"
   (Proofs.StableHLO.vitAdamTrainStepBText .erf "vitin_adamdp256x2wxclipdroperf_train_step" "256.0" 2 1000

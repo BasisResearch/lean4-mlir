@@ -85,6 +85,15 @@ abbrev EmitS := Nat × ShapeTbl
 def fresh : StateM EmitS String := do
   let (k, tbl) ← get; set (k + 1, tbl); pure s!"%v{k}"
 
+/-- **The row-max shift** both max-shifted softmax emits share: `{mx}` = each row's max of the
+    `[B,m,n]` scores `{xn}` (`reduce maximum` over [2] from -inf), broadcast back and subtracted, so
+    `{sh}` = `xn − max` has every entry ≤ 0 and the `exp` that follows cannot overflow. -/
+def softmaxShiftText (B m n : Nat) (xn ninf mx mxb sh : String) : String :=
+  s!"    {ninf} = stablehlo.constant dense<0xFF800000> : tensor<f32>\n" ++
+  s!"    {mx} = stablehlo.reduce({xn} init: {ninf}) applies stablehlo.maximum across dimensions = [2] : ({ty [B,m,n]}, tensor<f32>) -> {ty [B,m]}\n" ++
+  s!"    {mxb} = stablehlo.broadcast_in_dim {mx}, dims = [0, 1] : ({ty [B,m]}) -> {ty [B,m,n]}\n" ++
+  s!"    {sh} = stablehlo.subtract {xn}, {mxb} : {ty [B,m,n]}\n"
+
 /-- **The 3×3/s2 pool's emitted forward text**, given already-freshened names.
 
     It is a shared helper rather than two copies for the reason `sWGradGeom` is: the
@@ -251,6 +260,7 @@ inductive Raw where
   | layerScaleChF (γ : String) (c h w : Nat) : Raw → Raw
   | softmaxRowF    (m n : Nat)             : Raw → Raw
   | softmaxRowBack (x : String) (m n : Nat) : Raw → Raw
+  | softmaxRowBackShift (x : String) (m n : Nat) : Raw → Raw
   | matmulF    (m k n : Nat)               : Raw → Raw → Raw
   | transposeF (m n : Nat)                 : Raw → Raw
   | scaleF     (s : String) (n : Nat)      : Raw → Raw
@@ -336,6 +346,7 @@ private def batchOpDescr {a b : Nat} (N : Nat) : BatchableOp a b → (String × 
   -- half of the same pin.
   | .maxPool3s2 (c := c) (h := h) (w := w) => ("maxPool3s2", [], [N, c, h, w])
   | .softmaxRow (m := m) (n := n) => ("softmaxRow", [], [N, m, n])
+  | .softmaxRowShift (m := m) (n := n) => ("softmaxRowShift", [], [N, m, n])
   | .denseRowBack (rows := rows) (a := a) (c := c) wN _ => ("denseRowBackP", [wN], [N, rows, a, c])
   -- A DISTINCT tag, for the reason every bf16 tag in this function is distinct: the emitted TEXT
   -- differs (two operand converts and bf16 operand types), so sharing a Raw with the f32 tag would
@@ -492,6 +503,7 @@ def skel : {k : Nat} → SHlo k → Raw
   | _, .matmulFBBf16 (m := m) (k := k) (n := n) _ a b =>
       .batched2 "matmulFBf16" [] [m, k, n] (skel a) (skel b)
   | _, .softmaxRowBackB (m := m) (n := n) x _ e => .softmaxRowBack x m n (skel e)
+  | _, .softmaxRowBackShiftB (m := m) (n := n) x _ e => .softmaxRowBackShift x m n (skel e)
   | _, .rowDenseWeightGradB (tk := tk) (a := a) (c := c) xN _ e =>
       .batched "rowDenseWeightGrad" [xN] [tk, a, c] (skel e)
   | _, .rowDenseWeightGradBBf16 (tk := tk) (a := a) (c := c) _ xN _ e =>
@@ -878,6 +890,7 @@ inductive Tok where
   | layerScaleChF (γ : String) (c h w : Nat) : Tok
   | softmaxRowF    (m n : Nat)             : Tok
   | softmaxRowBack (x : String) (m n : Nat) : Tok
+  | softmaxRowBackShift (x : String) (m n : Nat) : Tok
   | matmulF    (m k n : Nat)               : Tok
   | transposeF (m n : Nat)                 : Tok
   | scaleF     (s : String) (n : Nat)      : Tok
@@ -987,6 +1000,7 @@ def toToks : Raw → List Tok
   | .layerScaleChF γN c h w e => toToks e ++ [.layerScaleChF γN c h w]
   | .softmaxRowF m n e    => toToks e ++ [.softmaxRowF m n]
   | .softmaxRowBack x m n e => toToks e ++ [.softmaxRowBack x m n]
+  | .softmaxRowBackShift x m n e => toToks e ++ [.softmaxRowBackShift x m n]
   | .matmulF m k n a b    => toToks a ++ toToks b ++ [.matmulF m k n]
   | .transposeF m n e     => toToks e ++ [.transposeF m n]
   | .scaleF s n e         => toToks e ++ [.scaleF s n]
@@ -2709,6 +2723,28 @@ def emitTok (B : Nat) : Tok → List String → StateM EmitS (String × List Str
         s!"    {d} = stablehlo.subtract {dn}, {srb} : {ty [B,m,n]}\n" ++
         s!"    {dz} = stablehlo.multiply {p}, {d} : {ty [B,m,n]}\n" ++
         s!"    {o} = stablehlo.reshape {dz} : ({ty [B,m,n]}) -> {ty [B, m*n]}\n", o :: st)
+  | .softmaxRowBackShift x m n, r :: st => do
+      -- `.softmaxRowBack` with `p` recomputed MAX-SHIFTED: the row max of the saved scores
+      -- (`reduce maximum` from -inf over [2]) is subtracted before `exp`, as in the forward's
+      -- `softmaxRowShift`. Everything after `p` is `.softmaxRowBack`'s text.
+      let xn ← fresh; let dn ← fresh; let ninf ← fresh; let mx ← fresh; let mxb ← fresh
+      let sh ← fresh; let z ← fresh; let e ← fresh; let s ← fresh
+      let sb ← fresh; let p ← fresh; let pdy ← fresh; let sr ← fresh; let srb ← fresh
+      let d ← fresh; let dz ← fresh; let o ← fresh
+      pure (s!"    {xn} = stablehlo.reshape {x} : ({ty [B, m*n]}) -> {ty [B,m,n]}\n" ++
+        s!"    {dn} = stablehlo.reshape {r} : ({ty [B, m*n]}) -> {ty [B,m,n]}\n" ++
+        softmaxShiftText B m n xn ninf mx mxb sh ++
+        s!"    {z} = stablehlo.constant dense<0.0> : tensor<f32>\n" ++
+        s!"    {e} = stablehlo.exponential {sh} : {ty [B,m,n]}\n" ++
+        s!"    {s} = stablehlo.reduce({e} init: {z}) applies stablehlo.add across dimensions = [2] : ({ty [B,m,n]}, tensor<f32>) -> {ty [B,m]}\n" ++
+        s!"    {sb} = stablehlo.broadcast_in_dim {s}, dims = [0, 1] : ({ty [B,m]}) -> {ty [B,m,n]}\n" ++
+        s!"    {p} = stablehlo.divide {e}, {sb} : {ty [B,m,n]}\n" ++
+        s!"    {pdy} = stablehlo.multiply {p}, {dn} : {ty [B,m,n]}\n" ++
+        s!"    {sr} = stablehlo.reduce({pdy} init: {z}) applies stablehlo.add across dimensions = [2] : ({ty [B,m,n]}, tensor<f32>) -> {ty [B,m]}\n" ++
+        s!"    {srb} = stablehlo.broadcast_in_dim {sr}, dims = [0, 1] : ({ty [B,m]}) -> {ty [B,m,n]}\n" ++
+        s!"    {d} = stablehlo.subtract {dn}, {srb} : {ty [B,m,n]}\n" ++
+        s!"    {dz} = stablehlo.multiply {p}, {d} : {ty [B,m,n]}\n" ++
+        s!"    {o} = stablehlo.reshape {dz} : ({ty [B,m,n]}) -> {ty [B, m*n]}\n", o :: st)
   | .matmulF m k n, b :: a :: st => do
       -- flattened matrix multiply C = A·B (`emitMatmul`). (Postorder pushes a then b, so b is on top.)
       let (s, o) ← emitMatmul B none a b m k n
@@ -3253,6 +3289,20 @@ def emitTok (B : Nat) : Tok → List String → StateM EmitS (String × List Str
                   s!"    {sp} = stablehlo.multiply {s}, {om} : {ty d}\n" ++
                   s!"    {o} = stablehlo.multiply {r}, {sp} : {ty d}\n", o)
           pure (txt4, res4 :: st)
+      | "softmaxRowShift", [], [_N, m, n] => do
+          -- `"softmaxRow"`'s text with the row max subtracted before `exp`
+          -- (`softmaxShiftText`), so no exponent exceeds 0.
+          let xn ← fresh; let ninf ← fresh; let mx ← fresh; let mxb ← fresh; let sh ← fresh
+          let z ← fresh; let e ← fresh; let s ← fresh; let sb ← fresh
+          let dv ← fresh; let o ← fresh
+          pure (s!"    {xn} = stablehlo.reshape {r} : ({ty [B, m*n]}) -> {ty [B,m,n]}\n" ++
+            softmaxShiftText B m n xn ninf mx mxb sh ++
+            s!"    {z} = stablehlo.constant dense<0.0> : tensor<f32>\n" ++
+            s!"    {e} = stablehlo.exponential {sh} : {ty [B,m,n]}\n" ++
+            s!"    {s} = stablehlo.reduce({e} init: {z}) applies stablehlo.add across dimensions = [2] : ({ty [B,m,n]}, tensor<f32>) -> {ty [B,m]}\n" ++
+            s!"    {sb} = stablehlo.broadcast_in_dim {s}, dims = [0, 1] : ({ty [B,m]}) -> {ty [B,m,n]}\n" ++
+            s!"    {dv} = stablehlo.divide {e}, {sb} : {ty [B,m,n]}\n" ++
+            s!"    {o} = stablehlo.reshape {dv} : ({ty [B,m,n]}) -> {ty [B, m*n]}\n", o :: st)
       | "softmaxRow", [], [_N, m, n] => do
           -- byte-for-byte `.softmaxRowF`'s emit. `m` is rows PER EXAMPLE; the batch is `_N` on the
           -- proof side and `B` in the emit.

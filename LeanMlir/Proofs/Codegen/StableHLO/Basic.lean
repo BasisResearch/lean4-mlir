@@ -206,6 +206,13 @@ inductive BatchableOp : Nat → Nat → Type where
   -- classifier head), NOT the batch — it is emitted as a real inner
   -- dimension. The descriptor form exists so the batch can move to `N`.
   | softmaxRow {m n : Nat}                                 : BatchableOp (m*n) (m*n)
+  -- The same row softmax emitted MAX-SHIFTED: `exp(x − max x) / Σ exp(x − max x)` per row.
+  -- `softmaxRow`'s plain `exp` overflows f32 at a score of 88.72 (the DeiT-recipe verified ViT-Ti
+  -- reached 90.0 at epoch 3 and went NaN, 2026-10-14); the shift caps every exponent at 0. Its
+  -- `den` is the shifted form, `rowSoftmaxShiftFlat`, and `rowSoftmaxShiftFlat_eq` proves it equal
+  -- to `rowSoftmaxFlat`. A separate constructor, not a flag on `softmaxRow`, so every artifact
+  -- already rendered through `softmaxRow` stays byte-identical.
+  | softmaxRowShift {m n : Nat}                            : BatchableOp (m*n) (m*n)
   | denseRowBack {rows a c : Nat} (wName : String) (W : Mat a c) : BatchableOp (rows*c) (rows*a)
   -- bf16 peer of `denseRowBack` — ViT's input-VJP through Q/K/V/O/fc1/fc2.
   -- **bf16 operands, bf16-TYPED RESULT, convert back — the CONV shape.**
@@ -798,6 +805,11 @@ inductive SHlo : Nat → Type where
   -- own slice via `batchMapAux`. A descriptor would give every example example 0's scores — same
   -- types, same emitted bytes, different function. `lnRowBackB`'s situation exactly.
   | softmaxRowBackB {N m n : Nat} (xName : String) (preAct : Vec (N*(m*n)))
+      : SHlo (N*(m*n)) → SHlo (N*(m*n))
+  -- `softmaxRowBackB` with `p` recomputed MAX-SHIFTED from the saved scores — the backward
+  -- partner of `BatchableOp.softmaxRowShift`, for the same overflow. `den` is
+  -- `rowSoftmaxBackShiftFlat`, equal to `rowSoftmaxBackFlat` by `rowSoftmaxBackShiftFlat_eq`.
+  | softmaxRowBackShiftB {N m n : Nat} (xName : String) (preAct : Vec (N*(m*n)))
       : SHlo (N*(m*n)) → SHlo (N*(m*n))
   -- ── the four batch-contracting parameter gradients. Every one of their per-example emits
   --    ALREADY reduces over the batch axis (`dimensions = [0, 1]`, `[0]`,
@@ -1510,6 +1522,48 @@ noncomputable def rowSoftmaxBackFlat (m n : Nat) (preAct dy : Vec (m*n)) : Vec (
     let s := ∑ j, p j * dyi j
     fun c => p c * (dyi c - s))
 
+/-- **Softmax is shift-invariant**: subtracting one constant from every logit leaves it
+    unchanged, since `exp (z j − c) = exp (z j) / exp c` and `exp c` cancels from the ratio. This
+    is what lets an emit subtract the row max before `exp` (which keeps every exponent ≤ 0, so
+    nothing overflows) and still denote the plain `softmax`. -/
+theorem softmax_sub_const (n : Nat) (z : Vec n) (c : ℝ) :
+    softmax n (fun j => z j - c) = softmax n z := by
+  funext j
+  simp only [softmax, Real.exp_sub, ← Finset.sum_div]
+  exact div_div_div_cancel_right₀ (Real.exp_pos c).ne' _ _
+
+/-- **Row-softmax (flattened), max-shifted** — each row shifted by its own max before the 1-D
+    `softmax`, which is what `BatchableOp.softmaxRowShift` emits (`reduce … maximum`,
+    `subtract`, then `exp / reduce / divide`). The max is `⨆` over the row; the emit's
+    `reduce maximum` from `-inf` agrees with it on every non-empty row, and on an empty row the
+    output is empty. Equal to `rowSoftmaxFlat` (`rowSoftmaxShiftFlat_eq`). -/
+noncomputable def rowSoftmaxShiftFlat (m n : Nat) (v : Vec (m*n)) : Vec (m*n) :=
+  Mat.flatten (fun i =>
+    let r := (Mat.unflatten v) i
+    softmax n (fun j => r j - ⨆ k, r k))
+
+/-- **Row-softmax backward (flattened), max-shifted** — `rowSoftmaxBackFlat` with `p` from the
+    shifted scores, what `SHlo.softmaxRowBackShiftB` emits. Equal to `rowSoftmaxBackFlat`
+    (`rowSoftmaxBackShiftFlat_eq`). -/
+noncomputable def rowSoftmaxBackShiftFlat (m n : Nat) (preAct dy : Vec (m*n)) : Vec (m*n) :=
+  Mat.flatten (fun i =>
+    let r := (Mat.unflatten preAct) i
+    let p := softmax n (fun j => r j - ⨆ k, r k)
+    let dyi := (Mat.unflatten dy) i
+    let s := ∑ j, p j * dyi j
+    fun c => p c * (dyi c - s))
+
+/-- The max-shifted row softmax IS the row softmax (`softmax_sub_const`, row by row). -/
+theorem rowSoftmaxShiftFlat_eq (m n : Nat) : rowSoftmaxShiftFlat m n = rowSoftmaxFlat m n := by
+  funext v
+  simp only [rowSoftmaxShiftFlat, rowSoftmaxFlat, softmax_sub_const]
+
+/-- The max-shifted row-softmax backward IS the row-softmax backward. -/
+theorem rowSoftmaxBackShiftFlat_eq (m n : Nat) :
+    rowSoftmaxBackShiftFlat m n = rowSoftmaxBackFlat m n := by
+  funext a dy
+  simp only [rowSoftmaxBackShiftFlat, rowSoftmaxBackFlat, softmax_sub_const]
+
 -- ── Chapter 9 (ViT) den helpers — flattened matrix/row-wise forms (the `rfl` ties
 --    to the Attention.lean forms live in ViTFwdGraph). ──
 
@@ -1714,6 +1768,7 @@ noncomputable def denOp : {a b : Nat} → BatchableOp a b → (Vec a → Vec b)
   -- them; this arm and the emitted text are what separate them.
   | _, _, .maxPool3s2 (c := c) (h := h) (w := w) => maxPool3s2Flat c h w
   | _, _, .softmaxRow (m := m) (n := n) => rowSoftmaxFlat m n
+  | _, _, .softmaxRowShift (m := m) (n := n) => rowSoftmaxShiftFlat m n
   | _, _, .denseRowBack (rows := rows) (a := a) (c := c) _ W => rowDenseBackFlat rows a c W
   -- THREE roundings: the two operand casts and the **bf16 STORE**. The emit gives this
   -- `dot_general` a bf16-TYPED result (most of the bf16 win on a dot), so the hardware rounds the output
@@ -2193,6 +2248,8 @@ noncomputable def den : {n : Nat} → SHlo n → Vec n
         (den a) (den b)
   | _, .softmaxRowBackB (N := N) (m := m) (n := n) _ preAct e =>
       batchMapAux N (rowSoftmaxBackFlat m n) preAct (den e)
+  | _, .softmaxRowBackShiftB (N := N) (m := m) (n := n) _ preAct e =>
+      batchMapAux N (rowSoftmaxBackShiftFlat m n) preAct (den e)
   | _, .rowDenseWeightGradB (N := N) (tk := tk) (a := a) (c := c) _ x e =>
       fun idx => ∑ b : Fin N,
         Mat.flatten (fun i j => ∑ t : Fin tk,
@@ -2726,6 +2783,19 @@ theorem den_matmulFB_per_example {N m k n : Nat} (a : SHlo (N*(m*k))) (b : SHlo 
 /-- **Each example's softmax backward recomputes from ITS OWN saved scores.** The descriptor
     version would hand all `N` example 0's — same types, same bytes, different function.
     `lnRowBackB`'s statement, on attention. -/
+@[simp] theorem den_softmaxRowBackShiftB {N m n : Nat} (xN : String) (preAct : Vec (N*(m*n)))
+    (e : SHlo (N*(m*n))) :
+    den (.softmaxRowBackShiftB xN preAct e)
+      = batchMapAux N (rowSoftmaxBackShiftFlat m n) preAct (den e) :=
+  rfl
+
+/-- **The max-shifted softmax backward denotes the plain one**, per example — so swapping
+    `softmaxRowBackB` for `softmaxRowBackShiftB` in a render changes no function. -/
+theorem den_softmaxRowBackShiftB_eq {N m n : Nat} (xN : String) (preAct : Vec (N*(m*n)))
+    (e : SHlo (N*(m*n))) :
+    den (.softmaxRowBackShiftB xN preAct e) = den (.softmaxRowBackB xN preAct e) := by
+  simp only [den_softmaxRowBackShiftB, den_softmaxRowBackB, rowSoftmaxBackShiftFlat_eq]
+
 theorem den_softmaxRowBackB_per_example {N m n : Nat} (xN : String) (preAct : Vec (N*(m*n)))
     (e : SHlo (N*(m*n))) (k : Fin N) (i : Fin (m*n)) :
     den (.softmaxRowBackB xN preAct e) (finProdFinEquiv (k, i))

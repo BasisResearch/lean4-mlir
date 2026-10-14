@@ -157,6 +157,8 @@ def parseStack : List Tok → List Raw → Option (List Raw)
   | .layerScaleChF γ c h w :: ts, e :: st => parseStack ts (.layerScaleChF γ c h w e :: st)
   | .softmaxRowF m n :: ts, e :: st => parseStack ts (.softmaxRowF m n e :: st)
   | .softmaxRowBack x m n :: ts, e :: st => parseStack ts (.softmaxRowBack x m n e :: st)
+  | .softmaxRowBackShift x m n :: ts, e :: st =>
+      parseStack ts (.softmaxRowBackShift x m n e :: st)
   | .matmulF m k n :: ts, b :: a :: st => parseStack ts (.matmulF m k n a b :: st)
   | .transposeF m n :: ts, e :: st => parseStack ts (.transposeF m n e :: st)
   | .scaleF s n :: ts, e :: st => parseStack ts (.scaleF s n e :: st)

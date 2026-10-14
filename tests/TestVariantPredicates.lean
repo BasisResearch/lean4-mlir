@@ -683,6 +683,18 @@ private def erfSpellings : List String :=
 #guard accOn "emadp128x4wxclipdropeps0000001erfbf16" == false
 #guard nRegions "emadp128x4wxclipdropeps0000001erfbf16" == 4
 #guard VerifiedVariant.evalTag "emadp128x4wxclipdropeps0000001erfbf16" == "_eps0000001"
+-- The max-shifted attention softmax (2026-10-14): `smx` between the ε digits and `erf`. It is a
+-- render choice like the GELU form — no region, scalar or mask — so every predicate reads the
+-- `smx` spelling as it reads the one without it, and `evalTag`'s digit read stops at `s`.
+#guard ["emadp256x4wxdropeps0000001smxerfbf16", "emadp256x4wxdropeps0000001smxbf16"].all (fun v =>
+  let t := v.replace "smx" ""
+  nRegions v == nRegions t && nScalars v == nScalars t && emaRegion v == emaRegion t &&
+  sdOn v == sdOn t && cdOn v == cdOn t && accOn v == accOn t && rmsOn v == rmsOn t &&
+  lambOn v == lambOn t && bceOn v == bceOn t && erfOn v == erfOn t && accK v == accK t &&
+  VerifiedVariant.evalTag v == VerifiedVariant.evalTag t)
+#guard erfOn "emadp256x4wxdropeps0000001smxerfbf16" == true
+#guard erfOn "emadp256x4wxdropeps0000001smxbf16" == false
+#guard VerifiedVariant.evalTag "emadp256x4wxdropeps0000001smxerfbf16" == "_eps0000001"
 -- `fwdStem`: the forward a variant with none of its own scores through.
 #guard fwdStem "convnextin" "emadpwxclipdroperfbf16" == "convnextin_erf_fwd"
 #guard fwdStem "convnextin" "emadpwxclipdropbf16" == "convnextin_fwd"
@@ -721,10 +733,11 @@ private def erfSpellings : List String :=
     ].mapM refused
   unless mixed.all id do
     throw <| IO.userError s!"checkGeluWorld accepted a mixed pair: refusals {mixed}"
-  -- 56 at each form since ConvNeXt's official-batch pairs (`convnext{,s,b}in_emaaccdp16xwxdrop{erf,}bf16`,
-  -- 2026-10-12), after the ViT-S / ViT-B DeiT-recipe pairs' 53 (2026-10-11) and Ti's 51; a new
-  -- ImageNet ViT / ConvNeXt render lands with its twin, so the two counts stay equal.
-  unless pairs == 112 && erfs == 56 do
-    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 112 (56 at each form)"
+  -- 57 at each form since Ti's max-shifted-softmax pair (`vitin_emadp256x4wxdropeps0000001smx{erf,}bf16`,
+  -- 2026-10-14), after ConvNeXt's official-batch pairs' 56 (2026-10-12), the ViT-S / ViT-B
+  -- DeiT-recipe pairs' 53 (2026-10-11) and Ti's 51; a new ImageNet ViT / ConvNeXt render lands with
+  -- its twin, so the two counts stay equal.
+  unless pairs == 114 && erfs == 57 do
+    throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 114 (57 at each form)"
   IO.println s!"✓ checkGeluWorld: {pairs} train steps ({erfs} erf, {pairs - erfs} tanh) score through a forward at their own form; \
 3 mixed pairs refused"
