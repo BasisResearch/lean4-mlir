@@ -146,6 +146,12 @@ def mobilenetV4ConvMImagenetConfigFull : TrainConfig :=
       evalF32        := true       -- the verified path's eval forward; scored post hoc in f32 as every pair is
       useEMA         := false }    -- Table 10: no EMA for Conv-M; the live weights are scored
 
+/-- Tier 3 at 100 epochs — the paper recipe above with only the length cut: the cosine runs over
+    100 × 312 steps from step 0 with the same 5-epoch warmup on top. A one-day read on the recipe
+    before the 500-epoch run, not the paper's number. -/
+def mobilenetV4ConvMImagenetConfigFull100 : TrainConfig :=
+  { mobilenetV4ConvMImagenetConfigFull with epochs := 100 }
+
 def mobilenetV4ConvMImagenetRecipes : List Recipe := [
   { name := "default", cfg := mobilenetV4ConvMImagenetConfig,
     out := "generated_mobilenet_v4_imagenet.py",
@@ -156,6 +162,9 @@ def mobilenetV4ConvMImagenetRecipes : List Recipe := [
   { name := "full",    cfg := mobilenetV4ConvMImagenetConfigFull,
     out := "generated_mobilenet_v4_imagenet_full.py",
     desc := "Tier-3 paper-faithful 500ep run" },
+  { name := "full100", cfg := mobilenetV4ConvMImagenetConfigFull100,
+    out := "generated_mobilenet_v4_imagenet_full100.py",
+    desc := "Tier-3 paper recipe cut to 100ep" },
   { name := "bench",   cfg := mobilenetV4ConvMImagenetConfigBench,
     out := "generated_mobilenet_v4_imagenet_bench.py",
     desc := "throughput bench: micro-batch 128, single GPU" }
