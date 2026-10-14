@@ -78,6 +78,8 @@ static PJRT_Device* g_devices[8];
 // PJRT_Client_PlatformName at client creation — the plugin's own answer, not a
 // guess from the .so path, because $PJRT_PLUGIN can name anything.
 static int g_platform_rocm = 0;
+// 1 when it reports Metal ("mtl"): Apple Silicon's unified memory, so no PCIe to speak of.
+static int g_platform_unified = 0;
 
 // ⚠⚠ **XLA's ROCm command buffers CORRUPT MEMORY on gfx1100 for some graph
 // shapes**, so this defaults ON for ROCm and OFF for CUDA.
@@ -712,6 +714,8 @@ static int ensure_client(void) {
     pn.client = g_client;
     if (g_api->PJRT_Client_PlatformName(&pn) == NULL && pn.platform_name) {
       g_platform_rocm = (strstr(pn.platform_name, "rocm") != NULL);
+      g_platform_unified = (strstr(pn.platform_name, "mtl") != NULL ||
+                            strstr(pn.platform_name, "metal") != NULL);
       if (trace_enabled())
         fprintf(stderr, "[pjrt_ffi] platform: %.*s\n",
                 (int)pn.platform_name_size, pn.platform_name);
@@ -1764,9 +1768,11 @@ int pjrt_ffi_invoke_f32_resident_v2(
 
     fprintf(stderr,
             "[pjrt_ffi] RESIDENT: @%s holds %d parameter tensors (%.1f MB) on %d "
-            "device%s; they stop crossing PCIe from here\n",
+            "device%s; %s\n",
             sess->entry, n_resident, res->total * 4.0 / 1048576.0, n_replicas,
-            n_replicas == 1 ? "" : "s");
+            n_replicas == 1 ? "" : "s",
+            g_platform_unified ? "they stop being re-uploaded every step (unified memory)"
+                               : "they stop crossing PCIe from here");
   }
 
   // ── host → device for the NON-resident inputs only ───────────────────────
