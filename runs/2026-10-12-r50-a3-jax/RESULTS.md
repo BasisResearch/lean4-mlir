@@ -35,3 +35,49 @@ Epochs 91–100 average **77.38** top-1 (range 77.16–77.60).
 
 Against the book's A3 JAX run (77.75 at its f32 rescore): **−0.15**, inside one run's ±0.37 95 %
 half-width.
+
+## Against the other A3 numbers (added 2026-10-14, with the ch 5 update)
+
+| | e100 top-1 / top-5 | mean e97–100 top-1 | mean e91–100 top-1 |
+|---|---|---|---|
+| **JAX, this run (timm's schedule)** | **77.602 / 93.610** | **77.46** | **77.38** |
+| verified, same settings (`runs/2026-10-12-r50-a3-rsb-bf16`) | 78.078 / 93.844 | 78.04 | 77.91 |
+| JAX 10-07 (per-step cosine from zero, alternating Mixup/CutMix, grey fill), f32 rescore | 77.75 / 93.65 | 77.72 | 77.57 |
+| verified 10-09, same settings as the 10-07 run | 77.914 / 93.712 | 77.90 | 77.83 |
+| timm RSB A3 (paper) / `resnet50.a3_in1k` under this protocol | 78.1 / 78.05 | | |
+
+* The three settings (the per-epoch cosine 1e-4 → 1e-6, the per-batch Mixup/CutMix draw at 0.5, the
+  img_mean fill) moved the reference −0.15 and the verified path +0.17, each inside one run's interval.
+  The reference lands 0.50 under the paper's 78.1; the verified render lands on it.
+* Epoch 1 reads 0.10 % (51 images; the verified half also 51): the whole first epoch runs at `warmup_lr`
+  1e-4, an eightieth of the peak, where the 10-07 run's per-step warmup read 1.73 %. The rate is 1.68e-3 /
+  3.26e-3 / 4.84e-3 / 6.42e-3 over the rest of the warmup, 7.951e-3 at epoch 6, 2.37e-4 at epoch 90,
+  3e-6 at epoch 100 (`cooldown_epochs 10` not taken).
+* Top-1 by 20-epoch window, verified minus JAX: +0.58, +3.06, +1.45, +1.42, +0.50 (the 10-07/09 pair:
+  +1.92, +0.24, +1.16, +1.05, +0.29). The reference's middle is the noisier: e30 reads 38.44 against the
+  verified 49.80, the widest single-epoch gap (11.36).
+* The recipe delta on the reference, A3 − 2018: 77.60 − 76.76 = **+0.84** (the 10-07 pair had +0.99); on
+  the verified path 78.08 − 77.09 = **+0.99**. Against the 2018 reference curve, A3 first leads at epoch
+  41 and holds the lead outright from epoch 89; at the matched epoch 90 it is +0.31 (77.11 vs 76.80).
+* Pace: 478.7 s an epoch at the median, eval included (min 473.8, max 503.1; 770 ms an optimizer step at
+  the end), against the conf's ETA of ~13.5 h and the 10-07 mars run's 14.75 h.
+
+## The per-image pairing — `rescore.sh`, 2026-10-14
+
+`rescore.sh` rescored the final `resnet50_imagenet_rsbfaithful.state.npz` (copied to atlas as
+`~/r50_a3_jax_2611/`) through `jax/scripts/eval_full50k.py` at `EVAL_DTYPE=f32`, `PROTOCOL=train`
+(224 / 0.95), `BATCH=200`, writing `bitmaps/r50-a3_jax_f32.bin` (`rescore_f32.log`) — on atlas's CPU
+(`JAX_PLATFORMS=cpu`, `~/.venv-score`: jax 0.11.0 / tensorflow 2.21.0 / tfds 4.9.10, the CUDA lock's pins;
+the validation shards rsync'd from ares), ~12 min for the 50,000 against ~1 min on four cards.
+
+    224px crop 0.95   top-1  77.61%  top-5  93.61%  (50000 images)   # 38,803 set; the training log 38,801
+
+Two images over the log's own f32 evaluation: CPU and GPU f32 reductions round differently. Paired
+with the verified run's e100 bitmap (`scripts/demos/mcnemar.py <jax> <verified>`):
+
+| JAX f32 | verified | both right / both wrong | only JAX / only verified | net | discordant | McNemar p |
+|---|---|---|---|---|---|---|
+| 77.61 (38,803) | 78.08 (39,039) | 36,902 / 9,060 | 1,901 / 2,137 | +236 | 4,038 (8.1 %) | **0.0002** |
+
+These two checkpoints are separable on this validation set (the 10-07/09 pair was not: p = 0.20 on 82
+images of 4,014). One seed per arm, so a statement about the two checkpoints, not the two paths.

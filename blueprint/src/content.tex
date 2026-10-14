@@ -6731,20 +6731,21 @@ A3 is LAMB at effective batch
 at \texttt{timm}'s $0.2$ threshold, RandAugment, and train@160 / eval@224.
 
 \begin{center}
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{l l l r r r r r}
 \hline
 GPU & Recipe & BN group & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
 4$\times$ 3060 (bf16) & 2018   & 256 (global)   & $\sim$17.2 min & 90  & $\sim$25.8 hr & $\mathbf{76.76\%}$ & $\mathbf{93.39\%}$ \\
-4$\times$ 3060 (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$8.9 min  & 100 & $\sim$14.8 hr & $\mathbf{77.75\%}$ & $\mathbf{93.65\%}$ \\
+4$\times$ 4060 Ti (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$8.0 min  & 100 & $\sim$13.4 hr & $\mathbf{77.61\%}$ & $\mathbf{93.61\%}$ \\
 \hline
 \end{tabular}
 \end{center}
 
 \noindent Both rows are the final checkpoints scored over all $50{,}000$
 validation images through an fp32 forward, as the verified path and
-\texttt{timm} score; the trainers' own bf16 evaluation lands within $0.04$
-of them. A3
+\texttt{timm} score; the trainers' own evaluation lands within $0.04$ of
+them (through bf16 on 2018, fp32 on A3). A3
 normalizes per $512$-image micro-batch because it accumulates
 $4 \times 512$ to reach $2048$; the 2018 row is a true global batch of
 $256$. That is \emph{ghost} batch norm (Hoffer, Hubara \& Soudry 2017,
@@ -6754,12 +6755,14 @@ as a side effect of accumulation rather than a choice, and the A3 render
 below reproduces it by accumulating the same way. The
 architecture lever: against ResNet-34's $74.14\%$ on the same
 recipe, the bottleneck is worth $+2.62$ points. The recipe lever: A3 adds
-$+0.99$ on the same network, in less wall clock, because it trains at
-$160^2$. It lands $0.35$ under the paper's $78.1\%$ and $0.30$ under the
+$+0.85$ on the same network, in less wall clock, because it trains at
+$160^2$. It lands $0.49$ under the paper's $78.1\%$ and $0.44$ under the
 $78.05\%$ that \texttt{timm}'s own \texttt{resnet50.a3\_in1k} weights
-score under this protocol, both within one run's $\pm0.36$; what still
-separates this A3 from \texttt{timm}'s is the marker after the
-side-by-side table.
+score under this protocol, a tenth of a point past one run's $\pm0.37$;
+the verified render of the same recipe, below, lands on the paper's
+number. This A3 is \texttt{timm}'s recipe as \texttt{timm} ran it, on
+both paths; the paragraph after the side-by-side table names the settings
+a bare transcription would miss, and the one not taken.
 
 \begin{center}
 \begin{tikzpicture}
@@ -6783,7 +6786,7 @@ side-by-side table.
 };
 \addlegendentry{2018 (90 ep)}
 \addplot[orange] coordinates {
-(1,1.73) (2,5.09) (3,10.22) (4,12.39) (5,14.59) (6,25.05) (7,29.31) (8,30.05) (9,32.80) (10,35.82) (11,33.60) (12,38.26) (13,36.09) (14,43.75) (15,35.76) (16,40.58) (17,44.13) (18,45.98) (19,45.28) (20,50.03) (21,41.44) (22,36.38) (23,44.75) (24,45.85) (25,49.10) (26,51.16) (27,51.70) (28,50.22) (29,50.80) (30,51.67) (31,52.15) (32,50.54) (33,47.02) (34,57.98) (35,49.62) (36,57.81) (37,55.62) (38,55.93) (39,54.04) (40,52.33) (41,55.46) (42,58.17) (43,58.20) (44,59.16) (45,57.42) (46,60.72) (47,56.68) (48,55.91) (49,61.15) (50,57.68) (51,62.57) (52,61.13) (53,60.63) (54,65.53) (55,66.57) (56,65.29) (57,63.69) (58,68.20) (59,64.61) (60,67.37) (61,68.77) (62,67.84) (63,65.91) (64,65.45) (65,68.49) (66,69.80) (67,70.32) (68,68.47) (69,68.30) (70,71.91) (71,72.03) (72,70.40) (73,73.18) (74,73.87) (75,73.34) (76,74.52) (77,74.22) (78,74.93) (79,75.03) (80,74.64) (81,75.48) (82,75.30) (83,75.72) (84,76.17) (85,76.67) (86,76.75) (87,76.64) (88,77.14) (89,77.14) (90,77.25) (91,77.41) (92,77.17) (93,77.36) (94,77.58) (95,77.68) (96,77.61) (97,77.80) (98,77.70) (99,77.64) (100,77.74)
+(1,0.10) (2,3.78) (3,7.80) (4,12.45) (5,15.25) (6,22.07) (7,24.09) (8,29.60) (9,35.84) (10,34.52) (11,36.98) (12,29.54) (13,39.61) (14,38.41) (15,40.54) (16,42.34) (17,38.87) (18,38.27) (19,46.92) (20,48.37) (21,41.04) (22,47.52) (23,44.41) (24,42.69) (25,45.13) (26,51.49) (27,43.96) (28,46.55) (29,48.32) (30,38.44) (31,51.10) (32,55.92) (33,51.05) (34,56.30) (35,50.80) (36,57.06) (37,53.79) (38,51.05) (39,57.99) (40,51.12) (41,59.86) (42,54.99) (43,56.75) (44,61.63) (45,56.14) (46,55.46) (47,54.52) (48,57.12) (49,59.17) (50,61.56) (51,60.60) (52,64.51) (53,61.38) (54,64.69) (55,64.75) (56,64.03) (57,61.97) (58,65.52) (59,65.89) (60,68.46) (61,63.52) (62,67.04) (63,65.74) (64,67.69) (65,69.33) (66,69.83) (67,66.58) (68,71.23) (69,71.85) (70,72.07) (71,71.31) (72,71.25) (73,71.92) (74,73.39) (75,73.30) (76,73.74) (77,74.02) (78,74.09) (79,75.13) (80,75.31) (81,75.45) (82,75.41) (83,75.77) (84,76.16) (85,76.40) (86,76.42) (87,76.75) (88,76.72) (89,76.79) (90,77.11) (91,77.25) (92,77.33) (93,77.16) (94,77.42) (95,77.40) (96,77.38) (97,77.40) (98,77.48) (99,77.36) (100,77.60)
 };
 \addlegendentry{RSB-A3 (100 ep)}
 \end{axis}
@@ -6791,12 +6794,14 @@ side-by-side table.
 \end{center}
 
 \noindent The two recipes on the reference, epoch by epoch. A3 starts far
-lower --- $1.73\%$ at epoch~1 against $4.61\%$ --- because BCE over mixup
-targets gives almost no signal until the logits separate; from roughly
-epoch~35 the two trade the lead, and A3 holds it outright only from
-epoch~88. At the matched epoch~90 it leads by $0.45$ ($77.25$ against
-$76.80$), and its last ten epochs of anneal add the rest. The schedules are
-different lengths, so at a shared epoch the two cosines are at different
+lower --- $0.10\%$ at epoch~1 against $4.61\%$ --- because its whole first
+epoch runs at \texttt{timm}'s warmup start of $10^{-4}$, an eightieth of
+the peak, and BCE over mixup targets gives almost no signal until the
+logits separate; from epoch~41 the two trade the lead, and A3 holds it
+outright only from epoch~89. At the matched epoch~90 it leads by $0.31$
+($77.11$ against $76.80$), and its last ten epochs of anneal add the rest.
+The schedules are different lengths, so at a shared epoch the two cosines
+are at different
 points in their decay; the endpoints are what the $+0.99$ is measured from.
 
 \prosesection{The verified path (PJRT)}
@@ -6815,12 +6820,13 @@ lake run r50-a3-wxclip4x128-bf16-4gpu
 \end{verbatim}
 
 \begin{center}
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{l l l r r r r r}
 \hline
 GPU & Recipe & BN group & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
 4$\times$ 3060 (bf16) & 2018   & 256 (global)   & $\sim$21.1 min & 90  & $\sim$31.6 hr & $\mathbf{77.09\%}$ & $\mathbf{93.36\%}$ \\
-4$\times$ 3060 (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$12.6 min & 100 & $\sim$20.9 hr & $\mathbf{77.91\%}$ & $\mathbf{93.71\%}$ \\
+4$\times$ 4060 Ti (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$13.1 min & 100 & $\sim$21.9 hr & $\mathbf{78.08\%}$ & $\mathbf{93.84\%}$ \\
 \hline
 \end{tabular}
 \end{center}
@@ -6854,7 +6860,7 @@ rather than per-step.
 \hline
 lowering            & JAX $\to$ XLA            & \texttt{pretty(provenGraph)} $\to$ XLA \\
 Python in the step  & yes                      & none \\
-evaluation forward  & bf16                     & fp32 \\
+evaluation forward  & bf16 (2018), fp32 (A3)   & fp32 \\
 \hline
 precision           & bf16 convolutions        & bf16 convolutions \\
 classifier head     & fp32                     & fp32 \\
@@ -6868,6 +6874,7 @@ accumulation        & none                     & none \\
 BN statistic group  & 256 (global)             & 256 (global) \\
 steps/epoch         & 5{,}004                  & 5{,}004 \\
 optimizer           & SGD, momentum $0.9$      & SGD, momentum $0.9$ \\
+schedule stepped    & per step                 & per step \\
 train / eval res    & 224 / 224                & 224 / 224 \\
 \textbf{val top-1}  & $\mathbf{76.76\%}$       & $\mathbf{77.09\%}$ \\
 \textbf{val top-5}  & $\mathbf{93.39\%}$       & $\mathbf{93.36\%}$ \\
@@ -6878,45 +6885,51 @@ accumulation        & $4 \times 512$           & $4 \times 512$ \\
 BN statistic group  & 512 (Ghost-BN)           & 512 (Ghost-BN) \\
 steps/epoch         & 625                      & 625 \\
 optimizer           & LAMB                     & LAMB \\
+schedule stepped    & per epoch (\texttt{timm}) & per epoch (\texttt{timm}) \\
 train / eval res    & 160 / 224                & 160 / 224 \\
-\textbf{val top-1}  & $\mathbf{77.75\%}$       & $\mathbf{77.91\%}$ \\
-\textbf{val top-5}  & $\mathbf{93.65\%}$       & $\mathbf{93.71\%}$ \\
+\textbf{val top-1}  & $\mathbf{77.61\%}$       & $\mathbf{78.08\%}$ \\
+\textbf{val top-5}  & $\mathbf{93.61\%}$       & $\mathbf{93.84\%}$ \\
 \hline
 \end{tabular}
 \end{center}
 
 \noindent Both columns are ResNet-50, each block on its recipe, scored over
 the same $50{,}000$ validation images under the same protocol. Rows above
-the first rule differ; every other row but the results is held equal by
-construction. The BatchNorm statistic group is the setting that changes
-between the blocks, on both paths at once: the 2018 recipe normalizes over
+the first rule differ, the evaluation forward on 2018 alone; every other
+row but the results is held equal by construction. The BatchNorm statistic
+group is the setting that changes between the blocks, on both paths at
+once: the 2018 recipe normalizes over
 the global $256$, and A3 over the $512$-image micro-batch its accumulation
 hands each step --- ghost batch norm, on the reference and the verified
-path alike. \textbf{[TODO: A3 is
-\texttt{timm}'s in all but three places, on both paths: Mixup or CutMix
-drawn per batch at $p = 0.5$ (ours alternate by step), the schedule stepped
-once an epoch from $10^{-4}$ to a floor of $10^{-6}$ (ours per step from
-zero), RandAugment's fill
-at the image mean (ours grey $128$). The $0.35$ and $0.19$ to the paper's
-$78.1$ are inside one run's interval. All three are in code since
-2026-10-11, with an fp32 evaluation forward, and not yet run; one rerun of
-both halves takes them --- \texttt{r50-a3-jax-4gpu} /
-\texttt{r50-a3-wxclip4x128-bf16-4gpu}, ${\sim}13.5 + 24$\,h.]}
+path alike. A3 is \texttt{timm}'s recipe as \texttt{timm} ran it, in the
+settings a transcription of the paper would miss: the cosine stepped once
+an epoch, from $10^{-4}$ over the five warmup epochs to the peak and down
+to a floor of $10^{-6}$; Mixup or CutMix drawn per batch at $p = 0.5$;
+RandAugment's fill at the image mean; the BCE targets binarized at $0.2$
+--- on both paths (\texttt{r50-a3-jax-4gpu} /
+\texttt{r50-a3-wxclip4x128-bf16-4gpu}, $13.4 + 21.9$\,h on the 4060~Ti
+box). Not taken, on either path: \texttt{timm}'s then-default
+\texttt{cooldown\_epochs 10} at the floor (the paper counts 100 epochs,
+and $10^{-6}$ moves nothing).
 
-\medskip\noindent\textbf{The two paths agree within $0.33$ points on top-1
-on both recipes}, and within $0.06$ on top-5 --- inside the 95\% Wilson
-interval, $\pm0.37$ at $77\%$ on $50{,}000$ images, at one seed per cell.
-Paired on the same images, the two recipes read differently. On A3 the two
-checkpoints disagree on $4{,}014$ images, $1{,}966$ one way and $2{,}048$
-the other, and McNemar's exact test puts $p = 0.20$ on the $82$ between
-them: not separable. On 2018 they disagree on $4{,}622$, $2{,}228$ against
-$2{,}394$, and the $166$-image lead is $p = 0.015$: the verified checkpoint
-is ahead on this validation set. With one seed per arm that is a statement
-about two trained models, not about the two paths --- the nine percent of
-images the two disagree on is what two runs of one recipe produce,
-whichever is ahead --- and whether the verified path's 2018 run is ahead by
-construction needs seeds per arm. \textbf{And the recipe delta replicates}:
-A3 beats 2018 by $+0.99$ on the reference and $+0.82$ on the verified path. Agreement at a
+\medskip\noindent\textbf{The verified path lands ahead on both recipes}, by
+$0.33$ points on 2018 and $0.47$ on A3 on top-1 ($-0.03$ and $+0.23$ on
+top-5) --- 2018's inside the 95\% Wilson interval, $\pm0.37$ at $77\%$ on
+$50{,}000$ images, A3's a tenth of a point past it, at one seed per cell.
+Paired on the same images, both read the same way. On 2018 the two
+checkpoints disagree on $4{,}622$, $2{,}228$ against $2{,}394$, and
+McNemar's exact test puts $p = 0.015$ on the $166$-image lead; on A3 they
+disagree on $4{,}038$, $1{,}901$ against $2{,}137$, and the $236$-image
+lead is $p = 0.0002$ (each bitmap is from the same fp32 scoring of the
+final checkpoint as its headline). The verified checkpoint is ahead on this validation
+set on both recipes. With one seed per arm a paired lead is a statement
+about two trained models, not about the two paths --- the eight to nine
+percent of images the two disagree on is what two runs of one recipe
+produce, whichever is ahead --- and whether the verified path is ahead by
+construction needs seeds per arm; that it has landed ahead on all three
+ResNet pairs ($+0.03$, $+0.33$, $+0.47$) is the pattern seeds would test.
+\textbf{And the recipe delta replicates}: A3 beats 2018 by $+0.85$ on the
+reference and $+0.99$ on the verified path. Agreement at a
 single configuration can be a coincidence of that configuration; a
 difference that reproduces across two independent implementations is harder
 to arrange by accident, and it is what a one-row comparison cannot show. One
@@ -6925,21 +6938,23 @@ at $224$ while 2018 does both at $224$, so the recipe delta confounds
 resolution with recipe, by A3's own design.
 
 \medskip\noindent\textbf{The 2018 curves travel together; the A3 curves
-meet.} On 2018 the two paths swing both ways through the schedule, as
-ResNet-34's do --- the verified path minus the reference averages $+0.22$,
+close most of the way.} On 2018 the two paths swing both ways through the
+schedule, as ResNet-34's do --- the verified path minus the reference averages $+0.22$,
 $-0.52$, $-0.19$, $+0.07$ and $+0.24$ over successive twenty-epoch windows,
-five points apart at the widest. On A3 the verified path runs about a point ahead
-through the middle of the schedule --- $+1.92$, $+0.24$, $+1.16$ and $+1.05$
-by the same windows, ten points at the widest --- and the two converge in the
-anneal, to $+0.29$ over the last twenty epochs and $+0.26$ over the last
-ten. Where A3's route difference lives is not established; the one
+five points apart at the widest. On A3 the verified path runs one to three
+points ahead through the middle of the schedule --- $+0.58$, $+3.06$,
+$+1.45$ and $+1.42$ by the same windows, eleven points at the widest --- and
+the anneal closes most of it, to $+0.50$ over the last twenty epochs and
+$+0.53$ over the last ten, which is the $0.47$ at the endpoint. Where A3's
+route difference lives is not established; the one
 difference between its columns that 2018's do not share is where the
 Mixup/CutMix draw happens, once per $512$-image micro-batch on the
 verified path against once per accumulated step on the reference, and it
 is untested. It is why these pairs are read at their endpoints and nowhere
-else (the rows are the runs' own per-epoch evaluation through the
-trainers' bf16 forward; the headline numbers rescore the final checkpoints
-through fp32, within $0.04$ of the last column):
+else (the rows are the runs' own per-epoch evaluation, the reference's
+through its bf16 forward on 2018 and through fp32 on A3; the headline
+numbers are the final checkpoints scored through fp32, within $0.04$ of
+the last column):
 
 \begin{center}
 \begin{tabular}{@{}l r r r r r r r r@{}}
@@ -6952,9 +6967,9 @@ verified path (PJRT)  & 36.38 & 50.71 & 55.14 & 60.72 & 65.34 & 73.21 & 77.09 & 
 $\Delta$              & $-0.79$ & $-0.13$ & $+0.77$ & $-0.01$ & $-1.29$ & $+0.34$ & $+0.29$ &  \\
 \hline
 \multicolumn{9}{@{}l}{\textbf{RSB-A3} (100 ep)} \\
-reference (JAX)       & 14.59 & 35.76 & 51.67 & 57.42 & 67.37 & 73.34 & 77.25 & 77.74 \\
-verified path (PJRT)  & 21.57 & 44.32 & 51.53 & 61.47 & 67.09 & 74.61 & 77.52 & 77.91 \\
-$\Delta$              & $+6.98$ & $+8.56$ & $-0.14$ & $+4.05$ & $-0.28$ & $+1.27$ & $+0.27$ & $+0.17$ \\
+reference (JAX)       & 15.25 & 40.54 & 38.44 & 56.14 & 68.46 & 73.30 & 77.11 & 77.60 \\
+verified path (PJRT)  & 16.43 & 45.13 & 49.80 & 60.26 & 67.48 & 74.59 & 77.56 & 78.08 \\
+$\Delta$              & $+1.18$ & $+4.59$ & $+11.36$ & $+4.12$ & $-0.98$ & $+1.29$ & $+0.45$ & $+0.48$ \\
 \hline
 \end{tabular}
 \end{center}
@@ -7005,11 +7020,11 @@ $\Delta$              & $+6.98$ & $+8.56$ & $-0.14$ & $+4.05$ & $-0.28$ & $+1.27
     every axis plot/.append style={line width=1pt, mark=none},
 ]
 \addplot[blue] coordinates {
-(1,1.73) (2,5.09) (3,10.22) (4,12.39) (5,14.59) (6,25.05) (7,29.31) (8,30.05) (9,32.80) (10,35.82) (11,33.60) (12,38.26) (13,36.09) (14,43.75) (15,35.76) (16,40.58) (17,44.13) (18,45.98) (19,45.28) (20,50.03) (21,41.44) (22,36.38) (23,44.75) (24,45.85) (25,49.10) (26,51.16) (27,51.70) (28,50.22) (29,50.80) (30,51.67) (31,52.15) (32,50.54) (33,47.02) (34,57.98) (35,49.62) (36,57.81) (37,55.62) (38,55.93) (39,54.04) (40,52.33) (41,55.46) (42,58.17) (43,58.20) (44,59.16) (45,57.42) (46,60.72) (47,56.68) (48,55.91) (49,61.15) (50,57.68) (51,62.57) (52,61.13) (53,60.63) (54,65.53) (55,66.57) (56,65.29) (57,63.69) (58,68.20) (59,64.61) (60,67.37) (61,68.77) (62,67.84) (63,65.91) (64,65.45) (65,68.49) (66,69.80) (67,70.32) (68,68.47) (69,68.30) (70,71.91) (71,72.03) (72,70.40) (73,73.18) (74,73.87) (75,73.34) (76,74.52) (77,74.22) (78,74.93) (79,75.03) (80,74.64) (81,75.48) (82,75.30) (83,75.72) (84,76.17) (85,76.67) (86,76.75) (87,76.64) (88,77.14) (89,77.14) (90,77.25) (91,77.41) (92,77.17) (93,77.36) (94,77.58) (95,77.68) (96,77.61) (97,77.80) (98,77.70) (99,77.64) (100,77.74)
+(1,0.10) (2,3.78) (3,7.80) (4,12.45) (5,15.25) (6,22.07) (7,24.09) (8,29.60) (9,35.84) (10,34.52) (11,36.98) (12,29.54) (13,39.61) (14,38.41) (15,40.54) (16,42.34) (17,38.87) (18,38.27) (19,46.92) (20,48.37) (21,41.04) (22,47.52) (23,44.41) (24,42.69) (25,45.13) (26,51.49) (27,43.96) (28,46.55) (29,48.32) (30,38.44) (31,51.10) (32,55.92) (33,51.05) (34,56.30) (35,50.80) (36,57.06) (37,53.79) (38,51.05) (39,57.99) (40,51.12) (41,59.86) (42,54.99) (43,56.75) (44,61.63) (45,56.14) (46,55.46) (47,54.52) (48,57.12) (49,59.17) (50,61.56) (51,60.60) (52,64.51) (53,61.38) (54,64.69) (55,64.75) (56,64.03) (57,61.97) (58,65.52) (59,65.89) (60,68.46) (61,63.52) (62,67.04) (63,65.74) (64,67.69) (65,69.33) (66,69.83) (67,66.58) (68,71.23) (69,71.85) (70,72.07) (71,71.31) (72,71.25) (73,71.92) (74,73.39) (75,73.30) (76,73.74) (77,74.02) (78,74.09) (79,75.13) (80,75.31) (81,75.45) (82,75.41) (83,75.77) (84,76.16) (85,76.40) (86,76.42) (87,76.75) (88,76.72) (89,76.79) (90,77.11) (91,77.25) (92,77.33) (93,77.16) (94,77.42) (95,77.40) (96,77.38) (97,77.40) (98,77.48) (99,77.36) (100,77.60)
 };
 \addlegendentry{reference (JAX)}
 \addplot[red, dashed] coordinates {
-(1,1.73) (2,6.80) (3,9.82) (4,14.77) (5,21.57) (6,26.43) (7,27.06) (8,30.68) (9,38.14) (10,38.56) (11,38.22) (12,37.12) (13,42.76) (14,45.39) (15,44.32) (16,46.12) (17,45.22) (18,40.42) (19,47.01) (20,46.75) (21,48.36) (22,46.66) (23,49.37) (24,49.13) (25,47.25) (26,49.78) (27,52.33) (28,51.32) (29,51.50) (30,51.53) (31,51.96) (32,49.48) (33,51.01) (34,53.82) (35,40.69) (36,51.96) (37,53.93) (38,49.24) (39,57.06) (40,54.52) (41,53.82) (42,57.46) (43,56.68) (44,59.59) (45,61.47) (46,60.64) (47,61.64) (48,62.22) (49,62.22) (50,63.28) (51,64.32) (52,63.62) (53,61.96) (54,65.22) (55,65.25) (56,63.24) (57,64.47) (58,66.68) (59,68.47) (60,67.09) (61,67.54) (62,68.65) (63,69.64) (64,69.07) (65,70.86) (66,69.11) (67,71.57) (68,71.90) (69,71.51) (70,72.01) (71,71.60) (72,71.98) (73,73.71) (74,73.65) (75,74.61) (76,74.39) (77,74.09) (78,75.21) (79,75.77) (80,75.63) (81,75.71) (82,75.77) (83,76.54) (84,76.63) (85,76.79) (86,77.23) (87,76.91) (88,77.15) (89,77.27) (90,77.52) (91,77.63) (92,77.80) (93,77.72) (94,77.84) (95,77.85) (96,77.84) (97,77.89) (98,77.91) (99,77.89) (100,77.91)
+(1,0.10) (2,4.49) (3,8.11) (4,12.52) (5,16.43) (6,20.07) (7,28.33) (8,23.54) (9,33.54) (10,34.18) (11,38.07) (12,33.68) (13,42.13) (14,40.00) (15,45.13) (16,45.67) (17,41.14) (18,38.11) (19,43.95) (20,47.85) (21,48.74) (22,49.49) (23,47.48) (24,49.67) (25,52.36) (26,48.60) (27,51.62) (28,50.02) (29,51.42) (30,49.80) (31,58.00) (32,56.67) (33,52.10) (34,44.59) (35,49.56) (36,58.37) (37,57.34) (38,55.91) (39,56.88) (40,58.38) (41,58.92) (42,55.15) (43,58.13) (44,58.33) (45,60.26) (46,60.95) (47,62.26) (48,60.21) (49,63.54) (50,61.40) (51,64.46) (52,64.52) (53,62.52) (54,64.12) (55,65.06) (56,63.69) (57,66.43) (58,63.67) (59,66.79) (60,67.48) (61,69.10) (62,68.69) (63,69.66) (64,69.97) (65,70.84) (66,71.26) (67,70.43) (68,71.89) (69,71.06) (70,72.77) (71,71.94) (72,73.21) (73,73.01) (74,74.17) (75,74.59) (76,73.62) (77,74.44) (78,75.13) (79,75.44) (80,75.45) (81,75.92) (82,76.31) (83,76.30) (84,76.68) (85,76.41) (86,76.95) (87,77.14) (88,76.82) (89,77.57) (90,77.56) (91,77.56) (92,77.76) (93,77.85) (94,77.88) (95,77.99) (96,77.93) (97,78.02) (98,78.02) (99,78.03) (100,78.08)
 };
 \addlegendentry{verified path (PJRT)}
 \end{axis}
@@ -7081,7 +7096,7 @@ as \texttt{a2} and \texttt{a1} (the reference's \texttt{a2-accum} and
 \hline
 tier & epochs & train res & verified render & top-1 \\
 \hline
-A3 (\texttt{rsb-faithful}) & 100 & $160$ & shipped, and run (\S\ref{sec:r50_pjrt}) & $\mathbf{77.91\%}$ \\
+A3 (\texttt{rsb-faithful}) & 100 & $160$ & shipped, and run (\S\ref{sec:r50_pjrt}) & $\mathbf{78.08\%}$ \\
 A2 (\texttt{a2})           & 300 & $224$ & rendered, sd $0.05$, no EMA & $79.8\%$ (paper) \\
 A1 (\texttt{a1})           & 600 & $224$ & rendered, sd $0.05$, no EMA & $80.4\%$ (paper) \\
 \hline
@@ -7124,15 +7139,17 @@ In & Still out \\
 \textbf{BCE target threshold} $0.2$ (\texttt{timm}'s \texttt{--bce-target-thresh}), applied in each recipe's own shim after mixing; A1 adds label smoothing $0.1$
   & Model EMA --- RSB Table~2 runs none; the \texttt{emalamb} twins stay on disk unused \\[2pt]
 \textbf{Stochastic depth} $0.05$ --- sixteen sites, one per bottleneck, on the residual branch
-  & Repeated augmentation is stream-level, not per-batch \\[2pt]
+  & Repeated augmentation is stream-level, not per-batch: \texttt{timm}'s index-level \texttt{RASampler} \\[2pt]
 Repeated augmentation $3\times$; both tiers, four replicas
-  & Mixup and CutMix alternate step by step, where \texttt{timm} draws which one per batch \\[2pt]
-\textbf{Bicubic RandAugment geometry}, matched to PIL's as \texttt{timm} resolves it, over torchvision's random-resized crop
-  & RandAugment's geometric ops fill with grey $128$, where \texttt{timm} fills with the image mean \\[2pt]
-A1's own weight decay ($0.01$) and own shim (Mixup $\alpha\,0.2$, label smoothing $0.1$)
-  & The learning rate is set per step, where \texttt{timm}'s scheduler steps once per epoch \\[2pt]
-As A3: \texttt{wdExcludeNormBias}, LAMB's clip at $kC$ after the all-reduce and the accumulation, BCE-with-logits over Mixup/CutMix soft labels, accumulation to $2048$ at $k=4$
   & Neither tier has been run \\[2pt]
+\textbf{Bicubic RandAugment geometry}, matched to PIL's as \texttt{timm} resolves it, over torchvision's random-resized crop, the fill at the image mean
+  & \\[2pt]
+\textbf{\texttt{timm}'s schedule and draw}, as A3 ran them above: the cosine stepped once an epoch from $10^{-4}$ to the floor $10^{-6}$, Mixup or CutMix drawn per batch at $p = 0.5$
+  & \\[2pt]
+A1's own weight decay ($0.01$) and own shim (Mixup $\alpha\,0.2$, label smoothing $0.1$)
+  & \\[2pt]
+As A3: \texttt{wdExcludeNormBias}, LAMB's clip at $kC$ after the all-reduce and the accumulation, BCE-with-logits over Mixup/CutMix soft labels, accumulation to $2048$ at $k=4$
+  & \\[2pt]
 Also as A3: zero-$\gamma$ bottlenecks, BN decay $0.9$, the fp32 classifier head, evaluation at \texttt{timm}'s $0.95$ crop
   & \\[2pt]
 Optimizer tied at the update, seven variants to ${\sim}10^{-7}$ & \\
@@ -7140,8 +7157,9 @@ Optimizer tied at the update, seven variants to ${\sim}10^{-7}$ & \\
 \end{tabular}
 \end{center}
 
-\noindent\textbf{[TODO: as A3's three, plus \texttt{timm}'s index-level
-\texttt{RASampler} for the $3\times$ repeats; neither tier has run ---
+\noindent\textbf{[TODO: \texttt{timm}'s index-level \texttt{RASampler} for
+the $3\times$ repeats (A3's three are in both tiers' code, and ran on A3);
+neither tier has run ---
 \texttt{r50-a2-bf16-4gpu} / \texttt{r50-a1-bf16-4gpu},
 \texttt{r50-a2accum-jax-4gpu} / \texttt{r50-a1-jax-4gpu}.]}
 
@@ -11122,7 +11140,7 @@ The full 300-epoch tier (\texttt{convnext-tiny-imagenet full},
 \texttt{convNeXtTinyImagenetConfigFull}) reached $\mathbf{81.53\%}$ top-1
 and $\mathbf{95.50\%}$ top-5 on the held-out validation pass. That is the
 strongest result in this book's sweep by a wide margin, ahead of
-ResNet-50 RSB-A3 ($77.75\%$), EfficientNet-B0 ($77.15\%$) and ResNet-34
+ResNet-50 RSB-A3 ($77.61\%$), EfficientNet-B0 ($77.15\%$) and ResNet-34
 ($74.14\%$), and it lands within
 $\sim$0.6\% of ConvNeXt-T's $82.1\%$ paper headline from a from-scratch
 Lean$\to$JAX-codegen reimplementation. Two candidate explanations for
@@ -14450,9 +14468,10 @@ BCE loss, repeated augmentation --- which trains this exact network
 to ${\sim}79.8\%$ top-1. The JAX reference trainer
 (\texttt{jax/MainResnet50Imagenet.lean}) wires that recipe: running
 the cheaper 100-epoch A3 tier end-to-end through the
-Lean~$\to$~StableHLO~$\to$~JAX pipeline reaches \textbf{77.75\% top-1
-/ 93.65\% top-5} on ImageNet-1k, $0.35$ under the A3 paper's $78.1\%$;
-the verified path's render of the same recipe scores $77.91\%$.
+Lean~$\to$~StableHLO~$\to$~JAX pipeline reaches \textbf{77.61\% top-1
+/ 93.61\% top-5} on ImageNet-1k, $0.49$ under the A3 paper's $78.1\%$;
+the verified path's render of the same recipe scores $78.08\%$, on the
+paper's number.
 
 \subsubsection*{WRN (Wide ResNet) (\texttt{Bestiary/WRN.lean})}
 \emph{Zero} new primitives --- the residual block of

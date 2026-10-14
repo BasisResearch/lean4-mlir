@@ -38,3 +38,41 @@ Epochs 91–100 average **77.91** top-1.
 One run's 95 % half-width is ±0.37, so the verified run finished ahead at this seed. The book's pair
 was 77.74 JAX / 77.91 verified (+0.17). McNemar on the paired predictions is owed: this run wrote
 bitmaps, the JAX trainer does not.
+
+## Against the other A3 numbers (added 2026-10-14, with the ch 5 update)
+
+| | e100 top-1 / top-5 | mean e97–100 top-1 | mean e91–100 top-1 |
+|---|---|---|---|
+| **verified, this run (timm's schedule)** | **78.078 / 93.844** | **78.04** | **77.91** |
+| JAX, same settings (`runs/2026-10-12-r50-a3-jax`) | 77.602 / 93.610 | 77.46 | 77.38 |
+| verified 10-09 (per-step cosine from zero, alternating Mixup/CutMix, grey fill) | 77.914 / 93.712 | 77.90 | 77.83 |
+| JAX 10-07, same settings as the 10-09 run, f32 rescore | 77.75 / 93.65 | 77.72 | 77.57 |
+| verified 09-23 (γ = 1, no threshold, the old schedule) | 78.330 / 94.034 | 78.36 | 78.23 |
+| timm RSB A3 (paper) / `resnet50.a3_in1k` under this protocol | 78.1 / 78.05 | | |
+
+* **+0.48 is the first ResNet pair outside the single-run interval** (R34 +0.03, 2018 +0.33, A3 10-07/09
+  +0.17, all verified ahead). One seed per arm; the McNemar pairing reads these two checkpoints, and seeds
+  per arm would read the paths.
+* The three settings moved this path +0.17 (77.91 → 78.08) and the reference −0.15. This run lands 0.02
+  under the paper's 78.1 and 0.03 over `timm`'s own weights' 78.05. Against the 09-23 run it is −0.25,
+  where the 10-09 run (threshold + zero-γ on the old schedule) was −0.42: timm's schedule gave some back.
+* The log's own lines for the three: `▸ LR SCHEDULE: per epoch (timm CosineLRScheduler, t_in_epochs) —
+  warmup 0.000100→0.008000 over 5 epochs, then cosine over all 100 epochs to the floor 0.000001`;
+  `Epoch 1/100: lr=0.000100` … `Epoch 100/100: lr=0.000003`, the JAX log's rates epoch for epoch; the
+  shim is the 4d612bb9 `generated_resnet50_imagenet_short_shim.py` (per-batch draw, `_RA_FILL` = img_mean).
+  Step-0 loss 0.720 (the 10-09 run's 0.724); epoch 1 reads 0.102 % (51 images, the JAX half's 51 too),
+  against 1.728 % on the 10-09 run — the whole first epoch at 1e-4.
+* Top-1 by 20-epoch window, verified minus JAX: +0.58, +3.06, +1.45, +1.42, +0.50 (the 10-09 pair:
+  +1.92, +0.24, +1.16, +1.05, +0.29). The lead through the middle has the same shape; the anneal closed
+  it to +0.26 over the last ten epochs then, and to +0.53 now.
+* The recipe delta, A3 − 2018: verified 78.078 − 77.090 = **+0.99**; JAX 77.602 − 76.796 = **+0.84**.
+* Pace: 785 s an epoch at the median over the epochs the log's timestamps resolve (min 750, max 915;
+  788 s from the supervisor's wall clock); the 10-09 run on the 3060 box took 20.94 h at 754 s.
+* The bitmap file names carry the variant twice (`a3_lambaccdp4x128wxclipbcebf16_lambaccdp4x128wxclipbcebf16_e{N}.bin`):
+  the driver appends `_{variant}_e{N}` to the prefix itself (`LeanMlir/Verified/Train.lean`, the
+  `writeBinFile` at the bitmap dump) and the conf's prefix already carried it. The conf now passes
+  `$RUNDIR/bitmaps/a3`, which gives the 10-09 run's `a3_lambaccdp4x128wxclipbcebf16_e{N}.bin`.
+* **The pairing (2026-10-14):** `../2026-10-12-r50-a3-jax/rescore.sh` (the JAX checkpoint through f32 on
+  atlas's CPU, 38,803 set) against this run's e100 bitmap (39,039): both right 36,902, both wrong 9,060,
+  only JAX 1,901, only verified 2,137 — 4,038 discordant (8.1 %), net +236, McNemar exact p = **0.0002**.
+  These two checkpoints are separable; the 10-07/09 pair's were not (p = 0.20).

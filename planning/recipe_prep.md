@@ -21,7 +21,7 @@ and the four rows the markers still call "disclosed", costed in §10 (R1–R4), 
 | chapter | state | commit |
 |---|---|---|
 | ch 5 ResNet R34, R50-2018 | fp32 rescore paid the markers; R34's deleted; McNemar paired | 8a659b2f, 5be4f349 |
-| ch 5 ResNet A3, A2, A1 | timm's recipe on both paths (F1 / F3 / F4 / F5 / F8), gated, smoked; runs pending | 4d612bb9 |
+| ch 5 ResNet A3, A2, A1 | timm's recipe on both paths (F1 / F3 / F4 / F5 / F8), gated, smoked; the A3 pair ran 2026-10-12/13 on ares — JAX 77.60 / 93.61, verified 78.08 / 93.84 (`runs/2026-10-12-r50-a3-jax/`, `runs/2026-10-12-r50-a3-rsb-bf16/`), the ch 5 A3 marker deleted, McNemar 4,038 discordant / +236 / p = 0.0002 (the JAX checkpoint rescored on atlas's CPU, `rescore.sh`); A2 / A1 pending | 4d612bb9 |
 | ch 9 ViT-Ti | DeiT as timm runs it on both paths, dp256x4 no-clip render, smoked; runs pending | 320f5045, 3336f4a7 |
 | ch 9 ViT-S, ViT-B | Tiny's recipe at both widths; S one-shot 4 × 256, B the first `acc` render; both JAX refs accumulate; smoked (§3) | a39f5cf7 |
 
@@ -587,7 +587,7 @@ f32 eval); `imagenet_parity.md` D6 / D13 / D20–D22 / F2 and §10.4 carry the s
 | net | config | verified driver | render | confs | gates | smokes | commit | run | marker |
 |---|---|---|---|---|---|---|---|---|---|
 | R34, R50-2018 | — | — | — | — | — | — | 8a659b2f, 5be4f349 | landed | R34 deleted; 2018 paid |
-| R50 A3 / A2 / A1 | done | done | existing | done | green | done | 4d612bb9 | pending | stands until the runs |
+| R50 A3 / A2 / A1 | done | done | existing | done | green | done | 4d612bb9 | A3 landed 10-13/14 (77.60 / 78.08); A2 / A1 pending | A3's deleted; A2/A1's stands (RASampler, the runs) |
 | ViT-Ti | done | done | done | done | green | done | 320f5045, 3336f4a7 | pending | stands |
 | ViT-S / B | done | done | done (B: the first `acc` render) | done | green | done | a39f5cf7 | pending | stands |
 | ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | a0c125b3 | pending | stands |

@@ -633,7 +633,7 @@ deviations, and a gate checks this**, not prose. §7's run table is superseded b
 | net | source of truth | accepted, disclosed deviations (draft) |
 |---|---|---|
 | R34, R50-2018 | torchvision reference recipe | — |
-| R50-A3 | RSB (arXiv 2110.00476) + timm | the landed pair predates F1/F3/F4 (§10.3) |
+| R50-A3 | RSB (arXiv 2110.00476) + timm | the 2026-10-12/13 pair carries F1 / F4 / F5 / F8 (F3 does not apply to A3): 77.60 / 78.08 |
 | MNv2 | TF-slim's own reproduction command, `research/slim/nets/mobilenet/README.md` ("roughly 72.0"), with the sources it runs (`train_image_classifier.py`, `mobilenet.training_scope`, `conv_blocks.expanded_conv`, `inception_preprocessing.py`, TF's `training_ops.cc`) — read 2026-10-12, `recipe_prep.md` §6. The paper's sentence ("0.045, decay 0.98 per epoch, 16 async workers of 96") is what the landed pair ran; the README's command is ×0.98 every 2.5 epochs at 0.045 per 96 images, label smoothing 0.1, EMA 0.9999, ~420 epochs | 16×96 async → 4×64 sync; slim's eval reproduced too (D23, later on 2026-10-12: `central_crop(0.875)` of both sides, TF 1's bilinear to 224²), timm's 224 / 0.875 kept as the post-hoc second score like every pair |
 | MNv4-Conv-M | paper Tables 9–10; timm where the paper is silent | — (500 ep is affordable: ~95 h verified, ~112 h JAX) |
 | B0 | TF EfficientNet | — |
@@ -666,7 +666,7 @@ emitter (`Jax/Codegen.lean`) and the shims, so they go in one pass before any pe
 | 3 | MNv4 `full` | D7–D10, EMA off; Phase 2 — ✅ 2026-10-12 as the paper's own yaml at 256² (`recipe_prep.md` §5; the `mnv4in256` renders) | S each | smoked 2026-10-12 (the confs' ETAs) |
 | 4 | ConvNeXt-T | D2 clip off, k16 accumulation, D15 (rerun JAX too); Phase 2 | S–M | ~77 + ~107 h |
 | 5 | B0 | **D3 SAME padding on strided depthwise moves the T2/T3 ties**; D6 classifier init; D13 — ✅ 2026-10-12, both halves (D3 a89fa9af; the rest as TF's own code has it, every row: `recipe_prep.md` §7's "Done" paragraph — D6, D13, the decay set (BN alone exempt), AutoAugment as `autoaugment.py` applies it, TF 1's bicubic, `_decode_and_center_crop`, the f32 eval) | M–L, the only proof work | smoked 2026-10-12 (the confs' ETAs) |
-| — | R34 / R50 | heavy-ball `opt_step_tie` row (§9.4); D16 Imagenette zero-γ | S | none; A3 discloses F1/F3/F4 |
+| — | R34 / R50 | heavy-ball `opt_step_tie` row (§9.4); D16 Imagenette zero-γ | S | none; A3's F1 / F4 / F5 ran 2026-10-12/13 |
 
 About 750 box-hours of runs, roughly 2.5 weeks across both boxes if nothing fails. Put the long ones
 (MNv4 `full`, ConvNeXt) at the front of the queue once their code is green.
@@ -699,7 +699,11 @@ Smokes (`runs/2026-10-11-r50-a3-jax-smoke/`, `runs/2026-10-11-r50-a3-verified-sm
 lr 1e-4 / 1.68e-3 / 3.26e-3 under GRAD_ACCUM 4 with the f32 eval line before every validation; verified A3
 307 ms/step (~24 h) with the new schedule banner. Runs: A3 pair first as the canary (JAX ~13.5 h, verified
 ~24 h), then A2 (~75 h + ~99 h); A1 (2×) after A2 ties. The ch 5 R50 marker is deleted when the A3 pair lands;
-the A2/A1 marker when theirs do.
+the A2/A1 marker when theirs do. **The A3 pair landed** 2026-10-13 / 10-14 on ares: JAX 77.602 / 93.610 in
+13.4 h, verified 78.078 / 93.844 in 21.9 h — +0.48, a tenth past the single-run interval (the three settings
+moved the reference −0.15 and the verified path +0.17); the marker is deleted; paired on the same images (`runs/2026-10-12-r50-a3-jax/rescore.sh`, the JAX
+checkpoint through f32 on atlas's CPU, then `mcnemar.py`): 4,038 discordant, 1,901 / 2,137, net +236,
+p = 0.0002 — the first ResNet pair whose checkpoints separate on A3 (the 10-07/09 pair: p = 0.20).
 
 **ViT-Ti status (2026-10-11, the user's order: resnet → vit → mnv2 → enet → convnext).** Phase 2's F1 /
 F4 / F5 / F8 and the EMA ramp are `TrainConfig` flags in the shared emitter now (`mixSwitchProb`,
