@@ -19,16 +19,21 @@ Started 2026-10-15, from the editors' one note on v0.7.2: every figure gets an i
 * **Code listings are out of scope for now** (134 `verbatim` blocks). In this house style they
   would be "Example 1-1."; revisit if the editors ask.
 
-## 1. The pass: cite each float by number
+## 1. The pass: cite each float by number — done 2026-10-15
 
 The editors' style implies, and every house style that numbers floats expects, that the text
-cites each one by number. On 2026-10-15 the 17 phrases that pointed at a float by position
-("the table below", "the curve above", "the sweep below") became `Figure~\ref` / `Table~\ref`,
-so 23 of 145 floats are cited; the other 122 are introduced by position only, by a lead-in
-sentence ending in a colon right above the float.
+cites each one by number. Done in four commits on 2026-10-15: the 17 positional phrases, then
+Chapters 1–4 (with the note fold below), Chapters 5–9, and the bestiary and appendices. All 145
+floats are cited by `Figure~\ref` / `Table~\ref` before they appear, and
+`book_floats.py --strict` (on in CI) fails the build on one that is not.
 
 `python3 scripts/book/book_floats.py --refs` is the census: one line per float, with the lines
 that `\ref` it, or `NONE`.
+
+**Still open: the note fold outside Chapters 1–4.** The `\noindent` notes after the Chapter 1–4
+result floats were split (setup into the caption, argument stays in prose) as the sample. The
+~80 notes in Chapters 5–10 and the appendices are untouched; decide from the sample whether to
+continue, caption by caption, with the rules below.
 
 | where | figures | tables | uncited |
 |---|---|---|---|

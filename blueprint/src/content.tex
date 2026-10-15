@@ -14178,7 +14178,8 @@ This count is calibrated to the reader (what's new vs.\ what
 they've seen), not to the codebase (where some bestiary primitives
 were drafted earlier and already sit in \texttt{Types.lean}).
 Formalizing every sub-op of every modern architecture would be an
-asymptote we don't approach.
+asymptote we don't approach. Figure~\ref{fig:operation_inventory} is the
+inventory.
 
 \begin{figure}[H]
 \centering
@@ -14662,7 +14663,7 @@ and an extra nonlinearity in the middle; three stacked $3\times 3$s
 match a $7\times 7$. The whole architecture is just that
 trick repeated.
 
-All four paper variants:
+Table~\ref{tab:bestiary_vgg} is all four paper variants.
 
 \begin{table}[H]
 \centering
@@ -14768,7 +14769,8 @@ residual unit; the bottleneck variants (R50, R101, R152) use
 $1\times 1$ reduce $\to$ $3\times 3$ work $\to$ $1\times 1$ expand
 around a residual skip --- three convs per block instead of two,
 but the expensive $3\times 3$ now runs at $1/4$ the input channels,
-so per-block parameter count actually drops.
+so per-block parameter count actually drops. Table~\ref{tab:bestiary_resnet} is
+the family.
 
 \begin{table}[H]
 \centering
@@ -14836,7 +14838,7 @@ from 1000+) and the width knob out (multiply every channel count
 by $k$, typically 2--10). Result: WRN-40-4 matches the 1001-layer ResNet on CIFAR-10/100 with
 fewer parameters and several times faster training, and WRN-28-10
 (36.5M in the paper) beats it. Width turned out to be a more efficient axis to scale than
-depth.
+depth. Table~\ref{tab:bestiary_wrn} is the variants here.
 
 \begin{table}[H]
 \centering
@@ -14884,6 +14886,7 @@ via the fire module (Iandola et al.\ 2016,
 \href{https://arxiv.org/abs/1602.07360}{arXiv:1602.07360}): squeeze 1$\times$1 conv followed by parallel
 expand 1$\times$1 + 3$\times$3 convs concatenated. The early
 efficiency-CNN family alongside MobileNet and ShuffleNet.
+Table~\ref{tab:bestiary_squeezenet} is the two versions.
 
 \begin{table}[H]
 \centering
@@ -15069,7 +15072,8 @@ ResNet bypass idea to its concatenative extreme: every layer in a
 ``dense block'' reads the channel-wise concatenation of all preceding
 layers' outputs. Each layer adds only \texttt{growth\_rate} new
 channels (32 in the paper), so the per-layer parameter count stays
-small while feature reuse compounds.
+small while feature reuse compounds. Table~\ref{tab:bestiary_densenet} is the
+variants.
 
 \begin{table}[H]
 \centering
@@ -15260,8 +15264,8 @@ of Definition~\ref{layer:fpnModule} necessary rather than decorative. Scored
 against VisDrone's uncapped validation ground truth --- all $38{,}759$
 boxes, not the 56-box-truncated training record, which drops $34.9\%$ of them
 and is not the benchmark's protocol. The catalog entry below keeps the
-paper-exact YOLOv1 shape for the historical record; this is the trained
-detector beside it.
+paper-exact YOLOv1 shape for the historical record; Table~\ref{tab:visdrone_results}
+is the trained detector beside it.
 
 \begin{table}[H]
 \centering
@@ -15472,11 +15476,12 @@ the frame; a steel defect is often half of it), the class weights are off
 one-hot, since the $5+10$ per-anchor width is baked into the \texttt{fpnDetect}
 emitter and the scorer averages over the classes present. NEU-DET ships no
 split; the one here is $1{,}080/360/360$, stratified $180/60/60$ per class from
-a fixed seed. Epochs are chosen on the validation $360$ and the numbers below
-are the test $360$ at that epoch, scored by the VisDrone protocol against
+a fixed seed. Epochs are chosen on the validation $360$ and the numbers in
+Table~\ref{tab:neudet_results} are the test $360$ at that epoch, scored by the VisDrone protocol against
 uncapped ground truth. The single-grid arm is the same ResNet-34 and the same
 bootstrap under a one-grid YOLOv1 head at $448/14$, run for the same 30
-epochs.
+epochs. Table~\ref{tab:neudet_visdrone_heads} is the same two heads on
+VisDrone, and Figure~\ref{fig:neudet_fpn} is both on one crop of each defect.
 
 \begin{table}[H]
 \centering
@@ -15524,7 +15529,7 @@ with the truth and with each other.}
 \label{fig:neudet_fpn}
 \end{figure}
 
-\noindent \textbf{The second table is the result.} On steel the single grid
+\noindent \textbf{Table~\ref{tab:neudet_visdrone_heads} is the result.} On steel the single grid
 matches the multi-scale head, $0.607$ against $0.623$; on drones it is six
 times behind, $0.039$ against $0.236$, with recall $0.18$ against $0.77$ ---
 same backbone, same bootstrap, same scorer, same lowerer in all four cells.
@@ -15593,9 +15598,11 @@ labels, Adam at $10^{-3}$ with one warm-up epoch and cosine decay, batch 64,
 five minutes on one card. The chapter's linear and MLP rungs run through
 the same loop as the bracket, and the chapter net at its own $32\times32$
 input checks that the resolution is not the story. Epochs are chosen on
-the validation tenth and the numbers below are the test tenth at that
-epoch, three seeds for the chapter net, with a $95\%$ Wilson interval on
+the validation tenth and the numbers in Table~\ref{tab:arasl_results} are the
+test tenth at that epoch, three seeds for the chapter net, with a $95\%$ Wilson interval on
 the pooled $\approx 16{,}200$ trials of $\pm 0.2$ (random) and $\pm 0.6$ (blocked).
+Figure~\ref{fig:arasl_signs} is the alphabet, the nearest neighbours under each
+split, and the confusions.
 
 \begin{table}[H]
 \centering
@@ -15691,7 +15698,8 @@ on the plant, several per frame, soil and sky behind them, phone lighting
 --- in 28 classes that all map onto PlantVillage's. The net here is
 Chapter~\ref{chap:residual}'s ResNet-34 from its ImageNet weights with a
 38-way head, ten epochs on PlantVillage, forty minutes on one card; PlantDoc
-is never seen in training except by the last two rows of the table, which
+is never seen in training except by the last two rows of
+Table~\ref{tab:plantvillage_results}, which
 learn from it five-fold and are scored only on field images they did not
 train on. (A near-duplicate audit of PlantVillage finds none, and the
 maintainers' own leaf-grouped split gives the same number as a random one;
@@ -15725,7 +15733,8 @@ scores $99.6\%$ in the laboratory scores $18\%$ in the field ($2{,}578$
 images, 28 classes, chance $3.6\%$). Nothing was wrong with the training;
 the distribution was. The rest of the section asks the net what it learned,
 with three instruments that need only the trained weights and the leaf mask
-PlantVillage ships with every image.
+PlantVillage ships with every image. Table~\ref{tab:plantvillage_probes} is
+what they find.
 
 \begin{table}[H]
 \centering
@@ -15764,6 +15773,8 @@ leaf painted out and it is right one time in four; show it a flat rectangle
 of the background's colour and it still beats chance. The background
 helps in nine images out of ten, a little each time. A map of where
 the evidence is heaviest does not say what the net cannot do without.
+Figure~\ref{fig:plant_lab_to_field} is four test leaves under the maps, in the
+laboratory and in the field.
 
 \begin{figure}[H]
 \centering
@@ -15833,6 +15844,7 @@ infrared), \texttt{ms10} (the ten bands at 10 and 20~m), \texttt{all}
 (thirteen), and \texttt{ir} (red edge, near and short-wave infrared, and
 no visible light at all); 80 epochs with flips and rotations, three seeds,
 five minutes an arm on one card. Nothing in the codegen moves.
+Table~\ref{tab:eurosat_bands} is the five arms at home and abroad.
 
 \begin{table}[H]
 \centering
@@ -15900,7 +15912,8 @@ a third of it from visible light on either continent, the short-wave share
 rising from $13\%$ at home to $22\%$ abroad, and the atmospheric bands
 worth less than nothing in Brazil ($-3.0$ nats of log-probability in the
 Amazon). They had learned Europe's sky, which is why the arm without them
-travels best.
+travels best. Figure~\ref{fig:remote_sensing_wavelengths} is three of the
+Brazilian windows under three of the arms.
 
 \begin{figure}[H]
 \centering
@@ -16111,8 +16124,8 @@ parameters --- trained in JAX on random $128^3$ patches for 20{,}000 steps,
 a little over five hours on one card (\texttt{jax/scripts/unet3d\_brats.py},
 the reference a Lean rank-5 port would be tied to). In
 Table~\ref{tab:brats_per_patient} its means are ahead of the anchor's by under a point on WT and TC and by two on
-ET, and most of the ET gain is what a size threshold also buys. So the
-comparison below applies the usual BraTS post-process to every model ---
+ET, and most of the ET gain is what a size threshold also buys. So
+Table~\ref{tab:brats_3d} applies the usual BraTS post-process to every model ---
 enhancing-tumour predictions under 200 voxels in a volume are relabelled as
 core --- and reads two seeds a side:
 
@@ -16762,7 +16775,7 @@ look like a digit to you.'' It does not have to be: Chapter~\ref{chap:cnn}'s
 verified CNN maps an image to ten numbers, and in that space the usual
 statistics work. What matters more than any row is that the scale is
 bracketed at both ends, since a metric that only ever reports ``bad'' is
-indistinguishable from a broken one:
+indistinguishable from a broken one. Table~\ref{tab:ddpm_scores} is the bracket.
 
 \begin{table}[H]
 \centering
@@ -16987,6 +17000,9 @@ change relative to the MNIST demo:
     18k-parameter MLP.
 \end{itemize}
 
+Figure~\ref{fig:boltzmann_mb} is the surface, the trained flow, and the
+reweighting that the chain cannot do.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{demos/boltzmann_mb.png}
@@ -17070,7 +17086,8 @@ trained flow's own (noise, sample) pairs; minibatch optimal-transport
 coupling (Tong et al.\ 2023,
 \href{https://arxiv.org/abs/2302.00482}{arXiv:2302.00482}) pairs each batch's
 noise to its data by a minimum-cost assignment. Neither changes the network.
-Energy distance as a multiple of the floor, with Liu's straightness at NFE 50:
+Table~\ref{tab:boltzmann_reflow} is the energy distance as a multiple of the
+floor, with Liu's straightness at NFE 50.
 
 \begin{table}[H]
 \centering
@@ -17233,7 +17250,8 @@ audio, the spectrogram of a voice. The demo scores a chapter-4 CNN against
 the detector its field already has, whose performance in Gaussian noise is a
 closed form; the two entries after it are the audio architectures that read
 the same kind of input, one sample at a time and one spectrogram frame at a
-time.
+time. Figure~\ref{fig:gw_detect} is the demo on one page: a window, the two
+spectrograms, and the detection curves in both noises.
 
 \begin{figure}[H]
 \centering
@@ -17300,7 +17318,8 @@ $Q$-function. Three things change relative to the CIFAR demo:
 \paragraph{Scored against the theorem.} Detection probability by injected
 network SNR on the Gaussian set, $12{,}228$ validation windows, every
 threshold set on the $8{,}177$ noise-only windows so that one in a hundred
-exceeds it. The last column is the SNR at which each row crosses one half:
+exceeds it. The last column of Table~\ref{tab:gw_gaussian} is the SNR at which
+each row crosses one half.
 
 \begin{table}[H]
 \centering
@@ -17328,8 +17347,8 @@ integrates, and this is the demo's number, not the architecture's ceiling.
 
 \paragraph{Real noise costs the filter, not the network.} LIGO noise is
 neither stationary nor Gaussian, and the production search adds a $\chi^2$
-veto for exactly that reason. The same rows on the strain itself, with each
-model trained on one noise set and scored on both:
+veto for exactly that reason. Table~\ref{tab:gw_real} is the same rows on the
+strain itself, with each model trained on one noise set and scored on both.
 
 \begin{table}[H]
 \centering
@@ -17483,13 +17502,16 @@ change relative to the TinyGPT demo:
     to learn what mean field gets wrong. For the MLP and ViT the reference
     is a fixed visible bias; for the GPT it is a fixed bias on the logits,
     so that the conditionals stay normalised.
-  \item \textbf{The instrument is a solved model.} Every number below is
-    bracketed by a closed form: enumeration of the $4{,}096 \times 4{,}096$
+  \item \textbf{The instrument is a solved model.} Every number in
+    Table~\ref{tab:nqs_ladder} is bracketed by a closed form: enumeration of the $4{,}096 \times 4{,}096$
     Hamiltonian at $N = 12$, and at $N = 64$ the free-fermion solution of
     Pfeuty 1970, which agrees with enumeration to $7 \times 10^{-15}$ where
     both apply. The variance of $E_{\mathrm{loc}}$ over the samples is the
     instrument that needs no ceiling: zero for an eigenstate at any $N$.
 \end{itemize}
+
+Figure~\ref{fig:nqs_ising} is the chain's three phases as the network draws
+them, and the check against the exact ground state.
 
 \begin{figure}[H]
 \centering
@@ -17514,7 +17536,7 @@ decay, $4{,}000$ steps at $N = 12$ and $2{,}000$ at $N = 64$, one RTX 4060
 Ti: 50\,s to 330\,s per row at $N = 12$ with the XLA compile included and
 about twenty minutes at $N = 64$. The $N = 64$ energies are means over the
 final $8{,}192$ samples, whose Monte Carlo standard error is below five
-percent of every entry:
+percent of every entry. Table~\ref{tab:nqs_ladder} is the ladder.
 
 \begin{table}[H]
 \centering
@@ -17764,6 +17786,9 @@ segmentation demo:
     trained for it.
 \end{itemize}
 
+Figure~\ref{fig:casp16_distogram} is one target's contact map, predicted
+against measured, and our fold beside the field's.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{demos/casp16_distogram.png}
@@ -17780,12 +17805,12 @@ model per unit.}
 \label{fig:casp16_distogram}
 \end{figure}
 
-\paragraph{The bracket on the CASP16 targets.} Top-$L/5$ long-range
-contact precision over the 84 evaluation units (a long-range pair is 24 or
+\paragraph{The bracket on the CASP16 targets.} Table~\ref{tab:casp16_arms} is
+the top-$L/5$ long-range contact precision over the 84 evaluation units (a long-range pair is 24 or
 more residues apart; the number is the fraction of the $L/5$ most confident
 such pairs that are within 8\,Å), the recall of the true long-range
 contacts at $P > 0.5$, and the fold's $\mathrm{C}_\beta$-lDDT and TM-score over the 78
-units the fold and the field both cover:
+units the fold and the field both cover.
 
 \begin{table}[H]
 \centering
@@ -17827,6 +17852,7 @@ its best member, and the fold is converged: under its own potential the
 experimental trace has higher energy than our fold on 78 of 78 units, the
 map's own mean distances score an lDDT of 0.615 against the fold's 0.627,
 and the two correlate at 0.90, so what the fold realises is the map.
+Figure~\ref{fig:casp16_ablation} is what each lever buys.
 
 \begin{figure}[H]
 \centering
@@ -18005,8 +18031,9 @@ $6{,}210$ parameters. Three things change relative to everything trained so far:
 \paragraph{Every arm scored against the theorem.} Mean reward per hand; exact
 by value iteration, Monte Carlo over $10^6$ hands with its standard error,
 and agreement with the optimum over the 200 decision states. The two value
-columns agree within two standard errors on every row, which is the check that
-the simulator and the DP describe the same game:
+columns of Table~\ref{tab:blackjack_policies} agree within two standard errors
+on every row, which is the check that the simulator and the DP describe the
+same game.
 
 \begin{table}[H]
 \centering
@@ -18035,9 +18062,9 @@ moving bootstrap target forever. Figure~\ref{fig:blackjack_chart} is the
 policy itself, cell by cell.
 
 
-\paragraph{The DQN's own table.} One seed per arm, exact value at the end of
-training; the gate is the DQN within $0.01$ of tabular Q's exact value, which
-every 200k-update arm passes:
+\paragraph{The DQN's own table.} Table~\ref{tab:blackjack_dqn} is one seed per
+arm, exact value at the end of training; the gate is the DQN within $0.01$ of
+tabular Q's exact value, which every 200k-update arm passes.
 
 \begin{table}[H]
 \centering
@@ -18084,7 +18111,7 @@ not contain the ball's velocity, so the input is a stack of the last four. The b
 is built into the game: the same DQN on the six numbers the renderer draws from ---
 ball position and velocity, the two paddles --- is a twin that is handed everything
 the pixels could carry, the scripted opponent is the bar, and a one-frame input is the
-ablation.
+ablation. Figure~\ref{fig:pong_dqn} is one input and every arm's learning curve.
 
 \begin{figure}[H]
 \centering
@@ -18098,9 +18125,9 @@ the random and scripted-tracker baselines as lines.}
 \label{fig:pong_dqn}
 \end{figure}
 
-\paragraph{Every arm against the scripted opponent.} Mean points per game over twenty
-fresh games after training, with the standard error; the baselines over a hundred
-games (\texttt{lake exe pong-env 100}):
+\paragraph{Every arm against the scripted opponent.} Table~\ref{tab:pong_arms} is the
+mean points per game over twenty fresh games after training, with the standard
+error; the baselines over a hundred games (\texttt{lake exe pong-env 100}).
 
 \begin{table}[H]
 \centering
@@ -18178,6 +18205,9 @@ around it:
     (\texttt{mode=tabular}), and does.
 \end{itemize}
 
+Figure~\ref{fig:deep_cfr_leduc} is one hand's betting tree under the trained
+profile, the exploitability curves, and the bluff.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{demos/deep_cfr_leduc.png}
@@ -18198,8 +18228,8 @@ one; a thousandth of a chip is a milli-ante per game, the Leduc papers' unit) an
 head-to-head against CFR+ averaged over the two seats. The scripted honest arm raises a
 pair or a king and folds a jack to a bet; the price-of-honesty arm is CFR+ with its
 worst-hand raises moved to call; the two Deep CFR rows and the sampled table are at the
-same 4.1M nodes, three seeds each. The last column is the bluff, the raise frequency
-opening round 2 with a jack under a queen:
+same 4.1M nodes, three seeds each. The last column of Table~\ref{tab:leduc_arms} is
+the bluff, the raise frequency opening round 2 with a jack under a queen.
 
 \begin{table}[H]
 \centering
@@ -18296,8 +18326,8 @@ $3 \times 3$, 155k at $4 \times 4$. Three things change relative to the two DQNs
 instrument becomes an exact solver --- alpha-beta with a transposition table over
 symmetry-canonical positions --- checked against the dense table on every reachable
 $3 \times 3$ and $4 \times 4$ position before it is trusted where no table exists. It
-establishes that $(5, 5, 4)$ is a draw, and something a reader can check on the
-figure: after X takes the centre, O's only drawing replies are the four diagonal
+establishes that $(5, 5, 4)$ is a draw, and something a reader can check on
+Figure~\ref{fig:alphazero_ttt}: after X takes the centre, O's only drawing replies are the four diagonal
 neighbours. Two things change in what the table can say: the sweep is a fixed sample
 of 20,000 random-play decision positions with at least six stones, exact per position
 but not exhaustive; and the perfect player draws its first move uniformly from the
@@ -18319,12 +18349,12 @@ decision positions, one dot per position, medians as bars.}
 \label{fig:alphazero_ttt}
 \end{figure}
 
-\paragraph{Every arm against the solved game.} Agreement of the arm's move with the
-optimal set --- over every decision position at $3 \times 3$ and $4 \times 4$, over the
+\paragraph{Every arm against the solved game.} Table~\ref{tab:ttt_arms} is the agreement
+of the arm's move with the optimal set --- over every decision position at $3 \times 3$ and $4 \times 4$, over the
 20,000-position sample at $5 \times 5$; the scripted players' is their expected
 agreement --- and W/D/L against the perfect player as X and as O: 1,000 games each way
 for the scripted rows (200 at $5 \times 5$), and for the network's rows three
-independent evaluations of the saved network, 256 games each, pooled:
+independent evaluations of the saved network, 256 games each, pooled.
 
 \begin{table}[H]
 \centering
@@ -18812,9 +18842,8 @@ physics, and each has a dataset of its own:
     targets.
 \end{itemize}
 
-\noindent Same fetch-and-unpack story as Table~\ref{tab:datasets_core}, with one
-extra
-step: each is tokenized or tiled into the trainer's input format by the
+\noindent Table~\ref{tab:datasets_demo} is the same fetch-and-unpack story as
+Table~\ref{tab:datasets_core}, with one extra step: each is tokenized or tiled into the trainer's input format by the
 matching \texttt{preprocess\_*.py} script before the first \texttt{lake exe}
 run; the strain and the M\"uller--Brown density skip the fetch, because
 that script is where they come from, and the Ising chain has no data step
@@ -19205,8 +19234,8 @@ If you want to just see it run, meaning train a real neural network end to
 end with the Lean $\to$ MLIR $\to$ GPU pipeline from Part 1, this appendix is
 the smallest path from zero to a trained model.
 
-What you install depends on how far up the scale you want to go, and the
-steps are not evenly spaced:
+Table~\ref{tab:getting_started_tracks} is the scale. What you install depends on
+how far up it you want to go, and the steps are not evenly spaced.
 
 \begin{table}[H]
 \centering
@@ -19520,10 +19549,10 @@ chapter's row. Each row's section says where it stands.
 \section*{Platforms}
 \label{sec:getting_started_platforms}
 
-The target is the middle row of the table that opens this appendix --- MNIST,
-CIFAR and Imagenette, Tracks 2 and 3 --- on five GPU platforms, each one
-plugin file and (off the Mac) one device variable away from the same Lean
-binaries, the plugin pinned per platform:
+The target is the middle row of Table~\ref{tab:getting_started_tracks} --- MNIST,
+CIFAR and Imagenette, Tracks 2 and 3 --- on the five GPU platforms of
+Table~\ref{tab:platforms}, each one plugin file and (off the Mac) one device
+variable away from the same Lean binaries, the plugin pinned per platform.
 
 \begin{table}[H]
 \centering
@@ -20278,7 +20307,8 @@ of a real 12-epoch, 97.8\% GPU run (\(|W| \le 3/5\), covering the
 measured \(0.52\), and He initialization already exceeds prettier bounds
 in its tails). An \texttt{f32}/\texttt{f64} twin of that run
 (\texttt{scripts/certs/\allowbreak margin\_probe.py}, per-step coupled to match the
-single-step theorems) measures what the theorems bound:
+single-step theorems) measures what the theorems bound. Table~\ref{tab:float_measured}
+is the two side by side.
 
 \begin{table}[H]
 \centering

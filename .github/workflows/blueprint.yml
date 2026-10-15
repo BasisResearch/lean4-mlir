@@ -85,10 +85,11 @@ jobs:
 
       - name: Check every graphic and table is a captioned float
         # The publisher numbers every figure and table ("Figure 1-2. Caption"). A TikZ diagram or
-        # a tabular set in a bare `center` gets no number and no LaTeX warning; this fails on one.
+        # a tabular set in a bare `center` gets no number and no LaTeX warning; this fails on one,
+        # and (--strict) on a float that no sentence cites by number.
         # Runs first: it needs only python and the checkout.
         run: |
-          python3 scripts/book/book_floats.py
+          python3 scripts/book/book_floats.py --strict
 
       - name: Install elan (Lean toolchain manager)
         # GitHub's release server intermittently returns 504 when fetching

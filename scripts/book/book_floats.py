@@ -3,14 +3,16 @@
 
     python3 scripts/book/book_floats.py            # the gate: exit 1 and one line per violation
     python3 scripts/book/book_floats.py --refs     # also: every float, and the lines that \\ref it
+    python3 scripts/book/book_floats.py --strict   # also fail on a float that no line \\refs
 
 The publisher's house style numbers every figure and table ("Figure 1-2. Caption"), and a
 TikZ diagram or a tabular set in a bare `center` gets no number at all, and no warning either.
 Fails on a `tikzpicture`, `tabular`, `\\includegraphics` or `\\input{figures/...}` outside a
 `figure` or `table` environment; a `figure` without exactly one `\\caption` and one
 `\\label{fig:...}`, or a `table` without one `\\caption` and one `\\label{tab:...}`; and a label
-used twice. `--refs` is the census for the pass that makes the prose cite each float by number
-(planning/book_floats.md): a float with no citing line is listed with none.
+used twice. `--refs` is the census of which lines cite each float; `--strict` fails on a float
+that none does, which is the rule since the pass of planning/book_floats.md (every float is
+named by Figure~\\ref / Table~\\ref in the prose, never by "the table below").
 """
 import re, sys
 
@@ -61,11 +63,13 @@ def main():
     labels = [l for f in found for l in f[4]]
     every = re.findall(r'\\label\{([^}]*)\}', '\n'.join(lines))
     bad += ['label %s defined %d times' % (l, every.count(l)) for l in sorted(set(labels)) if every.count(l) > 1]
-    if '--refs' in sys.argv:
-        for env, a, b, caps, labs in found:
-            for lab in labs:
-                cites = [n for n, l in enumerate(lines, 1) if not a <= n <= b and re.search(r'\\ref\{%s\}' % re.escape(lab), l)]
+    for env, a, b, caps, labs in found:
+        for lab in labs:
+            cites = [n for n, l in enumerate(lines, 1) if not a <= n <= b and re.search(r'\\ref\{%s\}' % re.escape(lab), l)]
+            if '--refs' in sys.argv:
                 print('%-6s %-32s line %-6d cited at %s' % (env, lab, a, ', '.join(map(str, cites)) or 'NONE'))
+            if '--strict' in sys.argv and not cites:
+                bad.append('%d: %s %s is cited by no \\ref' % (a, env, lab))
     for b in bad: print('%s:%s' % (TEX, b))
     print('%d figures, %d tables, %d violations' % (
         sum(f[0] == 'figure' for f in found), sum(f[0] == 'table' for f in found), len(bad)), file=sys.stderr)
