@@ -1,11 +1,15 @@
 """Write-or-check for generators of committed files.
 
-A generator calls `emit(path, text)` for every file it produces and `finish()` at the end. Run
+A generator calls `emit(path, text)` for every file it produces (a `.lean` one gets the module
+header via `modularize`) and `finish()` at the end. Run
 plainly it writes them; run with `--check` it writes nothing and exits 1 naming every committed
 file that differs from what the generator would write — the guard CI runs.
 """
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib" / "modules"))
+from to_module import modularize  # noqa: E402  (the module-system header every .lean file carries)
 
 CHECK = "--check" in sys.argv
 _drift = []
@@ -14,6 +18,8 @@ _seen = []
 
 def emit(path, text):
     path = Path(path)
+    if path.suffix == ".lean":
+        text = modularize(text)
     _seen.append(path)
     if CHECK:
         if not path.exists() or path.read_text() != text:

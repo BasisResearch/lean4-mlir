@@ -35,6 +35,7 @@ comes back byte-identical.
 import os
 import sys
 from fractions import Fraction
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 import numpy as np
 
@@ -811,7 +812,7 @@ end Proofs
 
 if os.environ.get("CNN_DESCENT_NO_WRITE") != "1":
     with open(OUT, "w") as fh:
-        fh.write(body)
+        fh.write(modularize(body))
     print(f"wrote {OUT} ({len(body.splitlines())} lines)", flush=True)
 
 # ================================================================ net B: the conv1 rungs
@@ -1252,5 +1253,5 @@ end Proofs
 
 if os.environ.get("CNN_DESCENT_NO_WRITE") != "1":
     with open(OUT1, "w") as fh:
-        fh.write(body_b)
+        fh.write(modularize(body_b))
     print(f"wrote {OUT1} ({len(body_b.splitlines())} lines)", flush=True)

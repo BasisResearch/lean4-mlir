@@ -28,6 +28,7 @@ does not have. Regenerate by hand and confirm the committed Lean comes back byte
 import os
 import numpy as np
 from fractions import Fraction
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 # ---- reproduce the witness (trains the net and computes the exact tables; WITNESS_NO_WRITE
 # ---- keeps it from rewriting Trained/CnnWitness.lean — run that generator for that file)
@@ -541,5 +542,5 @@ end Proofs
 '''
 
 with open(SEAL_OUT, "w") as f:
-    f.write(body)
+    f.write(modularize(body))
 print(f"wrote {SEAL_OUT}", flush=True)

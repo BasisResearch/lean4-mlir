@@ -39,6 +39,7 @@ from math import ceil, sqrt
 from pathlib import Path
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 import lipschitz_cert_scorecard_full as base
 
@@ -391,7 +392,7 @@ def emit_net(tag, W1q, W2q, out_path):
     A("")
     A("end Robustness")
     A("end Proofs")
-    out_path.write_text("\n".join(L) + "\n")
+    out_path.write_text(modularize("\n".join(L) + "\n"))
     print(f"[{tag}] wrote {out_path}: {len(L)} lines")
     return cert10, cert30
 

@@ -47,7 +47,8 @@ def imports_of(module):
     path = source_of(module)
     if not path.exists():
         return None
-    return re.findall(r"^import\s+([A-Za-z0-9_.]+)", path.read_text(), re.M)
+    return re.findall(r"^(?:public\s+|meta\s+|private\s+)*import\s+(?:all\s+)?([A-Za-z0-9_.]+)",
+                      path.read_text(), re.M)
 
 
 def reachable(roots, prefix="LeanMlir", strict=True):

@@ -28,6 +28,7 @@ does not have. Regenerate by hand and confirm the committed Lean comes back byte
 """
 import numpy as np, os, sys
 from fractions import Fraction
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "scripts", "lib"))
@@ -689,5 +690,5 @@ end Proofs
 # the seal generator does not also rewrite Trained/CnnWitness.lean.
 if not globals().get("WITNESS_NO_WRITE", False):
     with open(OUT, "w") as f:
-        f.write(hdr + mid1 + mid2 + mid3 + mid4 + mid5 + mid6)
+        f.write(modularize(hdr + mid1 + mid2 + mid3 + mid4 + mid5 + mid6))
     print(f"wrote {OUT}", flush=True)

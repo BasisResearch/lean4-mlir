@@ -26,6 +26,7 @@ does not have. Regenerate by hand and confirm the committed Lean comes back byte
 import numpy as np, os, sys
 from fractions import Fraction
 from math import ceil
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "LeanMlir/Proofs/Certificates/LipschitzCert/Scorecard.lean")
@@ -462,6 +463,6 @@ A("end Robustness")
 A("end Proofs")
 
 with open(OUT, "w") as f:
-    f.write("\n".join(L) + "\n")
+    f.write(modularize("\n".join(L) + "\n"))
 print(f"wrote {OUT}: {len(L)} lines, {len(need_imgs)} images, "
       f"{len(cert_c)}+{len(cert_u)} certificates")

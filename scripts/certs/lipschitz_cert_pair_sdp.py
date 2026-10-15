@@ -28,6 +28,7 @@ from fractions import Fraction
 from math import ceil, sqrt
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 import os
 import re
@@ -413,7 +414,7 @@ def emit_net(tag, W1z, W2z, G1q, den, facts, w1name, w2name, g1name, g1eq,
     A("end Robustness")
     A("end Proofs")
     with open(out_path, "w") as f:
-        f.write("\n".join(L) + "\n")
+        f.write(modularize("\n".join(L) + "\n"))
     print(f"[{tag}] wrote {out_path}: {len(L)} lines")
     return certified
 

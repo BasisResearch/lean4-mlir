@@ -34,7 +34,8 @@ def proofs_roots(text: str) -> list[str]:
 
 
 def check(audit: Path, covered: set[str], libs_desc: str, fix: str) -> int:
-    audited = re.findall(r"^import\s+([A-Za-z0-9_.]+)", audit.read_text(), re.M)
+    audited = re.findall(r"^(?:public\s+|meta\s+|private\s+)*import\s+(?:all\s+)?([A-Za-z0-9_.]+)",
+                         audit.read_text(), re.M)
     missing = [m for m in audited if m.startswith("LeanMlir") and m not in covered]
     if missing:
         print(f"error: {audit} imports module(s) not reachable from the "

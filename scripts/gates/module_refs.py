@@ -126,7 +126,7 @@ def main() -> int:
         if f.startswith(SCAN_SKIP):
             continue
         for n, line in enumerate(texts[f].split("\n"), 1):
-            if line.startswith("import "):
+            if re.match(r"(?:public |meta |private )*import ", line):
                 continue                      # Lean itself resolves these
             for m in PATH.finditer(line):
                 tok = m.group(0)

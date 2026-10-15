@@ -32,6 +32,7 @@ import re
 import sys
 from fractions import Fraction
 from pathlib import Path
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 import numpy as np
 
@@ -434,7 +435,7 @@ def emit(tag, W1q, W2q, Xraw, yte, out_path, counts_ibp, pgd, netdesc, ibp_impor
     A("")
     A("end Robustness")
     A("end Proofs")
-    out_path.write_text("\n".join(L) + "\n")
+    out_path.write_text(modularize("\n".join(L) + "\n"))
     print(f"[{tag}] {out_path.name}: {len(L)} lines, "
           f"certified " + "/".join(str(len(certs[en])) for _, en in EPS_GRID)
           + f" (IBP " + "/".join(str(counts_ibp[en]) for _, en in EPS_GRID)

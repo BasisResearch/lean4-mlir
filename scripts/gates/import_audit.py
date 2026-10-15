@@ -101,6 +101,42 @@ def closure(mod):
     return frozenset(c)
 
 
+@lru_cache(None)
+def import_kinds(mod):
+    """`(is_module, ((import, public, meta), ...))` for `mod`'s header."""
+    p = source_index().get(mod)
+    if not p:
+        return False, ()
+    is_mod, out = False, []
+    with open(p, errors="ignore") as fh:
+        for line in fh:
+            s = line.strip()
+            if s == "module":
+                is_mod = True
+                continue
+            m = IMP.match(s)
+            if m:
+                words = s[:m.start(1)].split()
+                out.append((m.group(1), "public" in words, "meta" in words))
+                continue
+            if s and not s.startswith(("--", "/-", "prelude")) and out:
+                break
+    return is_mod, tuple(out)
+
+
+@lru_cache(None)
+def reexported(mod):
+    """What importing `mod` brings into scope besides `mod` itself. Under the module system only
+    a `public import` passes on; every import of a non-`module` file does."""
+    is_mod, imps = import_kinds(mod)
+    c = set()
+    for i, pub, meta in imps:
+        if not meta and (pub or not is_mod):
+            c.add(i)
+            c |= reexported(i)
+    return frozenset(c)
+
+
 def implied(with_tests):
     if not os.path.isdir(".lake/packages/mathlib"):
         print("note: .lake/packages/mathlib is absent; Mathlib-to-Mathlib edges are not seen",
@@ -109,8 +145,9 @@ def implied(with_tests):
     for f in project_files(with_tests):
         if f == "LeanMlir.lean":
             continue                     # the doc-gen umbrella lists modules on purpose
-        imps = imports_of(module_of(f))
-        red = [x for x in imps if any(x in closure(y) for y in imps if y != x)]
+        # a `meta import` is a different phase: it neither implies nor is implied by a plain one
+        imps = [i for i, _, meta in import_kinds(module_of(f))[1] if not meta]
+        red = [x for x in imps if any(x in reexported(y) for y in imps if y != x)]
         if red:
             bad.append((f, red))
     checked = [(f, r) for f, r in bad if f.startswith(CHECKED_PREFIXES)]
@@ -160,7 +197,8 @@ def compiles_without(path, imp):
     text = open(path).read()
     if re.search(r"^#eval\b", text, re.M):
         return None
-    lines = [l for l in text.split("\n") if l.strip() not in {f"import {d}" for d in drop}]
+    lines = [l for l in text.split("\n")
+             if not ((m := IMP.match(l.strip())) and m.group(1) in drop)]
     with tempfile.NamedTemporaryFile("w", suffix=".lean", dir=tempfile.gettempdir(),
                                      delete=False) as fh:
         fh.write("\n".join(lines))

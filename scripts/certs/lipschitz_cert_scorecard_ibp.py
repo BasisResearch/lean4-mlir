@@ -29,6 +29,7 @@ import inspect
 import numpy as np
 from fractions import Fraction
 from pathlib import Path
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 import lipschitz_cert_scorecard_full as base
 
@@ -184,7 +185,7 @@ def emit_data(results, out_path):
                 emitted.add(i)
     A("end Robustness")
     A("end Proofs")
-    out_path.write_text("\n".join(Lb) + "\n")
+    out_path.write_text(modularize("\n".join(Lb) + "\n"))
     print(f"[data] wrote {out_path}: {len(Lb)} lines")
 
 
@@ -322,7 +323,7 @@ def emit_net(tag, r, out_path):
     A("")
     A("end Robustness")
     A("end Proofs")
-    out_path.write_text("\n".join(Lb) + "\n")
+    out_path.write_text(modularize("\n".join(Lb) + "\n"))
     print(f"[{tag}] wrote {out_path}: {len(Lb)} lines")
 
 results = [(tag, analyze(tag, *base.nets[tag])) for tag in ("SF", "TF")]

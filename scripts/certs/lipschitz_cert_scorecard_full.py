@@ -30,6 +30,7 @@ import numpy as np, os, sys
 from fractions import Fraction
 from math import ceil
 from pathlib import Path
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTDIR = ROOT / "LeanMlir" / "Proofs" / "Certificates"
@@ -381,7 +382,7 @@ def write_files():
         emit_net(A, tag, W1q, W2q, info[tag]["B1"], info[tag]["B2"], info[tag]["L"])
     A("end Robustness")
     A("end Proofs")
-    (OUTDIR / "LipschitzCert/ScorecardFullNets.lean").write_text("\n".join(L1) + "\n")
+    (OUTDIR / "LipschitzCert/ScorecardFullNets.lean").write_text(modularize("\n".join(L1) + "\n"))
 
     # ═══ files 2+3: images (split halves) ═══
 
@@ -402,7 +403,7 @@ def write_files():
                 emit_image(A, i, need[i])
         A("end Robustness")
         A("end Proofs")
-        (OUTDIR / f"LipschitzCert/ScorecardFullImgs{part}.lean").write_text("\n".join(L2) + "\n")
+        (OUTDIR / f"LipschitzCert/ScorecardFullImgs{part}.lean").write_text(modularize("\n".join(L2) + "\n"))
 
     # ═══ file 4: certificates + aggregate ═══
     L4 = []
@@ -490,7 +491,7 @@ def write_files():
     A("")
     A("end Robustness")
     A("end Proofs")
-    (OUTDIR / "LipschitzCert/ScorecardFull.lean").write_text("\n".join(L4) + "\n")
+    (OUTDIR / "LipschitzCert/ScorecardFull.lean").write_text(modularize("\n".join(L4) + "\n"))
 
     tot = sum(len(open(OUTDIR / f"LipschitzCert/ScorecardFull{s}.lean").readlines())
               for s in ("Nets", "ImgsA", "ImgsB", ""))

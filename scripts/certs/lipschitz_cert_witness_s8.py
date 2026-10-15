@@ -3,6 +3,7 @@
 import numpy as np, os, sys, tempfile
 from fractions import Fraction
 from math import ceil
+from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "scripts", "lib"))
@@ -289,5 +290,5 @@ A("  exact (hasFDerivAt_const (fwd xtV) xtV).fderiv")
 A("")
 A("end TrainedMlp")
 A("end Proofs")
-open(os.path.join(ROOT, "LeanMlir/Proofs/Training/Trained/MlpWitness.lean"), "w").write("\n".join(W) + "\n")
+open(os.path.join(ROOT, "LeanMlir/Proofs/Training/Trained/MlpWitness.lean"), "w").write(modularize("\n".join(W) + "\n"))
 print("wrote both")
