@@ -1,0 +1,7 @@
+[sup] 2026-10-15 02:52:39 START job=mnv4-full-e100-4gpu devs=0,1,2,3 epochs=100 rest_after=[none] temp_max=78 stall=1800s logs=runs/2026-10-14-mnv4-full-e100
+[sup] 2026-10-15 02:52:39 cmd: .lake/build/bin/mobilenetv4-imagenet-verified data
+[sup] 2026-10-15 02:52:39 eta: ~15 h for 100 ep on 4x 4060 Ti at 256² (the 500-epoch conf's 2026-10-12 smoke ÷ 5: med 214 ms per 512-row micro-step, 2,496 micro-steps + the streamed f32 eval every 5th epoch; compute-bound)
+[sup] 2026-10-15 02:52:39 attempt 1: resuming at epoch 0/100 (next rest: 999)
+[sup] 2026-10-15 02:52:39   launched PID=4100711 PGID=4100711
+[sup]   last line: done (trained MobileNetV4-Conv-M (ImageNet-1k, paper tier, 256²) accdp8x128wxdropdowd01bf16 + cosine/warmup via packed threading).
+[sup] 2026-10-15 18:28:36 ✅ COMPLETE — 100/100 epochs
