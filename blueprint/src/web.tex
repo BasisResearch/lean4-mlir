@@ -10,6 +10,9 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \graphicspath{{figures/}}
+% "Figure 1-2": the print numbering (print.tex has the reasoning).
+\renewcommand{\thefigure}{\ifnum\value{chapter}>0 \thechapter-\fi\arabic{figure}}
+\renewcommand{\thetable}{\ifnum\value{chapter}>0 \thechapter-\fi\arabic{table}}
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta, calc, fit}
 \usepackage{pgfplots}

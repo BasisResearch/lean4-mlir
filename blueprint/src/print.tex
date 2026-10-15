@@ -30,7 +30,15 @@
 
 \usepackage{graphicx}
 \graphicspath{{figures/}}
-\usepackage{float}   % [H] for the demo photographs: pinned beside the prose that cites them
+\usepackage{float}   % [H] on every figure and table: pinned beside the prose that cites them
+% "Figure 1-2. Caption": numbered within the chapter, hyphen and period in the publisher's
+% house style. Table captions sit above the table. A float before Chapter 1 is
+% numbered without a chapter. scripts/book/book_floats.py holds every graphic and table
+% to a captioned, labelled float.
+\usepackage[font=small, labelsep=period]{caption}
+\captionsetup[table]{position=top}
+\renewcommand{\thefigure}{\ifnum\value{chapter}>0 \thechapter-\fi\arabic{figure}}
+\renewcommand{\thetable}{\ifnum\value{chapter}>0 \thechapter-\fi\arabic{table}}
 
 \usepackage{amssymb, amsthm, mathtools}
 \usepackage[unicode,colorlinks=true,linkcolor=blue,urlcolor=magenta, citecolor=blue]{hyperref}

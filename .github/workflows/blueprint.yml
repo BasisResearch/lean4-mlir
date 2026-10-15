@@ -31,6 +31,7 @@ on:
       # unrelated push happened to touch a trigger path).
       - 'tests/BlueprintCheckDecls.lean'
       - 'scripts/book/blueprint_uses.py'
+      - 'scripts/book/book_floats.py'
       # Fifth instance of the same bug: the docstring gate's SOURCE and its ratchet decide the
       # verdict at the `docstring-checkrefs` step below, and until 2026-09-09 a change to either
       # triggered nothing. The last two emit PUBLISHED content (sitemap, analytics tag).
@@ -81,6 +82,13 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
+      - name: Check every graphic and table is a captioned float
+        # The publisher numbers every figure and table ("Figure 1-2. Caption"). A TikZ diagram or
+        # a tabular set in a bare `center` gets no number and no LaTeX warning; this fails on one.
+        # Runs first: it needs only python and the checkout.
+        run: |
+          python3 scripts/book/book_floats.py
 
       - name: Install elan (Lean toolchain manager)
         # GitHub's release server intermittently returns 504 when fetching

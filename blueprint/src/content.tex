@@ -363,7 +363,10 @@ not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
 toolkit is used straight away by a proven model, so no chapter is pure
 scaffolding.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Theorems per chapter: contracts, witnesses and step certificates, and the primitive or result each chapter adds.}
+\label{tab:theorem_budget}
 \small
 \begin{tabular}{l c c c p{8cm}}
 \hline
@@ -382,7 +385,7 @@ Chapter & Contracts & Witnesses & Steps & New primitive / result \\
                   & \textbf{44} & \textbf{9} & \textbf{37} & total \textbf{90} \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 That's the ladder at a glance. Every chapter's theorems section opens
 with its dependency graph, every box a Lean theorem and a link, and
@@ -839,7 +842,12 @@ structuring a one-\texttt{simp} proof would be ceremony.
 
 \section{The theorems}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch1}
+\caption{Dependency graph of this chapter's theorems. Each box is a statement in this section and a link to it; a dashed box is a dependency that lives elsewhere.}
+\label{fig:depgraph_tensor}
+\end{figure}
 
 {\noindent\small \depgraphlegend{} Every chapter's theorems section opens with
 its own.\par}
@@ -1706,7 +1714,8 @@ The smallest network that learns: a single dense layer mapping
 and plain SGD. About 7,850 parameters. \(\sim\)92\% test accuracy
 in seconds.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -1723,7 +1732,9 @@ in seconds.
   \foreach \a/\b in {input/d1, d1/out}
      \draw[arr] (\a) -- (\b);
 \end{tikzpicture}
-\end{center}
+\caption{The MNIST linear classifier: one dense layer from the flattened image to ten logits.}
+\label{fig:mnist_linear_arch}
+\end{figure}
 
 \paragraph{The forward pass and loss, in math.}
 For an input image \(x \in \R^{784}\) and true class index
@@ -2367,7 +2378,12 @@ theorem is what makes naming it a claim.
 
 \section{The theorems}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch2}
+\caption{Dependency graph of the MLP chapter's theorems.}
+\label{fig:depgraph_mlp}
+\end{figure}
 
 \begin{theorem}[ReLU Jacobian (guarded subgradient)]
   \label{ax:pdiv_relu}
@@ -2579,7 +2595,8 @@ spatial structure.
 
 \subsection*{Architecture}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -2599,7 +2616,9 @@ spatial structure.
   \foreach \a/\b in {input/d1, d1/d2, d2/d3, d3/out}
      \draw[arr] (\a) -- (\b);
 \end{tikzpicture}
-\end{center}
+\caption{The MNIST MLP: two hidden dense layers of width 512 with ReLU, then a dense head to ten logits.}
+\label{fig:mnist_mlp_arch}
+\end{figure}
 
 Three dense layers stacked with ReLU non-linearities between them:
 $784 \to 512 \to 512 \to 10$. First layer ingests the flattened
@@ -2704,7 +2723,8 @@ and two ReLU subgradients rather than one dense layer.
 The run in \S\ref{sec:mlp_runit} is the result. Its per-epoch training
 loss, on a log scale:
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -2722,7 +2742,9 @@ loss, on a log scale:
 };
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Training loss per epoch of the verified MNIST MLP, on a log scale.}
+\label{fig:mlp_loss}
+\end{figure}
 
 \noindent MNIST MLP ($784{\to}512{\to}512{\to}10$), SGD~0.1, 12 epochs,
 log-scale mean training loss per epoch
@@ -2742,7 +2764,8 @@ exactly this: it renders $784{\to}d{\to}d{\to}10$ from the faithful emitter
 and trains it end to end. Sweeping $d$ over the powers of two from 8 to 4096
 (each 12-epoch SGD, on the GPU) gives the accuracy-vs-width curve below.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -2770,7 +2793,9 @@ coordinates {
   {knee $\approx 64$: 97.0\% at 55K params};
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Test accuracy of the verified MNIST MLP against hidden width.}
+\label{fig:mlp_width}
+\end{figure}
 
 \noindent Return on width for the verified MNIST MLP
 ($784{\to}d{\to}d{\to}10$): test accuracy versus hidden width $d$ (log
@@ -2985,7 +3010,8 @@ summary assumes, and this is the chapter to say what that means.
 \medskip\noindent Run this net thirty times and twenty-nine of them land
 between 98.48 and 98.94\%. The thirtieth lands at 97.39\%.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=3.4cm,
@@ -3002,7 +3028,9 @@ coordinates {(97.39,0) (98.48,0) (98.59,0) (98.60,0) (98.67,0) (98.67,0) (98.71,
 coordinates {(97.49,1) (97.55,1) (97.63,1) (97.63,1) (97.64,1) (97.65,1) (97.65,1) (97.69,1) (97.70,1) (97.72,1) (97.75,1) (97.76,1) (97.76,1) (97.76,1) (97.77,1) (97.78,1) (97.78,1) (97.79,1) (97.79,1) (97.80,1) (97.81,1) (97.83,1) (97.84,1) (97.85,1) (97.86,1) (97.86,1) (97.87,1) (97.90,1) (97.92,1) (97.93,1)};
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Final test accuracy of thirty runs each of the MNIST MLP and CNN, one dot per run.}
+\label{fig:mnist_n30}
+\end{figure}
 
 \noindent Thirty seeds of each net, one dot per run
 (\texttt{runs/2026-09-01-mnist-n30/}). The MLP's runs sit in a band; the
@@ -3149,7 +3177,12 @@ respects the image's 2-D structure.
 
 \section{The theorems}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch3}
+\caption{Dependency graph of the convolution chapter's theorems.}
+\label{fig:depgraph_cnn}
+\end{figure}
 
 \begin{definition}[Conv2d forward]
   \label{ax:conv2d}
@@ -3529,7 +3562,8 @@ the same dense head you already know.
 
 \subsection*{Architecture}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -3556,7 +3590,9 @@ the same dense head you already know.
   \foreach \a/\b in {input/c1, c1/c2, c2/p1, p1/fl, fl/d1, d1/d2, d2/d3, d3/out}
      \draw[arr] (\a) -- (\b);
 \end{tikzpicture}
-\end{center}
+\caption{The MNIST CNN: two $3\times3$ convolutions and a max-pool in front of the MLP's dense head.}
+\label{fig:mnist_cnn_arch}
+\end{figure}
 
 Two convolutions lift the 1-channel grayscale input to 32 channels,
 maxPool halves the spatial resolution, then the flattened
@@ -3669,7 +3705,8 @@ their biases, three dense matrices and theirs.
 The run in \S\ref{sec:cnn_runit} is the result. Its per-epoch training
 loss, against Chapter~\ref{chap:mlp}'s MLP on the same recipe:
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -3694,7 +3731,9 @@ loss, against Chapter~\ref{chap:mlp}'s MLP on the same recipe:
 \addlegendentry{CNN (12 epochs)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Training loss per epoch of the MNIST CNN against the MLP, on a log scale.}
+\label{fig:cnn_loss}
+\end{figure}
 
 \noindent MNIST, SGD~0.1, log-scale mean training loss per epoch
 (\texttt{runs/2026-09-01-\{mlp,cnn\}-verified-xla-cuda/}), both nets now on
@@ -3747,7 +3786,8 @@ rendering each width from the faithful CNN emitter. Overlaying that sweep on
 the MLP's (both trained on their own verified StableHLO) shows how little
 the head needs once good convolutional features exist:
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.8cm,
@@ -3779,7 +3819,9 @@ coordinates {
 \addlegendentry{MLP ($784{\to}d{\to}d{\to}10$)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Test accuracy against dense-head width for the CNN, overlaid on the MLP's width sweep.}
+\label{fig:cnn_head_width}
+\end{figure}
 
 \noindent Classifier-head width sweep for the verified CNN (convolutional
 backbone held at 32 channels), overlaid on the MLP width sweep of
@@ -4175,7 +4217,12 @@ chain rule we already had.
 
 \section{The theorems}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch4}
+\caption{Dependency graph of the BatchNorm chapter's theorems.}
+\label{fig:depgraph_bn}
+\end{figure}
 
 \begin{theorem}[BN affine step Jacobian]
   \label{ax:pdiv_bnAffine}
@@ -4738,7 +4785,8 @@ times the MNIST net's two, and that growth in depth, not width, is
 the lineage ResNet-34 (Ch~\ref{chap:residual}) carries to thirty-four
 layers.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -4784,7 +4832,9 @@ layers.
   % Bridge cue: the dense head is exactly the MNIST CNN's.
   \node[stage, align=left] at ($(d1.east)!0.5!(d2.east) + (0.35,0)$) {= MNIST CNN\\head (Ch~\ref{chap:cnn})};
 \end{tikzpicture}
-\end{center}
+\caption{The eight-convolution CIFAR-10 network with BatchNorm.}
+\label{fig:cifar8_arch}
+\end{figure}
 
 \noindent The \texttt{ConvBN} boxes are the with-BN variant. The no-BN
 net is identical with each \texttt{ConvBN} replaced by a plain
@@ -4902,7 +4952,8 @@ warmup, no decay --- because a schedule is a fourth thing changing and
 this section is about the third. Per-epoch test accuracy, the median of
 five runs each, from \texttt{runs/2026-09-01-cifar8w-6arm-constlr/}:
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -4927,7 +4978,9 @@ five runs each, from \texttt{runs/2026-09-01-cifar8w-6arm-constlr/}:
 \addlegendentry{no BN}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{CIFAR-10 test accuracy per epoch with and without BatchNorm, plain SGD at a constant rate.}
+\label{fig:cifar_bn_curves}
+\end{figure}
 
 \noindent CIFAR-10, wide 8-conv net, plain SGD at a constant lr~0.1 on the
 shared pipeline, 40 epochs, BN vs no-BN, through the verified renderer.
@@ -4955,7 +5008,10 @@ optimizers, each at its own tuned learning rate, all on the identical
 pipeline, the same 40 epochs and the same constant rate. Median final
 accuracy, with the observed range across five runs:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Final CIFAR-10 test accuracy by optimizer, with and without BatchNorm: the median of five runs, with the range in parentheses.}
+\label{tab:cifar_optimizers}
 \begin{tabular}{l c c c}
 \hline
        & SGD & momentum & AdamW \\
@@ -4965,7 +5021,7 @@ no BN  & 68.8 {\footnotesize (2.7)} & 72.2 {\footnotesize (3.3)} & 72.8 {\footno
 BN     & 74.5 {\footnotesize (1.1)} & \textbf{76.3 {\footnotesize (1.0)}} & 74.3 {\footnotesize (0.2)} \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent $n=5$ per cell. Parenthesised figures are the range from lowest
 run to highest.
@@ -5070,7 +5126,10 @@ gradients (the first layer's input is the image and needs none). Six
 arms, five seeds each, from
 \texttt{runs/2026-09-01-bnprec-seeds/}:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Final CIFAR-10 test accuracy per seed in fp32 and bf16, for each optimizer.}
+\label{tab:cifar_bf16}
 \small
 \begin{tabular}{l l r r r r r c}
 \hline
@@ -5084,7 +5143,7 @@ AdamW          & fp32 & 74.75 & 75.08 & 73.90 & 73.98 & 74.48 & 74.48 \\
                & bf16 & 74.53 & 73.76 & 74.23 & 74.15 & 73.95 & 74.15 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Medians move by $+0.31$, $-0.02$ and $-0.33$. Each of those is
 smaller than the spread within the corresponding fp32 row --- $1.89$,
@@ -5144,7 +5203,8 @@ parameter of the verified emitter), so we can sweep $d$ from 8 to 4096 and
 train each point on its own proof-rendered StableHLO. Dealt across three
 of the box's four cards, the whole curve is a 22-minute run:
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.2cm,
@@ -5172,7 +5232,9 @@ coordinates {
   {canonical head $d{=}64$};
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{CIFAR-10 test accuracy against dense-head width, with the convolutional backbone fixed.}
+\label{fig:cifar_head_width}
+\end{figure}
 
 \noindent Dense-head width sweep for the 8-conv cifar8 net with per-channel
 BatchNorm, AdamW, 25 epochs under a cosine schedule with a three-epoch
@@ -5496,7 +5558,12 @@ fan-in pattern, persist.
 
 \section{The theorems}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch5}
+\caption{Dependency graph of the residual chapter's theorems.}
+\label{fig:depgraph_residual}
+\end{figure}
 
 \begin{theorem}[Residual block VJP]
   \label{thm:residualHasVJP}
@@ -5875,7 +5942,8 @@ $64, 128, 256, 512$) do the work, and a global average pool replaces
 the flatten-plus-fat-dense head. The inset shows the one new piece:
 each residual block adds its input back, $y = f(x) + x$.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -5932,7 +6000,9 @@ each residual block adds its input back, $y = f(x) + x$.
         node[midway, above, term, violet!70!black] {identity skip ($+\,x$)};
   \node[term, below=0.18cm of f2, gray!55!black] {one residual block: \; $y = f(x) + x$};
 \end{tikzpicture}
-\end{center}
+\caption{ResNet-34: a stem, four stages of residual blocks, global average pooling and a dense head. The inset is one residual block.}
+\label{fig:resnet34_arch}
+\end{figure}
 
 \subsection*{The verified trainer, which is the pattern every later chapter reuses}
 \label{sec:verified_trainer_pattern}
@@ -6205,7 +6275,8 @@ difference from the full recipe measures that component's contribution
 given everything else is present --- not the order-dependent story an
 additive ladder tells.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \pgfplotsset{
   ablationaxis/.style={
@@ -6257,7 +6328,9 @@ additive ladder tells.
     (-7.11,noaug) +- (0.38,0)};
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Leave-one-out ablation of the ResNet-34 recipe on Imagenette, in fp32 and bf16: each arm's top-1 difference from the full recipe, with its 95\% interval over five seeds.}
+\label{fig:r34_ablation}
+\end{figure}
 
 \noindent Each point is plotted as its difference from the full recipe
 rather than as an accuracy, so the line at zero is the baseline and distance
@@ -6291,7 +6364,8 @@ by $1/(1-\mu) = 10$, so the comparison that isolates momentum is against plain
 SGD at ten times the rate --- $0.1$, not $0.01$ --- where both take the same size
 step and differ only in whether a velocity carries it.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 % ── left: the ladder ───────────────────────────────────────────────────────
 \begin{axis}[
@@ -6345,7 +6419,9 @@ step and differ only in whether a velocity carries it.
   \addplot[blue!65!black] coordinates {(1,16.89) (2,27.26) (3,58.60) (4,50.37) (5,58.52) (6,63.11) (7,70.14) (8,69.83) (9,71.36) (10,51.80) (11,66.47) (12,73.61) (13,65.53) (14,70.09) (15,68.20) (16,74.04) (17,79.46) (18,77.66) (19,78.06) (20,80.97) (21,80.71) (22,83.44) (23,81.12) (24,75.36) (25,83.77) (26,81.02) (27,81.12) (28,82.42) (29,82.39) (30,84.92) (31,79.26) (32,84.64) (33,84.28) (34,84.92) (35,85.73) (36,83.06) (37,85.96) (38,82.45) (39,82.42) (40,86.37) (41,85.30) (42,85.61) (43,86.55) (44,86.80) (45,86.45) (46,87.34) (47,87.39) (48,87.21) (49,86.65) (50,87.13) (51,87.87) (52,87.87) (53,87.92) (54,87.36) (55,87.49) (56,87.64) (57,87.49) (58,87.69) (59,87.39) (60,87.85) (61,87.52) (62,87.77) (63,87.87) (64,87.46) (65,87.49) (66,87.57) (67,87.41) (68,87.49) (69,87.41) (70,87.46) (71,87.44) (72,87.75) (73,87.64) (74,87.69) (75,87.67) (76,87.80) (77,87.54) (78,87.72) (79,87.57) (80,87.82)};  \addlegendentry{SGD .1}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{The optimizer arms at a matched step size: their top-1 difference from the full recipe over five seeds, and one run of each epoch by epoch.}
+\label{fig:r34_optimizer_matched}
+\end{figure}
 
 \noindent At a matched step, plain SGD does not merely keep up with momentum ---
 it finishes slightly ahead, by a paired $+0.403 \pm 0.162$ with all five seeds
@@ -6410,7 +6486,10 @@ a throughput choice
 rather than a fidelity one, and is why its column is the faster of the
 two below.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-34 on ImageNet-1k, reference trainer (JAX).}
+\label{tab:r34_jax}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -6418,14 +6497,15 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & $\sim$9.9 min & 90 & $\sim$14.8 hr & $\mathbf{74.14\%}$ & $\mathbf{91.83\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Global batch 256 as $4 \times 64$ replicas; the final checkpoint
 scored over all $50{,}000$ validation images through an fp32 forward, as
 the verified path and \texttt{timm} score, and the run's own bf16
 evaluation lands within $0.01$ of it.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -6452,7 +6532,9 @@ evaluation lands within $0.01$ of it.
 \addlegendentry{top-5}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Validation accuracy per epoch of the ResNet-34 reference run on ImageNet-1k.}
+\label{fig:r34_jax_curve}
+\end{figure}
 
 \noindent The run, epoch by epoch. The kink near epoch~5 is the end of
 warmup; the steady late climb is the cosine anneal.
@@ -6550,7 +6632,10 @@ lake run r34-default-bf16-4gpu
 both replica knobs, the variant, the per-replica batch and the feed setting;
 \S\ref{sec:getting_started_track4} says what the supervisor behind it does.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-34 on ImageNet-1k, verified path (PJRT).}
+\label{tab:r34_pjrt}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -6558,7 +6643,7 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & $\sim$15.8 min & 90 & $\sim$23.7 hr & $\mathbf{74.17\%}$ & $\mathbf{91.89\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Global batch 256 as $4 \times 64$ replicas, bf16 convolutions
 under an fp32 classifier head, BatchNorm statistics all-reduced across
@@ -6576,7 +6661,10 @@ trusted, as it is at every op of an f32 render.
 
 \prosesection{The two paths, side by side}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-34 on ImageNet-1k: the reference and the verified path, row by row.}
+\label{tab:r34_paths}
 \begin{tabular}{@{}l l l@{}}
 \hline
  & reference (JAX) & verified path (PJRT) \\
@@ -6597,7 +6685,7 @@ schedule            & cosine, 5-epoch warmup   & cosine, 5-epoch warmup \\
 \textbf{val top-5}  & $\mathbf{91.83\%}$       & $\mathbf{91.89\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both columns are ResNet-34 on the 2018 recipe, 90 epochs, scored
 over the same $50{,}000$ validation images under the same protocol. Rows
@@ -6628,7 +6716,10 @@ epochs, in both directions, six at the worst on either path --- so the row
 is read for its ends. Over the last fifteen epochs the two average within
 $0.01$ of each other on top-1 and $0.02$ on top-5:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-34 validation top-1 on both paths at selected epochs.}
+\label{tab:r34_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r@{}}
 \hline
 epoch & 5 & 15 & 30 & 45 & 60 & 75 & 90 \\
@@ -6638,9 +6729,10 @@ verified path (PJRT)  & 32.04 & 42.76 & 49.09 & 53.92 & 58.11 & 68.57 & 74.17 \\
 $\Delta$              & $-3.46$ & $-2.56$ & $-0.59$ & $+3.71$ & $-1.73$ & $+0.67$ & $+0.03$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -6665,7 +6757,9 @@ $\Delta$              & $-3.46$ & $-2.56$ & $-0.59$ & $+3.71$ & $-1.73$ & $+0.67
 \addlegendentry{verified path (PJRT)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{ResNet-34 validation top-1 per epoch on both paths.}
+\label{fig:r34_paths_curve}
+\end{figure}
 
 \noindent One recipe, two paths to XLA, scored over all $50{,}000$
 validation images at every epoch.
@@ -6730,7 +6824,10 @@ A3 is LAMB at effective batch
 2048 (accumulated as $4\times512$), BCE over Mixup/CutMix targets binarized
 at \texttt{timm}'s $0.2$ threshold, RandAugment, and train@160 / eval@224.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-50 on ImageNet-1k under the 2018 and RSB-A3 recipes, reference trainer (JAX).}
+\label{tab:r50_jax}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{l l l r r r r r}
 \hline
@@ -6740,7 +6837,7 @@ GPU & Recipe & BN group & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 4060 Ti (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$8.0 min  & 100 & $\sim$13.4 hr & $\mathbf{77.61\%}$ & $\mathbf{93.61\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both rows are the final checkpoints scored over all $50{,}000$
 validation images through an fp32 forward, as the verified path and
@@ -6764,7 +6861,8 @@ number. This A3 is \texttt{timm}'s recipe as \texttt{timm} ran it, on
 both paths; the paragraph after the side-by-side table names the settings
 a bare transcription would miss, and the one not taken.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -6791,7 +6889,9 @@ a bare transcription would miss, and the one not taken.
 \addlegendentry{RSB-A3 (100 ep)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Validation top-1 per epoch of the two ResNet-50 recipes on the reference.}
+\label{fig:r50_jax_curves}
+\end{figure}
 
 \noindent The two recipes on the reference, epoch by epoch. A3 starts far
 lower --- $0.10\%$ at epoch~1 against $4.61\%$ --- because its whole first
@@ -6819,7 +6919,10 @@ lake run r50-2018-bf16-4gpu
 lake run r50-a3-wxclip4x128-bf16-4gpu
 \end{verbatim}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-50 on ImageNet-1k under the 2018 and RSB-A3 recipes, verified path (PJRT).}
+\label{tab:r50_pjrt}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{l l l r r r r r}
 \hline
@@ -6829,7 +6932,7 @@ GPU & Recipe & BN group & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 4060 Ti (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$13.1 min & 100 & $\sim$21.9 hr & $\mathbf{78.08\%}$ & $\mathbf{93.84\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Scored over the same $50{,}000$ images. Both renders all-reduce
 every BatchNorm's mean and variance across the four replicas
@@ -6853,7 +6956,10 @@ rather than per-step.
 
 \prosesection{The two paths, side by side}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-50 on ImageNet-1k: the reference and the verified path, row by row, for both recipes.}
+\label{tab:r50_paths}
 \begin{tabular}{@{}l l l@{}}
 \hline
  & reference (JAX) & verified path (PJRT) \\
@@ -6891,7 +6997,7 @@ train / eval res    & 160 / 224                & 160 / 224 \\
 \textbf{val top-5}  & $\mathbf{93.61\%}$       & $\mathbf{93.84\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both columns are ResNet-50, each block on its recipe, scored over
 the same $50{,}000$ validation images under the same protocol. Rows above
@@ -6956,7 +7062,10 @@ through its bf16 forward on 2018 and through fp32 on A3; the headline
 numbers are the final checkpoints scored through fp32, within $0.04$ of
 the last column):
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-50 validation top-1 at selected epochs, both recipes on both paths.}
+\label{tab:r50_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r r@{}}
 \hline
 epoch & 5 & 15 & 30 & 45 & 60 & 75 & 90 & 100 \\
@@ -6972,9 +7081,10 @@ verified path (PJRT)  & 16.43 & 45.13 & 49.80 & 60.26 & 67.48 & 74.59 & 77.56 & 
 $\Delta$              & $+1.18$ & $+4.59$ & $+11.36$ & $+4.12$ & $-0.98$ & $+1.29$ & $+0.45$ & $+0.48$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.49\linewidth, height=6cm,
@@ -7029,7 +7139,9 @@ $\Delta$              & $+1.18$ & $+4.59$ & $+11.36$ & $+4.12$ & $-0.98$ & $+1.2
 \addlegendentry{verified path (PJRT)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{ResNet-50 validation top-1 per epoch, both recipes on both paths.}
+\label{fig:r50_paths_curves}
+\end{figure}
 
 \noindent Both recipes on both paths, scored over all $50{,}000$ validation
 images at every epoch.
@@ -7047,7 +7159,10 @@ confounding the recipe with the backbone. The backbone and the entry point
 are the same for both, and each recipe has its own spec, shim and render.
 Here is the full diff:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The RSB-A3 recipe against the 2018 recipe on ResNet-50, knob by knob.}
+\label{tab:r50_a3_vs_2018}
 \begin{tabular}{@{}l p{2.9cm} p{3.2cm} p{6.3cm}@{}}
 \hline
 Knob & ResNet-50 (2018) & RSB-A3 (2021) & What the A3 choice buys \\
@@ -7067,7 +7182,7 @@ Train / eval res & $224$ / $224$        & $160$ / $224$                 & FixRes
 BN statistics & global over batch      & Ghost-BN over 512             & side-effect of grad-accum (each micro-step normalizes its own 512); a single big-memory card would remove it \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent What carries over unchanged: cosine LR decay, the 5-epoch
 warmup, the base augmentation in the row above, zero-$\gamma$
@@ -7091,7 +7206,10 @@ A3 is the cheap tier of ``ResNet Strikes Back''. The other two --- A2 at
 as \texttt{a2} and \texttt{a1} (the reference's \texttt{a2-accum} and
 \texttt{a1}), and neither has been run:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The three ResNet Strikes Back tiers on the verified path.}
+\label{tab:r50_rsb_tiers}
 \begin{tabular}{@{}l c c l l@{}}
 \hline
 tier & epochs & train res & verified render & top-1 \\
@@ -7101,7 +7219,7 @@ A2 (\texttt{a2})           & 300 & $224$ & rendered, sd $0.05$, no EMA & $79.8\%
 A1 (\texttt{a1})           & 600 & $224$ & rendered, sd $0.05$, no EMA & $80.4\%$ (paper) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Four artifacts: each tier at four replicas of $128$, in both
 precisions --- under synchronised BatchNorm the recipe's
@@ -7113,7 +7231,10 @@ against A2's $0.02$.
 trainer timed on real ImageNet at the job's shape --- four replicas of $128$
 accumulated four times to $2048$, $625$ optimizer steps an epoch:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Measured step time and projected training time for A2 and A1 on four cards, on each path.}
+\label{tab:r50_a2_a1_time}
 \begin{tabular}{@{}l r r r r r@{}}
 \hline
  & & \multicolumn{2}{c}{reference (JAX)} & \multicolumn{2}{c}{verified path (PJRT)} \\
@@ -7123,7 +7244,7 @@ A2 & $300$ & $1{,}467$ & $76$\,h \;($3.2$\,d)  & $1{,}784$ & $93$\,h \;($3.9$\,d
 A1 & $600$ & $1{,}469$ & $153$\,h \;($6.4$\,d) & $1{,}776$ & $185$\,h \;($7.7$\,d) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent A step is one optimizer step, four micro-batches. Totals are
 training steps alone; evaluation adds a few hours a run.
@@ -7131,7 +7252,10 @@ training steps alone; evaluation adds a few hours a run.
 \medskip\noindent What the two renders carry, and where they stop short of
 the paper:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{What the A2 and A1 renders carry, and what they still leave out.}
+\label{tab:r50_a2_a1_scope}
 \begin{tabular}{@{}p{0.45\linewidth} p{0.47\linewidth}@{}}
 \hline
 In & Still out \\
@@ -7155,7 +7279,7 @@ Also as A3: zero-$\gamma$ bottlenecks, BN decay $0.9$, the fp32 classifier head,
 Optimizer tied at the update, seven variants to ${\sim}10^{-7}$ & \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent\textbf{[TODO: \texttt{timm}'s index-level \texttt{RASampler} for
 the $3\times$ repeats (A3's three are in both tiers' code, and ran on A3);
@@ -7423,7 +7547,12 @@ trade is the whole reason MobileNet exists.
 
 \section{The theorems}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch6}
+\caption{Dependency graph of the depthwise chapter's theorems.}
+\label{fig:depgraph_depthwise}
+\end{figure}
 
 \begin{definition}[Depthwise conv forward]
   \label{ax:depthwiseConv2d}
@@ -7924,7 +8053,8 @@ max-pools, since every downsample is folded into a strided block. The
 inset shows one inverted-residual block: the cheap depthwise spatial mix
 happens at the wide point.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -7984,7 +8114,9 @@ happens at the wide point.
         node[midway, above, term, teal!70!black] {skip if stride 1, $C_{\text{in}}{=}C_{\text{out}}$};
   \node[term, below=0.16cm of dw, gray!55!black] {one inverted-residual block: depthwise spatial mix at the wide point};
 \end{tikzpicture}
-\end{center}
+\caption{MobileNetV2: seven stages of inverted-residual blocks between a strided stem and a $1\times1$ lift to 1280 channels. The inset is one inverted-residual block.}
+\label{fig:mobilenetv2_arch}
+\end{figure}
 
 \subsection*{The verified trainer}
 
@@ -8316,7 +8448,10 @@ long enough. A shortened run of this recipe has to substitute cosine to be
 worth anything, which is a different experiment rather than a cheaper
 version of the same one.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV2 on ImageNet-1k, reference trainer (JAX).}
+\label{tab:mnv2_jax}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -8324,7 +8459,7 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & $6.7$ min & 350 & $38.8$ hr & $\mathbf{71.63\%}$ & $\mathbf{90.46\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Global batch 256 as $4 \times 64$ replicas, scored over all
 $50{,}000$ validation images every epoch. The wall-clock win over the
@@ -8341,7 +8476,8 @@ paper's recipe, at a length the paper leaves open, is not distinguishable
 from the paper's number, which is the claim here and a weaker one than
 closing a gap by a measured amount.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -8365,7 +8501,9 @@ closing a gap by a measured amount.
 \addlegendentry{top-5}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Validation accuracy of the MobileNetV2 reference run, every ten epochs.}
+\label{fig:mnv2_jax_curve}
+\end{figure}
 
 \noindent The run, sampled every 10 epochs. Epoch $100$ has $94\%$ of the
 final accuracy, the run is still climbing at $200$, and the last $50$
@@ -8438,7 +8576,10 @@ rerun's render named in the marker below:
 lake run mnv2-default-4gpu
 \end{verbatim}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV2 on ImageNet-1k, verified path (PJRT).}
+\label{tab:mnv2_pjrt}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -8446,14 +8587,17 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & $9.6$ min & 350 & $55.8$ hr & $\mathbf{71.12\%}$ & $\mathbf{90.04\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Global batch 256 as $4 \times 64$ replicas with synchronised
 BatchNorm statistics, scored over the same $50{,}000$ images every epoch.
 
 \prosesection{The two paths, side by side}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV2 on ImageNet-1k: the reference and the verified path, row by row.}
+\label{tab:mnv2_paths}
 \begin{tabular}{@{}l l l@{}}
 \hline
  & reference (JAX) & verified path (PJRT) \\
@@ -8476,7 +8620,7 @@ weights scored       & raw, epoch 350           & raw, epoch 350 \\
 \textbf{val top-5}   & $\mathbf{90.46\%}$       & $\mathbf{90.04\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both columns are MobileNetV2 on the paper's recipe at 350
 epochs, on the same four RTX 3060 cards, scored over the same $50{,}000$
@@ -8512,7 +8656,10 @@ every depthwise kernel starts $\sqrt{C}$ narrower on the verified path,
 He fan-out over $C \cdot k^2$ against the reference's fan over $k^2$. Those
 rows are open; a run with them matched is what closes them.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV2 validation top-1 on both paths at selected epochs.}
+\label{tab:mnv2_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r@{}}
 \hline
 epoch & 10 & 50 & 100 & 150 & 200 & 300 & 350 \\
@@ -8522,9 +8669,10 @@ verified path (PJRT)  & 50.05 & 63.19 & 67.55 & 69.48 & 70.36 & 71.05 & 71.12 \\
 $\Delta$              & $+0.26$ & $+0.76$ & $+0.23$ & $-0.69$ & $-0.62$ & $-0.43$ & $-0.51$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -8549,7 +8697,9 @@ $\Delta$              & $+0.26$ & $+0.76$ & $+0.23$ & $-0.69$ & $-0.62$ & $-0.43
 \addlegendentry{verified path (PJRT)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{MobileNetV2 validation top-1 on both paths, every ten epochs.}
+\label{fig:mnv2_paths_curve}
+\end{figure}
 
 \noindent One recipe, two paths to XLA, sampled every 10 epochs and scored
 over all $50{,}000$ validation images.
@@ -8567,7 +8717,10 @@ side by side, and it is the base that the next chapter's 2019
 EfficientNet recipe is built on. The entry point is the same on both
 paths, and every row below is one argument or one field:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The MobileNetV2 recipe against ResNet-34's 2018 recipe, knob by knob.}
+\label{tab:mnv2_vs_2018}
 \begin{tabular}{@{}l p{2.9cm} p{3.2cm} p{6.3cm}@{}}
 \hline
 Knob & ResNet-34 (2018) & MobileNetV2 (2018) & What the MNv2 choice buys \\
@@ -8582,7 +8735,7 @@ Label smoothing & $0.1$                & none                          & the pap
 Augmentation  & RRC + hflip            & RRC + hflip                   & unchanged, with no learned policy and no mixing, the leanest recipe in this book \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent What carries over unchanged: batch 256, train and eval both
 at $224$, running-BN evaluation, and bf16 convolution under an fp32
@@ -8631,7 +8784,10 @@ whose per-block instantiation is visible right in the
 in this book. What changed from 2018 to 2024 is at
 least as much recipe as architecture:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV4-Conv-M against MobileNetV2, knob by knob.}
+\label{tab:mnv4_vs_mnv2}
 \begin{tabular}{@{}l p{2.9cm} p{3.2cm} p{6.3cm}@{}}
 \hline
 Knob & MobileNetV2 (2018) & MNv4-Conv-M (2024) & What the v4 choice buys \\
@@ -8651,7 +8807,7 @@ Stochastic depth & none                & drop-path $0.075$             & linear 
 EMA           & none                   & none in the paper; $0.9999$ here, warmup-corrected & weight averaging on both paths below (with the BN buffers shadowed, per Ch~\ref{chap:se}'s lesson), an addition to the paper's recipe that the \texttt{full} tier drops \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The direction of travel matches the recipe tables of
 Chapters~\ref{chap:se} and~\ref{chap:layernorm}: by 2024 the mobile
@@ -8691,7 +8847,10 @@ bf16 convolutions against fp32 master weights, the classifier head in
 fp32; the EMA
 shadow is what gets scored, every five epochs and at the end.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV4-Conv-M on ImageNet-1k, reference trainer (JAX).}
+\label{tab:mnv4_jax}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -8699,7 +8858,7 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & $\sim$9.7 min & 100 & $\sim$16.2 hr & $\mathbf{76.57\%}$ & $\mathbf{92.98\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Micro-batch $512$ as $4 \times 128$ replicas, accumulated
 $8\times$ to the effective $4096$; EMA weights scored over all
@@ -8712,7 +8871,8 @@ By 2024 the mobile line is not trading accuracy for size so
 much as reaching the same accuracy with a block that happens to be
 cheap.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -8736,7 +8896,9 @@ cheap.
 \addlegendentry{top-5}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Validation accuracy of the MobileNetV4-Conv-M reference run, every five epochs.}
+\label{fig:mnv4_jax_curve}
+\end{figure}
 
 \noindent The run, scored every five epochs. The last ten epochs move
 top-1 by $0.09$ ($76.49 \to 76.51 \to 76.57$): the schedule is
@@ -8809,7 +8971,10 @@ sit outside that statement. It runs with:
 lake run mnv4-default-4gpu
 \end{verbatim}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV4-Conv-M on ImageNet-1k, verified path (PJRT).}
+\label{tab:mnv4_pjrt}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -8817,7 +8982,7 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & $\sim$11.1 min & 100 & $\sim$18.5 hr & $\mathbf{76.68\%}$ & $\mathbf{93.14\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Micro-batch $512$ as $4 \times 128$ replicas, accumulated
 $8\times$ as on the reference; EMA weights scored over the same
@@ -8825,7 +8990,10 @@ $50{,}000$ images.
 
 \prosesection{The two paths, side by side}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV4-Conv-M on ImageNet-1k: the reference and the verified path, row by row.}
+\label{tab:mnv4_paths}
 \begin{tabular}{@{}l l l@{}}
 \hline
  & reference (JAX) & verified path (PJRT) \\
@@ -8849,7 +9017,7 @@ weights scored      & EMA shadow               & EMA shadow \\
 \textbf{val top-5}  & $\mathbf{92.98\%}$       & $\mathbf{93.14\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both columns are MobileNetV4-Conv-M on the 100-epoch tier,
 scored over the same $50{,}000$ validation images under the same
@@ -8883,7 +9051,10 @@ not monotonically, it widens again at epochs $25$, $60$ and $70$ ---
 to $0.11$. Over the last three scored epochs the two average within
 $0.15$ of each other on top-1 and $0.18$ on top-5:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{MobileNetV4-Conv-M validation top-1 on both paths at selected epochs.}
+\label{tab:mnv4_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r@{}}
 \hline
 epoch & 5 & 10 & 25 & 50 & 75 & 90 & 100 \\
@@ -8893,9 +9064,10 @@ verified path (PJRT)  & 34.77 & 61.73 & 70.95 & 74.66 & 76.36 & 76.69 & 76.68 \\
 $\Delta$              & $-2.19$ & $+4.40$ & $+1.24$ & $+0.48$ & $+0.37$ & $+0.20$ & $+0.11$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -8920,7 +9092,9 @@ $\Delta$              & $-2.19$ & $+4.40$ & $+1.24$ & $+0.48$ & $+0.37$ & $+0.20
 \addlegendentry{verified path (PJRT)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{MobileNetV4-Conv-M validation top-1 on both paths, every five epochs.}
+\label{fig:mnv4_paths_curve}
+\end{figure}
 
 \noindent One recipe, two paths to XLA, scored every five epochs over
 all $50{,}000$ validation images.
@@ -9151,7 +9325,12 @@ return-on-scaling to show up.
 
 \section{The theorems}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch7}
+\caption{Dependency graph of the squeeze-and-excitation chapter's theorems.}
+\label{fig:depgraph_se}
+\end{figure}
 
 \begin{theorem}[SE block VJP]
   \label{thm:seBlockHasVJP}
@@ -9375,7 +9554,8 @@ $5 \times 5$ depthwise), the $1 \times 1$ lift to 1280, global average
 pool, and dense head. The inset shows one MBConv block, an inverted
 residual with an SE gate (highlighted) inserted before the project.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -9430,7 +9610,9 @@ residual with an SE gate (highlighted) inserted before the project.
         node[midway, above, term, magenta!70!black]{skip if stride 1, $C_{\text{in}}{=}C_{\text{out}}$};
   \node[term, below=0.16cm of s, gray!55!black]{one MBConv block: inverted residual $+$ squeeze-excitation};
 \end{tikzpicture}
-\end{center}
+\caption{EfficientNet-B0: the MobileNetV2 column built from MBConv blocks with squeeze-and-excitation. The inset is one MBConv block.}
+\label{fig:efficientnet_b0_arch}
+\end{figure}
 
 \subsection*{The verified trainer}
 
@@ -9576,7 +9758,10 @@ floor as ResNet-34 and MobileNetV2. The three-chapter comparison --- same
 dataset, same recipe, same eighty epochs, and every row now a measurement
 on the verified XLA path, on one RTX 4060 Ti:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ResNet-34, MobileNetV2 and EfficientNet-B0 on Imagenette: 80 epochs each on the verified path, on one card.}
+\label{tab:imagenette_three}
 \begin{tabular}{l r r r r r r}
 \hline
 Model            & Params  & MLIR       & Step time & Total    & Top-1 & Top-5 \\
@@ -9586,7 +9771,7 @@ MobileNetV2      &  2.24M  & 1{,}071\,KB &  90 ms   & 35 min   & 89.25\% & \text
 EfficientNet-B0  &  4.02M  & 1{,}317\,KB & 103 ms   & 41 min   & 90.04\% & 98.29\% \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Step time is the epoch wall-clock divided by 295 batches, so it
 includes each epoch's validation pass. MLIR sizes are the committed
@@ -9808,7 +9993,10 @@ wired into the reference trainer, emitted into the generated
 \texttt{tf.data} pipeline with each knob gated on a config flag, and left
 off here because the 2019 recipe reaches for AutoAugment instead.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{EfficientNet-B0 on ImageNet-1k, reference trainer (JAX).}
+\label{tab:enet_jax}
 \begin{tabular}{l l r r r r}
 \hline
 GPU & Epochs & Per epoch & Wall-clock & Val top-1 & Val top-5 \\
@@ -9816,7 +10004,7 @@ GPU & Epochs & Per epoch & Wall-clock & Val top-1 & Val top-5 \\
 4$\times$ 3060 & 350 (RMSProp) & $\sim$8.0 min & $46.6$ hr & $\mathbf{77.15\%}$ & $\mathbf{93.30\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent (CUDA, bf16, batch 256.) The run reached
 $\mathbf{77.15\%}$ top-1 / $\mathbf{93.30\%}$ top-5 on the full
@@ -9877,7 +10065,8 @@ minutes per epoch. The headline figure is the EMA weights scored over all
 50{,}000 validation images; the same run's raw weights score
 $76.33\%\,/\,92.90\%$, so the weight average is worth $+0.82$ points:
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -9899,7 +10088,9 @@ $76.33\%\,/\,92.90\%$, so the weight average is worth $+0.82$ points:
 \addlegendentry{top-5}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Validation accuracy per epoch of the 350-epoch EfficientNet-B0 reference run.}
+\label{fig:enet_jax_curve}
+\end{figure}
 
 \noindent EfficientNet-B0 / ImageNet-1k validation accuracy per epoch,
 350-epoch RMSProp run (bf16, 4$\times$ 3060), scored over all
@@ -10005,7 +10196,10 @@ network.
 
 \prosesection{The two paths, side by side}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{EfficientNet-B0 on ImageNet-1k: the reference and the verified path, row by row.}
+\label{tab:enet_paths}
 \begin{tabular}{@{}l l l@{}}
 \hline
  & reference (JAX) & verified path (PJRT) \\
@@ -10032,7 +10226,7 @@ augmentation         & AutoAugment              & AutoAugment \\
 \textbf{val top-5}   & $\mathbf{93.30\%}$       & $\mathbf{93.154\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both columns are EfficientNet-B0 on the paper's RMSProp recipe at
 350 epochs, on the same four RTX 3060 cards, scored over the same
@@ -10093,7 +10287,10 @@ The verified path leads through the first fifty epochs on average ($+0.17$),
 runs about half a point behind from there to epoch~200, and narrows to
 $-0.4$ over epochs 200--250 and $-0.3$ from 250 on, where it stays:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{EfficientNet-B0 validation top-1 on both paths at selected epochs.}
+\label{tab:enet_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r@{}}
 \hline
 epoch & 10 & 50 & 100 & 150 & 200 & 300 & 350 \\
@@ -10103,9 +10300,10 @@ verified path (PJRT)  & 61.79 & 70.22 & 72.83 & 74.41 & 75.50 & 76.54 & 76.88 \\
 $\Delta$              & $+0.10$ & $-0.56$ & $-0.31$ & $-0.66$ & $-0.43$ & $-0.38$ & $-0.30$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -10130,7 +10328,9 @@ $\Delta$              & $+0.10$ & $-0.56$ & $-0.31$ & $-0.66$ & $-0.43$ & $-0.38
 \addlegendentry{verified path (PJRT)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{EfficientNet-B0 validation top-1 on both paths, every ten epochs.}
+\label{fig:enet_paths_curve}
+\end{figure}
 
 \noindent One recipe, two paths to XLA, sampled every 10 epochs and scored
 over all $50{,}000$ validation images. The verified curve's epoch-1
@@ -10154,7 +10354,10 @@ to the 2018 baseline, and Chapter~\ref{chap:layernorm}'s recipe table is
 every row is a one-line change to the \texttt{VerifiedNetSpec}, the
 \texttt{VerifiedConfig}, or the arguments beside them:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The EfficientNet-B0 recipe against ResNet-34's 2018 recipe, knob by knob.}
+\label{tab:enet_vs_2018}
 \begin{tabular}{@{}l p{2.9cm} p{3.2cm} p{6.3cm}@{}}
 \hline
 Knob & ResNet-34 (2018) & EfficientNet-B0 (2019) & What the B0 choice buys \\
@@ -10170,7 +10373,7 @@ Stochastic depth & none                & drop-path $0.2$               & randoml
 EMA           & none                   & decay $0.9999$                & evaluates a smoothed shadow of the weights and the BN buffers (below) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent What carries over unchanged: softmax cross-entropy with
 label smoothing $0.1$, the 5-epoch warmup, random-resized-crop +
@@ -10474,7 +10677,12 @@ how convnets are trained, on one page.
 
 \section{The theorems}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch8}
+\caption{Dependency graph of the LayerNorm chapter's theorems.}
+\label{fig:depgraph_layernorm}
+\end{figure}
 
 \begin{definition}[GELU scalar function]
   \label{ax:geluScalar}
@@ -10734,7 +10942,8 @@ inset shows one ConvNeXt block: an inverted bottleneck with a single
 LayerNorm and GELU, scaled by a learnable $\gamma$ before the residual
 add.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -10791,7 +11000,9 @@ add.
         node[midway, above, term, brown!70!black]{residual};
   \node[term, below=0.16cm of ge, gray!55!black]{one ConvNeXt block: inverted bottleneck, one norm $+$ one activation};
 \end{tikzpicture}
-\end{center}
+\caption{ConvNeXt-T: a patchify stem, four stages of ConvNeXt blocks joined by downsampling layers, and a pooled head. The inset is one ConvNeXt block.}
+\label{fig:convnext_t_arch}
+\end{figure}
 
 \subsection*{The verified trainer}
 
@@ -10931,7 +11142,10 @@ ${\sim}0.50$ label-smoothing floor as the three chapters before it. The
 four-chapter comparison --- same dataset, same recipe, same eighty epochs,
 and every row a measurement on the verified XLA path, on one RTX 4060 Ti:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The four convolutional networks on Imagenette: 80 epochs each on the verified path, on one card.}
+\label{tab:imagenette_four}
 \begin{tabular}{l r r r r r r}
 \hline
 Model            & Params  & MLIR       & Step time & Total    & Top-1 & Top-5 \\
@@ -10942,7 +11156,7 @@ EfficientNet-B0  &  4.02M  & 1{,}317\,KB & 103 ms   & 41 min   & 90.04\% & 98.29
 ConvNeXt-T       & \textbf{27.83M} & 1{,}019\,KB & 188 ms & 1.2 h & 82.27\% & 96.51\% \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Columns as in Chapter~\ref{chap:se}'s table; ResNet-34's row is the five-seed mean of \S\ref{sec:r34_ablation}
 (\texttt{runs/2026-09-12-r34-ablation-fp32-seeds/}) with one seed's timing.
@@ -11119,7 +11333,10 @@ full 300-epoch tier,
 trained and evaluated on an antialiased bicubic resize and scored at the
 paper's protocol, $224$ with a $0.875$ centre crop.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ConvNeXt-T on ImageNet-1k, reference trainer (JAX).}
+\label{tab:cnx_jax}
 \begin{tabular}{l l r r r r}
 \hline
 GPU & Epochs & Per epoch & Wall-clock & Val top-1 & Val top-5 \\
@@ -11127,7 +11344,7 @@ GPU & Epochs & Per epoch & Wall-clock & Val top-1 & Val top-5 \\
 4$\times$ 3060 & 300 & $15.3$ min & $76.5$ hr & $\mathbf{81.53\%}$ & $\mathbf{95.50\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both figures are the exponential moving average of the
 weights, scored over all $50{,}000$ validation images. The raw weights
@@ -11165,7 +11382,8 @@ decoupled step plus the grad-clip makes the peak LR a non-event, which is
 what lets the heavy augmentation run to schedule instead of destabilizing
 it early.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -11187,7 +11405,9 @@ it early.
 \addlegendentry{top-5}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Validation accuracy per epoch of the 300-epoch ConvNeXt-T reference run.}
+\label{fig:cnx_jax_curve}
+\end{figure}
 
 \noindent ConvNeXt-T / ImageNet-1k validation accuracy per epoch over the
 full 300-epoch schedule (bf16, 4$\times$ 3060), every point the EMA weights
@@ -11259,7 +11479,10 @@ the shim. It runs with:
 lake run cnx-default-4gpu
 \end{verbatim}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ConvNeXt-T on ImageNet-1k, verified path (PJRT).}
+\label{tab:cnx_pjrt}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -11267,7 +11490,7 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & 18.3 min & 300 & 91.3 hr & $\mathbf{81.30\%}$ & $\mathbf{95.61\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Global batch 256 as $4 \times 64$ replicas at the reference's
 $2.5\mathrm{e}{-4}$ and its 5{,}004 steps per epoch; the raw weights at
@@ -11276,7 +11499,10 @@ epoch was 291, at $81.39\%$.
 
 \prosesection{The two paths, side by side}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ConvNeXt-T on ImageNet-1k: the reference and the verified path, row by row.}
+\label{tab:cnx_paths}
 \begin{tabular}{@{}l l l@{}}
 \hline
  & reference (JAX) & verified path (PJRT) \\
@@ -11301,7 +11527,7 @@ scored               & raw weights, epoch 300   & raw weights, epoch 300 \\
 \textbf{val top-5}   & $\mathbf{95.50\%}$       & $\mathbf{95.61\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both columns are ConvNeXt-T on the paper's recipe, 300 epochs,
 on the same four RTX 3060 cards, scored over the same $50{,}000$
@@ -11355,7 +11581,10 @@ raw against raw. A raw reference curve cannot be rebuilt after the fact
 which is why the reference section measured the EMA's worth at the end,
 where it is $0.03$, and not along the way, where it is several points.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ConvNeXt-T validation top-1 at selected epochs: the reference's EMA weights against the verified path's raw weights.}
+\label{tab:cnx_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r@{}}
 \hline
 epoch & 5 & 50 & 100 & 150 & 200 & 250 & 300 \\
@@ -11365,9 +11594,10 @@ verified path (PJRT, raw)   & 4.24 & 72.22 & 75.85 & 77.88 & 79.57 & 81.00 & 81.
 $\Delta$                    & $+0.41$ & $-3.50$ & $-2.94$ & $-2.27$ & $-1.35$ & $-0.51$ & $-0.23$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -11389,7 +11619,9 @@ $\Delta$                    & $+0.41$ & $-3.50$ & $-2.94$ & $-2.27$ & $-1.35$ & 
 \addlegendentry{verified path (PJRT, raw)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{ConvNeXt-T validation top-1 per epoch on both paths.}
+\label{fig:cnx_paths_curve}
+\end{figure}
 
 \noindent One recipe, two paths to XLA, every epoch, scored over all
 $50{,}000$ validation images.
@@ -11420,7 +11652,10 @@ the diff below is the chapter in table form. The
 every row is a one-line change to the \texttt{VerifiedNetSpec}, the
 \texttt{VerifiedConfig}, or the arguments beside them:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The ConvNeXt-T recipe against ResNet-34's 2018 recipe, knob by knob.}
+\label{tab:cnx_vs_2018}
 \begin{tabular}{@{}l p{2.9cm} p{3.2cm} p{6.3cm}@{}}
 \hline
 Knob & ResNet-34 (2018) & ConvNeXt-T (2022) & What the ConvNeXt choice buys \\
@@ -11438,7 +11673,7 @@ EMA           & none                   & decay $0.9999$                & evaluat
 Grad clip     & none                   & global-norm $1.0$             & this book's addition, not the paper's: cheap insurance that made the peak LR a non-event \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent What carries over unchanged: cosine LR decay, the
 warmup-then-anneal structure, random-resized-crop + horizontal flip
@@ -11475,7 +11710,10 @@ from 9 blocks to 27 and touches nothing else; \textbf{B} does that and
 widens every stage, $96/192/384/768 \to 128/256/512/1024$. On the JAX side both
 are parameter edits. On the verified side they are not the same job at all.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ConvNeXt-T, S and B: shape, parameter count, and graph time in fp32 and bf16.}
+\label{tab:cnx_sb_sizes}
 \begin{tabular}{@{}l l c r@{}}
 \hline
 model & shape & params & graph, one card bs$32$: fp32 $\to$ bf16 \\
@@ -11485,7 +11723,7 @@ ConvNeXt-S & $27$ blocks, $96$ wide & $50{,}223{,}688$ & $255.2 \to 105.3$\,ms \
 ConvNeXt-B & $27$ blocks, $128$ wide& $88{,}591{,}464$ & $378.6 \to 158.0$\,ms \;($2.40\times$) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Every number in this section was measured on
 4$\times$ RTX 4060 Ti (16\,GB, CUDA 12.9). Counts are \texttt{\#guard}ed at
@@ -11497,7 +11735,10 @@ jobs' own shape --- $64$ per replica, sixteen micro-batches accumulated to
 the official $4096$, $312$ updates an epoch --- with each path's own
 trainer timed on real ImageNet (the 2026-10-12 smokes):
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Measured step time and projected 300-epoch training time for ConvNeXt-S and B on four cards, on each path.}
+\label{tab:cnx_sb_time}
 \begin{tabular}{@{}l r r r r@{}}
 \hline
  & \multicolumn{2}{c}{reference (JAX)} & \multicolumn{2}{c}{verified path (PJRT)} \\
@@ -11507,7 +11748,7 @@ ConvNeXt-S & $247$ & $106$\,h \;($4.4$\,d) & $323$ & $144$\,h \;($6.0$\,d) \\
 ConvNeXt-B & $352$ & $151$\,h \;($6.3$\,d) & $491$ & $219$\,h \;($9.1$\,d) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Totals include the per-epoch evaluation; the verified steps are
 fed, $3$--$7$\,ms of them waiting on the shim. All four are compute-bound.
@@ -11752,7 +11993,12 @@ made concrete.
 \section{Matrix-level machinery}
 \label{sec:matrix_machinery}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch9_matrix_level_machinery}
+\caption{Dependency graph of the matrix-level machinery.}
+\label{fig:depgraph_matrix}
+\end{figure}
 
 Attention is fundamentally matrix algebra: queries times keys
 transposed (\(QK^T\)), softmax over rows of the resulting matrix,
@@ -12138,9 +12384,19 @@ Jacobian (Theorem~\ref{thm:pdivMat_transpose}) with \(dY\):
 \section{Attention proofs}
 \label{sec:attention_proofs}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch9_attention_proofs_1}
+\caption{Dependency graph of the attention proofs, part 1 of 2.}
+\label{fig:depgraph_attention_1}
+\end{figure}
 
+\begin{figure}[H]
+\centering
 \input{figures/depgraph/ch9_attention_proofs_2}
+\caption{Dependency graph of the attention proofs, part 2 of 2: multi-head attention and what is built on it.}
+\label{fig:depgraph_attention_2}
+\end{figure}
 
 \begin{theorem}[Softmax Jacobian]
   \label{ax:pdiv_softmax}
@@ -12939,7 +13195,8 @@ runs twelve pre-norm blocks, and a final LayerNorm feeds the CLS token
 to a dense head. The inset shows one of the twelve transformer blocks,
 which is two residual sub-blocks, attention then MLP, each pre-normed.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
   >={Stealth[length=1.8mm]},
   every node/.style={font=\sffamily\scriptsize},
@@ -12989,7 +13246,9 @@ which is two residual sub-blocks, attention then MLP, each pre-normed.
         node[midway, above, term, blue!45!violet]{$+\,z$};
   \node[term, below=0.18cm of ln2, gray!55!black]{one transformer block: $z = x + \mathrm{MHSA}(\mathrm{LN}\,x)$, \ $y = z + \mathrm{MLP}(\mathrm{LN}\,z)$};
 \end{tikzpicture}
-\end{center}
+\caption{ViT-Tiny: patch embedding, twelve pre-norm transformer blocks, and a dense head on the CLS token. The inset is one transformer block.}
+\label{fig:vit_tiny_arch}
+\end{figure}
 
 \subsection*{The verified trainer}
 
@@ -13130,7 +13389,10 @@ top-5. That completes the Part-1 column, and every row of it is now a
 measurement on the verified XLA path at the same dataset, the same
 eighty epochs, and one RTX 4060 Ti:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The five Part~1 networks on Imagenette: 80 epochs each on the verified path, on one card.}
+\label{tab:imagenette_five}
 \begin{tabular}{l r r r r r r}
 \hline
 Model            & Params  & MLIR       & Step time & Total    & Top-1 & Top-5 \\
@@ -13142,7 +13404,7 @@ ConvNeXt-T       & 27.83M  & 1{,}019\,KB & 188 ms   & 1.2 h    & 82.27\% & 96.51
 ViT-Tiny         &  5.53M  & 1{,}282\,KB & \textbf{61 ms} & \textbf{24 min} & 68.74\% & 90.42\% \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Columns as in Chapter~\ref{chap:se}'s table; ResNet-34's row is the five-seed mean of \S\ref{sec:r34_ablation}
 (\texttt{runs/2026-09-12-r34-ablation-fp32-seeds/}) with one seed's timing.
@@ -13336,7 +13598,10 @@ multiple is below the convnets' because ViT-Ti's matmuls are narrow
 ($d{=}192$) and proportionally more time goes to the fp32
 LayerNorm/softmax that bf16 leaves alone.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ViT-Tiny on ImageNet-1k, reference trainer (JAX).}
+\label{tab:vit_jax}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -13344,7 +13609,7 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & 9.1 min & 300 & 45.9 hr & $\mathbf{72.07\%}$ & $\mathbf{91.00\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Global batch 512 as $4 \times 128$ replicas, the EMA weights
 scored over all $50{,}000$ validation images; one attempt, no restarts.
@@ -13356,7 +13621,8 @@ $50{,}000$ images, so the shadow's gain is real, if small). At
 $n = 50{,}000$ the Wilson 95\% interval is $\pm0.39$ points either way:
 on the paper's number, not under it in any meaningful sense.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -13383,7 +13649,9 @@ on the paper's number, not under it in any meaningful sense.
 \addlegendentry{top-5}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{Validation accuracy of the ViT-Tiny reference run, every five epochs.}
+\label{fig:vit_jax_curve}
+\end{figure}
 
 \noindent The run, sampled every 5 epochs. The slow start is Mixup and
 CutMix blending the labels, compounded by the EMA shadow lagging the live
@@ -13493,7 +13761,10 @@ the marker below:
 lake run vit-default-emabf16-4gpu
 \end{verbatim}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ViT-Tiny on ImageNet-1k, verified path (PJRT).}
+\label{tab:vit_pjrt}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
@@ -13501,7 +13772,7 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 4$\times$ 3060 (CUDA) & bf16 & 13.0 min & 300 & 64.9 hr & $\mathbf{72.42\%}$ & $\mathbf{91.21\%}$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Global batch 512 as $4 \times 128$ replicas, the EMA weights
 scored over the same $50{,}000$ images; one attempt, no restarts, every
@@ -13510,7 +13781,10 @@ DeiT-Ti's own $72.2$ / $91.1$ to within a twentieth of a point.
 
 \prosesection{The two paths, side by side}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ViT-Tiny on ImageNet-1k: the reference and the verified path, row by row.}
+\label{tab:vit_paths}
 \begin{tabular}{@{}l l l@{}}
 \hline
  & reference (JAX) & verified path (PJRT) \\
@@ -13537,7 +13811,7 @@ EMA (scored)         & 0.99996                  & 0.99996 \\
 live weights, top-1 / top-5 & 71.86 / 90.88     & 72.15 / 91.11 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Both columns are ViT-Tiny on the DeiT-Ti recipe, 300 epochs, on
 the same four RTX 3060 cards, scored over the same $50{,}000$ validation
@@ -13588,7 +13862,10 @@ against $13.99$ at epoch~5, $48.27$ against $48.24$ at~25 --- and from
 epoch~40 the verified path sits between a tenth and half a point ahead,
 to the end, never reversing:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ViT-Tiny validation top-1 on both paths at selected epochs.}
+\label{tab:vit_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r@{}}
 \hline
 epoch & 5 & 50 & 100 & 150 & 200 & 250 & 300 \\
@@ -13598,9 +13875,10 @@ verified path (PJRT)  & 13.89 & 57.26 & 63.60 & 66.78 & 69.15 & 71.38 & 72.42 \\
 $\Delta$              & $-0.11$ & $+0.21$ & $+0.45$ & $+0.46$ & $+0.40$ & $+0.36$ & $+0.34$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
@@ -13625,7 +13903,9 @@ $\Delta$              & $-0.11$ & $+0.21$ & $+0.45$ & $+0.46$ & $+0.40$ & $+0.36
 \addlegendentry{verified path (PJRT)}
 \end{axis}
 \end{tikzpicture}
-\end{center}
+\caption{ViT-Tiny validation top-1 on both paths, every five epochs.}
+\label{fig:vit_paths_curve}
+\end{figure}
 
 \noindent One recipe, two paths to XLA, sampled every 5 epochs and scored
 over all $50{,}000$ validation images.
@@ -13672,7 +13952,10 @@ $128$ rows. The validation accuracies remain the comparison.
 Small and Base are the same twelve blocks at a wider model dimension, with the
 MLP at $4D$ throughout. Depth never moves.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ViT-Ti, S and B: shape, parameter count, and graph time in fp32 and bf16.}
+\label{tab:vit_sb_sizes}
 \begin{tabular}{@{}l l c r@{}}
 \hline
 model & shape & params & graph, 4 cards $128$/dev: fp32 $\to$ bf16 \\
@@ -13682,7 +13965,7 @@ ViT-S  & $12$ blocks, $D{=}384$ / 6 heads  & $22{,}050{,}664$ & $464.0 \to 245.5
 ViT-B  & $12$ blocks, $D{=}768$ / 12 heads & $86{,}567{,}656$ & $1295.6 \to 745.3$\,ms \;($1.74\times$) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Counts \texttt{\#guard} against DeiT-S's $22.05$\,M and DeiT-B's
 $86.57$\,M. These are the graph's times, all-reduce in and no trainer around
@@ -13698,7 +13981,10 @@ jobs' own shape --- DeiT's $1024$, $1{,}251$ optimizer steps an epoch ---
 with each path's own trainer timed on real ImageNet (the 2026-10-11
 smokes, on the 4060~Ti box):
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Measured step time and projected 300-epoch training time for ViT-S and B on four cards, on each path.}
+\label{tab:vit_sb_time}
 \begin{tabular}{@{}l r r r r@{}}
 \hline
  & \multicolumn{2}{c}{reference (JAX)} & \multicolumn{2}{c}{verified path (PJRT)} \\
@@ -13708,7 +13994,7 @@ ViT-S & $648$     & $72$\,h \;($3.0$\,d)  & $650$     & $72$\,h \;($3.0$\,d) \\
 ViT-B & $1{,}700$ & $180$\,h \;($7.5$\,d) & $1{,}718$ & $187$\,h \;($7.8$\,d) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Steps are $1{,}024$ rows; the JAX side accumulates two of $512$,
 and ViT-B's verified render two micro-steps of $4 \times 128$ at $859$\,ms
@@ -13835,7 +14121,8 @@ were drafted earlier and already sit in \texttt{Types.lean}).
 Formalizing every sub-op of every modern architecture would be an
 asymptote we don't approach.
 
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[scale=0.9277, transform shape,
   font=\sffamily,
   chip/.style = {draw, rounded corners=2pt, align=center, minimum height=0.46cm, minimum width=2.0cm, font=\sffamily\scriptsize, inner sep=1pt},
@@ -13915,7 +14202,9 @@ asymptote we don't approach.
 \path[fill,dotr] (10.9,-13.45) circle (0.082); \draw[black!45,line width=0.25pt] (10.9,-13.45) circle (0.082);
 \node[font=\sffamily\scriptsize, anchor=west] at (11.07,-13.45) {ConvNeXt $\to$ ViT (ch 8--9)};
 \end{tikzpicture}%
-\end{center}
+\caption{The operations of the verified spine (Chapters 1--9) against the primitives the bestiary adds.}
+\label{fig:operation_inventory}
+\end{figure}
 
 \section{Bestiary-only \texttt{Layer} primitives}
 \label{sec:bestiary_primitives}
@@ -14316,7 +14605,10 @@ trick repeated.
 
 All four paper variants:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The four VGG variants: convolutions per stage and parameter count.}
+\label{tab:bestiary_vgg}
 \begin{tabular}{l c r}
 \hline
 Name    & Per-stage convs    & Params \\
@@ -14327,7 +14619,7 @@ VGG-16  & (2, 2, 3, 3, 3)    & 138.4M \\
 VGG-19  & (2, 2, 4, 4, 4)    & 143.7M \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 All paper-exact. The big numbers come almost entirely from the FC
 head: the first dense layer alone ($7\times 7\times 512 \to 4096$)
@@ -14419,7 +14711,10 @@ around a residual skip --- three convs per block instead of two,
 but the expensive $3\times 3$ now runs at $1/4$ the input channels,
 so per-block parameter count actually drops.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The standard ResNet family: block type, blocks per stage and parameter count.}
+\label{tab:bestiary_resnet}
 \begin{tabular}{l l c r}
 \hline
 Name & Block & Stage block counts & Params \\
@@ -14431,7 +14726,7 @@ ResNet-101 & bottleneck & (3, 4, 23, 3) & 44.5M (paper 44.5M) \\
 ResNet-152 & bottleneck & (3, 8, 36, 3) & 60.2M (paper 60.2M) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 All three share the same stem ($7\times 7$ stride-2 conv +
 $3\times 3$ stride-2 max pool), the same 4-stage layout (channels
@@ -14484,7 +14779,10 @@ fewer parameters and several times faster training, and WRN-28-10
 (36.5M in the paper) beats it. Width turned out to be a more efficient axis to scale than
 depth.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Wide ResNet variants: depth, widening factor and parameter count.}
+\label{tab:bestiary_wrn}
 \begin{tabular}{l c c r}
 \hline
 Name      & Depth & $k$  & Params \\
@@ -14494,7 +14792,7 @@ WRN-40-2  & 40    & 2    &  2.2M  \\
 WRN-22-8  & 22    & 8    & 17.2M  \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 All paper-exact. The \texttt{N-k} naming follows the paper:
 $N$ is depth (must be $6n+4$ for some $n$ to balance the 3-stage
@@ -14528,7 +14826,10 @@ via the fire module (Iandola et al.\ 2016,
 expand 1$\times$1 + 3$\times$3 convs concatenated. The early
 efficiency-CNN family alongside MobileNet and ShuffleNet.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{SqueezeNet 1.0 and 1.1.}
+\label{tab:bestiary_squeezenet}
 \begin{tabular}{l c r}
 \hline
 Name           & Stem               & Params \\
@@ -14537,7 +14838,7 @@ SqueezeNet 1.0 & 7$\times$7 stride 2 (96 ch) & 1.25M \\
 SqueezeNet 1.1 & 3$\times$3 stride 2 (64 ch), earlier downsample & 1.24M \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 Both paper-exact, plus a tiny fixture. SqueezeNet 1.1 is the
 default for downstream use --- same accuracy at $\sim$2$\times$
@@ -14711,7 +15012,10 @@ layers' outputs. Each layer adds only \texttt{growth\_rate} new
 channels (32 in the paper), so the per-layer parameter count stays
 small while feature reuse compounds.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{DenseNet variants: blocks per stage and parameter count.}
+\label{tab:bestiary_densenet}
 \begin{tabular}{l c r}
 \hline
 Name          & Block counts        & Params              \\
@@ -14721,7 +15025,7 @@ DenseNet-169  & (6, 12, 32, 32)     & 12.5M  \\
 DenseNet-201  & (6, 12, 48, 32)     & 18.1M  \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 These specs end in a 10-class (Imagenette) classifier, so they sit below
 the paper's 1000-class models by that layer. Plus a tiny fixture for
@@ -14900,7 +15204,10 @@ and is not the benchmark's protocol. The catalog entry below keeps the
 paper-exact YOLOv1 shape for the historical record; this is the trained
 detector beside it.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Detection on VisDrone validation: mAP@0.5, recall and class-agnostic AP for each arm.}
+\label{tab:visdrone_results}
 \small
 \begin{tabular}{l c c c}
 \hline
@@ -14916,7 +15223,7 @@ YOLOv8s, matched budget & 0.140 & --- & --- \\
 YOLOv8s, 100\,ep, 640\,px, full aug & 0.391 & 0.400 & --- \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \begin{figure}[H]
 \centering
@@ -15112,7 +15419,10 @@ uncapped ground truth. The single-grid arm is the same ResNet-34 and the same
 bootstrap under a one-grid YOLOv1 head at $448/14$, run for the same 30
 epochs.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Detection on the NEU-DET test split: the R34+FPN arms, the single-grid head, and published detectors.}
+\label{tab:neudet_results}
 \small
 \begin{tabular}{l c c c}
 \hline
@@ -15126,9 +15436,12 @@ published stock detectors, $640$\,px, 300\,ep & 0.73--0.78 & --- & --- \\
 published improved variants & $\approx 0.83$ & --- & --- \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The same two detection heads on VisDrone validation.}
+\label{tab:neudet_visdrone_heads}
 \small
 \begin{tabular}{l c c c}
 \hline
@@ -15138,7 +15451,7 @@ VisDrone val, the same two heads & mAP@0.5 & recall & class-agnostic AP \\
 \textbf{R34, single $14\times14$ grid}, 12\,ep & \textbf{0.0391} & 0.184 & 0.107 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \begin{figure}[H]
 \centering
@@ -15225,7 +15538,10 @@ the validation tenth and the numbers below are the test tenth at that
 epoch, three seeds for the chapter net, with a $95\%$ Wilson interval on
 the pooled $\approx 16{,}200$ trials of $\pm 0.2$ (random) and $\pm 0.6$ (blocked).
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{ArASL test accuracy under a random and a blocked split.}
+\label{tab:arasl_results}
 \small
 \begin{tabular}{l c c p{4.8cm}}
 \hline
@@ -15242,7 +15558,7 @@ published CNNs, from scratch & 96.6--97.6 & --- & 2020--23 \\
 published transfer / transformer & 99.3--99.6 & --- & ViT, EfficientNet-B2, 2024--25 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \begin{figure}[H]
 \centering
@@ -15322,7 +15638,10 @@ train on. (A near-duplicate audit of PlantVillage finds none, and the
 maintainers' own leaf-grouped split gives the same number as a random one;
 whatever the lab number hides, it is not a repeated frame.)
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Accuracy on the PlantVillage test split and on the PlantDoc field photographs.}
+\label{tab:plantvillage_results}
 \small
 \begin{tabular}{l c c p{3.9cm}}
 \hline
@@ -15340,7 +15659,7 @@ published, PlantVillage random split & 99.35 & --- & Mohanty et al.\ 2016 \\
 published, on images from elsewhere & --- & $\approx 31$ & Mohanty et al.\ 2016 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent \textbf{The first two columns are the result.} The net that
 scores $99.6\%$ in the laboratory scores $18\%$ in the field ($2{,}578$
@@ -15349,7 +15668,10 @@ the distribution was. The rest of the section asks the net what it learned,
 with three instruments that need only the trained weights and the leaf mask
 PlantVillage ships with every image.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{What the PlantVillage net responds to: edited test leaves and two explainers, for the base net and the net trained with backgrounds.}
+\label{tab:plantvillage_probes}
 \small
 \begin{tabular}{l c c}
 \hline
@@ -15366,7 +15688,7 @@ Shapley value: images where the background helps & 88\% & 71\% \\
 class-activation map: share of the map inside the leaf (uniform map: 59\%) & 71\% & 79\% \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The upper rows are counterfactuals: the same test leaves, edited.
 The lower rows are the two explainers. The class-activation map is the
@@ -15453,7 +15775,10 @@ infrared), \texttt{ms10} (the ten bands at 10 and 20~m), \texttt{all}
 no visible light at all); 80 epochs with flips and rotations, three seeds,
 five minutes an arm on one card. Nothing in the codegen moves.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Accuracy by input bands, on EuroSAT test and on the Amazon and Cerrado windows.}
+\label{tab:eurosat_bands}
 \footnotesize
 \setlength{\tabcolsep}{5pt}
 \begin{tabular}{l c c c c c}
@@ -15471,7 +15796,7 @@ trained in Brazil, five-fold & --- & \multicolumn{3}{c}{\texttt{rgb} 94.2 $\pm$ 
 Helber et al.\ 2019, ResNet-50 & 98.6 & --- & --- & --- & --- \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent \textbf{The first column is the literature's question and the
 second is the demo's.} In Europe the ten invisible bands are worth about a
@@ -15572,7 +15897,10 @@ tumour), TC (tumour core) and ET (enhancing tumour) --- pooled over the 2{,}569
 tumour-bearing validation slices, ten epochs of plain per-pixel cross-entropy
 gives:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The ResNet-34 UNet on BraTS validation: mIoU, and Dice on the three tumour regions, pooled over the tumour-bearing slices.}
+\label{tab:brats_dice}
 \begin{tabular}{lcccc}
 \hline
  & mIoU & WT & TC & ET \\
@@ -15580,7 +15908,7 @@ gives:
 ResNet-34 UNet (\texttt{unet-brats-r34}) & 0.741 & 0.910 & 0.867 & 0.856 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Rendered predictions are Figure~\ref{fig:brats_unet} --- T1gd
 backdrop, ground truth, prediction, on four held-out patients. This matters more
@@ -15647,7 +15975,10 @@ the same backbone, data and schedule with the decoder's skip connections
 removed --- upsample and convolve, but never concatenate the encoder feature ---
 isolates exactly what they contribute:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The UNet decoder with and without its skip connections.}
+\label{tab:brats_skips}
 \begin{tabular}{lcccc}
 \hline
 decoder & mIoU & WT & TC & ET \\
@@ -15656,7 +15987,7 @@ upsample only (no skips) & 0.633 & 0.871 & 0.814 & 0.733 \\
 \texttt{.unetUp} (skips)  & \textbf{0.741} & \textbf{0.910} & \textbf{0.867} & \textbf{0.856} \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Roughly ten points of mIoU, and the largest single gain is on ET
 ($+0.12$), the smallest and thinnest structure --- which is what the bullet
@@ -15676,7 +16007,10 @@ computes that from a whole-volume export of the 73 validation patients
 number on the same slices, where it agrees with the trainer's log line to
 $0.0004$. Best-by-val checkpoints:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Per-patient Dice on BraTS validation: the mean, with the median in parentheses.}
+\label{tab:brats_per_patient}
 \begin{tabular}{lccc}
 \hline
 per-patient mean Dice (median) & WT & TC & ET \\
@@ -15690,7 +16024,7 @@ ResNet-34 UNet, 2.5D ($\pm 1$ slice) & 0.893 (0.916) & 0.824 (0.868) & 0.788 (0.
 3D UNet, $128^3$ patches, 20k steps (JAX) & 0.900 (0.918) & 0.827 (0.868) & 0.808 (0.867) \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Two things the pooled number hid. The tumour-free slices cost almost
 nothing: pooled over every slice the Dice is within $0.003$ of the tumour-slice
@@ -15722,7 +16056,10 @@ comparison below applies the usual BraTS post-process to every model ---
 enhancing-tumour predictions under 200 voxels in a volume are relabelled as
 core --- and reads two seeds a side:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Per-patient Dice after the size post-process, two seeds each: the slice UNet against the 3D UNet.}
+\label{tab:brats_3d}
 \begin{tabular}{lcccc}
 \hline
 per-patient Dice, mean $\cdot$ worst tenth & WT & TC & ET & ET false alarms \\
@@ -15733,7 +16070,7 @@ ResNet-34 UNet, seed 1 & 0.891 $\cdot$ 0.699 & 0.818 $\cdot$ 0.453 & 0.801 $\cdo
 3D UNet, seed 1        & 0.903 $\cdot$ 0.772 & 0.830 $\cdot$ 0.521 & 0.805 $\cdot$ 0.440 & 1.03\% \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The worst tenth is the seven lowest-scoring of the 73 patients, and
 a false alarm is a slice with no enhancing tumour in the ground truth on which
@@ -16367,7 +16704,10 @@ statistics work. What matters more than any row is that the scale is
 bracketed at both ends, since a metric that only ever reports ``bad'' is
 indistinguishable from a broken one:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Generated MNIST scored by the verified CNN, bracketed by real data above and unstructured pixels below.}
+\label{tab:ddpm_scores}
 \begin{tabular}{@{}l c c r c@{}}
 \hline
 & coverage & confidence & energy ($\times$ floor) & pixel mean \\
@@ -16378,7 +16718,7 @@ the model, deterministic DDIM      & 10/10 & $90.94\%$ & $0.0237$ \;($15\times$)
 unstructured pixels                &  4/10 & $58.47\%$ & $0.3674$ \;($231\times$)& $0.132$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The instrument scores $98.66\%$ on the real split, which is the check
 that its weights loaded. Its first run caught a broken checkpoint --- pixels
@@ -16406,7 +16746,10 @@ between them that DDIM's $\eta$ (Song, Meng \& Ermon 2020,
 So it can be measured. Energy distance against real MNIST, budget in network
 evaluations:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Energy distance to real MNIST by sampler and number of network evaluations.}
+\label{tab:ddpm_samplers}
 \begin{tabular}{@{}l c c c c@{}}
 \hline
 sampler & NFE $10$ & NFE $20$ & NFE $50$ & NFE $200$ \\
@@ -16417,7 +16760,7 @@ reverse SDE (Euler--Maruyama)    & $1.1837$ & $0.9870$ & $0.3382$ & $0.0211$ \\
 probability-flow ODE (Euler)     & $0.3542$ & $0.2053$ & $0.0910$ & $0.0288$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent \textbf{Noise in the reverse process helps, and the effect is
 monotone in $\eta$ at every budget} --- the two intermediate arms, $\eta = 0.25$
@@ -16603,7 +16946,10 @@ row, the energy distance against an independent exact draw as a multiple of
 the exact-against-exact floor. The DDPM row is the same network, loss and
 budget with the cosine-schedule interpolant and DDIM in place of Euler:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The Boltzmann generator at $kT = 20$ against quadrature: well populations, mean energy, free-energy difference and energy distance.}
+\label{tab:boltzmann_kt20}
 \small
 \begin{tabular}{@{}l c r r r@{}}
 \hline
@@ -16619,7 +16965,7 @@ DDPM, DDIM, NFE 50                        & $0.895 \,/\, 0.059 \,/\, 0.046$ & $-
 $N(0, I)$ prior, no flow                  & $0.419 \,/\, 0.195 \,/\, 0.385$ &   $57.2$ & $-15.3$ & $306\times$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The model is faithful to its training set, not to the physics: it
 over-weights A because the Langevin chains do. Reweighting its own samples by
@@ -16632,7 +16978,10 @@ $kT = 20$ samples reweighted to $kT' = 12$ and $8$, naively and with the
 model's density in the weight, against a Langevin chain of $2 \times 10^5$
 steps started in well B:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Reweighting to lower temperatures, against a Langevin chain started in well B.}
+\label{tab:boltzmann_reweight}
 \small
 \begin{tabular}{@{}r l c r r r@{}}
 \hline
@@ -16648,7 +16997,7 @@ $kT'$ & source & $p_A \,/\, p_B \,/\, p_C$ & $\Delta F_{AB}$ & ESS \\
    & \quad with $1/p_\theta$ in the weight     & $0.991 \,/\, 0.008 \,/\, 0.001$ & $\mathbf{-38.3}$ & $958$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The barrier out of B is 36 units; at $kT = 8$ the chain never
 crossed. The naive weights carry the model's bias in full; with $1/p_\theta$
@@ -16663,7 +17012,10 @@ coupling (Tong et al.\ 2023,
 noise to its data by a minimum-cost assignment. Neither changes the network.
 Energy distance as a multiple of the floor, with Liu's straightness at NFE 50:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Straightened flows: energy distance by number of function evaluations, and straightness.}
+\label{tab:boltzmann_reflow}
 \small
 \begin{tabular}{@{}l r r r r r r@{}}
 \hline
@@ -16674,7 +17026,7 @@ minibatch OT                & $7.2\times$ & $5.4\times$ & $4.7\times$ & $4.9\tim
 reflow                      & $\mathbf{4.9\times}$ & $\mathbf{4.1\times}$ & $\mathbf{3.7\times}$ & $\mathbf{3.7\times}$ & $3.7\times$ & $0.0003$ \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent A one-step generator: after reflow one Euler step lands at
 $4.9\times$ the floor where the independent coupling needs ten. The price is
@@ -16890,7 +17242,10 @@ network SNR on the Gaussian set, $12{,}228$ validation windows, every
 threshold set on the $8{,}177$ noise-only windows so that one in a hundred
 exceeds it. The last column is the SNR at which each row crosses one half:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Detection probability by injected SNR in Gaussian noise, at a false-alarm rate of $10^{-2}$.}
+\label{tab:gw_gaussian}
 \small
 \begin{tabular}{@{}l r r r r r r r r r@{}}
 \hline
@@ -16902,7 +17257,7 @@ CNN on spectrograms, trained on Gaussian noise & $0.05$ & $0.19$ & $0.43$ & $0.6
 random                                        & $0.01$ & $0.01$ & $0.01$ & $0.01$ & $0.01$ & $0.01$ & $0.01$ & $0.01$ & --- \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The filter sits on its closed form and the CNN trails it by $1.5$
 units of SNR. Gabbard et al.\ 2018
@@ -16916,7 +17271,10 @@ neither stationary nor Gaussian, and the production search adds a $\chi^2$
 veto for exactly that reason. The same rows on the strain itself, with each
 model trained on one noise set and scored on both:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The SNR for half detection in Gaussian and in real LIGO noise, each model trained on one noise set and tested on both.}
+\label{tab:gw_real}
 \small
 \begin{tabular}{@{}l r r r@{}}
 \hline
@@ -16928,7 +17286,7 @@ CNN, real O3a strain        & $6.65$ & $\mathbf{6.91}$ & $\mathbf{7.52}$ \\
 PyCBC coherent search       & $\mathbf{5.27}$ & $10.32$ & --- \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Each network is best on the noise it trained on, by a few tenths.
 The filter loses five units of SNR to glitches at $10^{-2}$, and at
@@ -17098,7 +17456,10 @@ about twenty minutes at $N = 64$. The $N = 64$ energies are means over the
 final $8{,}192$ samples, whose Monte Carlo standard error is below five
 percent of every entry:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Neural quantum states on the transverse-field Ising chain at the critical point, at $N = 12$ and $N = 64$.}
+\label{tab:nqs_ladder}
 \small
 \begin{tabular}{@{}l r r r r r@{}}
 \hline
@@ -17119,7 +17480,7 @@ GPT, exact sampling      & $27{,}056$ & $\mathbf{1.7 \times 10^{-4}}$ & $0.020$ 
 exact (Jordan--Wigner)   & ---        & 0 & 0 & 0.6367 & 0.3036 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent At $N = 12$ every rung sits three to four orders below the floor
 and the GPT, whose conditionals are the wavefunction, is the best of them
@@ -17366,7 +17727,10 @@ such pairs that are within 8\,Å), the recall of the true long-range
 contacts at $P > 0.5$, and the fold's $\mathrm{C}_\beta$-lDDT and TM-score over the 78
 units the fold and the field both cover:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The distogram arms on the CASP16 targets: long-range contact precision and recall, $\mathrm{C}_\beta$-lDDT and TM-score.}
+\label{tab:casp16_arms}
 \small
 \begin{tabular}{@{}l r r r r@{}}
 \hline
@@ -17380,7 +17744,7 @@ ESMFold v1: ESM-2 3B under its own trunk           &       &       & 0.751 & 0.7
 CASP16 field, the median first model per unit      &       &       &       & 0.892 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The language model is the lever and the ladder says by how much:
 at 64 channels and 30 epochs the precision runs $0.585 \to 0.735 \to 0.838
@@ -17584,7 +17948,10 @@ and agreement with the optimum over the 200 decision states. The two value
 columns agree within two standard errors on every row, which is the check that
 the simulator and the DP describe the same game:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{Blackjack policies against value iteration, scored exactly and by Monte Carlo.}
+\label{tab:blackjack_policies}
 \begin{tabular}{@{}l r r r@{}}
 \hline
 policy & exact & Monte Carlo, $10^6$ hands & agrees / 200 \\
@@ -17597,7 +17964,7 @@ DQN, Double, 200k updates                & $-0.0476$ & $-0.0471 \pm 0.0010$ & 18
 exact optimum                            & $-0.0431$ & $-0.0419 \pm 0.0010$ & 200 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent The published table is the strategy card the first book shipped as
 its ceiling. It sits four cents a hand below the optimum
@@ -17612,7 +17979,10 @@ policy itself, cell by cell.
 training; the gate is the DQN within $0.01$ of tabular Q's exact value, which
 every 200k-update arm passes:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The DQN arms at the end of training: exact value and agreement with the optimal policy.}
+\label{tab:blackjack_dqn}
 \begin{tabular}{@{}l r r r r@{}}
 \hline
 arm & updates & hands & exact & agrees / 200 \\
@@ -17624,7 +17994,7 @@ plain, lr $10^{-3} \to 10^{-4}$ & 200k & 132k & $-0.0530$ & 178 \\
 Double, lr $10^{-3} \to 10^{-4}$ & 200k & 132k & $-0.0503$ & 187 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Double DQN (van Hasselt et al.\ 2016,
 \href{https://arxiv.org/abs/1509.06461}{arXiv:1509.06461}: argmax from the
@@ -17672,7 +18042,10 @@ the random and scripted-tracker baselines as lines.}
 fresh games after training, with the standard error; the baselines over a hundred
 games (\texttt{lake exe pong-env 100}):
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The Pong arms against the scripted opponent, in points per game.}
+\label{tab:pong_arms}
 \begin{tabular}{@{}l l l@{}}
 \hline
 arm & points per game & first positive evaluation \\
@@ -17684,7 +18057,7 @@ state, six numbers, seeds 1--3   & $+14.15$, $+12.70$, $+13.50$ & 100--125k \\
 pixels, four frames, seeds 1--3  & $+15.60$, $+15.90$, $+14.90$ & 75--100k \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent One frame cannot see velocity, and the row says by how much: $+4.6$ against
 $+15.5$, the gap between a paddle that reaches the ball and one that guesses. The
@@ -17768,7 +18141,10 @@ worst-hand raises moved to call; the two Deep CFR rows and the sampled table are
 same 4.1M nodes, three seeds each. The last column is the bluff, the raise frequency
 opening round 2 with a jack under a queen:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The Leduc poker arms: exploitability, head-to-head against CFR+, and bluff frequency.}
+\label{tab:leduc_arms}
 \small
 \begin{tabular}{@{}l l l l@{}}
 \hline
@@ -17783,7 +18159,7 @@ tabular ES-MCCFR            & 0.038 / 0.043 / 0.041 & & \\
 CFR+, a thousand iterations & 0.00024 & 0 & 19.5\% \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Six minutes a seed on one card. Deep CFR's exploitability falls from 1.4 at
 iteration 5 to 0.11--0.15 at a hundred and ends under the honest arm and under the
@@ -17890,7 +18266,10 @@ agreement --- and W/D/L against the perfect player as X and as O: 1,000 games ea
 for the scripted rows (200 at $5 \times 5$), and for the network's rows three
 independent evaluations of the saved network, 256 games each, pooled:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The tic-tac-toe arms against the solved game at $3 \times 3$, $4 \times 4$ and $5 \times 5$.}
+\label{tab:ttt_arms}
 \small
 \begin{tabular}{@{}l r l r l r l@{}}
 \hline
@@ -17904,7 +18283,7 @@ network + search & ---    & 0/768/0 $\cdot$ 0/768/0      & ---    & 0/768/0 $\cd
 perfect          & 100\%  & 0/1000/0 $\cdot$ 0/1000/0    & 100\%  & 0/1000/0 $\cdot$ 0/1000/0    & 100\%  & 0/200/0 $\cdot$ 0/200/0 \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Twenty iterations and 2.5 minutes on one card at $3 \times 3$; forty
 iterations and 10.0 minutes at $4 \times 4$, the same binary with \texttt{n=4} ---
@@ -18143,7 +18522,10 @@ datasets span the book's whole range:
     ViT-Tiny), on the reference and the verified path alike.
 \end{itemize}
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The datasets behind the chapters.}
+\label{tab:datasets_core}
 \footnotesize\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}l l l p{4.3cm} p{4.0cm}@{}}
 \hline
@@ -18163,7 +18545,7 @@ ImageNet-1k & IN1K & Deng et al., 2009 &
   \textit{TFDS build}\,\textsuperscript{*} \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent\small Dataset information: name, abbreviation, standard
 reference, homepage, and the repository script (with the on-disk path
@@ -18376,7 +18758,10 @@ run; the strain and the M\"uller--Brown density skip the fetch, because
 that script is where they come from, and the Ising chain has no data step
 at all.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The datasets behind the bestiary demos.}
+\label{tab:datasets_demo}
 \footnotesize\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}l l p{3.2cm} p{4.0cm} p{3.7cm}@{}}
 \hline
@@ -18429,7 +18814,7 @@ PDB, pre-CASP16 chains & PDB & Berman et al., 2000 &
   \texttt{casp16\_chain\_list.py},\newline \texttt{casp16\_fetch\_chains.py}\newline $\to$ \texttt{data/casp16/}  \\
 \hline
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent\small The demo datasets, in the same columns as above. Each
 also has a \texttt{preprocess\_*.py} step (e.g.\
@@ -18760,7 +19145,10 @@ the smallest path from zero to a trained model.
 What you install depends on how far up the scale you want to go, and the
 steps are not evenly spaced:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{What each track needs.}
+\label{tab:getting_started_tracks}
 \begin{tabular}{@{}lll@{}}
 \textbf{What you want} & \textbf{What you need} & \textbf{Track} \\[2pt]
 \hline \\[-6pt]
@@ -18768,7 +19156,7 @@ Read and check the proofs      & Lean. No GPU.                    & 1 \\
 MNIST / CIFAR / Imagenette     & Lean + one plugin file.          & 2, 3 \\
 Full ImageNet-1k               & the above, plus Python + tfds.   & 4 \\
 \end{tabular}
-\end{center}
+\end{table}
 
 Everything in Part 1 of this book is the middle row. It needs no Python at
 run time and no compiler: you download one shared library and run a Lean
@@ -18945,7 +19333,10 @@ uses. A row is a (network, recipe) pair rather than a network --- ResNet-50 has
 a row per recipe --- and the recipe is the middle field of the job's own
 name.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The Track~4 ImageNet-1k targets, their recipes and their job configs.}
+\label{tab:track4_runners}
 \begin{tabular}{@{}lll@{}}
 \textbf{Target} & \textbf{Recipe} & \textbf{Job config} \\[2pt]
 \hline \\[-6pt]
@@ -18957,7 +19348,7 @@ name.
 \texttt{convnext-imagenet-verified}     & \texttt{default}                   & \texttt{cnx-default-4gpu} \\
 \texttt{vit-imagenet-verified}          & \texttt{default} (DeiT-Ti)         & \texttt{vit-default-emabf16-4gpu} \\
 \end{tabular}
-\end{center}
+\end{table}
 
 \noindent Every row has run and is the one behind its chapter's numbers.
 \texttt{scripts/jobs/} also carries axis siblings that this table does not
@@ -19044,7 +19435,10 @@ not because they cannot start. All seven have job configs, launch like
 any Track-4 row and ride in \texttt{lake run imagenet} right after their
 chapter's row. Each row's section says where it stands.
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The side-quest renders: target, variant, job and section.}
+\label{tab:track4_side_quests}
 \small
 \begin{tabular}{@{}llll@{}}
 \textbf{Target} & \textbf{Variant} & \textbf{Job} & \textbf{Section} \\[2pt]
@@ -19057,7 +19451,7 @@ chapter's row. Each row's section says where it stands.
 \texttt{vit-s-imagenet-verified}       & --- & \texttt{vits-default-emabf16-4gpu} & \S\ref{sec:vit_sb} \\
 \texttt{vit-b-imagenet-verified}       & --- & \texttt{vitb-default-emabf16-4gpu} & \S\ref{sec:vit_sb} \\
 \end{tabular}
-\end{center}
+\end{table}
 
 \section*{Platforms}
 \label{sec:getting_started_platforms}
@@ -19067,7 +19461,10 @@ CIFAR and Imagenette, Tracks 2 and 3 --- on five GPU platforms, each one
 plugin file and (off the Mac) one device variable away from the same Lean
 binaries, the plugin pinned per platform:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The GPU platforms, the plugin each is pinned to, and where each stands.}
+\label{tab:platforms}
 \small
 \begin{tabular}{@{}p{0.24\textwidth}p{0.34\textwidth}p{0.36\textwidth}@{}}
 \textbf{Platform} & \textbf{Plugin, pinned} & \textbf{Where it stands} \\[2pt]
@@ -19078,7 +19475,7 @@ binaries, the plugin pinned per platform:
 \cellleft Jetson Orin Nano 8\,GB, JetPack 6.2 & \cellleft jax 0.11.1 built for sm\_87 against cuDNN 9.12, per \texttt{deploy/ORIN.md} & \cellleft Tracks 1--3 on record; \texttt{lake run imagenette-orin} is the Imagenette tier at the board's memory \\[4pt]
 \cellleft Apple Silicon, Metal (M1 MacBook Air, 16\,GB, macOS 26) & \cellleft \texttt{jax-graft} 0.0.5 (\texttt{metal-pjrt-core}, platform \texttt{mtl}: jaxlib 0.11.2's XLA with a Metal backend), per \texttt{deploy/MAC.md} & \cellleft Track 2 and the MNIST tier of Track 3 on record, matching CUDA (92.10 / 97.79 / 98.71\%); CIFAR and ResNet-34 train, their full runs to come \\
 \end{tabular}
-\end{center}
+\end{table}
 
 The CUDA 12 and ROCm pins are the lock files under \texttt{jax/}; the Orin's
 is its build script, the Mac's its setup script. Three notes. ImageNet (Track 4) wants 16\,GB cards: every row trains on four
@@ -19819,7 +20216,10 @@ in its tails). An \texttt{f32}/\texttt{f64} twin of that run
 (\texttt{scripts/certs/\allowbreak margin\_probe.py}, per-step coupled to match the
 single-step theorems) measures what the theorems bound:
 
-\begin{center}
+\begin{table}[H]
+\centering
+\caption{The worst-case float bounds against the values measured on a real run.}
+\label{tab:float_measured}
 \begin{tabular}{lll}
 quantity & worst-case theorem & measured \\
 \hline
@@ -19828,7 +20228,7 @@ cotangent & \(\le 21/1000\) \;(\texttt{mnist\_cot\_budget}) & \(2.2\cdot 10^{-6}
 \(W_2\) SGD step & \(\le 5/4\) \;(\texttt{mnist\_w2\_step\_float\_budget}) & \(7.5\cdot 10^{-9}\) \\
 ReLU mask flips & \(0\) under margins & \(\mathbf{0}\,/\,29.5\mathrm{M}\) \\
 \end{tabular}
-\end{center}
+\end{table}
 
 The worst-case bounds hold
 with up to \(10^{8}\) to spare because worst-case composition
