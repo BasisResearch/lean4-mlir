@@ -22,9 +22,10 @@ Started 2026-10-15, from the editors' one note on v0.7.2: every figure gets an i
 ## 1. The pass: cite each float by number
 
 The editors' style implies, and every house style that numbers floats expects, that the text
-cites each one by number. Today 7 of 145 floats are cited by `\ref`; the other 138 are
-introduced by position — a lead-in sentence ending in a colon right above the float, or "the
-table below", "the curve above" (24 such phrases).
+cites each one by number. On 2026-10-15 the 17 phrases that pointed at a float by position
+("the table below", "the curve above", "the sweep below") became `Figure~\ref` / `Table~\ref`,
+so 23 of 145 floats are cited; the other 122 are introduced by position only, by a lead-in
+sentence ending in a colon right above the float.
 
 `python3 scripts/book/book_floats.py --refs` is the census: one line per float, with the lines
 that `\ref` it, or `NONE`.
@@ -70,8 +71,8 @@ that `\ref` it, or `NONE`.
 
 * `book_floats.py --strict`: also fail on a float with no citing `\ref`. Turn it on in CI when
   the census reads zero `NONE`; until then it is a report.
-* `book_xrefs.py`'s `REF` pattern knows `Figure~\ref` but not `Table~\ref`; add it, so the
-  cross-reference census covers the new citations.
+* `book_xrefs.py`'s `REF` pattern knows `Table~\ref` since 2026-10-15, so the cross-reference
+  census covers the new citations.
 
 ### Order
 

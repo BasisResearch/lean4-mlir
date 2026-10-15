@@ -14,7 +14,7 @@ cross a chapter boundary; same-chapter proof steps are stable by label.
 import bisect, collections, re, sys
 
 TEX = 'blueprint/src/content.tex'
-REF = re.compile(r'(\\S\\ref|Chapters?~\\ref|Section~\\ref|Appendix~\\ref|Figure~\\ref|Theorem~\\ref|\\bestiaryref)\{([^}]*)\}')
+REF = re.compile(r'(\\S\\ref|Chapters?~\\ref|Section~\\ref|Appendix~\\ref|Figure~\\ref|Table~\\ref|Theorem~\\ref|\\bestiaryref)\{([^}]*)\}')
 HEAD = re.compile(r'\\(chapter\*?|section|subsection|prosesection|prosesubsection)\{(.*)\}')
 ENV = re.compile(r'\\begin\{(theorem|lemma|definition|axiom|corollary|proposition)\}(\[.*?\])?')
 ABBR = re.compile(r'(e\.g|i\.e|vs|cf|Fig|Ch|Sec|No)\.$')

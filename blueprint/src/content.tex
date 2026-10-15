@@ -2762,7 +2762,8 @@ covers every width and we can sweep the hidden size, training each point
 on its own proof-rendered StableHLO. The \texttt{mnist-mlp-grid} driver does
 exactly this: it renders $784{\to}d{\to}d{\to}10$ from the faithful emitter
 and trains it end to end. Sweeping $d$ over the powers of two from 8 to 4096
-(each 12-epoch SGD, on the GPU) gives the accuracy-vs-width curve below.
+(each 12-epoch SGD, on the GPU) gives Figure~\ref{fig:mlp_width}, the
+accuracy-vs-width curve.
 
 \begin{figure}[H]
 \centering
@@ -5182,7 +5183,7 @@ Almost not at all, which is exactly why we could borrow MNIST's head
 untouched. The 2$\times$512 head carries about $334{,}000$ of the net's
 $374{,}000$ parameters. Swap it for a narrow 64-wide head ($13{,}000$
 params, whole net down to $53{,}000$) and, under AdamW on the sweep
-below, the two land within a point of each other with overlapping
+in Figure~\ref{fig:cifar_head_width}, the two land within a point of each other with overlapping
 intervals: $73.13\%$ narrow, $74.09\%$ wide. Seven times the parameters
 buys no accuracy the test set can resolve. The eight convolutions over
 the $32 \times 32$ maps dominate the compute, and the head is cheap
@@ -6484,7 +6485,7 @@ through tfds. It runs in bf16 --- the convolutions cast to bfloat16
 against fp32 master weights, the classifier head left in fp32 --- which is
 a throughput choice
 rather than a fidelity one, and is why its column is the faster of the
-two below.
+two in Table~\ref{tab:r34_paths}.
 
 \begin{table}[H]
 \centering
@@ -6856,8 +6857,8 @@ $+0.85$ on the same network, in less wall clock, because it trains at
 $160^2$. It lands $0.49$ under the paper's $78.1\%$ and $0.44$ under the
 $78.05\%$ that \texttt{timm}'s own \texttt{resnet50.a3\_in1k} weights
 score under this protocol, a tenth of a point past one run's $\pm0.37$;
-the verified render of the same recipe, below, lands on the paper's
-number. This A3 is \texttt{timm}'s recipe as \texttt{timm} ran it, on
+the verified render of the same recipe, Table~\ref{tab:r50_pjrt}, lands on
+the paper's number. This A3 is \texttt{timm}'s recipe as \texttt{timm} ran it, on
 both paths; the paragraph after the side-by-side table names the settings
 a bare transcription would miss, and the one not taken.
 
@@ -8443,8 +8444,8 @@ $10^{-5}$ range where the run stops moving ($0.045 \times 0.98^{345}
 \approx 4.2\times10^{-5}$ at $350$). So $350$ is this book's choice, made
 the way the decay makes it --- it is also the length Tan \& Le state for
 EfficientNet's version of the same RMSProp lineage in
-Chapter~\ref{chap:se} --- and the curve below is the check that it is
-long enough. A shortened run of this recipe has to substitute cosine to be
+Chapter~\ref{chap:se} --- and Figure~\ref{fig:mnv2_jax_curve} is the check
+that it is long enough. A shortened run of this recipe has to substitute cosine to be
 worth anything, which is a different experiment rather than a cheaper
 version of the same one.
 
@@ -8715,7 +8716,8 @@ tiny weight decay, and nothing beyond crop and flip on the data
 side. So this diff is not a time jump but two contemporary recipes
 side by side, and it is the base that the next chapter's 2019
 EfficientNet recipe is built on. The entry point is the same on both
-paths, and every row below is one argument or one field:
+paths, and every row of Table~\ref{tab:mnv2_vs_2018} is one argument or one
+field:
 
 \begin{table}[H]
 \centering
@@ -10239,7 +10241,8 @@ construction. The reference's in-training evaluation reads $77.18\%$ at
 epoch~350; the $77.15\%$ headline is the same checkpoint rescored from its
 saved state at a different evaluation batch size, and the $0.03$ between
 them is bf16 batch-shape noise. Against the in-training figure the verified
-path's $76.878\%$ is $-0.30$, the $\Delta$ the curve table below carries.
+path's $76.878\%$ is $-0.30$, the $\Delta$ Table~\ref{tab:enet_paths_epochs}
+carries.
 \textbf{[TODO: the final pair --- TensorFlow's own EfficientNet code, every
 row: the staircase floored on the global step from step $0$, weight decay
 off BatchNorm alone (the biases decay), drop-connect $0.2 \cdot i/16$, BN
@@ -14828,7 +14831,7 @@ efficiency-CNN family alongside MobileNet and ShuffleNet.
 
 \begin{table}[H]
 \centering
-\caption{SqueezeNet 1.0 and 1.1.}
+\caption{SqueezeNet 1.0 and 1.1: stem and parameter count.}
 \label{tab:bestiary_squeezenet}
 \begin{tabular}{l c r}
 \hline
@@ -15996,7 +15999,8 @@ $7 \times 7$ bottleneck. It is visible in the renders as well: the thin
 enhancing rim around the necrotic core is resolved with skips and smeared into
 the core without them.
 
-\paragraph{Scored per patient.} The tables above pool every pixel of every
+\paragraph{Scored per patient.} Tables~\ref{tab:brats_dice} and
+\ref{tab:brats_skips} pool every pixel of every
 tumour-bearing slice into one Dice. The literature does something else: one
 Dice per patient volume, over all of its slices including the tumour-free
 ones, then the mean over patients --- so a small tumour counts as much as a
@@ -16049,8 +16053,8 @@ cannot infer, not that volumetric context is useless. The direct test is a 3D
 UNet --- this section's UNet with $3^3$ kernels and $2^3$ pools, 23.5M
 parameters --- trained in JAX on random $128^3$ patches for 20{,}000 steps,
 a little over five hours on one card (\texttt{jax/scripts/unet3d\_brats.py},
-the reference a Lean rank-5 port would be tied to). In the table above its
-means are ahead of the anchor's by under a point on WT and TC and by two on
+the reference a Lean rank-5 port would be tied to). In
+Table~\ref{tab:brats_per_patient} its means are ahead of the anchor's by under a point on WT and TC and by two on
 ET, and most of the ET gain is what a size threshold also buys. So the
 comparison below applies the usual BraTS post-process to every model ---
 enhancing-tumour predictions under 200 voxels in a volume are relabelled as
@@ -16693,7 +16697,7 @@ change relative to the classifiers, segmentation nets and detectors so far:
     the positional-encoding primitive NeRF introduced. Diffusion adds
     only the conditioning.
   \item \textbf{Inference is an iterative loop, not one forward pass.} What that
-    loop costs is the second table below.
+    loop costs is Table~\ref{tab:ddpm_samplers}.
 \end{itemize}
 
 \paragraph{Scoring it needs an instrument, not an eye.} Unconditional image
@@ -16775,8 +16779,8 @@ forward and reverse.
 \caption{DDPM on MNIST, both directions. Top: the forward process takes a
 training digit to Gaussian noise, one column per step of the schedule. Bottom:
 the trained reverse process, started from fresh noise, arrives at a digit the
-training set never contained --- the sampling the table above scores by function
-evaluations.}
+training set never contained --- the sampling Table~\ref{tab:ddpm_samplers}
+scores by function evaluations.}
 \label{fig:ddpm_mnist}
 \end{figure}
 
@@ -16909,8 +16913,8 @@ change relative to the MNIST demo:
   \item \textbf{The ground truth is a formula.} $U$ has a closed form, so the
     well populations, the mean energy, the free-energy difference between
     wells and the exact likelihood are all numbers by quadrature on a
-    $360 \times 360$ grid. Every column of the tables below is exact for the
-    first row.
+    $360 \times 360$ grid. Every column of Tables~\ref{tab:boltzmann_kt20}
+    and \ref{tab:boltzmann_reweight} is exact for the quadrature row.
   \item \textbf{A sample set is a free-energy estimate.} $\Delta F_{AB} =
     -kT \ln (p_A / p_B)$ is read off the populations, and populations are
     assigned by gradient descent to a minimum rather than by nearest minimum,
@@ -18506,7 +18510,8 @@ def muZeroGoPredictionValue : NetSpec where
 
 Every dataset in this book is public, and every one except ImageNet is
 fetched or built by a script in the repository root that drops it under
-\texttt{data/} where the trainers expect it. The table below lists each
+\texttt{data/} where the trainers expect it. Table~\ref{tab:datasets_core}
+lists each
 with its standard reference, homepage, and that fetch path. Four image
 datasets span the book's whole range:
 
@@ -18751,7 +18756,8 @@ physics, and each has a dataset of its own:
     targets.
 \end{itemize}
 
-\noindent Same fetch-and-unpack story as the table above, with one extra
+\noindent Same fetch-and-unpack story as Table~\ref{tab:datasets_core}, with one
+extra
 step: each is tokenized or tiled into the trainer's input format by the
 matching \texttt{preprocess\_*.py} script before the first \texttt{lake exe}
 run; the strain and the M\"uller--Brown density skip the fetch, because
@@ -18816,7 +18822,8 @@ PDB, pre-CASP16 chains & PDB & Berman et al., 2000 &
 \end{tabular}
 \end{table}
 
-\noindent\small The demo datasets, in the same columns as above. Each
+\noindent\small The demo datasets, in the same columns as
+Table~\ref{tab:datasets_core}. Each
 also has a \texttt{preprocess\_*.py} step (e.g.\
 \texttt{preprocess\_shakespeare.py} builds
 \texttt{train.bin}/\texttt{val.bin}/\texttt{vocab.txt}) between download
@@ -19147,7 +19154,7 @@ steps are not evenly spaced:
 
 \begin{table}[H]
 \centering
-\caption{What each track needs.}
+\caption{The four tracks: what each lets you do and what it needs.}
 \label{tab:getting_started_tracks}
 \begin{tabular}{@{}lll@{}}
 \textbf{What you want} & \textbf{What you need} & \textbf{Track} \\[2pt]
@@ -19415,8 +19422,8 @@ lake run imagenet start          # the rows in order, each resuming from its che
 \end{verbatim}
 
 \noindent \texttt{lake run imagenet} is the tier itself, the fourth of the four.
-Bare, it only plans, because its fourteen rows --- the table above and the side
-quests below --- are weeks of four-card time; \texttt{start} is the confirmation.
+Bare, it only plans, because its fourteen rows --- Table~\ref{tab:track4_runners}
+and the side quests of Table~\ref{tab:track4_side_quests} --- are weeks of four-card time; \texttt{start} is the confirmation.
 
 Data parallelism needs both replica knobs, and setting only one fails with a
 confusing ``compiled for N replicas'' error. \texttt{PJRT\_REPLICAS} configures
@@ -19430,7 +19437,8 @@ XLA-only.
 Several chapters end in a variant that is rendered but is not a Track-4 runner,
 and the section heading says which of three kinds it is: a second recipe, a
 wider or deeper size, or an architecture the book reaches for once. They are
-collected here rather than in the table above because they are side quests,
+collected here rather than in Table~\ref{tab:track4_runners} because they are
+side quests,
 not because they cannot start. All seven have job configs, launch like
 any Track-4 row and ride in \texttt{lake run imagenet} right after their
 chapter's row. Each row's section says where it stands.
