@@ -1,3 +1,7 @@
+module
+
+@[expose] public section
+
 /-! # `key=value` command-line arguments
 
 The demos take their knobs as `key=value` words (`lr=0.001 epochs=30 tag=x`). This is the one

@@ -1,4 +1,9 @@
-import LeanMlir.Spec
+module
+
+public import LeanMlir.Spec
+meta import LeanMlir.Types
+
+@[expose] public section
 
 set_option maxRecDepth 2000
 
@@ -98,14 +103,14 @@ def checkSupported (spec : NetSpec) : IO Unit :=
 /-- What the `generate*` entry points return for an unsupported spec: a module that fails to
     parse, whose first line says why. They are pure, so they cannot throw, and a `panic!` in
     compiled code only prints and continues with an empty string. -/
-private def guarded (spec : NetSpec) (emit : Unit → String) : String :=
+def guarded (spec : NetSpec) (emit : Unit → String) : String :=
   match unsupported spec with
   | some e => s!"// MlirCodegen cannot emit {spec.name}: {e}\n#unsupported_spec\n"
   | none => emit ()
 
 /-- The NCHW input channels when the first layer takes an image (a conv or a conv block);
     `none` for a flat input. -/
-private def inputChannels (spec : NetSpec) : Option Nat :=
+def inputChannels (spec : NetSpec) : Option Nat :=
   match spec.layers.head? with
   | some (.conv2d ic ..) | some (.convBn ic ..) | some (.invertedResidual ic ..)
   | some (.mbConv ic ..) | some (.fusedMbConv ic ..) | some (.mbConvV3 ic ..) | some (.uib ic ..)
@@ -124,7 +129,7 @@ def inputFlatDim (spec : NetSpec) : Nat :=
   | none, _ => spec.imageH * spec.imageW
 
 /-- Render tensor type: `tensor<128x1x28x28xf32>`. -/
-private def tensorTy (dims : List Nat) : String :=
+def tensorTy (dims : List Nat) : String :=
   "tensor<" ++ String.intercalate "x" (dims.map toString) ++ "xf32>"
 
 /-- Sanitize a string for use as an MLIR identifier: lower-case, every non-alphanumeric
@@ -139,7 +144,7 @@ def _root_.NetSpec.sanitizedName (spec : NetSpec) : String :=
   sanitize spec.name
 
 /-- Compute SAME padding. Returns (padH0, padH1, padW0, padW1). -/
-private def samePad (h w kSize stride : Nat) : Nat × Nat × Nat × Nat :=
+def samePad (h w kSize stride : Nat) : Nat × Nat × Nat × Nat :=
   let oH := (h + stride - 1) / stride
   let oW := (w + stride - 1) / stride
   let tH := if (oH - 1) * stride + kSize > h then (oH - 1) * stride + kSize - h else 0
@@ -147,7 +152,7 @@ private def samePad (h w kSize stride : Nat) : Nat × Nat × Nat × Nat :=
   (tH / 2, tH - tH / 2, tW / 2, tW - tW / 2)
 
 /-- Standard conv dimension numbers block (NCHW/OIHW). -/
-private def convDimNumbers : String :=
+def convDimNumbers : String :=
   "        dimension_numbers = #stablehlo.conv<raw\n" ++
   "          input_batch_dimension = 0, input_feature_dimension = 1,\n" ++
   "          input_spatial_dimensions = [2, 3],\n" ++
@@ -157,7 +162,7 @@ private def convDimNumbers : String :=
   "          output_spatial_dimensions = [2, 3]>,\n"
 
 /-- Standard conv attribute block (NCHW/OIHW), symmetric padding, stride 1. -/
-private def convAttrBlock (pad : Nat) : String :=
+def convAttrBlock (pad : Nat) : String :=
   "        batch_group_count = 1 : i64,\n" ++
   convDimNumbers ++
   "        feature_group_count = 1 : i64,\n" ++
@@ -166,7 +171,7 @@ private def convAttrBlock (pad : Nat) : String :=
   "        window_strides = array<i64: 1, 1>\n"
 
 /-- General conv attribute block with explicit asymmetric padding and optional dilations. -/
-private def convAttrBlockFull (pH0 pH1 pW0 pW1 : Nat)
+def convAttrBlockFull (pH0 pH1 pW0 pW1 : Nat)
     (sH sW : Nat := 1) (lhsH lhsW : Nat := 1) (rhsH rhsW : Nat := 1) : String :=
   "        batch_group_count = 1 : i64,\n" ++
   convDimNumbers ++
@@ -180,7 +185,7 @@ private def convAttrBlockFull (pH0 pH1 pW0 pW1 : Nat)
     (e.g. `s!"_mb{p}"`), the input SSA, and the tensor shape. Returns
     (code, output_ssa). All five activation kinds handled inline so callers
     don't need to forward-reference helpers further down in this file. -/
-private def emitActForward (act : Activation) (tag inSSA : String) (shape : List Nat)
+def emitActForward (act : Activation) (tag inSSA : String) (shape : List Nat)
     : String × String := Id.run do
   let ty := tensorTy shape
   match act with
@@ -229,7 +234,7 @@ private def emitActForward (act : Activation) (tag inSSA : String) (shape : List
 /-- Emit a conv2d + bias + activation block. Returns (code, newSSA, newShape).
     Assumes NCHW input [b, ic, h, w], produces [b, oc, h, w] for SAME padding,
     stride 1. -/
-private def emitConv2d (pidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitConv2d (pidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc kSize : Nat) (act : Activation) : String × String × List Nat := Id.run do
   match curShape with
   | [b, _, h, w] =>
@@ -288,7 +293,7 @@ private def emitConv2d (pidx : Nat) (curSSA : String) (curShape : List Nat)
 /-- Emit convBn: conv (possibly strided) + instance norm + optional ReLU.
     Params: W{pidx} (kernel), g{pidx} (gamma/scale), bt{pidx} (beta/shift).
     Instance norm: per-sample, per-channel spatial statistics. -/
-private def emitConvBn (pidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitConvBn (pidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc kSize stride : Nat) (relu : Bool := true) (fixedBN : Bool := false)
     : String × String × List Nat := Id.run do
   match curShape with
@@ -355,7 +360,7 @@ private def emitConvBn (pidx : Nat) (curSSA : String) (curShape : List Nat)
     Output channels = input channels.
     If `noAct := true`, emits only convBn (no activation), returning pre-activation
     so the caller can attach its own (e.g., Swish for MBConv). -/
-private def emitDepthwiseConvBn (pidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitDepthwiseConvBn (pidx : Nat) (curSSA : String) (curShape : List Nat)
     (channels kSize stride : Nat) (fixedBN : Bool := false) (noAct : Bool := false)
     (useRelu : Bool := false)
     : String × String × List Nat := Id.run do
@@ -426,7 +431,7 @@ private def emitDepthwiseConvBn (pidx : Nat) (curSSA : String) (curShape : List 
 /-- Emit a raw depthwise conv (no BN, no activation). Used by ConvNeXt
     blocks where the DW output goes straight into LayerNorm.
     Weight shape (channels, 1, kSize, kSize), bias [channels]. -/
-private def emitDepthwiseConvRaw (pidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitDepthwiseConvRaw (pidx : Nat) (curSSA : String) (curShape : List Nat)
     (channels kSize stride : Nat) : String × String × List Nat := Id.run do
   match curShape with
   | [b, _, h, w] =>
@@ -450,7 +455,7 @@ private def emitDepthwiseConvRaw (pidx : Nat) (curSSA : String) (curShape : List
 
 /-- Emit an inverted residual block stage for inference.
     Returns (code, newSSA, newShape, newPidx). -/
-private def emitInvertedResidual (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitInvertedResidual (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc expand firstStride nBlocks : Nat) (fixedBN : Bool := false)
     : String × String × List Nat × Nat := Id.run do
   let mut code := ""
@@ -493,7 +498,7 @@ private def emitInvertedResidual (startPidx : Nat) (curSSA : String) (curShape :
     NOTE: weight shapes in MLIR params are stored [seMid, mid, 1, 1] / [mid, seMid, 1, 1]
     (conv style) — we reshape them to dense layout here.
     Returns (code, outSSA, shape) where shape == input shape. -/
-private def emitSEBlock (tag : String) (xSSA : String) (xShape : List Nat)
+def emitSEBlock (tag : String) (xSSA : String) (xShape : List Nat)
     (mid seMid pRed pExp : Nat) : String × String := Id.run do
   match xShape with
   | [b, _, h, w] =>
@@ -539,7 +544,7 @@ private def emitSEBlock (tag : String) (xSSA : String) (xShape : List Nat)
       - uses Swish activation (x * sigmoid(x)) instead of ReLU6
       - optional Squeeze-and-Excitation between depthwise and project.
     Returns (code, newSSA, newShape, newPidx). -/
-private def emitMbConv (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitMbConv (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc expand kSize firstStride nBlocks : Nat) (useSE : Bool)
     (act : Activation := .swish)
     (fixedBN : Bool := false) : String × String × List Nat × Nat := Id.run do
@@ -594,7 +599,7 @@ private def emitMbConv (startPidx : Nat) (curSSA : String) (curShape : List Nat)
       3. Project: 1×1 convBn (mid → oc), linear (SKIPPED if expand == 1)
       4. Skip if blockIc == oc && stride == 1
     Returns (code, newSSA, newShape, newPidx). -/
-private def emitFusedMbConv (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitFusedMbConv (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc expand kSize firstStride nBlocks : Nat) (useSE : Bool)
     (fixedBN : Bool := false) : String × String × List Nat × Nat := Id.run do
   let mut code := ""
@@ -634,7 +639,7 @@ private def emitFusedMbConv (startPidx : Nat) (curSSA : String) (curShape : List
 
 /-- Emit h-swish forward: x * ReLU6(x + 3) / 6
     Returns (code, output_ssa). Caller provides input_ssa and shape. -/
-private def emitHSwishForward (tag : String) (inSSA : String) (shape : List Nat)
+def emitHSwishForward (tag : String) (inSSA : String) (shape : List Nat)
     : String × String := Id.run do
   let ty := tensorTy shape
   let mut s := ""
@@ -649,7 +654,7 @@ private def emitHSwishForward (tag : String) (inSSA : String) (shape : List Nat)
   return (s, s!"%hs_out{tag}")
 
 /-- Emit h-sigmoid forward: ReLU6(x + 3) / 6 -/
-private def emitHSigmoidForward (tag : String) (inSSA : String) (shape : List Nat)
+def emitHSigmoidForward (tag : String) (inSSA : String) (shape : List Nat)
     : String × String := Id.run do
   let ty := tensorTy shape
   let mut s := ""
@@ -663,7 +668,7 @@ private def emitHSigmoidForward (tag : String) (inSSA : String) (shape : List Na
   return (s, s!"%hsg_out{tag}")
 
 /-- Emit ReLU forward (plain, not ReLU6) -/
-private def emitReluForward (tag : String) (inSSA : String) (shape : List Nat)
+def emitReluForward (tag : String) (inSSA : String) (shape : List Nat)
     : String × String := Id.run do
   let ty := tensorTy shape
   let mut s := ""
@@ -677,7 +682,7 @@ private def emitReluForward (tag : String) (inSSA : String) (shape : List Nat)
     - Activation: h-swish if `useHSwish`, otherwise plain ReLU.
     - SE: uses ReLU on reduce, h-sigmoid on gate.
     - Skip connection iff `stride == 1 && ic == oc`. -/
-private def emitMbConvV3 (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitMbConvV3 (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc expandCh kSize stride : Nat) (useSE useHSwish : Bool)
     (fixedBN : Bool := false) : String × String × List Nat × Nat := Id.run do
   let mut code := ""
@@ -775,7 +780,7 @@ private def emitMbConvV3 (startPidx : Nat) (curSSA : String) (curShape : List Na
     All activations are plain ReLU (NOT ReLU6, NOT Swish, NOT h-swish). Stride placement and
     the activation-free preDW follow timm 1.0.28's `UniversalInvertedResidual`
     (`scripts/parity/mnv4_timm_parity.py`). -/
-private def emitUib (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitUib (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc expand stride preDWk postDWk : Nat)
     (fixedBN : Bool := false) : String × String × List Nat × Nat := Id.run do
   let mut code := ""
@@ -815,7 +820,7 @@ private def emitUib (startPidx : Nat) (curSSA : String) (curShape : List Nat)
   return (code, ssa, shape, p)
 
 /-- Emit global average pool: (b, c, h, w) -> (b, c). -/
-private def emitGlobalAvgPool (pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitGlobalAvgPool (pos : Nat) (curSSA : String) (curShape : List Nat)
     : String × String × List Nat := Id.run do
   match curShape with
   | [b, c, h, w] =>
@@ -831,7 +836,7 @@ private def emitGlobalAvgPool (pos : Nat) (curSSA : String) (curShape : List Nat
   | _ => return ("    // globalAvgPool error\n", curSSA, curShape)
 
 /-- Emit max pool. Handles kSize != stride (e.g., 3/2 in ResNet). -/
-private def emitMaxPool (pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitMaxPool (pos : Nat) (curSSA : String) (curShape : List Nat)
     (size stride : Nat) : String × String × List Nat := Id.run do
   match curShape with
   | [b, c, h, w] =>
@@ -862,7 +867,7 @@ private def emitMaxPool (pos : Nat) (curSSA : String) (curShape : List Nat)
   | _ => return ("    // maxPool error: expected rank-4 input\n", curSSA, curShape)
 
 /-- Emit flatten: (b, c, h, w) -> (b, c*h*w). -/
-private def emitFlatten (pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitFlatten (pos : Nat) (curSSA : String) (curShape : List Nat)
     : String × String × List Nat := Id.run do
   match curShape with
   | [b, c, h, w] =>
@@ -877,7 +882,7 @@ private def emitFlatten (pos : Nat) (curSSA : String) (curShape : List Nat)
     `(N, Ca + Cb, H, W)`. Used by UNet decoder skip-connection
     fusion (`emitUnetUp` will call this). The two inputs must
     share `(N, H, W)`. -/
-private def emitChannelConcat (tag : String) (aSSA bSSA : String)
+def emitChannelConcat (tag : String) (aSSA bSSA : String)
     (aShape bShape : List Nat) : String × String × List Nat := Id.run do
   match aShape, bShape with
   | [n, ca, h, w], [_, cb, _, _] =>
@@ -893,7 +898,7 @@ private def emitChannelConcat (tag : String) (aSSA bSSA : String)
     `(i + 0.5) / scale - 0.5`, with edge values clamped (so the first
     and last output rows replicate the corresponding input rows).
     Each row has at most two nonzero entries. -/
-private def bilinearWeights1D (inLen scale : Nat) : Array (Array Float) := Id.run do
+def bilinearWeights1D (inLen scale : Nat) : Array (Array Float) := Id.run do
   let outLen := inLen * scale
   let mut rows : Array (Array Float) := Array.replicate outLen (Array.replicate inLen 0.0)
   let den : Int := 2 * Int.ofNat scale
@@ -918,7 +923,7 @@ private def bilinearWeights1D (inLen scale : Nat) : Array (Array Float) := Id.ru
 
 /-- Serialize a 2-D float matrix as MLIR `dense<[[...]]>` payload (no
     `dense<>` wrapper, no type — caller adds those). -/
-private def floatMatrixToMlirDense (m : Array (Array Float)) : String :=
+def floatMatrixToMlirDense (m : Array (Array Float)) : String :=
   let rowStrs := m.toList.map fun row =>
     "[" ++ ",".intercalate (row.toList.map fun v => s!"{v}") ++ "]"
   "[" ++ ",".intercalate rowStrs ++ "]"
@@ -932,7 +937,7 @@ private def floatMatrixToMlirDense (m : Array (Array Float)) : String :=
     matmul factorization keeps the cost at `O(b·c·(h·w·oH + oH·w·oW))`
     rather than naïve gather + 4-corner blend, and reuses the existing
     `dot_general` lowering paths. -/
-private def emitBilinearUpsample (pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitBilinearUpsample (pos : Nat) (curSSA : String) (curShape : List Nat)
     (scale : Nat) : String × String × List Nat := Id.run do
   match curShape with
   | [b, c, h, w] =>
@@ -959,7 +964,7 @@ private def emitBilinearUpsample (pos : Nat) (curSSA : String) (curShape : List 
 /-- Emit patch embedding forward. Input (B, ic, H, W) → (B, N+1, dim).
     Three params: W (dim, ic, p, p), b (dim,), cls (dim,), pos (N+1, dim).
     Returns (code, outSSA, outShape). -/
-private def emitPatchEmbedForward (tag : String) (curSSA : String) (curShape : List Nat)
+def emitPatchEmbedForward (tag : String) (curSSA : String) (curShape : List Nat)
     (ic dim pSize nP : Nat) (pWSSA pBSSA pClsSSA pPosSSA : String)
     : String × String × List Nat := Id.run do
   match curShape with
@@ -1001,7 +1006,7 @@ private def emitPatchEmbedForward (tag : String) (curSSA : String) (curShape : L
 /-- Emit LayerNorm forward for a (B, N, D) input, normalizing across D.
     Returns (code, outSSA, saved records: normSSA, istdSSA, meanSSA).
     gamma, beta are (D,). -/
-private def emitLayerNormForward (tag : String) (xSSA : String) (shape : List Nat)
+def emitLayerNormForward (tag : String) (xSSA : String) (shape : List Nat)
     (gammaSSA betaSSA : String)
     : String × String × String × String × String := Id.run do
   match shape with
@@ -1048,7 +1053,7 @@ private def emitLayerNormForward (tag : String) (xSSA : String) (shape : List Na
     `[B, HW]`), which is what the matching backward consumes.
 
     Returns `(code, outSSA, normSSA, istdSSA, meanSSA)`. -/
-private def emitLayerNormForwardNCHW (tag : String) (xSSA : String) (shape : List Nat)
+def emitLayerNormForwardNCHW (tag : String) (xSSA : String) (shape : List Nat)
     (gammaSSA betaSSA : String)
     : String × String × String × String × String := Id.run do
   match shape with
@@ -1102,7 +1107,7 @@ private def emitLayerNormForwardNCHW (tag : String) (xSSA : String) (shape : Lis
     Returns `(code, outSSA, normSSA, meanBcSSA, istdBcSSA)`. `meanBcSSA`
     and `istdBcSSA` are the broadcast-to-NCHW versions used by the
     matching backward. -/
-private def emitBatchNormForwardNCHW (pidx : Nat) (xSSA : String) (shape : List Nat)
+def emitBatchNormForwardNCHW (pidx : Nat) (xSSA : String) (shape : List Nat)
     (gammaSSA betaSSA : String) (fixedBN : Bool := false)
     : String × String × String × String × String := Id.run do
   match shape with
@@ -1147,7 +1152,7 @@ private def emitBatchNormForwardNCHW (pidx : Nat) (xSSA : String) (shape : List 
 
 /-- Emit GELU forward (tanh form, exact) for a tensor of given shape.
     Returns (code, outSSA, tanhSSA) where tanhSSA is saved for backward. -/
-private def emitGeluForward (tag : String) (xSSA : String) (shape : List Nat)
+def emitGeluForward (tag : String) (xSSA : String) (shape : List Nat)
     : String × String × String := Id.run do
   let ty := tensorTy shape
   let mut s := ""
@@ -1168,7 +1173,7 @@ private def emitGeluForward (tag : String) (xSSA : String) (shape : List Nat)
 
 /-- Emit dense layer for rank-3 (B, N, D) input → (B, N, fanOut).
     W shape (D, fanOut), b shape (fanOut,). -/
-private def emitDense3D (tag : String) (xSSA : String) (shape : List Nat)
+def emitDense3D (tag : String) (xSSA : String) (shape : List Nat)
     (wSSA bSSA : String) (fanOut : Nat) : String × String × List Nat := Id.run do
   match shape with
   | [b, n, d] =>
@@ -1193,7 +1198,7 @@ private def emitDense3D (tag : String) (xSSA : String) (shape : List Nat)
     feature blocks are its head, and the tail, reshaped to `[B, p, L, L]`, is concatenated
     onto the map as its last `p` channels. Returns `(code, outSSA, uSSA, vSSA)`, the two block
     inputs kept for the backward's weight gradients. -/
-private def emitPairTileForward (tag xSSA : String) (b l d c : Nat) (wi wj : String) (p : Nat := 0)
+def emitPairTileForward (tag xSSA : String) (b l d c : Nat) (wi wj : String) (p : Nat := 0)
     : String × String × String × String := Id.run do
   let flat := [b, 2 * l * d]
   let row := [b, 2 * l * d + p * l * l]
@@ -1237,7 +1242,7 @@ private def emitPairTileForward (tag xSSA : String) (b l d c : Nat) (wi wj : Str
     per-row logsumexp the backward needs. Requires `n % bk == 0`. Validated
     end-to-end against dense attention (jax/demos/flash_attention_ref.py +
     an IREE compile+run probe, ~1e-7 fp32). -/
-private def emitFlashAttnSdpa (tag : String) (qSSA kSSA vSSA : String)
+def emitFlashAttnSdpa (tag : String) (qSSA kSSA vSSA : String)
     (b heads n dh bk : Nat) (causal : Bool) : String × String × String := Id.run do
   let hTy := tensorTy [b, heads, n, dh]
   let blkTy := tensorTy [b, heads, bk, dh]
@@ -1324,7 +1329,7 @@ private def emitFlashAttnSdpa (tag : String) (qSSA kSSA vSSA : String)
     the softmax-Jacobian term. dQ accumulates across ALL blocks; dK/dV are written
     once per (disjoint) key block via `dynamic_update_slice`. Matches
     `flash_attention_ref.py:flash_backward` (validated ~1e-15). -/
-private def emitFlashAttnBwd (tag : String) (qSSA kSSA vSSA doSSA oSSA lseSSA : String)
+def emitFlashAttnBwd (tag : String) (qSSA kSSA vSSA doSSA oSSA lseSSA : String)
     (b heads n dh bk : Nat) (causal : Bool) : String × String × String × String := Id.run do
   let hTy := tensorTy [b, heads, n, dh]
   let blkTy := tensorTy [b, heads, bk, dh]
@@ -1399,13 +1404,13 @@ private def emitFlashAttnBwd (tag : String) (qSSA kSSA vSSA doSSA oSSA lseSSA : 
 
 /-- Block size for FlashAttention: a divisor of `n` ≤ 128 (fewer blocks for
     short sequences, real memory win for long ones). -/
-private def flashBlock (n : Nat) : Nat :=
+def flashBlock (n : Nat) : Nat :=
   if n % 128 == 0 then 128 else if n % 64 == 0 then 64 else n
 
 /-- Emit the RoPE cos/sin tables `[n, dh]` in-graph (scale-independent — no
     giant constant): `θ_i = base^(-2i/dh)`, `freqs[m,i] = m·θ_i`, tiled to dh.
     Returns `(code, cosSSA, sinSSA)`. See jax/demos/rope_ref.py. -/
-private def emitRopeTables (tag : String) (n dh : Nat) (base : Float := 10000.0)
+def emitRopeTables (tag : String) (n dh : Nat) (base : Float := 10000.0)
     : String × String × String := Id.run do
   let half := dh / 2
   let thTy := tensorTy [half]
@@ -1431,7 +1436,7 @@ private def emitRopeTables (tag : String) (n dh : Nat) (base : Float := 10000.0)
 /-- Apply RoPE to `xSSA : [b,heads,n,dh]` given the `[n,dh]` cos/sin tables:
     `x⊙cos + rotate_half(x)⊙sin`, `rotate_half([a,b])=[-b,a]`. With `negSin`
     (the backward/VJP), sin is negated (rotation by −θ). Returns `(code, outSSA)`. -/
-private def emitRopeApply (tag : String) (xSSA cosSSA sinSSA : String)
+def emitRopeApply (tag : String) (xSSA cosSSA sinSSA : String)
     (b heads n dh : Nat) (negSin : Bool) : String × String := Id.run do
   let half := dh / 2
   let hTy := tensorTy [b, heads, n, dh]
@@ -1456,7 +1461,7 @@ private def emitRopeApply (tag : String) (xSSA cosSSA sinSSA : String)
 /-- Emit multi-head self-attention forward.
     Input x (B, N, D). Params: Wq, bq, Wk, bk, Wv, bv, Wo, bo.
     Returns (code, outSSA, Q, K, V, softmax-or-Lse, preProj, sdpaOut SSAs). -/
-private def emitMHSAForward (tag : String) (xSSA : String) (shape : List Nat)
+def emitMHSAForward (tag : String) (xSSA : String) (shape : List Nat)
     (heads : Nat) (wqSSA bqSSA wkSSA bkSSA wvSSA bvSSA woSSA boSSA : String)
     (causalMask : Bool := false) (flashAttn : Bool := false) (rope : Bool := false)
     : String × String × String × String × String × String × String × String := Id.run do
@@ -1558,7 +1563,7 @@ private def emitMHSAForward (tag : String) (xSSA : String) (shape : List Nat)
     Uses pidx starting at `startP` and 8 param pairs per block:
     LN1(g,b), Wq,bq, Wk,bk, Wv,bv, Wo,bo, LN2(g,b), Wfc1,bfc1, Wfc2,bfc2.
     Returns (code, outSSA, newPidx). -/
-private def emitTransformerBlockForward (tag : String) (startP : Nat) (xSSA : String) (shape : List Nat)
+def emitTransformerBlockForward (tag : String) (startP : Nat) (xSSA : String) (shape : List Nat)
     (heads mlpDim : Nat) (causalMask : Bool := false) (rope : Bool := false) : String × String × Nat := Id.run do
   match shape with
   | [_b, _n, d] =>
@@ -1601,7 +1606,7 @@ private def emitTransformerBlockForward (tag : String) (startP : Nat) (xSSA : St
 
 /-- Emit a residual block stage: nBlocks basic blocks, first may downsample.
     Returns (code, newSSA, newShape, newPidx). -/
-private def emitResidualBlock (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitResidualBlock (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc nBlocks firstStride : Nat) (fixedBN : Bool := false) : String × String × List Nat × Nat := Id.run do
   let needsProj := !(ic == oc && firstStride == 1)
   let mut code := ""
@@ -1634,7 +1639,7 @@ private def emitResidualBlock (startPidx : Nat) (curSSA : String) (curShape : Li
 
 /-- Emit a bottleneck block stage: nBlocks bottleneck blocks (1x1→3x3→1x1).
     mid = oc / 4 is the bottleneck channels. First block may downsample. -/
-private def emitBottleneckBlock (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitBottleneckBlock (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc nBlocks firstStride : Nat) (fixedBN : Bool := false) : String × String × List Nat × Nat := Id.run do
   let mid := oc / 4
   let needsProj := !(ic == oc && firstStride == 1)
@@ -1669,7 +1674,7 @@ private def emitBottleneckBlock (startPidx : Nat) (curSSA : String) (curShape : 
   return (code, ssa, shape, p)
 
 /-- Emit a dense layer. Assumes (batch, fanIn) input. -/
-private def emitDense (pidx : Nat) (curSSA : String) (batchSize fanIn fanOut : Nat)
+def emitDense (pidx : Nat) (curSSA : String) (batchSize fanIn fanOut : Nat)
     (act : Activation) : String × String := Id.run do
   let bTy := tensorTy [batchSize, fanOut]
   let mut s := ""
@@ -1712,7 +1717,7 @@ private def emitDense (pidx : Nat) (curSSA : String) (batchSize fanIn fanOut : N
     DW (W, b), norm (γ, β), expand (W, b), project (W, b), LayerScale (γ).
     `norm` selects LN (default, paper) or BN (running stats fed in eval).
     Caller must already have emitted any preceding downsample. -/
-private def emitConvNextStage (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitConvNextStage (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (channels nBlocks : Nat) (norm : Normalization) (act : Activation) (fixedBN : Bool := false)
     : String × String × List Nat × Nat := Id.run do
   let mut code := ""
@@ -1764,7 +1769,7 @@ private def emitConvNextStage (startPidx : Nat) (curSSA : String) (curShape : Li
 /-- Emit a ConvNeXt downsample (forward inference): norm(channel-axis) on
     `ic`-channel input, then a 2×2 stride-2 valid-pad conv `ic → oc`.
     Two pidx slots: norm (γ, β), conv (W, b). `norm` selects LN/BN. -/
-private def emitConvNextDownsample (startPidx : Nat) (curSSA : String) (curShape : List Nat)
+def emitConvNextDownsample (startPidx : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc : Nat) (norm : Normalization) (fixedBN : Bool := false)
     : String × String × List Nat × Nat := Id.run do
   match curShape with
@@ -1805,7 +1810,7 @@ private def emitConvNextDownsample (startPidx : Nat) (curSSA : String) (curShape
     network input (`prependTChannel` fills it with `t/Tmax`, constant
     over the plane). Given the flat input `%x_flat : [B, inDim]` and the
     channel layout, the timestep column offset is `(cIn-1)·H·W`. -/
-private def ddpmTStepOffset (spec : NetSpec) : Nat :=
+def ddpmTStepOffset (spec : NetSpec) : Nat :=
   let cIn := match spec.layers.head? with
     | some (.unetDown ic _)      => ic
     | some (.convBn ic _ _ _ _)  => ic
@@ -1821,7 +1826,7 @@ private def ddpmTStepOffset (spec : NetSpec) : Nat :=
     (broadcast over H,W) onto `featSSA : [B, C, H, W]`.
     Returns `(code, outSSA, embSSA)` — `embSSA` (the `[B, 2·nFreq]`
     sin/cos features) is stored by the train forward for the backward. -/
-private def emitTimeCondForward (tag : String) (xSSA : String) (B inDim tOff nFreq c : Nat)
+def emitTimeCondForward (tag : String) (xSSA : String) (B inDim tOff nFreq c : Nat)
     (featSSA : String) (featShape : List Nat) (pW pB : String)
     : String × String × String := Id.run do
   let nf := nFreq
@@ -1860,7 +1865,7 @@ private def emitTimeCondForward (tag : String) (xSSA : String) (B inDim tOff nFr
     W[ids[b,t], :]`, producing `%tpe_emb{pos}` `[B, T, D]` — no `[B, T, V]`
     one-hot. f32 ids convert to i32 exactly (vocab « 2²⁴). Literal attribute
     braces are concatenated (Lean s-strings reserve `{`). -/
-private def emitTokenGatherFwd (pos : Nat) (idsSSA : String) (idsShape : List Nat)
+def emitTokenGatherFwd (pos : Nat) (idsSSA : String) (idsShape : List Nat)
     (pW : String) (b t d v : Nat) : String := Id.run do
   let btd := tensorTy [b, t, d]
   let bti := s!"tensor<{b}x{t}xi32>"
@@ -1885,7 +1890,7 @@ private def emitTokenGatherFwd (pos : Nat) (idsSSA : String) (idsShape : List Na
 /-- 1×1 conv (channel mix) forward: `einsum('oi,bihw->bohw', W, x)`.
     x `[b,ic,h,w]`, W `[oc,ic]` → `[b,oc,h,w]`. dot_general contracting the input
     channel dim, then transpose the trailing out-channel back to NCHW. -/
-private def emitConv1x1Fwd (pfx xSSA wSSA : String) (b ic oc h w : Nat)
+def emitConv1x1Fwd (pfx xSSA wSSA : String) (b ic oc h w : Nat)
     : String × String := Id.run do
   let xTy := tensorTy [b, ic, h, w]
   let wTy := s!"tensor<{oc}x{ic}xf32>"
@@ -1898,7 +1903,7 @@ private def emitConv1x1Fwd (pfx xSSA wSSA : String) (b ic oc h w : Nat)
 
 /-- 1×1 conv input-VJP: `einsum('oi,bohw->bihw', W, dP)` → `dX [b,ic,h,w]`.
     Contract the out-channel dim of `dP` against W's out dim. -/
-private def emitConv1x1BwdDC (pfx wSSA dpSSA : String) (b ic oc h w : Nat)
+def emitConv1x1BwdDC (pfx wSSA dpSSA : String) (b ic oc h w : Nat)
     : String × String := Id.run do
   let wTy := s!"tensor<{oc}x{ic}xf32>"
   let dpTy := tensorTy [b, oc, h, w]
@@ -1911,7 +1916,7 @@ private def emitConv1x1BwdDC (pfx wSSA dpSSA : String) (b ic oc h w : Nat)
 
 /-- 1×1 conv weight-VJP: `einsum('bohw,bihw->oi', dP, x)` → `dW [oc,ic]`.
     Contract the batch + spatial dims jointly. -/
-private def emitConv1x1BwdDW (pfx dpSSA xSSA : String) (b ic oc h w : Nat)
+def emitConv1x1BwdDW (pfx dpSSA xSSA : String) (b ic oc h w : Nat)
     : String × String := Id.run do
   let dpTy := tensorTy [b, oc, h, w]
   let xTy := tensorTy [b, ic, h, w]
@@ -1924,7 +1929,7 @@ private def emitConv1x1BwdDW (pfx dpSSA xSSA : String) (b ic oc h w : Nat)
     backward exactly, but as a reusable emitter so the FPN DAG can route an
     upsample cotangent up the pyramid. `inShape` is the (small) pre-upsample
     shape; `gradSSA` carries the (large) post-upsample cotangent. -/
-private def emitBilinearUpsampleBwd (pos : Nat) (gradSSA : String)
+def emitBilinearUpsampleBwd (pos : Nat) (gradSSA : String)
     (inShape : List Nat) (scale : Nat) : String × String := Id.run do
   match inShape with
   | [b, c, h, w] =>
@@ -1954,7 +1959,7 @@ private def emitBilinearUpsampleBwd (pos : Nat) (gradSSA : String)
         P3 = conv1x1(C3,W3) + upsample2(P4)  [b,oc,4·g5,4·g5]
 
     Returns the code and the three pyramid SSAs `(P3,P4,P5)`. -/
-private def emitFpnNeckForward (c3SSA c4SSA c5SSA w3SSA w4SSA w5SSA : String)
+def emitFpnNeckForward (c3SSA c4SSA c5SSA w3SSA w4SSA w5SSA : String)
     (b oc c3 c4 c5 g5 : Nat) : String × (String × String × String) := Id.run do
   let g4 := 2 * g5
   let g3 := 4 * g5
@@ -1978,7 +1983,7 @@ private def emitFpnNeckForward (c3SSA c4SSA c5SSA w3SSA w4SSA w5SSA : String)
     `dP5_tot = dP5 + up^T(dP4_tot)`). Returns the code, the backbone-tap
     cotangents `(dC3,dC4,dC5)`, and the lateral-weight gradients `(dW3,dW4,dW5)`.
     Mirrors `fpn_grad` in `scripts/probes/fpn_neck_check.py`. -/
-private def emitFpnNeckBackward (dP3SSA dP4SSA dP5SSA : String)
+def emitFpnNeckBackward (dP3SSA dP4SSA dP5SSA : String)
     (c3SSA c4SSA c5SSA w3SSA w4SSA w5SSA : String) (b oc c3 c4 c5 g5 : Nat)
     : String × (String × String × String) × (String × String × String) := Id.run do
   let g4 := 2 * g5
@@ -2013,7 +2018,7 @@ private def emitFpnNeckBackward (dP3SSA dP4SSA dP5SSA : String)
 
     Returns the code, the post-ReLU output SSA, and the PRE-activation SSA (the
     backward needs it for the ReLU mask). -/
-private def emitTowerConvFwd (pfx xSSA wSSA bSSA : String) (b c h w k : Nat)
+def emitTowerConvFwd (pfx xSSA wSSA bSSA : String) (b c h w k : Nat)
     : String × String × String := Id.run do
   let ty := tensorTy [b, c, h, w]
   let kTy := tensorTy [c, c, k, k]
@@ -2032,7 +2037,7 @@ private def emitTowerConvFwd (pfx xSSA wSSA bSSA : String) (b c h w k : Nat)
     pre-ReLU SSA the forward returned; `xSSA` is that layer's input. Returns the
     code, `dX`, `dW`, `db`. Same three-step structure as the `.conv2d` backward
     (dW by the transpose trick, dX by the reversed+transposed kernel). -/
-private def emitTowerConvBwd (pfx dOutSSA xSSA preActSSA wSSA : String)
+def emitTowerConvBwd (pfx dOutSSA xSSA preActSSA wSSA : String)
     (b c h w k : Nat) : String × String × String × String := Id.run do
   let ty := tensorTy [b, c, h, w]
   let i1 := s!"tensor<{b}x{c}x{h}x{w}xi1>"
@@ -2072,7 +2077,7 @@ private def emitTowerConvBwd (pfx dOutSSA xSSA preActSSA wSSA : String)
 
     Returns the code, the output SSA, and the per-layer `(input, preAct)` SSA
     pairs the backward needs, in forward order. -/
-private def emitFpnTowerFwd (pfx xSSA : String) (wSSAs bSSAs : List String)
+def emitFpnTowerFwd (pfx xSSA : String) (wSSAs bSSAs : List String)
     (b c h w k depth : Nat) : String × String × List (String × String) := Id.run do
   let mut s := ""
   let mut cur := xSSA
@@ -2087,7 +2092,7 @@ private def emitFpnTowerFwd (pfx xSSA : String) (wSSAs bSSAs : List String)
 /-- VJP of `emitFpnTowerFwd`: walk the layers in REVERSE, threading the input
     cotangent back to the tower's input. Returns the code, `dX`, and the per-layer
     `(dW, db)` pairs in FORWARD order (so they bind to `%W{base+i}` directly). -/
-private def emitFpnTowerBwd (pfx dOutSSA : String) (taps : List (String × String))
+def emitFpnTowerBwd (pfx dOutSSA : String) (taps : List (String × String))
     (wSSAs : List String) (b c h w k depth : Nat)
     : String × String × List (String × String) := Id.run do
   let mut s := ""
@@ -2114,7 +2119,7 @@ private def emitFpnTowerBwd (pfx dOutSSA : String) (taps : List (String × Strin
 
     where `headBase = base + 3 + 6·depth`. Returns the per-level tower weight and
     bias name lists; `depth = 0` gives three empty lists. -/
-private def fpnTowerParamSSAs (pfx : String) (base depth : Nat)
+def fpnTowerParamSSAs (pfx : String) (base depth : Nat)
     : List (List String) × List (List String) := Id.run do
   let mut ws : List (List String) := []
   let mut bs : List (List String) := []
@@ -2130,10 +2135,10 @@ private def fpnTowerParamSSAs (pfx : String) (base depth : Nat)
   return (ws, bs)
 
 /-- Index of the first head param (`Wh3`) for a `.fpnDetect` based at `base`. -/
-private def fpnHeadBase (base depth : Nat) : Nat := base + 3 + 6 * depth
+def fpnHeadBase (base depth : Nat) : Nat := base + 3 + 6 * depth
 
 /-- Total param count owned by a `.fpnDetect` layer: 9 + 6·depth. -/
-private def fpnNumParams (depth : Nat) : Nat := 9 + 6 * depth
+def fpnNumParams (depth : Nat) : Nat := 9 + 6 * depth
 
 /-- FPN detector head+neck forward: neck (top-down merge) → per-scale 1×1-conv
     heads → flatten + concat into a single `[B, Ntot]` output. Heads are a single
@@ -2148,7 +2153,7 @@ private def fpnNumParams (depth : Nat) : Nat := 9 + 6 * depth
     biasless 1×1 conv has to manufacture the constant background offset out of
     its weights, which is measurably what it spends them on: on a biasless run's validation set
     every objectness logit sits in [−2.7, −1.2]. Zero-init biases reproduce the biasless net exactly. -/
-private def emitFpnDetectForward
+def emitFpnDetectForward
     (c3SSA c4SSA c5SSA wn3 wn4 wn5 wh3 wh4 wh5 bh3 bh4 bh5 : String)
     (towerW towerB : List (List String)) (depth : Nat)
     (B oc c3 c4 c5 g5 A : Nat)
@@ -2211,7 +2216,7 @@ private def emitFpnDetectForward
     the forward's param args). The bias VJP is the plain sum of the head cotangent
     over batch + spatial (a bias added to every cell receives every cell's grad).
     All from FD-verified conv1x1 / neck emitters. -/
-private def emitFpnDetectBackward (gradConcatSSA : String)
+def emitFpnDetectBackward (gradConcatSSA : String)
     (c3SSA c4SSA c5SSA wn3 wn4 wn5 : String) (p3SSA p4SSA p5SSA : String)
     (wh3 wh4 wh5 : String)
     (towerW : List (List String)) (taps : List (List (String × String))) (depth : Nat)
@@ -2284,7 +2289,7 @@ private def emitFpnDetectBackward (gradConcatSSA : String)
     reshape the pre-GAP activation `[B, C, H, W]` to flat `[B, C*H*W]`
     and return that. CAM math is then done in Lean against the dense
     head's weights. -/
-private def emitForwardBody (spec : NetSpec) (batchSize : Nat)
+def emitForwardBody (spec : NetSpec) (batchSize : Nat)
     (fixedBN : Bool := false) (stopAtGAP : Bool := false) : String := Id.run do
   let mut code : String := ""
   let mut curSSA : String := "%x"
@@ -2663,7 +2668,7 @@ private def emitForwardBody (spec : NetSpec) (batchSize : Nat)
 
 /-- Split a layer's `ParamSlot`s into signature groups: each `W` opens a group, and a group's
     tensors share one parameter index (`%W3, %g3, %bt3`). -/
-private def slotGroups (ss : List ParamSlot) : List (List ParamSlot) :=
+def slotGroups (ss : List ParamSlot) : List (List ParamSlot) :=
   ss.foldl (fun acc sl =>
     if sl.nm == "W" || acc.isEmpty then acc ++ [[sl]]
     else acc.dropLast ++ [acc.getLast! ++ [sl]]) []
@@ -2672,7 +2677,7 @@ private def slotGroups (ss : List ParamSlot) : List (List ParamSlot) :=
     `,\n    %W3: …, %g3: …, %bt3: …` per group — read off `Layer.paramSlots` — and the next index.
     `.fpnDetect` keeps its own line layout (laterals, tower pairs, head weights, head biases);
     `.tokenPositionEmbed` puts both tables on one line. -/
-private def fwdLayerArgs (l : Layer) (p₀ : Nat) : String × Nat := Id.run do
+def fwdLayerArgs (l : Layer) (p₀ : Nat) : String × Nat := Id.run do
   let mut out := ""
   let mut p := p₀
   match l with
@@ -2706,7 +2711,7 @@ private def fwdLayerArgs (l : Layer) (p₀ : Nat) : String × Nat := Id.run do
 /-- The forward signature's parameter list and output shape: `%x`, the parameter arguments
     (`fwdLayerArgs`), and the activation shape walked through every layer. Shared by
     `emitForwardSig` and `emitForwardEvalSig`. -/
-private def fwdSigParts (spec : NetSpec) (batchSize : Nat) : String × List Nat := Id.run do
+def fwdSigParts (spec : NetSpec) (batchSize : Nat) : String × List Nat := Id.run do
   let inDim := inputFlatDim spec
   let mut params := s!"%x: {tensorTy [batchSize, inDim]}"
   let mut p : Nat := 0
@@ -2799,7 +2804,7 @@ private def fwdSigParts (spec : NetSpec) (batchSize : Nat) : String × List Nat 
   pure (params, outShape)
 
 /-- Emit function signature: interleaved (W, b) per param-bearing layer. -/
-private def emitForwardSig (spec : NetSpec) (batchSize : Nat) : String :=
+def emitForwardSig (spec : NetSpec) (batchSize : Nat) : String :=
   let (params, outShape) := fwdSigParts spec batchSize
   s!"func.func @forward(\n    {params}\n  ) -> {tensorTy outShape}"
 
@@ -2971,7 +2976,7 @@ def _root_.NetSpec.bnLayers (spec : NetSpec) : Array (Nat × Nat) := Id.run do
 
 /-- Emit function signature for forward_eval: same as forward but with
     bn_mean/bn_var params appended for each BN layer. -/
-private def emitForwardEvalSig (spec : NetSpec) (batchSize : Nat) : String := Id.run do
+def emitForwardEvalSig (spec : NetSpec) (batchSize : Nat) : String := Id.run do
   let (params, outShape) := fwdSigParts spec batchSize
   let mut params := params
   for (p, oc) in spec.bnLayers do
@@ -3087,7 +3092,7 @@ def preGAPShape (spec : NetSpec) : Option (Nat × Nat × Nat) := Id.run do
 /-- Forward-with-capture signature: same params as `emitForwardEvalSig`
     but returns the flat pre-GAP feature map `[batch, C*H*W]` instead of
     the logits `[batch, NC]`. -/
-private def emitForwardCamSig (spec : NetSpec) (batchSize : Nat) : String := Id.run do
+def emitForwardCamSig (spec : NetSpec) (batchSize : Nat) : String := Id.run do
   -- Reuse eval-sig generation, then rewrite the function name and the
   -- return type. Cheaper than duplicating the param emission.
   let evalSig := emitForwardEvalSig spec batchSize
@@ -3127,7 +3132,7 @@ def generateForwardCam (spec : NetSpec) (batchSize : Nat) : String :=
 -- ════════════════════════════════════════════════════════════════════
 
 /-- Record saved during forward pass for use by backward. -/
-private structure FwdRec where
+structure FwdRec where
   layer     : Layer
   pidx      : Option Nat   -- param index (conv/dense only)
   pos       : Nat          -- layer position
@@ -3301,7 +3306,7 @@ instance : Inhabited FwdRec where
 
 /-- Emit convBn forward for train step. Records intermediates for backward.
     Returns (code, FwdRec). -/
-private def emitConvBnTrain (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitConvBnTrain (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc kSize stride : Nat) (relu : Bool) : String × FwdRec := Id.run do
   match curShape with
   | [b, _, h, w] =>
@@ -3368,7 +3373,7 @@ private def emitConvBnTrain (pidx pos : Nat) (curSSA : String) (curShape : List 
     Weight shape: (channels, 1, kSize, kSize), feature_group_count = channels.
     Activation: ReLU6 by default, Swish if `useSwish := true`, or h-swish if
     `useHSwish := true`. -/
-private def emitDepthwiseConvBnTrain (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitDepthwiseConvBnTrain (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
     (channels kSize stride : Nat) (useSwish : Bool := false)
     (useHSwish : Bool := false) (useRelu : Bool := false)
     -- `noAct`: BN only, the output IS the pre-activation (MobileNetV4's `dw_start`). Not the
@@ -3464,7 +3469,7 @@ private def emitDepthwiseConvBnTrain (pidx pos : Nat) (curSSA : String) (curShap
 
 /-- Emit convBn forward for train step with ReLU6 (used for inverted residual expand).
     Same as emitConvBnTrain but with ReLU6 activation instead of ReLU. -/
-private def emitConvBnTrainRelu6 (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitConvBnTrainRelu6 (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc kSize stride : Nat) : String × FwdRec := Id.run do
   match curShape with
   | [b, _, h, w] =>
@@ -3530,7 +3535,7 @@ private def emitConvBnTrainRelu6 (pidx pos : Nat) (curSSA : String) (curShape : 
 
 /-- Emit convBn forward for train step with Swish (x * sigmoid(x)) activation.
     Used by EfficientNet's MBConv. -/
-private def emitConvBnTrainSwish (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitConvBnTrainSwish (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc kSize stride : Nat) : String × FwdRec := Id.run do
   match curShape with
   | [b, _, h, w] =>
@@ -3594,7 +3599,7 @@ private def emitConvBnTrainSwish (pidx pos : Nat) (curSSA : String) (curShape : 
 
 /-- Emit convBn forward for train step with h-swish activation:
     h_swish(x) = x * ReLU6(x + 3) / 6. Used by MobileNetV3. -/
-private def emitConvBnTrainHSwish (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
+def emitConvBnTrainHSwish (pidx pos : Nat) (curSSA : String) (curShape : List Nat)
     (ic oc kSize stride : Nat) : String × FwdRec := Id.run do
   match curShape with
   | [b, _, h, w] =>
@@ -3665,7 +3670,7 @@ private def emitConvBnTrainHSwish (pidx pos : Nat) (curSSA : String) (curShape :
 
 /-- Emit convBn backward: inst norm VJP + conv backward.
     Returns (code, gradient SSA name, gradient shape). -/
-private def emitConvBnBackward (r : FwdRec) (gradSSA : String) : String × String × String := Id.run do
+def emitConvBnBackward (r : FwdRec) (gradSSA : String) : String × String × String := Id.run do
   let p := r.pidx.getD 0
   let oc := r.outShape[1]!
   let b := r.outShape[0]!
@@ -3833,7 +3838,7 @@ private def emitConvBnBackward (r : FwdRec) (gradSSA : String) : String × Strin
 /-- Emit depthwise convBn backward: BN VJP + depthwise conv backward.
     Weight shape: (channels, 1, kSize, kSize), feature_group_count = channels.
     Returns (code, gradient SSA name, dW SSA name). -/
-private def emitDepthwiseConvBnBackward (r : FwdRec) (gradSSA : String) : String × String × String := Id.run do
+def emitDepthwiseConvBnBackward (r : FwdRec) (gradSSA : String) : String × String × String := Id.run do
   let p := r.pidx.getD 0
   let channels := r.outShape[1]!
   let b := r.outShape[0]!
@@ -3994,7 +3999,7 @@ private def emitDepthwiseConvBnBackward (r : FwdRec) (gradSSA : String) : String
     v_hat = v_new / bc2    (bc2 = 1 - β2^t, precomputed)
     w_new = w - lr * m_hat / (sqrt(v_hat) + ε)
     + optional decoupled weight decay: w_new = w_new - wd*lr*w -/
-private def emitAdamUpdate (paramSSA gradSSA mSSA vSSA : String) (shape : List Nat) (tag : String)
+def emitAdamUpdate (paramSSA gradSSA mSSA vSSA : String) (shape : List Nat) (tag : String)
     (applyWeightDecay : Bool := false) (clipScale : Option String := none) (lrSSA : String := "%lr")
     : String × String × String × String := Id.run do
   let ty := tensorTy shape
@@ -4047,7 +4052,7 @@ private def emitAdamUpdate (paramSSA gradSSA mSSA vSSA : String) (shape : List N
     v_new = mu * v + grad
     w_new = w - lr * v_new
     + optional decoupled weight decay: w_new = w_new - wd*lr*w -/
-private def emitMomentumUpdate (paramSSA gradSSA mSSA vSSA : String) (shape : List Nat) (tag : String)
+def emitMomentumUpdate (paramSSA gradSSA mSSA vSSA : String) (shape : List Nat) (tag : String)
     (applyWeightDecay : Bool := false) (clipScale : Option String := none) (lrSSA : String := "%lr")
     : String × String × String × String := Id.run do
   let ty := tensorTy shape
@@ -4092,7 +4097,7 @@ private def emitMomentumUpdate (paramSSA gradSSA mSSA vSSA : String) (shape : Li
     `%loss` / `%d_logits_seg` the seg path consumes, and are overridden only
     by `.diceCE`, which emits this block and the Dice block side by side under
     private names and sums them. -/
-private def emitPerPixelCEBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
+def emitPerPixelCEBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
     (labelSmoothing : Float)
     (lossOut : String := "%loss") (gradOut : String := "%d_logits_seg")
     (weights : List Float := []) (pfx : String := "seg") : String := Id.run do
@@ -4219,7 +4224,7 @@ private def emitPerPixelCEBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
     Labels are one-hot'd raw here: label smoothing is a CE notion (it softens
     a log-likelihood target) and has no meaning for a set-overlap ratio, so
     `.diceCE` applies smoothing to its CE half only. -/
-private def emitSegDiceBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
+def emitSegDiceBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
     (lossOut : String := "%loss") (gradOut : String := "%d_logits_seg")
     (smooth : Float := 1.0) : String := Id.run do
   let bhwI32  := s!"tensor<{B}x{H}x{W}xi32>"
@@ -4320,7 +4325,7 @@ private def emitSegDiceBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
     derivative of the `(1-p_t)^γ` factor itself. Detaching is a defensible
     approximation but yields a `d_logits` that is not the gradient of the loss
     being reported, which FD would (correctly) reject. -/
-private def emitSegFocalBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
+def emitSegFocalBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
     (gamma : Float)
     (lossOut : String := "%loss") (gradOut : String := "%d_logits_seg")
     : String := Id.run do
@@ -4403,7 +4408,7 @@ private def emitSegFocalBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
     `%d_logits_seg` defined either way. `.diceCE` emits both blocks under
     private names and sums them; the duplicated softmax prologue is identical
     SSA on identical inputs, so CSE folds it. -/
-private def emitSegLossBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
+def emitSegLossBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
     (labelSmoothing : Float) (segLoss : SegLoss) : String := Id.run do
   let bnhwfTy := tensorTy [B, NC, H, W]
   match segLoss with
@@ -4472,7 +4477,7 @@ private def emitSegLossBlock (B NC H W : Nat) (logitsSSA labelSSA : String)
     `loss = Σ_cells mask·(1 - DIoU)` with `DIoU = IoU − ρ²(centers)/c²(enclosing)`.
     Requires `%zf` in scope. Numeric spec: scripts/probes/diou_grad_check.py; the emitted
     forward is checked against numpy in scripts/probes/diou_probe_check.py. -/
-private def emitDiouForward (B gH gW : Nat) (predSSA tgtSSA maskSSA : String)
+def emitDiouForward (B gH gW : Nat) (predSSA tgtSSA maskSSA : String)
     (lossOut : String := "%dio_loss") (anchorW : Float := 1.0) (anchorH : Float := 1.0)
     (pfx : String := "dio") : String := Id.run do
   let c1 := tensorTy [B, 1, gH, gW]
@@ -4597,7 +4602,7 @@ private def emitDiouForward (B gH gW : Nat) (predSSA tgtSSA maskSSA : String)
     diou_grad_check.py; FD-verified against the emitted forward in
     scripts/probes/diou_probe_check.py. Every piecewise min/max sub-gradient is an
     indicator (compare→select). -/
-private def emitDiouBackward (B gH gW : Nat) (gradOut : String := "%dio_dpred") (pfx : String := "dio") : String := Id.run do
+def emitDiouBackward (B gH gW : Nat) (gradOut : String := "%dio_dpred") (pfx : String := "dio") : String := Id.run do
   let c1 := tensorTy [B, 1, gH, gW]
   let i1 := s!"tensor<{B}x1x{gH}x{gW}xi1>"
   let p4 := tensorTy [B, 4, gH, gW]
@@ -4716,7 +4721,7 @@ private def emitDiouBackward (B gH gW : Nat) (gradOut : String := "%dio_dpred") 
     gradient is assembled per anchor to `[B,15,gH,gW]` and concatenated to
     `[B, A·15, gH, gW]`. Requires `%zf`,`%neginf` in scope. FD-verified in
     scripts/probes/anchor_loss_probe_check.py. -/
-private def emitAnchorYoloLoss (B gH gW : Nat) (anchors : List (Float × Float))
+def emitAnchorYoloLoss (B gH gW : Nat) (anchors : List (Float × Float))
     (predSSA tgtSSA : String) (focalGamma : Float) (lambdaBox : Float)
     (lossOut gradOut : String) (tag : String := "")
     (clsWeights : List Float := []) (clsFocalGamma : Float := 0.0) : String := Id.run do
@@ -4950,7 +4955,7 @@ private def emitAnchorYoloLoss (B gH gW : Nat) (anchors : List (Float × Float))
     `emitTrainStepBody` single-output. Scales are independent (no cross-scale
     terms), so `d(loss)/d(logits) = concat(flat gradₛ)`. Requires `%zf` in scope.
     `scales` = per-scale (grid, anchors); `tgtSSAs` the matching target blocks. -/
-private def emitMultiScaleYoloLoss (B : Nat)
+def emitMultiScaleYoloLoss (B : Nat)
     (scales : List (Nat × List (Float × Float))) (tgtSSAs : List String)
     (logitsSSA : String) (focalGamma lambdaBox : Float)
     (lossOut gradOut : String) (clsWeights : List Float := [])
@@ -4997,7 +5002,7 @@ private def emitMultiScaleYoloLoss (B : Nat)
 
 /-- The train step's constants: `%zf` / `%neginf`, the optimizer's (Adam or momentum), and the
     weight decay. -/
-private def emitTrainConstants (useAdam : Bool) (weightDecay : Float) : String :=
+def emitTrainConstants (useAdam : Bool) (weightDecay : Float) : String :=
   Id.run do
   let mut code : String := ""
   code := code ++ "    %zf = stablehlo.constant dense<0.0> : tensor<f32>\n"
@@ -5026,7 +5031,7 @@ private def emitTrainConstants (useAdam : Bool) (weightDecay : Float) : String :
 /-- The loss on the logits `logitsSSA` and its gradient seed — FPN multi-scale YOLO, YOLOv1, DDPM,
     per-pixel segmentation, or softmax cross-entropy (optionally focal / soft-label). Returns the
     text, the seed's name and its shape, which the backward walk starts from. -/
-private def emitTrainLoss (spec : NetSpec) (B : Nat) (logitsSSA : String) (curShape : List Nat)
+def emitTrainLoss (spec : NetSpec) (B : Nat) (logitsSSA : String) (curShape : List Nat)
     (labelSmoothing : Float) (useSoftLabels useFocal : Bool) (focalGamma : Float)
     (useSeg useDdpm useYolov1 : Bool) (yoloGridH yoloGridW yoloNumBoxes yoloNumClasses : Nat)
     (segLoss : SegLoss) (useDiouBox : Bool) (yoloAnchors : List (Float × Float))
@@ -5547,7 +5552,7 @@ private def emitTrainLoss (spec : NetSpec) (B : Nat) (logitsSSA : String) (curSh
 
 /-- The optimizer updates, one per `Layer.paramSlots` tensor, then the `return` of the updated θ / m /
     v, the loss and the BN statistics. -/
-private def emitOptimizerUpdates (spec : NetSpec) (weightDecay : Float) (useAdam : Bool)
+def emitOptimizerUpdates (spec : NetSpec) (weightDecay : Float) (useAdam : Bool)
     (gradClipNorm headLrMult : Float) : String := Id.run do
   let mut code : String := ""
   -- ═══════════════ OPTIMIZER UPDATES ═══════════════
@@ -5643,7 +5648,7 @@ private def emitOptimizerUpdates (spec : NetSpec) (weightDecay : Float) (useAdam
 /-- The train step's forward walk: one block of StableHLO per layer, from the input reshape to the
     logits. Returns the text, the logits' SSA name and shape, and one `FwdRec` per layer — the
     names and shapes `emitTrainBackward` reads back. -/
-private def emitTrainForward (spec : NetSpec) (B : Nat)
+def emitTrainForward (spec : NetSpec) (B : Nat)
     : String × String × List Nat × Array FwdRec := Id.run do
   let mut code : String := ""
 
@@ -6930,7 +6935,7 @@ private def emitTrainForward (spec : NetSpec) (B : Nat)
 /-- The train step's backward walk: the `FwdRec`s in reverse, each layer's VJP from the cotangent
     `gradSSA₀ : gradShape₀` the loss seeds, writing `%d_W{p}` / `%d_b{p}` (and the other parameter
     gradients) that `emitOptimizerUpdates` reads. -/
-private def emitTrainBackward (B : Nat) (records : Array FwdRec) (gradSSA₀ : String)
+def emitTrainBackward (B : Nat) (records : Array FwdRec) (gradSSA₀ : String)
     (gradShape₀ : List Nat) : String := Id.run do
   let mut code : String := ""
   let mut gradSSA := gradSSA₀
@@ -8137,7 +8142,7 @@ private def emitTrainBackward (B : Nat) (records : Array FwdRec) (gradSSA₀ : S
 
 /-- Emit the full train step: constants, `emitTrainForward`, `emitTrainLoss`, `emitTrainBackward`,
     `emitOptimizerUpdates`. -/
-private def emitTrainStepBody (spec : NetSpec) (batchSize : Nat) (_moduleName : String)
+def emitTrainStepBody (spec : NetSpec) (batchSize : Nat) (_moduleName : String)
     (labelSmoothing : Float := 0.1) (weightDecay : Float := 0.0001) (useAdam : Bool := true)
     (useSoftLabels : Bool := false)
     (useFocal : Bool := false) (focalGamma : Float := 2.0)
@@ -8167,7 +8172,7 @@ private def emitTrainStepBody (spec : NetSpec) (batchSize : Nat) (_moduleName : 
     group, and the parameter types in order — read off `Layer.paramSlots`. Two layers keep their own
     line shapes: `.fpnDetect` numbers every tensor, one per line, and `.tokenPositionEmbed` puts its
     embedding and positional table on one line. -/
-private def trainSigArgs (pfx : String) (spec : NetSpec) : String × Array String := Id.run do
+def trainSigArgs (pfx : String) (spec : NetSpec) : String × Array String := Id.run do
   let mut out := ""
   let mut tys : Array String := #[]
   let mut p : Nat := 0
@@ -8197,7 +8202,7 @@ private def trainSigArgs (pfx : String) (spec : NetSpec) : String × Array Strin
   (out, tys)
 
 /-- Emit the train_step function signature. -/
-private def emitTrainStepSig (spec : NetSpec) (batchSize : Nat)
+def emitTrainStepSig (spec : NetSpec) (batchSize : Nat)
     (useSoftLabels : Bool := false) (useSeg : Bool := false)
     (useDdpm : Bool := false) (ddpmOutShape : List Nat := [])
     (useYolov1 : Bool := false)

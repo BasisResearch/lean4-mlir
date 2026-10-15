@@ -1,4 +1,8 @@
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-! # Pure-Lean E4M3 (fp8) fake-quant over raw-f32 `ByteArray`s
 
@@ -24,12 +28,12 @@ Values move through `F32.read` (extern f32→Float) and are re-encoded f32→`Fl
 namespace F32E4M3
 
 /-- E4M3 largest finite magnitude: `S.1111.110 = 2⁸·1.75`. -/
-@[inline] private def e4m3Max : Float := 448.0
+@[inline] def e4m3Max : Float := 448.0
 
 /-- Round half to even: `Float.round` (C `round`) sends ties away from zero, so a
     tie whose away-from-zero neighbour is odd steps back one toward zero. Agrees
     with numpy's `np.round`. -/
-private def roundHalfEven (y : Float) : Float :=
+def roundHalfEven (y : Float) : Float :=
   let r := Float.round y
   if (r - y).abs == 0.5 && Float.floor (r / 2.0) * 2.0 != r then
     if y < 0.0 then r + 1.0 else r - 1.0
@@ -38,7 +42,7 @@ private def roundHalfEven (y : Float) : Float :=
 /-- Round one value to the E4M3 grid (round-to-nearest, ties to even, subnormals
     on the `e = −6` grid, saturating). Mirrors `to_e4m3` in the numpy oracle,
     tie rule included. -/
-private def roundE4M3 (x : Float) : Float :=
+def roundE4M3 (x : Float) : Float :=
   let s : Float := if x < 0.0 then -1.0 else 1.0
   let a := min x.abs e4m3Max
   if a == 0.0 then 0.0
@@ -114,7 +118,7 @@ def addDelta (master wOut wq : ByteArray) : ByteArray := Id.run do
 /-- **Per-leading-block E4M3 quant**: `nBlocks` contiguous blocks of `blockSize`
     elements, each with its own scale. A conv kernel `[oc, ic, k, k]` (row-major)
     is `oc` blocks of `ic·k·k`, so this is per-output-channel quant. -/
-private def quantPerLeadingBlock (ba : ByteArray) (nBlocks blockSize : Nat) : ByteArray := Id.run do
+def quantPerLeadingBlock (ba : ByteArray) (nBlocks blockSize : Nat) : ByteArray := Id.run do
   let mut out := ByteArray.emptyWithCapacity (nBlocks * blockSize * 4)
   for o in [0:nBlocks] do
     let base := o * blockSize

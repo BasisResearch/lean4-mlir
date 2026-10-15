@@ -1,5 +1,9 @@
-import LeanMlir.FloatFmt
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.FloatFmt
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-! Leduc hold'em: the game, the exact instrument and Deep CFR's samplers. The game is pure
     Lean; every tree walk is in C (`ffi/f32_helpers.c`, `lean_leduc_*`), as tic-tac-toe's

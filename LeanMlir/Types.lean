@@ -1,3 +1,7 @@
+module
+
+@[expose] public section
+
 /-! # The reference path's specification types
 
 `Layer` (one architecture primitive), `NetSpec` (a named layer list plus input size and per-net

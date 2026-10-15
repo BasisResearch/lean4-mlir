@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Certificates.IntervalBound
-import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA
-import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB
+module
+
+public import LeanMlir.Proofs.Certificates.IntervalBound
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB
+
+@[expose] public section
 
 /-! # IBP / CROWN L∞ scorecards — the shared data
 

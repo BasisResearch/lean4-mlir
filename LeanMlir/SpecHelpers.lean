@@ -1,6 +1,10 @@
-import LeanMlir.ParamLayouts
-import LeanMlir.MlirCodegen
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.ParamLayouts
+public import LeanMlir.MlirCodegen
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-! Spec → tensor-shape / packed-bytes / parameter-init helpers for the reference trainers.
 
@@ -68,7 +72,7 @@ def evalFnName (spec : NetSpec) : String :=
 /-- Initialize one layer's parameters from its `Layer.paramSlots`: a random draw takes the current
     seed and advances it, a constant does not (`zeroSeeded` advances it without drawing). Layers
     with no slots contribute nothing. -/
-private def heInitLayer (l : Layer) (seed : USize) : IO (Array ByteArray × USize) := do
+def heInitLayer (l : Layer) (seed : USize) : IO (Array ByteArray × USize) := do
   let mut parts : Array ByteArray := #[]
   let mut s := seed
   for sl in l.paramSlots.getD [] do

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.CrownBound
-import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardIBPData
+module
+
+public import LeanMlir.Proofs.Certificates.CrownBound
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardIBPData
+
+@[expose] public section
 
 /-! # CROWN-IBP L∞ scorecard, full 784-dim input — spectrally-capped σ≤2 net (`mlpSF`)
 

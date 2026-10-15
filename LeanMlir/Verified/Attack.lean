@@ -1,5 +1,9 @@
-import LeanMlir.Verified.Train
-import LeanMlir.Verified.PgdGen
+module
+
+public import LeanMlir.Verified.Train
+public import LeanMlir.Verified.PgdGen
+
+@[expose] public section
 
 /-! # PGD attacks and the spectral-norm training studies
 
@@ -23,7 +27,7 @@ reduced model only).
     partial final batch: rows past `total` records get an all-zero row (their padded images are
     never scored, so the gradient they induce is irrelevant — the row just has to exist because
     the batch dim is baked into the compiled module). -/
-private def oneHotBatchPad (labels : ByteArray) (start bs d1 total : Nat) : IO ByteArray := do
+def oneHotBatchPad (labels : ByteArray) (start bs d1 total : Nat) : IO ByteArray := do
   let mut oh ← F32.const (bs * d1).toUSize 0.0
   for j in [0:min bs (total - start)] do
     let fi := j * d1 + F32.readLabel labels (start + j)
@@ -42,19 +46,19 @@ visible. -/
 
 /-- A layer's two L2 numbers: `bound`, a Lipschitz constant a certificate-tier theorem gives,
     and `est`, the power-iteration estimate (≤ the true norm; never used as a constant). -/
-private structure LipPair where
+structure LipPair where
   bound : Float
   est   : Float
 
 /-- Relative slack on every host-computed bound. The Gram sums are evaluated in `Float` (f64)
     from f32 weights, so the computed `‖H‖_F` carries accumulation error far below this factor at
     these layer sizes; the slack is the soundness margin for that rounding, not a proved one. -/
-private def roundingSlack : Float := 1.000001
+def roundingSlack : Float := 1.000001
 
 /-- The output-side Gram `G a b = Σⱼ M a j · M b j` (`k×k`, row-major) of the `k×n` matrix
     `M a j = get a j`, row `a` being output `a` — the orientation of `denseE`, so `G` is the
     `hG` data of `denseE_lipschitzL2_gram2`. `M` is copied into a contiguous buffer first. -/
-private def gramOut (get : Nat → Nat → Float) (k n : Nat) : FloatArray := Id.run do
+def gramOut (get : Nat → Nat → Float) (k n : Nat) : FloatArray := Id.run do
   let mut m : FloatArray := FloatArray.mk (Array.replicate (k*n) 0.0)
   for a in [0:k] do
     for j in [0:n] do m := m.set! (a*n+j) (get a j)
@@ -68,7 +72,7 @@ private def gramOut (get : Nat → Nat → Float) (k n : Nat) : FloatArray := Id
 
 /-- The Schatten-8 bound from the Gram: `H = Gᵀ·G`, then `B = (Σ H²)^{1/8}` times
     `roundingSlack` — the `B` of `denseE_lipschitzL2_gram2`'s `hHF : Σ H² ≤ B⁸`. -/
-private def schatten8OfGram (g : FloatArray) (k : Nat) : Float := Id.run do
+def schatten8OfGram (g : FloatArray) (k : Nat) : Float := Id.run do
   let mut s := 0.0
   for a in [0:k] do
     for b in [0:k] do
@@ -78,7 +82,7 @@ private def schatten8OfGram (g : FloatArray) (k : Nat) : Float := Id.run do
   pure (Float.pow s 0.125 * roundingSlack)
 
 /-- Power-iteration estimate of `σ₁ = √λ_max(G)` (a lower bound, up to convergence). -/
-private def powerIterOfGram (g : FloatArray) (k : Nat) : Float := Id.run do
+def powerIterOfGram (g : FloatArray) (k : Nat) : Float := Id.run do
   let mv := fun (v : Array Float) => Id.run do
     let mut u : Array Float := Array.replicate k 0.0
     for i in [0:k] do
@@ -100,14 +104,14 @@ private def powerIterOfGram (g : FloatArray) (k : Nat) : Float := Id.run do
   pure (Float.sqrt lam)
 
 /-- Both numbers for the `k×n` matrix `get` (row = output). -/
-private def lipOfGet (get : Nat → Nat → Float) (k n : Nat) : LipPair :=
+def lipOfGet (get : Nat → Nat → Float) (k n : Nat) : LipPair :=
   let g := gramOut get k n
   { bound := schatten8OfGram g k, est := powerIterOfGram g k }
 
 /-- A dense layer `W : [d0,d1]` (row-major, `logits = x·W + b`). Its `denseE` matrix is `Wᵀ`
     (`d1` outputs), so the Gram is the `d1×d1` `WᵀW`. The bias is a translation and leaves the
     Lipschitz constant unchanged. -/
-private def denseLip (W : ByteArray) (d0 d1 : Nat) : LipPair :=
+def denseLip (W : ByteArray) (d0 d1 : Nat) : LipPair :=
   lipOfGet (fun a j => F32.read W (j*d1+a).toUSize) d1 d0
 
 /-- A zero-padded 2-D convolution with kernel `W : [outC, inC, kh, kw]` (row-major). Writing the
@@ -118,7 +122,7 @@ private def denseLip (W : ByteArray) (d0 d1 : Nat) : LipPair :=
     has no Lean theorem. Both steps are loose against the exact (Sedghi–Gupta–Long) conv norm.
     `est` sums the taps' power-iteration values: the tap-sum at the true per-tap norms, not an
     estimate of `‖T‖₂`. -/
-private def convLip (W : ByteArray) (outC inC kh kw : Nat) : LipPair := Id.run do
+def convLip (W : ByteArray) (outC inC kh kw : Nat) : LipPair := Id.run do
   let mut b := 0.0
   let mut e := 0.0
   for ky in [0:kh] do
@@ -134,7 +138,7 @@ private def convLip (W : ByteArray) (outC inC kh kw : Nat) : LipPair := Id.run d
     cheap enough to call **during** training (the spectral-norm projection below). Fewer iters
     (`iters`) trade a little precision for speed. An estimate from below, so never a
     certificate constant (`denseLip` is). -/
-private def specNormMV (W : ByteArray) (d0 d1 : Nat) (iters : Nat := 15) : Float := Id.run do
+def specNormMV (W : ByteArray) (d0 d1 : Nat) (iters : Nat := 15) : Float := Id.run do
   let norm := fun (a : Array Float) (n : Nat) => Id.run do
     let mut s := 0.0
     for i in [0:n] do s := s + a[i]! * a[i]!
@@ -171,7 +175,7 @@ private def specNormMV (W : ByteArray) (d0 d1 : Nat) (iters : Nat := 15) : Float
     Schatten-8 bound costs a full Gram, too much to recompute every few steps — so a projected
     dense layer's certified `Lᵢ` (`denseLip`) sits somewhat above `c`. This is the lever that
     turns the (vacuous) product certificate non-vacuous. `F32.scaleShift` does the rescale. -/
-private def projectSpectral (theta : ByteArray) (specs : Array (Array Nat × Nat)) (c : Float)
+def projectSpectral (theta : ByteArray) (specs : Array (Array Nat × Nat)) (c : Float)
     : IO ByteArray := do
   let mut parts : Array ByteArray := #[]
   let mut off := 0
@@ -409,7 +413,7 @@ def VerifiedNet.attackPgdSpectralMlp (net : VerifiedNet) (cfg : VerifiedConfig) 
     `[o,i,kh,kw]` kernel, `denseLip` for each `[d0,d1]` weight, biases skipped. Returns the
     product of the bounds (the certificate's `L`), the product of the estimates, and a per-layer
     `bound (estimate)` line. -/
-private def certProduct (theta : ByteArray) (specs : Array (Array Nat × Nat)) :
+def certProduct (theta : ByteArray) (specs : Array (Array Nat × Nat)) :
     Float × Float × String := Id.run do
   let mut L := 1.0
   let mut Lest := 1.0

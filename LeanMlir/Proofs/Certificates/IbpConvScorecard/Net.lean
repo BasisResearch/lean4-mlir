@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.IntervalBoundConv.Q
+module
+
+public import LeanMlir.Proofs.Certificates.IntervalBoundConv.Q
+
+@[expose] public section
 
 /-! # IBP `L∞` scorecard for a CONVOLUTIONAL net — generated instance
 

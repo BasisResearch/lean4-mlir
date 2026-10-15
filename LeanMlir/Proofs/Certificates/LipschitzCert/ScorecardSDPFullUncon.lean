@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardSDPFull
+module
+
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardSDPFull
+
+@[expose] public section
 
 /-! # Per-pair LipSDP scorecard, FULL 784-dim input — unconstrained net (`mlpTF`)
 

@@ -1,5 +1,10 @@
-import LeanMlir.IreeRuntime
-import LeanMlir.SpecHelpers
+module
+
+public import LeanMlir.IreeRuntime
+public import LeanMlir.SpecHelpers
+meta import LeanMlir.Types
+
+@[expose] public section
 
 /-! The reference path's training loop, for any `NetSpec` `MlirCodegen` lowers.
 
@@ -71,11 +76,11 @@ def trainFnName (spec : NetSpec) : String :=
 /-- Cache key for an MLIR string under the current IREE backend.
     Combines the MLIR content with the backend env var so switching
     `IREE_BACKEND=rocm` ↔ `cuda` invalidates the cache. -/
-private def cacheKey (mlir : String) : IO String := do
+def cacheKey (mlir : String) : IO String := do
   let backend ← (IO.getEnv "IREE_BACKEND").map (·.getD "cuda")
   return toString (mlir ++ "::" ++ backend).hash
 
-private def runIree (mlirPath outPath : String) : IO Bool := do
+def runIree (mlirPath outPath : String) : IO Bool := do
   let args ← ireeCompileArgs mlirPath outPath
   let compiler ← findIreeCompile
   let r ← IO.Process.output { cmd := compiler, args := args }
@@ -135,7 +140,7 @@ def compileArtifact (mlirPath outPath : String) : IO Bool := do
 /-- Compile `mlirPath` to `outPath` via iree-compile, but skip the work
     if `outPath` exists and `outPath ++ ".hash"` matches the cache key
     for the current MLIR + IREE backend. Returns (compiledNewly, success). -/
-private def runIreeCached (mlirPath outPath mlir : String) : IO (Bool × Bool) := do
+def runIreeCached (mlirPath outPath mlir : String) : IO (Bool × Bool) := do
   -- XLA/PJRT has no ahead-of-time compile step — the `.mlir` goes straight to
   -- the runtime. Report (not-newly-compiled, succeeded) so every caller's
   -- logging and its `IO.Process.exit 1` on failure stay exactly as they are.
@@ -319,7 +324,7 @@ def compileVmfbs (spec : NetSpec) (cfg : TrainConfig)
     image is on disk, and what augmentation to apply per batch. Each
     dataset (Imagenette / CIFAR-10 / MNIST) constructs one of these and
     `runTraining` consumes it. -/
-private structure DatasetIO where
+structure DatasetIO where
   /-- Pixels per training image as stored on disk (before any crop). -/
   trainPixels : Nat
   /-- Pixels per val image as stored on disk. -/
@@ -381,7 +386,7 @@ private structure DatasetIO where
 /-- Imagenette: 256×256 train, 224×224 val, random-crop-to-224 + hflip.
     When augment=false, falls back to deterministic center-crop 256→224
     so the model still receives correctly-shaped input. -/
-private def imagenetteIO : DatasetIO where
+def imagenetteIO : DatasetIO where
   trainPixels := 3 * 256 * 256
   valPixels   := 3 * 224 * 224
   channels    := 3
@@ -407,7 +412,7 @@ private def imagenetteIO : DatasetIO where
     F32.randomHFlip raw batch 3 224 224 seed.toUSize
 
 /-- MNIST: 28×28 IDX format, no augmentation. -/
-private def mnistIO : DatasetIO where
+def mnistIO : DatasetIO where
   trainPixels := 1 * 28 * 28
   valPixels   := 1 * 28 * 28
   channels    := 1
@@ -422,7 +427,7 @@ private def mnistIO : DatasetIO where
   augmentBatch := fun raw _ _ => return raw
 
 /-- CIFAR-10: 5 train batches concatenated, 1 test batch, random hflip. -/
-private def cifar10IO : DatasetIO where
+def cifar10IO : DatasetIO where
   trainPixels := 3 * 32 * 32
   valPixels   := 3 * 32 * 32
   channels    := 3
@@ -466,7 +471,7 @@ private def cifar10IO : DatasetIO where
     240 is the native BraTS in-plane size and 240 = 16*15, so a depth-4 UNet's
     four halvings divide evenly — no resize is needed anywhere in the pipeline.
     Augmentation is identity for now. -/
-private def bratsIO : DatasetIO where
+def bratsIO : DatasetIO where
   trainPixels := 4 * 240 * 240
   valPixels   := 4 * 240 * 240
   channels    := 4
@@ -490,7 +495,7 @@ private def bratsIO : DatasetIO where
     `runTraining` dispatch splits this into target + mask before calling
     `trainStepAdamF32Yolov1`. See `scripts/datasets/preprocess_visdrone.py` for the on-disk
     format. -/
-private def detectionIO : DatasetIO where
+def detectionIO : DatasetIO where
   trainPixels := 3 * 224 * 224
   valPixels   := 3 * 224 * 224
   channels    := 3
@@ -507,7 +512,7 @@ private def detectionIO : DatasetIO where
     the region table is shared rather than restated: getting WT/TC/ET out of
     sync between two copies of the same dataset is exactly the silent bug
     `bratsIO`'s own comment warns about. -/
-private def brats224IO : DatasetIO :=
+def brats224IO : DatasetIO :=
   { bratsIO with
       trainPixels := 4 * 224 * 224
       valPixels   := 4 * 224 * 224
@@ -520,7 +525,7 @@ private def brats224IO : DatasetIO :=
     numbering, same split; the loader takes the channel count and checks the file length
     against it, so a 2D file read as 2.5D (or the reverse) fails at load rather than
     misaligning every mask after the first. -/
-private def brats224CtxIO (ctx : Nat) : DatasetIO :=
+def brats224CtxIO (ctx : Nat) : DatasetIO :=
   let ch := 4 * (2 * ctx + 1)
   { brats224IO with
       trainPixels := ch * 224 * 224
@@ -529,7 +534,7 @@ private def brats224CtxIO (ctx : Nat) : DatasetIO :=
       loadTrain := fun dir => F32.loadBrats (dir ++ "/train.bin") 224 ch.toUSize
       loadVal   := fun dir => F32.loadBrats (dir ++ "/val.bin") 224 ch.toUSize }
 
-private def datasetIO : DatasetKind → DatasetIO
+def datasetIO : DatasetKind → DatasetIO
   | .imagenette => imagenetteIO
   | .mnist      => mnistIO
   | .cifar10    => cifar10IO

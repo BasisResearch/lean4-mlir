@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Certificates.LipschitzCert.PairSDP
-import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA
-import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB
+module
+
+public import LeanMlir.Proofs.Certificates.LipschitzCert.PairSDP
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB
+
+@[expose] public section
 
 /-! # Per-pair LipSDP scorecard, FULL 784-dim input — spectrally-capped σ≤2 net (`mlpSF`)
 

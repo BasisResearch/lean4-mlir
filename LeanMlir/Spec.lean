@@ -1,4 +1,8 @@
-import LeanMlir.Types
+module
+
+public import LeanMlir.Types
+
+@[expose] public section
 /-! Spec helpers: parameter layouts and counts (`Layer.paramSlots`, `NetSpec.totalParams`), feature
     queries the codegen gates helper emission on, architecture display, and validation. -/
 
@@ -52,13 +56,13 @@ structure ParamSlot where
   decay : Bool
 deriving Inhabited
 
-private def slotsConvB (oc ic k : Nat) : List ParamSlot :=
+def slotsConvB (oc ic k : Nat) : List ParamSlot :=
   [⟨[oc, ic, k, k], .he (ic * k * k), "W", true⟩, ⟨[oc], .const 0.0, "b", false⟩]
-private def slotsConvBn (oc ic k : Nat) : List ParamSlot :=
+def slotsConvBn (oc ic k : Nat) : List ParamSlot :=
   [⟨[oc, ic, k, k], .he (ic * k * k), "W", true⟩, ⟨[oc], .const 1.0, "g", false⟩, ⟨[oc], .const 0.0, "bt", false⟩]
-private def slotsDense (fi fo : Nat) : List ParamSlot :=
+def slotsDense (fi fo : Nat) : List ParamSlot :=
   [⟨[fi, fo], .he fi, "W", true⟩, ⟨[fo], .const 0.0, "b", false⟩]
-private def slotsLN (d : Nat) : List ParamSlot :=
+def slotsLN (d : Nat) : List ParamSlot :=
   [⟨[d], .const 1.0, "W", false⟩, ⟨[d], .const 0.0, "b", false⟩]
 
 /-- **The one writer of a trainable layer's parameter layout** — the tensors in signature order,

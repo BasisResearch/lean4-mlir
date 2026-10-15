@@ -1,4 +1,8 @@
-import LeanMlir.LEBytes
+module
+
+public import LeanMlir.LEBytes
+
+@[expose] public section
 
 /-! Float32-in-ByteArray utilities.
 

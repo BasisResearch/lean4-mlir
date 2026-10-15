@@ -1,3 +1,7 @@
+module
+
+@[expose] public section
+
 /-! # IRPrint — hand-written StableHLO printers that mirror `IR`'s graphs
 
 Legacy printers from `Hlo`/`HloF` terms and plain `String` builders to StableHLO text, one module

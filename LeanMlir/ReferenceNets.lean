@@ -1,4 +1,8 @@
-import LeanMlir.Types
+module
+
+public import LeanMlir.Types
+
+@[expose] public section
 
 /-! # Reference NetSpecs shared by several entry points
 

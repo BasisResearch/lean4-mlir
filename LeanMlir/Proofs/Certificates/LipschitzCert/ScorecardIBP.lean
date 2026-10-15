@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardIBPData
+module
+
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardIBPData
+
+@[expose] public section
 
 /-! # IBP L∞ scorecard, full 784-dim input — spectrally-capped σ≤2 net (`mlpSF`)
 

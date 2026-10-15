@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.IntervalBoundConv.Basic
+module
+
+public import LeanMlir.Proofs.Certificates.IntervalBoundConv.Basic
+
+@[expose] public section
 
 /-! # The conv IBP box in exact rationals — one kernel check per image
 

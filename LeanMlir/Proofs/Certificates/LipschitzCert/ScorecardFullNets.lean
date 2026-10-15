@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard
-import LeanMlir.Proofs.Foundation.ListDot
+module
+
+public import LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard
+public import LeanMlir.Proofs.Foundation.ListDot
+
+@[expose] public section
 
 /-! # Full-input scorecard, part 1/4: the two 784→16→10 nets
 

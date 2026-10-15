@@ -1,4 +1,8 @@
-import LeanMlir.FloatFmt
+module
+
+public import LeanMlir.FloatFmt
+
+@[expose] public section
 
 /-! Blackjack under Gymnasium Blackjack-v1 `sab=True` rules (Sutton & Barto
     Example 5.1): the environment, the exact DP instrument, the comparison arms,
@@ -14,7 +18,7 @@ def draw (g : StdGen) : Nat × StdGen :=
   let (i, g) := randNat g 0 12
   (if i < 9 then i + 1 else 10, g)
 
-private def pCard (c : Nat) : Float := if c == 10 then 4.0 / 13.0 else 1.0 / 13.0
+def pCard (c : Nat) : Float := if c == 10 then 4.0 / 13.0 else 1.0 / 13.0
 
 structure Hand where
   raw : Nat      -- sum with every ace as 1
@@ -27,7 +31,7 @@ def Hand.total (h : Hand) : Nat := if h.usable then h.raw + 10 else h.raw
 def Hand.bust (h : Hand) : Bool := h.total > 21
 def Hand.natural (h : Hand) : Bool := h.n == 2 && h.total == 21
 def Hand.add (h : Hand) (c : Nat) : Hand := { raw := h.raw + c, ace := h.ace || c == 1, n := h.n + 1 }
-private def Hand.ofCards (a b : Nat) : Hand := (Hand.add { raw := 0, ace := false, n := 0 } a).add b
+def Hand.ofCards (a b : Nat) : Hand := (Hand.add { raw := 0, ace := false, n := 0 } a).add b
 
 /-- The observation: (player total, dealer showing, usable ace). -/
 structure Obs where
@@ -51,13 +55,13 @@ def reset (g : StdGen) : State × StdGen :=
   let (p2, g) := draw g
   ({ player := Hand.ofCards p1 p2, dealer := Hand.ofCards d1 d2, up := d1 }, g)
 
-private partial def dealerPlay (h : Hand) (g : StdGen) : Hand × StdGen :=
+partial def dealerPlay (h : Hand) (g : StdGen) : Hand × StdGen :=
   if h.total < 17 then
     let (c, g) := draw g
     dealerPlay (h.add c) g
   else (h, g)
 
-private def cmpF (a b : Nat) : Float := if a > b then 1.0 else if a < b then -1.0 else 0.0
+def cmpF (a b : Nat) : Float := if a > b then 1.0 else if a < b then -1.0 else 0.0
 
 /-- Gymnasium `sab=True` settlement after a stick. -/
 def settle (player dealer : Hand) : Float :=
@@ -80,7 +84,7 @@ def step (s : State) (hit : Bool) (g : StdGen) : State × Float × Bool × StdGe
 
 /-- Dealer final-outcome distribution from a hand: entries 0..4 = totals 17..21,
     5 = bust. Memoised over (raw, ace) by descending raw. -/
-private def dealerTable : Array (Array Float) := Id.run do
+def dealerTable : Array (Array Float) := Id.run do
   -- index raw * 2 + ace, raw in 0..30
   let mut t : Array (Array Float) := Array.replicate 62 (Array.replicate 6 0.0)
   for k in [0:31] do
@@ -102,7 +106,7 @@ private def dealerTable : Array (Array Float) := Id.run do
 
 /-- Dealer outcome given the up card, over the hidden hole card: entries 0..4 =
     totals 17..21 (not natural), 5 = bust, 6 = natural. -/
-private def dealerDist (up : Nat) : Array Float := Id.run do
+def dealerDist (up : Nat) : Array Float := Id.run do
   let mut d := Array.replicate 7 0.0
   for hole in [1:11] do
     let h := Hand.ofCards up hole
@@ -113,7 +117,7 @@ private def dealerDist (up : Nat) : Array Float := Id.run do
         d := d.set! j (d[j]! + pCard hole * row[j]!)
   return d
 
-private def dealerDists : Array (Array Float) := (Array.range 11).map fun u => if u == 0 then #[] else dealerDist u
+def dealerDists : Array (Array Float) := (Array.range 11).map fun u => if u == 0 then #[] else dealerDist u
 
 /-- Expected reward of sticking on total `s` against up card `up`. -/
 def stickValue (s up : Nat) (natural : Bool) : Float := Id.run do
@@ -129,7 +133,7 @@ def stickValue (s up : Nat) (natural : Bool) : Float := Id.run do
 /-- A policy is P(hit | obs). -/
 abbrev Pol := Obs → Float
 
-private def sidx (s : Nat) (u : Bool) : Nat := s * 2 + (if u then 1 else 0)
+def sidx (s : Nat) (u : Bool) : Nat := s * 2 + (if u then 1 else 0)
 
 /-- Q_hit for one dealer up card from a value table V[sidx]. -/
 def hitValue (V : Array Float) (s : Nat) (u : Bool) : Float := Id.run do
@@ -187,7 +191,7 @@ def gameValue (pi : Option Pol) : Float := Id.run do
   return v
 
 /-- The optimal action (hit?) at every decision state, from the DP. -/
-private def optimalHit : Obs → Bool := fun o =>
+def optimalHit : Obs → Bool := fun o =>
   let V := valueTable o.dealer none
   hitValue V o.sum o.usable > stickValue o.sum o.dealer false
 
@@ -221,7 +225,7 @@ def thresholdPol : Pol := fun o => if o.sum < 18 then 0.8 else 0.2
 
 /-- The old demo's published table, verbatim (IEEE 1299399 fig. 11), indexed by
     dealer card 1..10; it ignores the usable ace. -/
-private def tableRow (s : Nat) : String :=
+def tableRow (s : Nat) : String :=
   match s with
   | 10 => "HHHHHSSHHH" | 11 => "HHSSSSSSHH" | 12 => "HSHHHHHHHH" | 13 => "HSSHHHHHHH"
   | 14 => "HSHHHHHHHH" | 15 => "HSSHHHHHHH" | 16 => "HSSSSSHHHH" | 17 => "HSSSSHHHHH"
@@ -265,7 +269,7 @@ def qidx (o : Obs) (a : Nat) : Nat := ((o.sum * 11 + o.dealer) * 2 + (if o.usabl
 /-- ε-greedy tabular Q-learning, γ = 1, continued from a (Q, visit-count, rng)
     state for `hands` more hands. The step size is max(alpha, 1 / (1 + N)): early
     updates average, late ones keep a floor that tracks the moving bootstrap target. -/
-private def tabularQRun (Q0 : Array Float) (N0 : Array Nat) (g0 : StdGen) (hands : Nat)
+def tabularQRun (Q0 : Array Float) (N0 : Array Nat) (g0 : StdGen) (hands : Nat)
     (alpha eps : Float) : Array Float × Array Nat × StdGen := Id.run do
   let mut Q := Q0
   let mut N := N0
@@ -296,7 +300,7 @@ private def tabularQRun (Q0 : Array Float) (N0 : Array Nat) (g0 : StdGen) (hands
       done := d
   return (Q, N, g)
 
-private def qTableSize : Nat := 32 * 11 * 2 * 2
+def qTableSize : Nat := 32 * 11 * 2 * 2
 
 /-- Tabular Q from scratch: the greedy policy's table after `hands` hands. -/
 def tabularQ (hands : Nat) (alpha eps : Float) (seed : Nat) : Array Float :=

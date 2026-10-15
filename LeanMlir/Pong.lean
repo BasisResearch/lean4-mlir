@@ -1,4 +1,8 @@
-import LeanMlir.FloatFmt
+module
+
+public import LeanMlir.FloatFmt
+
+@[expose] public section
 
 /-! Pong in Lean: the game, the renderer, the
     frame-skip wrapper and the scripted policies. Pure Lean, no FFI. Shared by the
@@ -37,16 +41,16 @@ namespace Pong
 
 def W : Float := 84.0
 def H : Float := 84.0
-private def padHalf : Float := 6.0
-private def padSpeed : Float := 2.0
-private def playerX : Float := 4.0
-private def oppX : Float := 79.0
-private def serveSpeed : Float := 1.5
-private def speedInc : Float := 0.25
-private def speedMax : Float := 4.0
+def padHalf : Float := 6.0
+def padSpeed : Float := 2.0
+def playerX : Float := 4.0
+def oppX : Float := 79.0
+def serveSpeed : Float := 1.5
+def speedInc : Float := 0.25
+def speedMax : Float := 4.0
 def spin : Float := 0.4
 
-private def clampF (x lo hi : Float) : Float := max lo (min hi x)
+def clampF (x lo hi : Float) : Float := max lo (min hi x)
 
 def uniform (g : StdGen) : Float × StdGen :=
   let (n, g) := randNat g 0 999999
@@ -156,7 +160,7 @@ def Game.step (gm : Game) (o : Opp) (a : Act) : Game × Float × Bool := Id.run 
   let done := sp >= 21 || so >= 21 || frames >= frameCap
   ({ p := p, scoreP := sp, scoreO := so, frames := frames, g := g }, r, done)
 
-private abbrev Policy := Pong → StdGen → Act × StdGen
+abbrev Policy := Pong → StdGen → Act × StdGen
 
 def randomPol : Policy := fun _ g =>
   let (i, g) := randNat g 0 2

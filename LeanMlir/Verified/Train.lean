@@ -1,8 +1,12 @@
-import LeanMlir.Types
-import LeanMlir.IreeRuntime
-import LeanMlir.E4M3Quant
-import LeanMlir.Verified.Spec
-import LeanMlir.ParamLayouts
+module
+
+public import LeanMlir.Types
+public import LeanMlir.IreeRuntime
+public import LeanMlir.E4M3Quant
+public import LeanMlir.Verified.Spec
+public import LeanMlir.ParamLayouts
+
+@[expose] public section
 
 /-! # Shared driver for the `*-verified` trainers
 
@@ -629,7 +633,7 @@ def mkParam (seed : Nat) (dims : Array Nat) (kind : Nat)
 
 /-- Load CIFAR-10 `.bin` records (3073 bytes: 1 label byte + 3072 image bytes).
     Returns f32 images `[n×3072]` (normalized) and int32-LE labels `[n×4]`. -/
-private def loadCifarSplit (paths : List String) : IO (ByteArray × ByteArray × Nat) := do
+def loadCifarSplit (paths : List String) : IO (ByteArray × ByteArray × Nat) := do
   let mut raw : ByteArray := .empty
   let mut labels : ByteArray := .empty
   let mut nTotal : Nat := 0
@@ -689,7 +693,7 @@ def readExact (h : IO.FS.Handle) (n : Nat) : IO ByteArray :=
 /-- Resolve a net's generated shim to a path on disk, or `none`. The candidate list is
     `spawnShim`'s, factored out so the two callers cannot disagree about WHICH file they are
     reading — one of them decides the wire, the other spawns it. -/
-private def resolveShimScript (shimScript : String) : IO (Option System.FilePath) := do
+def resolveShimScript (shimScript : String) : IO (Option System.FilePath) := do
   let candidates : List System.FilePath := match ← IO.getEnv "SHIM_SCRIPT" with
     | some p => [p]
     | none   => if shimScript.isEmpty then []
@@ -701,7 +705,7 @@ private def resolveShimScript (shimScript : String) : IO (Option System.FilePath
 
     The shim text is the single source: a `useMixup` field on `VerifiedNet` would be a second
     definition of what `generateShim` already baked from the same config. -/
-private def shimMixDefault (shimScript : String) : IO String := do
+def shimMixDefault (shimScript : String) : IO String := do
   match ← resolveShimScript shimScript with
   | none => pure ""
   | some script => do
@@ -872,7 +876,7 @@ the render wants batch={batch} flat={flat} — refusing rather than reading misa
 
 /-- One batch off the wire: `int32[batch]` labels then `float32[batch*flat]` images, in that order
     (the shim writes labels first so a partial record is detectable at the smaller read). -/
-private def readShimBatch (h : IO.FS.Handle) (batch flat : Nat) (nclasses : Nat := 0)
+def readShimBatch (h : IO.FS.Handle) (batch flat : Nat) (nclasses : Nat := 0)
     (imgBuf : Option (IO.Ref ByteArray) := none) (norm : Option ByteArray := none) :
     IO (ByteArray × ByteArray) := do
   -- `nclasses = 0` ⇒ v1: `int32[batch]`. Otherwise v2: `float32[batch*nclasses]`. The FFI accepts
@@ -979,7 +983,7 @@ reading a misframed batch"
     Each worker gets a distinct seed (`seed + i`). With one shared seed every worker draws the
     same augmentation sequence, and since the shards hold different images that is not a
     correctness bug — but it needlessly correlates the crops across workers. -/
-private def spawnShimSharded (shimScript : String) (split : String) (batch flat seed n : Nat)
+def spawnShimSharded (shimScript : String) (split : String) (batch flat seed n : Nat)
     (nclasses : Nat := 0) (extraEnv : Array (String × Option String) := #[]) (u8 : Bool := false) :
     IO (Array ShimProc) := do
   if n <= 1 then
@@ -994,7 +998,7 @@ private def spawnShimSharded (shimScript : String) (split : String) (batch flat 
 
 /-- Round-robin read: batch `k` comes from worker `k % n`. `readExact` already blocks until a whole
     record has arrived, so a slow worker throttles rather than corrupting — the framing cannot slip. -/
-private def readShimBatchRR (hs : Array ShimProc) (k batch flat : Nat) (nclasses : Nat := 0)
+def readShimBatchRR (hs : Array ShimProc) (k batch flat : Nat) (nclasses : Nat := 0)
     (imgBuf : Option (IO.Ref ByteArray) := none) : IO (ByteArray × ByteArray) := do
   match hs[k % hs.size]? with
   | some p => readShimBatch p.h batch flat nclasses imgBuf p.norm
@@ -1029,7 +1033,7 @@ structure ValCarry where
     `b % n` has exactly `⌊b / n⌋` of them when global batch `b` is the first past the end).
     Sequential by construction — `evalScore` issues the next pull only after awaiting this one — so
     the carry needs no lock. -/
-private def pullValRows (st : IO.Ref ValCarry) (hs : Array ShimProc) (shimBatch flat offset gB : Nat)
+def pullValRows (st : IO.Ref ValCarry) (hs : Array ShimProc) (shimBatch flat offset gB : Nat)
     (dropTail : Bool) : IO (ByteArray × ByteArray × Nat) := do
   let mut c ← st.get
   while c.rows < gB && !c.ended do
@@ -1079,7 +1083,7 @@ k, k+{hs.size}, … read round-robin, nothing held"
 
 /-- Kill then wait, so no `<defunct>` child is left: the val stream ends by itself, but a dropped tail or a
     refusal can leave a child still writing. -/
-private def reapValStream : EvalRows → IO Unit
+def reapValStream : EvalRows → IO Unit
   | .stream hs .. => do
       for p in hs do
         try p.child.kill catch _ => pure ()
@@ -1190,7 +1194,7 @@ refusal, not a number (a producer died, or the block sharding lost a batch)"
     held resident (`none` = off, or not Imagenette). ONE definition, because `loadData` (which then skips
     the train pixels) and `trainAdamSched` (which then reads every batch by index) must agree: a loader
     that skipped the pixels under a trainer that didn't know would slice an empty buffer. -/
-private def imagenetteTrainStream (net : VerifiedNet) (dataDir : String) : IO (Option String) := do
+def imagenetteTrainStream (net : VerifiedNet) (dataDir : String) : IO (Option String) := do
   match net.data with
   | .imagenette =>
     if ((← IO.getEnv "LEAN_MLIR_IMAGENETTE_STREAM").map (· == "1")).getD false then
@@ -1287,7 +1291,7 @@ def loadData (net : VerifiedNet) (dataDir : String) (evalD0 : Nat := 0)
     anchors (train-step throughput is value-independent). Lets the benchmark run with zero
     data downloaded. The per-step crop/hflip stays in the loop (so timing matches); eval is
     skipped in synth, so `nEval` is a placeholder. -/
-private def mkSynthData (data : VerifiedData) (d0 bs : Nat) :
+def mkSynthData (data : VerifiedData) (d0 bs : Nat) :
     IO (ByteArray × ByteArray × Nat × ByteArray × ByteArray × Nat × Nat × Bool) := do
   let (nTr, px, crop) := match data with
     | .imagenette => (9469, 3 * 256 * 256, true)   -- 256² pre-crop → 224² each step
@@ -1305,7 +1309,7 @@ private def mkSynthData (data : VerifiedData) (d0 bs : Nat) :
 /-- Write `bytes` to `path` all-or-nothing: a sibling `.tmp`, then `rename(2)` over the target.
     A crash mid-write leaves the PREVIOUS file intact rather than a truncated one — the same
     guarantee the JAX reference's `save_train_state` gets from `os.replace`. -/
-private def writeBinAtomic (path : String) (bytes : ByteArray) : IO Unit := do
+def writeBinAtomic (path : String) (bytes : ByteArray) : IO Unit := do
   let tmp := path ++ ".tmp"
   IO.FS.writeBinFile tmp bytes
   IO.FS.rename tmp path
@@ -1496,7 +1500,7 @@ def VerifiedNet.train (net : VerifiedNet) (cfg : VerifiedConfig) (dataDir : Stri
     `resnet50in160_fwd.mlir` declares `tensor<64x76800xf32>` (160² train) — the split is already
     rendered into the artifacts, and this is what lets the driver honour it. For every 224 net the
     two coincide, so this returns `(bs, net.d0)` there and nothing downstream moves. -/
-private def fwdRenderedShape (path : String) : IO (Option (Nat × Nat)) := do
+def fwdRenderedShape (path : String) : IO (Option (Nat × Nat)) := do
   if !(← System.FilePath.pathExists path) then return none
   let txt ← IO.FS.readFile path
   match txt.splitOn "%x: tensor<" with

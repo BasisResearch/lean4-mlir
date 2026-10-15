@@ -1,5 +1,9 @@
-import LeanMlir.SpecHelpers
-import LeanMlir.IreeRuntime
+module
+
+public import LeanMlir.SpecHelpers
+public import LeanMlir.IreeRuntime
+
+@[expose] public section
 
 /-! # The small-classifier demos' shared kit
 

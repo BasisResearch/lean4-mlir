@@ -1,5 +1,9 @@
-import LeanMlir.LEBytes
-import LeanMlir.FloatFmt
+module
+
+public import LeanMlir.LEBytes
+public import LeanMlir.FloatFmt
+
+@[expose] public section
 
 /-! Tic-tac-toe on an n × n board, k in a row to win: the game, the solved-game
     instrument and the scripted players. The game is pure Lean; the instrument is a

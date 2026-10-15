@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
-import LeanMlir.FloatFmt
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+public import LeanMlir.FloatFmt
+
+@[expose] public section
 
 /-! # ViT — hand-written StableHLO fragments
 

@@ -1,4 +1,8 @@
-import LeanMlir.Types
+module
+
+public import LeanMlir.Types
+
+@[expose] public section
 
 /-! # VJP-oracle nets — one definition, trained by both sides
 

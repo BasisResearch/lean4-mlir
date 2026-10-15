@@ -1,3 +1,7 @@
+module
+
+@[expose] public section
+
 /-! # The PGD-step kernels — hand-typed StableHLO text
 
 `genLinearPgdStep`, `genMlpPgdStep`, `genCnnPgdStep`, `genCifarPgdStep`: one PGD step (forward,

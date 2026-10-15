@@ -1,4 +1,8 @@
-import LeanMlir.LEBytes
+module
+
+public import LeanMlir.LEBytes
+
+@[expose] public section
 
 /-! # Lean4 numerical gradcheck harness (no numpy)
 
@@ -20,12 +24,12 @@ namespace ViTGradcheck
     Inputs and outputs go through files, not text: `Float.toString` keeps six decimals and IREE
     prints six significant digits, and either rounding alone puts a ~3e-4 floor under a
     finite-difference quotient at ε = 1e-3. Through files the floor is f32's own. -/
-private def writeBinF32 (path : String) (xs : Array Float) : IO Unit := do
+def writeBinF32 (path : String) (xs : Array Float) : IO Unit := do
   IO.FS.writeBinFile path (xs.foldl pushF32LE (ByteArray.emptyWithCapacity (4 * xs.size)))
 
 /-- Read an `f32` `.npy` file (as `iree-run-module --output=@file.npy` writes it) into a flat
     array. -/
-private def readNpyF32 (path : String) : IO (Array Float) := do
+def readNpyF32 (path : String) : IO (Array Float) := do
   let b ← IO.FS.readBinFile path
   unless b.size ≥ 10 && b[0]! == 0x93 && b[6]! == 1 do
     throw <| IO.userError s!"{path}: not a v1 .npy file"
@@ -47,7 +51,7 @@ def runDevice : IO String := do
   | b => return b
 
 /-- Run a compiled `.vmfb` function with `nOut` results; `inputs` are `(shapeStr, flatValues)`. -/
-private def runFn (vmfb fn : String) (inputs : List (String × Array Float)) (nOut : Nat) :
+def runFn (vmfb fn : String) (inputs : List (String × Array Float)) (nOut : Nat) :
     IO (Array (Array Float)) := do
   let inArgs ← inputs.zipIdx.mapM fun ((sh, xs), i) => do
     let f := s!".lake/build/{fn}_in{i}.bin"
@@ -74,7 +78,7 @@ def dot (a b : Array Float) : Float :=
   (a.zip b).foldl (fun acc (x, y) => acc + x * y) 0.0
 
 /-- `y + a·x` (elementwise). -/
-private def axpy (a : Float) (x y : Array Float) : Array Float :=
+def axpy (a : Float) (x y : Array Float) : Array Float :=
   (y.zip x).map (fun (yi, xi) => yi + a * xi)
 
 /-- **Adjoint/finite-difference gradcheck** of a compiled fwd/back pair, checking

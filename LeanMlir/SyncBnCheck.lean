@@ -1,4 +1,8 @@
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # The sync-BN gate, parameterised by net — `R×b` against `1×Rb`
 

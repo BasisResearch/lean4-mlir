@@ -1,10 +1,14 @@
+module
+
+@[expose] public section
+
 /-! Lean FFI bindings for the lowerer runtime — PJRT/XLA by default, IREE optionally
     (`LowererSession` is lowerer-agnostic).
 
     Links through the Lean shim in ffi/. -/
 
 /-- Opaque handle to a lowerer session (PJRT/XLA or IREE): a loaded module on a device. -/
-private opaque LowererSessionPointed : NonemptyType
+opaque LowererSessionPointed : NonemptyType
 def LowererSession : Type := LowererSessionPointed.type
 instance : Nonempty LowererSession := LowererSessionPointed.property
 

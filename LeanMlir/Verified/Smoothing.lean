@@ -1,4 +1,8 @@
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! ## Randomized-smoothing statistics (Cohen–Rosenfeld–Kolter 2019)
 
@@ -16,7 +20,7 @@ final bracket rather than rounding toward the conservative end.
 /-- Inverse standard-normal CDF `Φ⁻¹` (probit), Peter Acklam's rational approximation
     (relative error < 1.15e-9 over `(0,1)`). `p_A` here lives in `(0.5, ~0.99)`, far from
     the tails, so this is orders of magnitude tighter than the Monte-Carlo sampling error. -/
-private def invNormCdf (p : Float) : Float := Id.run do
+def invNormCdf (p : Float) : Float := Id.run do
   let a0 := -3.969683028665376e+01
   let a1 :=  2.209460984245205e+02
   let a2 := -2.759285104469687e+02
@@ -52,7 +56,7 @@ private def invNormCdf (p : Float) : Float := Id.run do
     return 0.0 - (((((c0*q+c1)*q+c2)*q+c3)*q+c4)*q+c5) / ((((d1*q+d2)*q+d3)*q+d4)*q+1.0)
 
 /-- `log Γ(x)` for `x ≥ 0.5` (the only regime we hit: `a=k≥1`, `b=n−k+1≥1`), Lanczos `g=7`. -/
-private def lgammaF (x : Float) : Float := Id.run do
+def lgammaF (x : Float) : Float := Id.run do
   let g : Array Float := #[
     0.99999999999980993, 676.5203681218851, -1259.1392167224028,
     771.32342877765313, -176.61502916214059, 12.507343278686905,
@@ -65,7 +69,7 @@ private def lgammaF (x : Float) : Float := Id.run do
   return 0.5 * Float.log (2.0 * 3.141592653589793) + (xx + 0.5) * Float.log t - t + Float.log a
 
 /-- Lentz continued fraction for the incomplete beta (Numerical Recipes `betacf`). -/
-private def betacf (a b x : Float) : Float := Id.run do
+def betacf (a b x : Float) : Float := Id.run do
   let fpmin := 1.0e-300; let eps := 3.0e-12
   let qab := a + b; let qap := a + 1.0; let qam := a - 1.0
   let mut c := 1.0
@@ -89,7 +93,7 @@ private def betacf (a b x : Float) : Float := Id.run do
   return h
 
 /-- Regularized incomplete beta `Iₓ(a,b)` (Numerical Recipes `betai`); increasing in `x`. -/
-private def betaiF (a b x : Float) : Float :=
+def betaiF (a b x : Float) : Float :=
   if x ≤ 0.0 then 0.0
   else if x ≥ 1.0 then 1.0
   else
@@ -104,7 +108,7 @@ private def betaiF (a b x : Float) : Float :=
     the final bracket. This is the `1−α` lower bound on `p_A` that the certified radius
     `σ·Φ⁻¹(p_A)` rests on (Cohen 2019 uses the same CP bound), evaluated in `Float` without a
     proof or a conservative rounding direction. `k=0 ⇒ 0`. -/
-private def clopperPearsonLower (k n : Nat) (alpha : Float) : Float := Id.run do
+def clopperPearsonLower (k n : Nat) (alpha : Float) : Float := Id.run do
   if k == 0 then return 0.0
   let a := k.toFloat
   let b := (n - k + 1).toFloat

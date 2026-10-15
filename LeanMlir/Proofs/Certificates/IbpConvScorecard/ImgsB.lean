@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.IbpConvScorecard.Net
+module
+
+public import LeanMlir.Proofs.Certificates.IbpConvScorecard.Net
+
+@[expose] public section
 
 /-! # Conv IBP scorecard, image chunk B — test images #2, #3
 

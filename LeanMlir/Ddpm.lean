@@ -1,3 +1,7 @@
+module
+
+@[expose] public section
+
 
 /-! DDPM noise schedule + per-step input plumbing.
 
@@ -126,9 +130,9 @@ def flowSamplerNfe : List (String × Nat) :=
 def piF : Float := 3.14159265358979323846
 
 /-- Nichol & Dhariwal's `s`, the same 0.008 `cosineSchedule` uses. -/
-private def sBias : Float := 0.008
+def sBias : Float := 0.008
 
-private def theta (t : Float) : Float :=
+def theta (t : Float) : Float :=
   (t + sBias) / (1.0 + sBias) * (piF / 2.0)
 
 /-- ᾱ(t) = cos²θ(t) / cos²θ(0) — the closed form of the tabulated schedule. -/

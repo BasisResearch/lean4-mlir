@@ -1,4 +1,8 @@
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-! Class Activation Map (Zhou 2016) — visualization helpers.
 
@@ -21,7 +25,7 @@ namespace Cam
 /-- 21 evenly spaced stops of matplotlib's viridis (perceptually uniform), linearly
     interpolated by `viridis`. Hardcoded so we don't carry a runtime dependency on a
     colormap file. -/
-private def viridisStops : Array (UInt8 × UInt8 × UInt8) := #[
+def viridisStops : Array (UInt8 × UInt8 × UInt8) := #[
   (68, 1, 84),    (71, 19, 101),  (72, 36, 117),  (70, 52, 128),
   (65, 68, 135),  (59, 82, 139),  (52, 95, 141),  (47, 108, 142),
   (42, 120, 142), (37, 132, 142), (33, 144, 141), (30, 156, 138),

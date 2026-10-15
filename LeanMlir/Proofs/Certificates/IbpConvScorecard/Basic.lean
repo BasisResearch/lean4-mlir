@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Certificates.IbpConvScorecard.ImgsA
-import LeanMlir.Proofs.Certificates.IbpConvScorecard.ImgsB
-import LeanMlir.Proofs.Certificates.IbpConvScorecard.ImgsC
-import LeanMlir.Proofs.Certificates.IbpConvScorecard.ImgsD
+module
+
+public import LeanMlir.Proofs.Certificates.IbpConvScorecard.ImgsA
+public import LeanMlir.Proofs.Certificates.IbpConvScorecard.ImgsB
+public import LeanMlir.Proofs.Certificates.IbpConvScorecard.ImgsC
+public import LeanMlir.Proofs.Certificates.IbpConvScorecard.ImgsD
+
+@[expose] public section
 
 /-! # IBP `L∞` conv scorecard — the aggregate
 
