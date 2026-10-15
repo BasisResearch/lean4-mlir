@@ -98,6 +98,7 @@ def main() -> int:
     ap.add_argument("docs", type=Path)
     ap.add_argument("hosted_index", type=Path)
     ap.add_argument("--base", default=HOSTED)
+    ap.add_argument("--summary", type=Path, help="write a one-line Markdown summary here (the CI job summary)")
     a = ap.parse_args()
     docs, base = a.docs, a.base.rstrip("/") + "/"
 
@@ -205,6 +206,15 @@ def main() -> int:
           f"{len(shipped) - len(kept_ext)} ours")
     for p in kept_ext[:20]:
         print(f"  kept: {p}")
+    if a.summary:
+        # The drift gauge: links master could not serve keep our pinned page. A jump in
+        # the local count after a Mathlib bump is where our release and master parted.
+        n = ext_stats["decl"] + ext_stats["module"]
+        kept = ", ".join(f"`{module_of(p)}`" for p in kept_ext[:5]) + (" …" if len(kept_ext) > 5 else "")
+        a.summary.write_text(
+            f"{n} to hosted ({ext_stats['decl']} by name, {ext_stats['module']} by module) · "
+            f"{ext_stats['kept']} kept local, {len(kept_ext)} page(s){': ' + kept if kept_ext else ''}\n",
+            encoding="utf-8")
     print(f"search index: {before / 1e6:.1f} MB → {index_path.stat().st_size / 1e6:.1f} MB, "
           f"{len(decls)} declarations, {len(local['modules'])} modules")
     return 0

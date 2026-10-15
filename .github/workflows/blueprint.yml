@@ -463,9 +463,10 @@ jobs:
             hosted="$RUNNER_TEMP/mathlib4_docs-declaration-data.json"
             if curl -fsSL --retry 3 -o "$hosted" \
                  https://leanprover-community.github.io/mathlib4_docs/declarations/declaration-data.bmp; then
-              python3 scripts/book/externalize_docs.py public/docs "$hosted"
+              python3 scripts/book/externalize_docs.py public/docs "$hosted" --summary "$RUNNER_TEMP/externalize.md"
             else
               echo "::warning::hosted Mathlib docs index unreachable; docs/ ships the local Mathlib copy"
+              echo "⚠️ hosted index unreachable — shipped the full local copy" > "$RUNNER_TEMP/externalize.md"
             fi
           fi
           # ⭐ Version the declaration index's URL (2026-09-22). doc-gen4's find/ page and every
@@ -595,6 +596,7 @@ jobs:
             echo "| Docstring citations | ${docrefs:-—} | $(ok "${{ steps.docrefs.outcome }}" "all resolve (\`docstring-checkrefs\`)" "some do not resolve — see \`docstring-checkrefs\`") |"
             echo "| Blueprint web pages | $(count_html public/blueprint) | |"
             echo "| API doc pages (doc-gen4, \`LeanMlir\`) | $(count_html .lake/build/doc/LeanMlir) | |"
+            echo "| Mathlib/core links (\`externalize_docs.py\`) | $(cat "$RUNNER_TEMP/externalize.md" 2>/dev/null || echo "—") | kept local = gone from Mathlib master; our pinned page ships |"
             echo "| PDF | $pdf | |"
             echo "| Sitemap URLs | $sitemap | |"
             echo ""
