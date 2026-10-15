@@ -361,7 +361,7 @@ spec, and a smooth-point form that a later global theorem superseded, is
 not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
 \textbf{9 witnesses} and \textbf{37 step certificates}. Even Chapter~1's
 toolkit is used straight away by a proven model, so no chapter is pure
-scaffolding.
+scaffolding. Table~\ref{tab:theorem_budget} is the count, chapter by chapter.
 
 \begin{table}[H]
 \centering
@@ -842,6 +842,10 @@ structuring a one-\texttt{simp} proof would be ceremony.
 
 \section{The theorems}
 
+Figure~\ref{fig:depgraph_tensor} is the dependency graph of this section. Every
+chapter's theorems section opens with its own, and the legend after this one
+applies to all of them.
+
 \begin{figure}[H]
 \centering
 \input{figures/depgraph/ch1}
@@ -849,8 +853,7 @@ structuring a one-\texttt{simp} proof would be ceremony.
 \label{fig:depgraph_tensor}
 \end{figure}
 
-{\noindent\small \depgraphlegend{} Every chapter's theorems section opens with
-its own.\par}
+{\noindent\small \depgraphlegend{}\par}
 
 \begin{definition}[Partial derivative]
   \label{ax:pdiv}
@@ -1712,7 +1715,7 @@ a gradient drift linear along the segment. The binary32 form supplies
 The smallest network that learns: a single dense layer mapping
 784-dim images to 10-dim logits, trained with softmax cross-entropy
 and plain SGD. About 7,850 parameters. \(\sim\)92\% test accuracy
-in seconds.
+in seconds. Figure~\ref{fig:mnist_linear_arch} is the whole network.
 
 \begin{figure}[H]
 \centering
@@ -2378,6 +2381,8 @@ theorem is what makes naming it a claim.
 
 \section{The theorems}
 
+Figure~\ref{fig:depgraph_mlp} is the dependency graph of this section.
+
 \begin{figure}[H]
 \centering
 \input{figures/depgraph/ch2}
@@ -2595,6 +2600,8 @@ spatial structure.
 
 \subsection*{Architecture}
 
+Figure~\ref{fig:mnist_mlp_arch} is the network.
+
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
@@ -2720,8 +2727,8 @@ and two ReLU subgradients rather than one dense layer.
 
 \subsection*{Results}
 
-The run in \S\ref{sec:mlp_runit} is the result. Its per-epoch training
-loss, on a log scale:
+The run in \S\ref{sec:mlp_runit} is the result. Figure~\ref{fig:mlp_loss} is
+its per-epoch training loss, on a log scale.
 
 \begin{figure}[H]
 \centering
@@ -2742,14 +2749,12 @@ loss, on a log scale:
 };
 \end{axis}
 \end{tikzpicture}
-\caption{Training loss per epoch of the verified MNIST MLP, on a log scale.}
+\caption{Mean training loss per epoch of the verified MNIST MLP ($784{\to}512{\to}512{\to}10$), SGD~0.1, 12 epochs, on a log scale (\texttt{runs/2026-09-01-mlp-verified-xla-cuda/}).}
 \label{fig:mlp_loss}
 \end{figure}
 
-\noindent MNIST MLP ($784{\to}512{\to}512{\to}10$), SGD~0.1, 12 epochs,
-log-scale mean training loss per epoch
-(\texttt{runs/2026-09-01-mlp-verified-xla-cuda/}). The loss falls
-$14\times$ across the run, and test accuracy ends at 97.81\%.
+\noindent The loss falls $14\times$ across the run, and test accuracy ends at
+97.81\%.
 
 Both numbers come off the same binary this chapter's theorems describe.
 
@@ -2794,16 +2799,12 @@ coordinates {
   {knee $\approx 64$: 97.0\% at 55K params};
 \end{axis}
 \end{tikzpicture}
-\caption{Test accuracy of the verified MNIST MLP against hidden width.}
+\caption{Test accuracy of the verified MNIST MLP ($784{\to}d{\to}d{\to}10$) against hidden width $d$, on a log scale: 12-epoch SGD on the proof-rendered StableHLO (\texttt{runs/mlp\_grid\_results\_xla.tsv}). Bars are the 95\% Wilson interval on 10,000 test images.}
 \label{fig:mlp_width}
 \end{figure}
 
-\noindent Return on width for the verified MNIST MLP
-($784{\to}d{\to}d{\to}10$): test accuracy versus hidden width $d$ (log
-scale), 12-epoch SGD on the proof-rendered StableHLO
-(\texttt{runs/mlp\_grid\_results\_xla.tsv}). Bars are the 95\% Wilson
-interval on 10,000 test images --- the same interval the transcripts
-print, and about $\pm 0.3$ points once accuracy is in the nineties.
+\noindent The bars are the same interval the transcripts print, and about
+$\pm 0.3$ points once accuracy is in the nineties.
 
 \medskip\noindent The curve flattens hard after $\sim$64 neurons: widening
 $8{\to}64$ buys $+5.0$ points, but $64{\to}4096$, at $64\times$ the width
@@ -3010,6 +3011,7 @@ summary assumes, and this is the chapter to say what that means.
 
 \medskip\noindent Run this net thirty times and twenty-nine of them land
 between 98.48 and 98.94\%. The thirtieth lands at 97.39\%.
+Figure~\ref{fig:mnist_n30} is those thirty beside the MLP's thirty.
 
 \begin{figure}[H]
 \centering
@@ -3029,13 +3031,11 @@ coordinates {(97.39,0) (98.48,0) (98.59,0) (98.60,0) (98.67,0) (98.67,0) (98.71,
 coordinates {(97.49,1) (97.55,1) (97.63,1) (97.63,1) (97.64,1) (97.65,1) (97.65,1) (97.69,1) (97.70,1) (97.72,1) (97.75,1) (97.76,1) (97.76,1) (97.76,1) (97.77,1) (97.78,1) (97.78,1) (97.79,1) (97.79,1) (97.80,1) (97.81,1) (97.83,1) (97.84,1) (97.85,1) (97.86,1) (97.86,1) (97.87,1) (97.90,1) (97.92,1) (97.93,1)};
 \end{axis}
 \end{tikzpicture}
-\caption{Final test accuracy of thirty runs each of the MNIST MLP and CNN, one dot per run.}
+\caption{Final test accuracy of thirty runs each of the MNIST MLP and CNN, one dot per run (\texttt{runs/2026-09-01-mnist-n30/}).}
 \label{fig:mnist_n30}
 \end{figure}
 
-\noindent Thirty seeds of each net, one dot per run
-(\texttt{runs/2026-09-01-mnist-n30/}). The MLP's runs sit in a band; the
-CNN's do too, apart from one.
+\noindent The MLP's runs sit in a band; the CNN's do too, apart from one.
 
 \medskip\noindent Summarised as a mean and a standard deviation the CNN is
 $98.73 \pm 0.27$. Summarised as a median and quartiles it is $98.78$, with
@@ -3177,6 +3177,8 @@ own theorem, and together they form a working trainer for MNIST that
 respects the image's 2-D structure.
 
 \section{The theorems}
+
+Figure~\ref{fig:depgraph_cnn} is the dependency graph of this section.
 
 \begin{figure}[H]
 \centering
@@ -3563,6 +3565,8 @@ the same dense head you already know.
 
 \subsection*{Architecture}
 
+Figure~\ref{fig:mnist_cnn_arch} is the network.
+
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
@@ -3703,8 +3707,9 @@ their biases, three dense matrices and theirs.
 
 \subsection*{Results}
 
-The run in \S\ref{sec:cnn_runit} is the result. Its per-epoch training
-loss, against Chapter~\ref{chap:mlp}'s MLP on the same recipe:
+The run in \S\ref{sec:cnn_runit} is the result. Figure~\ref{fig:cnn_loss} is
+its per-epoch training loss, against Chapter~\ref{chap:mlp}'s MLP on the same
+recipe.
 
 \begin{figure}[H]
 \centering
@@ -3732,13 +3737,11 @@ loss, against Chapter~\ref{chap:mlp}'s MLP on the same recipe:
 \addlegendentry{CNN (12 epochs)}
 \end{axis}
 \end{tikzpicture}
-\caption{Training loss per epoch of the MNIST CNN against the MLP, on a log scale.}
+\caption{Mean training loss per epoch of the MNIST CNN against the MLP, both on SGD~0.1 for twelve epochs, on a log scale (\texttt{runs/2026-09-01-\{mlp,cnn\}-verified-xla-cuda/}).}
 \label{fig:cnn_loss}
 \end{figure}
 
-\noindent MNIST, SGD~0.1, log-scale mean training loss per epoch
-(\texttt{runs/2026-09-01-\{mlp,cnn\}-verified-xla-cuda/}), both nets now on
-the same twelve. The CNN sits below the MLP through epoch~11 and reaches
+\noindent The CNN sits below the MLP through epoch~11 and reaches
 by epoch~5 a loss the MLP has not reached by twelve. Test accuracy is
 98.77\% against the MLP's 97.81\%.
 
@@ -3783,9 +3786,9 @@ If the dense head holds 99\% of the parameters, the obvious question is how
 many of them earn their keep. The parametric renderer answers it directly:
 \texttt{mnist-cnn-grid} holds the convolutional backbone fixed at 32
 channels and sweeps only the dense head ($\ldots{\to}d{\to}d{\to}10$),
-rendering each width from the faithful CNN emitter. Overlaying that sweep on
-the MLP's (both trained on their own verified StableHLO) shows how little
-the head needs once good convolutional features exist:
+rendering each width from the faithful CNN emitter. Figure~\ref{fig:cnn_head_width}
+overlays that sweep on the MLP's (both trained on their own verified StableHLO),
+and shows how little the head needs once good convolutional features exist.
 
 \begin{figure}[H]
 \centering
@@ -3820,17 +3823,12 @@ coordinates {
 \addlegendentry{MLP ($784{\to}d{\to}d{\to}10$)}
 \end{axis}
 \end{tikzpicture}
-\caption{Test accuracy against dense-head width for the CNN, overlaid on the MLP's width sweep.}
+\caption{Test accuracy against dense-head width for the verified CNN, the convolutional backbone held at 32 channels, overlaid on the MLP width sweep of Chapter~\ref{chap:mlp} (\texttt{runs/cnn\_grid\_rep\{1..5\}.tsv}, \texttt{runs/mlp\_grid\_results\_xla.tsv}). Each CNN point is the median of five runs and its whiskers the observed range.}
 \label{fig:cnn_head_width}
 \end{figure}
 
-\noindent Classifier-head width sweep for the verified CNN (convolutional
-backbone held at 32 channels), overlaid on the MLP width sweep of
-Chapter~\ref{chap:mlp} (\texttt{runs/cnn\_grid\_rep\{1..5\}.tsv} and
-\texttt{runs/mlp\_grid\_results\_xla.tsv}). Each CNN point is the median of
-five runs and its whiskers are the observed range across those five ---
-not an interval, just the highest and lowest the configuration actually
-produced. Eight of the ten widths repeat to within 0.4 and their whiskers
+\noindent The whiskers are not an interval, just the highest and lowest the
+configuration actually produced. Eight of the ten widths repeat to within 0.4 and their whiskers
 are barely visible. The other two do not: $d=512$ dropped one run to
 96.66\% and $d=4096$ one to 93.52\%, which is what the two long tails are.
 
@@ -4217,6 +4215,8 @@ differentiability), one formula, and the rest is the same
 chain rule we already had.
 
 \section{The theorems}
+
+Figure~\ref{fig:depgraph_bn} is the dependency graph of this section.
 
 \begin{figure}[H]
 \centering
@@ -4784,7 +4784,7 @@ and runs through the same 2$\times$512 dense head as that net
 deeper stack pools the grid down further). Eight convolutions is four
 times the MNIST net's two, and that growth in depth, not width, is
 the lineage ResNet-34 (Ch~\ref{chap:residual}) carries to thirty-four
-layers.
+layers. Figure~\ref{fig:cifar8_arch} is the network.
 
 \begin{figure}[H]
 \centering
@@ -4833,12 +4833,11 @@ layers.
   % Bridge cue: the dense head is exactly the MNIST CNN's.
   \node[stage, align=left] at ($(d1.east)!0.5!(d2.east) + (0.35,0)$) {= MNIST CNN\\head (Ch~\ref{chap:cnn})};
 \end{tikzpicture}
-\caption{The eight-convolution CIFAR-10 network with BatchNorm.}
+\caption{The eight-convolution CIFAR-10 network with BatchNorm; the \texttt{ConvBN} boxes are the with-BN variant.}
 \label{fig:cifar8_arch}
 \end{figure}
 
-\noindent The \texttt{ConvBN} boxes are the with-BN variant. The no-BN
-net is identical with each \texttt{ConvBN} replaced by a plain
+\noindent The no-BN net is identical with each \texttt{ConvBN} replaced by a plain
 \texttt{Conv2D~+~ReLU}. Both specs are written out next.
 
 \subsection*{The two specs, differing by one keyword per layer}
@@ -4950,8 +4949,8 @@ XLA/PJRT path on the GPU.
 Fix the optimizer at plain SGD and toggle BN. Both nets train for 40
 epochs on the shared pipeline at a constant learning rate --- no
 warmup, no decay --- because a schedule is a fourth thing changing and
-this section is about the third. Per-epoch test accuracy, the median of
-five runs each, from \texttt{runs/2026-09-01-cifar8w-6arm-constlr/}:
+this section is about the third. Figure~\ref{fig:cifar_bn_curves} is the
+per-epoch test accuracy, the median of five runs each.
 
 \begin{figure}[H]
 \centering
@@ -4979,13 +4978,11 @@ five runs each, from \texttt{runs/2026-09-01-cifar8w-6arm-constlr/}:
 \addlegendentry{no BN}
 \end{axis}
 \end{tikzpicture}
-\caption{CIFAR-10 test accuracy per epoch with and without BatchNorm, plain SGD at a constant rate.}
+\caption{CIFAR-10 test accuracy per epoch with and without BatchNorm: the wide 8-conv net, plain SGD at a constant lr~0.1 on the shared pipeline, 40 epochs, through the verified renderer, the median of five runs per curve (\texttt{runs/2026-09-01-cifar8w-6arm-constlr/}).}
 \label{fig:cifar_bn_curves}
 \end{figure}
 
-\noindent CIFAR-10, wide 8-conv net, plain SGD at a constant lr~0.1 on the
-shared pipeline, 40 epochs, BN vs no-BN, through the verified renderer.
-Median of $n{=}5$ runs per curve. The final points span 74.1 to 75.2 with BN
+\noindent The final points span 74.1 to 75.2 with BN
 and 68.0 to 70.7 without.
 
 \medskip\noindent BN leads from the first epoch --- 41\% against the bare net's 13\% ---
@@ -5006,12 +5003,13 @@ equipment by ResNet's thirty-four layers.
 
 Now hold the architecture fixed and change only the update rule. Three
 optimizers, each at its own tuned learning rate, all on the identical
-pipeline, the same 40 epochs and the same constant rate. Median final
-accuracy, with the observed range across five runs:
+pipeline, the same 40 epochs and the same constant rate.
+Table~\ref{tab:cifar_optimizers} is the median final accuracy, with the
+observed range across five runs.
 
 \begin{table}[H]
 \centering
-\caption{Final CIFAR-10 test accuracy by optimizer, with and without BatchNorm: the median of five runs, with the range in parentheses.}
+\caption{Final CIFAR-10 test accuracy by optimizer, with and without BatchNorm: the median of five runs, with the range from lowest run to highest in parentheses.}
 \label{tab:cifar_optimizers}
 \begin{tabular}{l c c c}
 \hline
@@ -5023,9 +5021,6 @@ BN     & 74.5 {\footnotesize (1.1)} & \textbf{76.3 {\footnotesize (1.0)}} & 74.3
 \hline
 \end{tabular}
 \end{table}
-
-\noindent $n=5$ per cell. Parenthesised figures are the range from lowest
-run to highest.
 
 \medskip\noindent Momentum with BN is the best result on the board at
 76.3\%, about two points over plain SGD and two over AdamW,
@@ -5123,13 +5118,12 @@ one renderer, one constant rate, forty epochs, five seeds, and precision
 the only thing that differs between a pair of rows. Every convolution
 op in the graph is bf16 in the low-precision arms --- twenty-three of
 them: eight forward, eight weight gradients, and the seven input
-gradients (the first layer's input is the image and needs none). Six
-arms, five seeds each, from
-\texttt{runs/2026-09-01-bnprec-seeds/}:
+gradients (the first layer's input is the image and needs none).
+Table~\ref{tab:cifar_bf16} is the six arms, five seeds each.
 
 \begin{table}[H]
 \centering
-\caption{Final CIFAR-10 test accuracy per seed in fp32 and bf16, for each optimizer.}
+\caption{Final CIFAR-10 test accuracy per seed in fp32 and bf16, for each optimizer (\texttt{runs/2026-09-01-bnprec-seeds/}).}
 \label{tab:cifar_bf16}
 \small
 \begin{tabular}{l l r r r r r c}
@@ -5202,7 +5196,8 @@ holds the eight-convolution backbone fixed and renders the AdamW train step
 at any head width $d$ (the same $D_1$ that was hard-wired to 64 is now a
 parameter of the verified emitter), so we can sweep $d$ from 8 to 4096 and
 train each point on its own proof-rendered StableHLO. Dealt across three
-of the box's four cards, the whole curve is a 22-minute run:
+of the box's four cards, the whole curve, Figure~\ref{fig:cifar_head_width}, is
+a 22-minute run.
 
 \begin{figure}[H]
 \centering
@@ -5233,18 +5228,13 @@ coordinates {
   {canonical head $d{=}64$};
 \end{axis}
 \end{tikzpicture}
-\caption{CIFAR-10 test accuracy against dense-head width, with the convolutional backbone fixed.}
+\caption{CIFAR-10 test accuracy against dense-head width for the 8-conv net with per-channel BatchNorm, the convolutional backbone held at $[16,16,32,32]$: AdamW, 25 epochs under a cosine schedule with a three-epoch warmup (\texttt{runs/2026-09-13-cifar8bn-grid-xla/}). Each point is one run; the whiskers are the 95\% Wilson interval on the $10{,}000$-image test set.}
 \label{fig:cifar_head_width}
 \end{figure}
 
-\noindent Dense-head width sweep for the 8-conv cifar8 net with per-channel
-BatchNorm, AdamW, 25 epochs under a cosine schedule with a three-epoch
-warmup (the grid driver's own recipe; the levers above ran at a constant
-rate), conv backbone held at $[16,16,32,32]$
-(\texttt{runs/2026-09-13-cifar8bn-grid-xla/}). Each point is one run, so
-the whiskers are the 95\% Wilson interval for that accuracy on the full
-$10{,}000$-image test set --- about $\pm 0.9$ here --- and not a spread
-over repeats. Read that way the curve makes a sharper claim than
+\noindent The recipe is the grid driver's own; the levers above ran at a constant
+rate. A whisker is about $\pm 0.9$ here, and is not a spread over repeats. Read
+that way the curve makes a sharper claim than
 ``essentially flat'': every width from $d{=}32$ to $d{=}4096$ spans only
 $73.1$ to $74.1\%$, which is narrower than a single point's own interval,
 so the eight plateau intervals all overlap and none of the
