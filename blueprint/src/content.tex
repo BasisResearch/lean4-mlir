@@ -5549,6 +5549,8 @@ fan-in pattern, persist.
 
 \section{The theorems}
 
+Figure~\ref{fig:depgraph_residual} is the dependency graph of this section.
+
 \begin{figure}[H]
 \centering
 \input{figures/depgraph/ch5}
@@ -5930,8 +5932,9 @@ scale: a $7 \times 7$ stride-2 stem and a max-pool drop the
 $224 \times 224 \times 3$ input to $56 \times 56 \times 64$, then four
 stages of residual blocks (depths $3, 4, 6, 3$ at widths
 $64, 128, 256, 512$) do the work, and a global average pool replaces
-the flatten-plus-fat-dense head. The inset shows the one new piece:
-each residual block adds its input back, $y = f(x) + x$.
+the flatten-plus-fat-dense head. Figure~\ref{fig:resnet34_arch} is the network,
+and its inset shows the one new piece: each residual block adds its input
+back, $y = f(x) + x$.
 
 \begin{figure}[H]
 \centering
@@ -6259,8 +6262,9 @@ Every chapter after this one uses the same six ingredients. The
 \section{Ablation: what each ingredient contributes}
 \label{sec:r34_ablation}
 
-So how much does each ingredient actually earn? The full recipe and six
-leave-one-out variants, ResNet-34 on Imagenette, 80 epochs each. Every variant
+So how much does each ingredient actually earn? Figure~\ref{fig:r34_ablation} is
+the full recipe and six leave-one-out variants, ResNet-34 on Imagenette, 80
+epochs each. Every variant
 keeps the recipe intact except for the one component it names, so its
 difference from the full recipe measures that component's contribution
 given everything else is present --- not the order-dependent story an
@@ -6354,6 +6358,7 @@ got a rate that suits it. Heavy-ball at $\mu = 0.9$ multiplies the effective ste
 by $1/(1-\mu) = 10$, so the comparison that isolates momentum is against plain
 SGD at ten times the rate --- $0.1$, not $0.01$ --- where both take the same size
 step and differ only in whether a velocity carries it.
+Figure~\ref{fig:r34_optimizer_matched} is that comparison.
 
 \begin{figure}[H]
 \centering
@@ -6475,7 +6480,7 @@ through tfds. It runs in bf16 --- the convolutions cast to bfloat16
 against fp32 master weights, the classifier head left in fp32 --- which is
 a throughput choice
 rather than a fidelity one, and is why its column is the faster of the
-two in Table~\ref{tab:r34_paths}.
+two in Table~\ref{tab:r34_paths}. Table~\ref{tab:r34_jax} is the run.
 
 \begin{table}[H]
 \centering
@@ -6493,7 +6498,8 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \noindent Global batch 256 as $4 \times 64$ replicas; the final checkpoint
 scored over all $50{,}000$ validation images through an fp32 forward, as
 the verified path and \texttt{timm} score, and the run's own bf16
-evaluation lands within $0.01$ of it.
+evaluation lands within $0.01$ of it. Figure~\ref{fig:r34_jax_curve} is the run,
+epoch by epoch.
 
 \begin{figure}[H]
 \centering
@@ -6527,7 +6533,7 @@ evaluation lands within $0.01$ of it.
 \label{fig:r34_jax_curve}
 \end{figure}
 
-\noindent The run, epoch by epoch. The kink near epoch~5 is the end of
+\noindent The kink near epoch~5 is the end of
 warmup; the steady late climb is the cosine anneal.
 
 \prosesection{The verified path (PJRT)}
@@ -6622,6 +6628,7 @@ lake run r34-default-bf16-4gpu
 \texttt{scripts/jobs/r34-default-bf16-4gpu.conf}, carries the device list,
 both replica knobs, the variant, the per-replica batch and the feed setting;
 \S\ref{sec:getting_started_track4} says what the supervisor behind it does.
+Table~\ref{tab:r34_pjrt} is the run.
 
 \begin{table}[H]
 \centering
@@ -6705,7 +6712,9 @@ together.} The middle of the schedule is noisy on both paths --- at peak
 learning rate SGD moves top-1 by several points between consecutive
 epochs, in both directions, six at the worst on either path --- so the row
 is read for its ends. Over the last fifteen epochs the two average within
-$0.01$ of each other on top-1 and $0.02$ on top-5:
+$0.01$ of each other on top-1 and $0.02$ on top-5.
+Table~\ref{tab:r34_paths_epochs} is the selected epochs and
+Figure~\ref{fig:r34_paths_curve} every epoch.
 
 \begin{table}[H]
 \centering
@@ -6814,6 +6823,7 @@ BatchNorm running statistics decay at $0.9$ against ResNet-34's $0.99$.
 A3 is LAMB at effective batch
 2048 (accumulated as $4\times512$), BCE over Mixup/CutMix targets binarized
 at \texttt{timm}'s $0.2$ threshold, RandAugment, and train@160 / eval@224.
+Table~\ref{tab:r50_jax} is both runs.
 
 \begin{table}[H]
 \centering
@@ -6851,6 +6861,7 @@ the verified render of the same recipe, Table~\ref{tab:r50_pjrt}, lands on
 the paper's number. This A3 is \texttt{timm}'s recipe as \texttt{timm} ran it, on
 both paths; the paragraph after the side-by-side table names the settings
 a bare transcription would miss, and the one not taken.
+Figure~\ref{fig:r50_jax_curves} is the two runs, epoch by epoch.
 
 \begin{figure}[H]
 \centering
@@ -6884,7 +6895,7 @@ a bare transcription would miss, and the one not taken.
 \label{fig:r50_jax_curves}
 \end{figure}
 
-\noindent The two recipes on the reference, epoch by epoch. A3 starts far
+\noindent A3 starts far
 lower --- $0.10\%$ at epoch~1 against $4.61\%$ --- because its whole first
 epoch runs at \texttt{timm}'s warmup start of $10^{-4}$, an eightieth of
 the peak, and BCE over mixup targets gives almost no signal until the
@@ -6946,6 +6957,8 @@ draws once per accumulated step, so agreement there is distributional
 rather than per-step.
 
 \prosesection{The two paths, side by side}
+
+Table~\ref{tab:r50_paths} is the two paths, row by row.
 
 \begin{table}[H]
 \centering
@@ -7051,7 +7064,8 @@ is untested. It is why these pairs are read at their endpoints and nowhere
 else (the rows are the runs' own per-epoch evaluation, the reference's
 through its bf16 forward on 2018 and through fp32 on A3; the headline
 numbers are the final checkpoints scored through fp32, within $0.04$ of
-the last column):
+the last column). Table~\ref{tab:r50_paths_epochs} is the selected epochs and
+Figure~\ref{fig:r50_paths_curves} every epoch.
 
 \begin{table}[H]
 \centering
@@ -7148,7 +7162,7 @@ A3 sets differently is one lever of the three-year jump in how these networks
 are trained, and holding the architecture fixed is what stops the comparison
 confounding the recipe with the backbone. The backbone and the entry point
 are the same for both, and each recipe has its own spec, shim and render.
-Here is the full diff:
+Table~\ref{tab:r50_a3_vs_2018} is the full diff.
 
 \begin{table}[H]
 \centering
@@ -7195,7 +7209,8 @@ resolution is a spec of its own.
 A3 is the cheap tier of ``ResNet Strikes Back''. The other two --- A2 at
 300 epochs and A1 at 600, both at $224^2$ --- render on the verified path
 as \texttt{a2} and \texttt{a1} (the reference's \texttt{a2-accum} and
-\texttt{a1}), and neither has been run:
+\texttt{a1}), and neither has been run. Table~\ref{tab:r50_rsb_tiers} is the
+three tiers.
 
 \begin{table}[H]
 \centering
@@ -7218,9 +7233,10 @@ ghost batch of $512$ per micro-step, as for A3. A1 is its own render rather
 than A2's with a flag: the weight decay is baked into the artifact, $0.01$
 against A2's $0.02$.
 
-\medskip\noindent \textbf{A full schedule}, four cards, each path's own
-trainer timed on real ImageNet at the job's shape --- four replicas of $128$
-accumulated four times to $2048$, $625$ optimizer steps an epoch:
+\medskip\noindent \textbf{A full schedule.} Table~\ref{tab:r50_a2_a1_time} is four
+cards, each path's own trainer timed on real ImageNet at the job's shape ---
+four replicas of $128$ accumulated four times to $2048$, $625$ optimizer steps
+an epoch.
 
 \begin{table}[H]
 \centering
@@ -7240,8 +7256,8 @@ A1 & $600$ & $1{,}469$ & $153$\,h \;($6.4$\,d) & $1{,}776$ & $185$\,h \;($7.7$\,
 \noindent A step is one optimizer step, four micro-batches. Totals are
 training steps alone; evaluation adds a few hours a run.
 
-\medskip\noindent What the two renders carry, and where they stop short of
-the paper:
+\medskip\noindent Table~\ref{tab:r50_a2_a1_scope} is what the two renders carry,
+and where they stop short of the paper.
 
 \begin{table}[H]
 \centering
@@ -7537,6 +7553,8 @@ measured in this book). For mobile and embedded deployment that
 trade is the whole reason MobileNet exists.
 
 \section{The theorems}
+
+Figure~\ref{fig:depgraph_depthwise} is the dependency graph of this section.
 
 \begin{figure}[H]
 \centering
@@ -8040,8 +8058,9 @@ inverted-residual blocks: a $3 \times 3$ stride-2 stem, seven stages of
 \texttt{.invertedResidualNB} blocks (17 in all, widths $16$ to $320$,
 expansion $t{=}6$ except the first), a $1 \times 1$ lift to 1280
 channels, global average pool, and a dense head. There are no
-max-pools, since every downsample is folded into a strided block. The
-inset shows one inverted-residual block: the cheap depthwise spatial mix
+max-pools, since every downsample is folded into a strided block.
+Figure~\ref{fig:mobilenetv2_arch} is the network, and its inset shows one
+inverted-residual block: the cheap depthwise spatial mix
 happens at the wide point.
 
 \begin{figure}[H]
@@ -8437,7 +8456,7 @@ EfficientNet's version of the same RMSProp lineage in
 Chapter~\ref{chap:se} --- and Figure~\ref{fig:mnv2_jax_curve} is the check
 that it is long enough. A shortened run of this recipe has to substitute cosine to be
 worth anything, which is a different experiment rather than a cheaper
-version of the same one.
+version of the same one. Table~\ref{tab:mnv2_jax} is the run.
 
 \begin{table}[H]
 \centering
@@ -8567,6 +8586,8 @@ rerun's render named in the marker below:
 lake run mnv2-default-4gpu
 \end{verbatim}
 
+\noindent Table~\ref{tab:mnv2_pjrt} is the run.
+
 \begin{table}[H]
 \centering
 \caption{MobileNetV2 on ImageNet-1k, verified path (PJRT).}
@@ -8584,6 +8605,8 @@ GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 BatchNorm statistics, scored over the same $50{,}000$ images every epoch.
 
 \prosesection{The two paths, side by side}
+
+Table~\ref{tab:mnv2_paths} is the two paths, row by row.
 
 \begin{table}[H]
 \centering
@@ -8646,6 +8669,8 @@ shared: the classifier head's precision, and the initialization, where
 every depthwise kernel starts $\sqrt{C}$ narrower on the verified path,
 He fan-out over $C \cdot k^2$ against the reference's fan over $k^2$. Those
 rows are open; a run with them matched is what closes them.
+Table~\ref{tab:mnv2_paths_epochs} is the two paths at selected epochs and
+Figure~\ref{fig:mnv2_paths_curve} every ten.
 
 \begin{table}[H]
 \centering
@@ -8774,7 +8799,8 @@ parameters, a fused-IB stage at high resolution, then 21 UIB blocks
 whose per-block instantiation is visible right in the
 \texttt{NetSpec}, driven by the same entry point as every other net
 in this book. What changed from 2018 to 2024 is at
-least as much recipe as architecture:
+least as much recipe as architecture, and Table~\ref{tab:mnv4_vs_mnv2} is the
+diff.
 
 \begin{table}[H]
 \centering
@@ -8838,6 +8864,7 @@ micro-batch accumulated eight times, so $312$ optimizer steps an epoch;
 bf16 convolutions against fp32 master weights, the classifier head in
 fp32; the EMA
 shadow is what gets scored, every five epochs and at the end.
+Table~\ref{tab:mnv4_jax} is the run.
 
 \begin{table}[H]
 \centering
@@ -8861,7 +8888,7 @@ the parameters and under a third of the epochs, $100$ against $350$
 and $16.2$ wall-clock hours against $38.8$ on the same four cards.
 By 2024 the mobile line is not trading accuracy for size so
 much as reaching the same accuracy with a block that happens to be
-cheap.
+cheap. Figure~\ref{fig:mnv4_jax_curve} is the run, scored every five epochs.
 
 \begin{figure}[H]
 \centering
@@ -8892,7 +8919,7 @@ cheap.
 \label{fig:mnv4_jax_curve}
 \end{figure}
 
-\noindent The run, scored every five epochs. The last ten epochs move
+\noindent The last ten epochs move
 top-1 by $0.09$ ($76.49 \to 76.51 \to 76.57$): the schedule is
 exhausted, and the points between this and $79.9\%$ live in the
 regularization and the length the \texttt{full} tier restores.
@@ -8963,6 +8990,8 @@ sit outside that statement. It runs with:
 lake run mnv4-default-4gpu
 \end{verbatim}
 
+\noindent Table~\ref{tab:mnv4_pjrt} is the run.
+
 \begin{table}[H]
 \centering
 \caption{MobileNetV4-Conv-M on ImageNet-1k, verified path (PJRT).}
@@ -8981,6 +9010,8 @@ $8\times$ as on the reference; EMA weights scored over the same
 $50{,}000$ images.
 
 \prosesection{The two paths, side by side}
+
+Table~\ref{tab:mnv4_paths} is the two paths, row by row.
 
 \begin{table}[H]
 \centering
@@ -9041,7 +9072,9 @@ together.} The verified path trails at epoch~5 and leads from epoch~10,
 by $4.40$ at the widest, and the lead narrows through the anneal ---
 not monotonically, it widens again at epochs $25$, $60$ and $70$ ---
 to $0.11$. Over the last three scored epochs the two average within
-$0.15$ of each other on top-1 and $0.18$ on top-5:
+$0.15$ of each other on top-1 and $0.18$ on top-5.
+Table~\ref{tab:mnv4_paths_epochs} is the selected epochs and
+Figure~\ref{fig:mnv4_paths_curve} every five.
 
 \begin{table}[H]
 \centering
@@ -9317,6 +9350,8 @@ return-on-scaling to show up.
 
 \section{The theorems}
 
+Figure~\ref{fig:depgraph_se} is the dependency graph of this section.
+
 \begin{figure}[H]
 \centering
 \input{figures/depgraph/ch7}
@@ -9543,8 +9578,9 @@ EfficientNet-B0 is the MobileNetV2 column with Squeeze-and-Excitation
 in every block: the same $3 \times 3$ stride-2 stem, seven stages of
 MBConv blocks (kernel sizes mixing $3 \times 3$ and
 $5 \times 5$ depthwise), the $1 \times 1$ lift to 1280, global average
-pool, and dense head. The inset shows one MBConv block, an inverted
-residual with an SE gate (highlighted) inserted before the project.
+pool, and dense head. Figure~\ref{fig:efficientnet_b0_arch} is the network, and
+its inset shows one MBConv block, an inverted residual with an SE gate
+(highlighted) inserted before the project.
 
 \begin{figure}[H]
 \centering
@@ -9746,9 +9782,9 @@ block itself.
 \S\ref{sec:enet_runit} has the run: 80 epochs at about 30 seconds each,
 forty-one minutes, $\mathbf{90.04\%}$ top-1 and $\mathbf{98.29\%}$
 top-5, with the loss settling on the same ${\sim}0.50$ label-smoothing
-floor as ResNet-34 and MobileNetV2. The three-chapter comparison --- same
-dataset, same recipe, same eighty epochs, and every row now a measurement
-on the verified XLA path, on one RTX 4060 Ti:
+floor as ResNet-34 and MobileNetV2. Table~\ref{tab:imagenette_three} is the
+three-chapter comparison --- same dataset, same recipe, same eighty epochs,
+and every row now a measurement on the verified XLA path, on one RTX 4060 Ti.
 
 \begin{table}[H]
 \centering
@@ -9984,6 +10020,7 @@ top of that the recipe turns on \textbf{AutoAugment} at policy
 wired into the reference trainer, emitted into the generated
 \texttt{tf.data} pipeline with each knob gated on a config flag, and left
 off here because the 2019 recipe reaches for AutoAugment instead.
+Table~\ref{tab:enet_jax} is the run.
 
 \begin{table}[H]
 \centering
@@ -10055,7 +10092,8 @@ exponential LR decay, and it departs from the paper in the lines listed
 after the config above. It ran $46.6$\,hr on four RTX 3060 at $8.0$
 minutes per epoch. The headline figure is the EMA weights scored over all
 50{,}000 validation images; the same run's raw weights score
-$76.33\%\,/\,92.90\%$, so the weight average is worth $+0.82$ points:
+$76.33\%\,/\,92.90\%$, so the weight average is worth $+0.82$ points.
+Figure~\ref{fig:enet_jax_curve} is the run, epoch by epoch.
 
 \begin{figure}[H]
 \centering
@@ -10188,6 +10226,8 @@ network.
 
 \prosesection{The two paths, side by side}
 
+Table~\ref{tab:enet_paths} is the two paths, row by row.
+
 \begin{table}[H]
 \centering
 \caption{EfficientNet-B0 on ImageNet-1k: the reference and the verified path, row by row.}
@@ -10278,7 +10318,9 @@ does not survive a fifty-epoch average.
 \medskip\noindent\textbf{The curves track; the gap narrows and then holds.}
 The verified path leads through the first fifty epochs on average ($+0.17$),
 runs about half a point behind from there to epoch~200, and narrows to
-$-0.4$ over epochs 200--250 and $-0.3$ from 250 on, where it stays:
+$-0.4$ over epochs 200--250 and $-0.3$ from 250 on, where it stays.
+Table~\ref{tab:enet_paths_epochs} is the selected epochs and
+Figure~\ref{fig:enet_paths_curve} every ten.
 
 \begin{table}[H]
 \centering
@@ -10342,10 +10384,10 @@ random-resized-crop). The config above is the 2019
 EfficientNet recipe (Tan \& Le).
 Chapter~\ref{chap:residual}'s RSB-A3 side quest shows what 2021 does
 to the 2018 baseline, and Chapter~\ref{chap:layernorm}'s recipe table is
-2022's version. This table is the 2019 rung of the same ladder. The
-\texttt{trainAdamSched} entry point is identical in both columns, and
-every row is a one-line change to the \texttt{VerifiedNetSpec}, the
-\texttt{VerifiedConfig}, or the arguments beside them:
+2022's version. Table~\ref{tab:enet_vs_2018} is the 2019 rung of the same
+ladder. The \texttt{trainAdamSched} entry point is identical in both columns,
+and every row is a one-line change to the \texttt{VerifiedNetSpec}, the
+\texttt{VerifiedConfig}, or the arguments beside them.
 
 \begin{table}[H]
 \centering
@@ -10670,6 +10712,8 @@ how convnets are trained, on one page.
 
 \section{The theorems}
 
+Figure~\ref{fig:depgraph_layernorm} is the dependency graph of this section.
+
 \begin{figure}[H]
 \centering
 \input{figures/depgraph/ch8}
@@ -10930,8 +10974,9 @@ ConvNeXt-Tiny replaces the convolutional stages with
 \texttt{.convNextStage} blocks at four widths ($96, 192, 384, 768$)
 and depths ($3, 3, 9, 3$), glued by \texttt{.convNextDownsample} transitions
 (LayerNorm $+$ $2 \times 2$ stride-2 conv). A $4 \times 4$ stride-4
-patchify stem and a global-average-pool head bracket the stack. The
-inset shows one ConvNeXt block: an inverted bottleneck with a single
+patchify stem and a global-average-pool head bracket the stack.
+Figure~\ref{fig:convnext_t_arch} is the network, and its inset shows one
+ConvNeXt block: an inverted bottleneck with a single
 LayerNorm and GELU, scaled by a learnable $\gamma$ before the residual
 add.
 
@@ -11131,9 +11176,10 @@ those 23 positivities are the only assumptions anywhere in the chain.
 \S\ref{sec:convnext_runit} has the run: 80 epochs at about 55 seconds
 each, one hour and fourteen minutes, $\mathbf{82.27\%}$ top-1 and
 $\mathbf{96.51\%}$ top-5, with the loss settling on the same
-${\sim}0.50$ label-smoothing floor as the three chapters before it. The
-four-chapter comparison --- same dataset, same recipe, same eighty epochs,
-and every row a measurement on the verified XLA path, on one RTX 4060 Ti:
+${\sim}0.50$ label-smoothing floor as the three chapters before it.
+Table~\ref{tab:imagenette_four} is the four-chapter comparison --- same
+dataset, same recipe, same eighty epochs, and every row a measurement on the
+verified XLA path, on one RTX 4060 Ti.
 
 \begin{table}[H]
 \centering
@@ -11321,8 +11367,8 @@ $4\mathrm{e}{-}3$@4096 official value linearly scaled to batch 256)
 over a 20-epoch warmup. No deviation from the paper's architecture remains
 but the GELU, which is the tanh approximation on both paths
 (Definition~\ref{ax:geluScalar}); where the recipe departs from the
-paper's is the marker after the side-by-side table. The run below is the
-full 300-epoch tier,
+paper's is the marker after the side-by-side table. Table~\ref{tab:cnx_jax} is
+the full 300-epoch tier,
 trained and evaluated on an antialiased bicubic resize and scored at the
 paper's protocol, $224$ with a $0.875$ centre crop.
 
@@ -11373,7 +11419,7 @@ top-1 climbed across the whole 300-epoch schedule with no erosion and no
 divergence, the opposite of B0's RMSProp blow-up. AdamW's bounded,
 decoupled step plus the grad-clip makes the peak LR a non-event, which is
 what lets the heavy augmentation run to schedule instead of destabilizing
-it early.
+it early. Figure~\ref{fig:cnx_jax_curve} is the run, epoch by epoch.
 
 \begin{figure}[H]
 \centering
@@ -11472,6 +11518,8 @@ the shim. It runs with:
 lake run cnx-default-4gpu
 \end{verbatim}
 
+\noindent Table~\ref{tab:cnx_pjrt} is the run.
+
 \begin{table}[H]
 \centering
 \caption{ConvNeXt-T on ImageNet-1k, verified path (PJRT).}
@@ -11491,6 +11539,8 @@ epoch 300, scored over the same $50{,}000$ validation images. The best
 epoch was 291, at $81.39\%$.
 
 \prosesection{The two paths, side by side}
+
+Table~\ref{tab:cnx_paths} is the two paths, row by row.
 
 \begin{table}[H]
 \centering
@@ -11573,6 +11623,8 @@ raw against raw. A raw reference curve cannot be rebuilt after the fact
 --- the reference kept raw weights only for its last three epochs ---
 which is why the reference section measured the EMA's worth at the end,
 where it is $0.03$, and not along the way, where it is several points.
+Table~\ref{tab:cnx_paths_epochs} is the selected epochs and
+Figure~\ref{fig:cnx_paths_curve} every epoch.
 
 \begin{table}[H]
 \centering
@@ -11640,10 +11692,10 @@ convnet. Where Chapter~\ref{chap:residual}'s RSB-A3 side quest showed
 the 2018$\to$2021 jump on a fixed ResNet, this table shows the
 2018$\to$2022 jump with the block modernized in step. Since
 ``the recipe is the thesis'' is this architecture's whole argument,
-the diff below is the chapter in table form. The
+Table~\ref{tab:cnx_vs_2018} is the chapter in table form. The
 \texttt{trainAdamSched} entry point is identical in both columns, and
 every row is a one-line change to the \texttt{VerifiedNetSpec}, the
-\texttt{VerifiedConfig}, or the arguments beside them:
+\texttt{VerifiedConfig}, or the arguments beside them.
 
 \begin{table}[H]
 \centering
@@ -11702,6 +11754,7 @@ regularization pay.
 from 9 blocks to 27 and touches nothing else; \textbf{B} does that and
 widens every stage, $96/192/384/768 \to 128/256/512/1024$. On the JAX side both
 are parameter edits. On the verified side they are not the same job at all.
+Table~\ref{tab:cnx_sb_sizes} is the three sizes.
 
 \begin{table}[H]
 \centering
@@ -11723,10 +11776,10 @@ ConvNeXt-B & $27$ blocks, $128$ wide& $88{,}591{,}464$ & $378.6 \to 158.0$\,ms \
 $50{,}223{,}688$ and $88{,}591{,}464$, $344$ tensors each, the head
 LayerNorm's $\gamma$ and $\beta$ included.
 
-\medskip\noindent \textbf{A full schedule}, four cards, $300$ epochs at the
-jobs' own shape --- $64$ per replica, sixteen micro-batches accumulated to
-the official $4096$, $312$ updates an epoch --- with each path's own
-trainer timed on real ImageNet (the 2026-10-12 smokes):
+\medskip\noindent \textbf{A full schedule.} Table~\ref{tab:cnx_sb_time} is four
+cards, $300$ epochs at the jobs' own shape --- $64$ per replica, sixteen
+micro-batches accumulated to the official $4096$, $312$ updates an epoch ---
+with each path's own trainer timed on real ImageNet (the 2026-10-12 smokes).
 
 \begin{table}[H]
 \centering
@@ -11985,6 +12038,8 @@ made concrete.
 
 \section{Matrix-level machinery}
 \label{sec:matrix_machinery}
+
+Figure~\ref{fig:depgraph_matrix} is the dependency graph of this section.
 
 \begin{figure}[H]
 \centering
@@ -12376,6 +12431,9 @@ Jacobian (Theorem~\ref{thm:pdivMat_transpose}) with \(dY\):
 
 \section{Attention proofs}
 \label{sec:attention_proofs}
+
+Figures~\ref{fig:depgraph_attention_1} and~\ref{fig:depgraph_attention_2} are
+the dependency graph of this section, in two halves.
 
 \begin{figure}[H]
 \centering
@@ -13185,8 +13243,9 @@ shortest spec in Part 1: \texttt{.patchEmbed} chops the
 image into $16 \times 16$ patches and projects each to a 192-dim token
 (196 of them, plus a prepended CLS token), \texttt{.transformerEncoder}
 runs twelve pre-norm blocks, and a final LayerNorm feeds the CLS token
-to a dense head. The inset shows one of the twelve transformer blocks,
-which is two residual sub-blocks, attention then MLP, each pre-normed.
+to a dense head. Figure~\ref{fig:vit_tiny_arch} is the network, and its inset
+shows one of the twelve transformer blocks, which is two residual sub-blocks,
+attention then MLP, each pre-normed.
 
 \begin{figure}[H]
 \centering
@@ -13378,9 +13437,9 @@ that failure mode.
 
 \S\ref{sec:vit_runit} has the run: 80 epochs at about 18 seconds each,
 twenty-four minutes, $\mathbf{68.74\%}$ top-1 and $\mathbf{90.42\%}$
-top-5. That completes the Part-1 column, and every row of it is now a
-measurement on the verified XLA path at the same dataset, the same
-eighty epochs, and one RTX 4060 Ti:
+top-5. That completes the Part-1 column, Table~\ref{tab:imagenette_five}, and
+every row of it is now a measurement on the verified XLA path at the same
+dataset, the same eighty epochs, and one RTX 4060 Ti.
 
 \begin{table}[H]
 \centering
@@ -13589,7 +13648,7 @@ is the only precision flag that applies and there is no
 128 (\texttt{jax/scripts/jax\_vit\_bench.py tiny 128}, synthetic). The
 multiple is below the convnets' because ViT-Ti's matmuls are narrow
 ($d{=}192$) and proportionally more time goes to the fp32
-LayerNorm/softmax that bf16 leaves alone.
+LayerNorm/softmax that bf16 leaves alone. Table~\ref{tab:vit_jax} is the run.
 
 \begin{table}[H]
 \centering
@@ -13613,6 +13672,7 @@ EMA is worth about $+0.2$ on top of them (McNemar $p = 0.002$ over the
 $50{,}000$ images, so the shadow's gain is real, if small). At
 $n = 50{,}000$ the Wilson 95\% interval is $\pm0.39$ points either way:
 on the paper's number, not under it in any meaningful sense.
+Figure~\ref{fig:vit_jax_curve} is the run, sampled every five epochs.
 
 \begin{figure}[H]
 \centering
@@ -13646,7 +13706,7 @@ on the paper's number, not under it in any meaningful sense.
 \label{fig:vit_jax_curve}
 \end{figure}
 
-\noindent The run, sampled every 5 epochs. The slow start is Mixup and
+\noindent The slow start is Mixup and
 CutMix blending the labels, compounded by the EMA shadow lagging the live
 weights; after that it climbs to the end of the schedule without an
 overfitting turn.
@@ -13754,6 +13814,8 @@ the marker below:
 lake run vit-default-emabf16-4gpu
 \end{verbatim}
 
+\noindent Table~\ref{tab:vit_pjrt} is the run.
+
 \begin{table}[H]
 \centering
 \caption{ViT-Tiny on ImageNet-1k, verified path (PJRT).}
@@ -13773,6 +13835,8 @@ epoch scored. The live weights score $72.15\%$ / $91.11\%$, which is
 DeiT-Ti's own $72.2$ / $91.1$ to within a twentieth of a point.
 
 \prosesection{The two paths, side by side}
+
+Table~\ref{tab:vit_paths} is the two paths, row by row.
 
 \begin{table}[H]
 \centering
@@ -13853,7 +13917,8 @@ matched row for row, the verified path does not trail its reference.
 leads from early on.} The two are tied through epoch~35 --- $13.89$
 against $13.99$ at epoch~5, $48.27$ against $48.24$ at~25 --- and from
 epoch~40 the verified path sits between a tenth and half a point ahead,
-to the end, never reversing:
+to the end, never reversing. Table~\ref{tab:vit_paths_epochs} is the selected
+epochs and Figure~\ref{fig:vit_paths_curve} every five.
 
 \begin{table}[H]
 \centering
@@ -13943,7 +14008,8 @@ $128$ rows. The validation accuracies remain the comparison.
 
 \textbf{The axis.} ViT scales on one axis where ConvNeXt scaled on two. Tiny,
 Small and Base are the same twelve blocks at a wider model dimension, with the
-MLP at $4D$ throughout. Depth never moves.
+MLP at $4D$ throughout. Depth never moves. Table~\ref{tab:vit_sb_sizes} is the
+three sizes.
 
 \begin{table}[H]
 \centering
@@ -13969,10 +14035,10 @@ micro-batches of $4 \times 128$ --- at the $10^{-3}$ that batch sets, which
 took one renderer feature, the accumulating optimizer tail, beyond the
 \texttt{\#eval} lines.
 
-\medskip\noindent \textbf{A full schedule}, four cards, $300$ epochs at the
-jobs' own shape --- DeiT's $1024$, $1{,}251$ optimizer steps an epoch ---
-with each path's own trainer timed on real ImageNet (the 2026-10-11
-smokes, on the 4060~Ti box):
+\medskip\noindent \textbf{A full schedule.} Table~\ref{tab:vit_sb_time} is four
+cards, $300$ epochs at the jobs' own shape --- DeiT's $1024$, $1{,}251$
+optimizer steps an epoch --- with each path's own trainer timed on real
+ImageNet (the 2026-10-11 smokes, on the 4060~Ti box).
 
 \begin{table}[H]
 \centering
