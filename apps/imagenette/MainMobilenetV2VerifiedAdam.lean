@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `mobilenetv2-verified-adam` — train MobileNetV2 with the VERIFIED-rendered **AdamW** step
 

@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `cifar-verified` — train the CIFAR-10 CNN on the VERIFIED-rendered codegen
 

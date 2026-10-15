@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! `.yolov1Masked` mutex checks.
 
@@ -28,7 +32,7 @@ def baseConfig : TrainConfig := {
     Returns `none` on success (it threw the right error), `some msg` on
     failure. The message must name `yolov1Masked`, as evidence the throw is from the YOLOv1
     mutex path. -/
-private def expectThrow (label : String) (act : IO Unit) : IO (Option String) := do
+def expectThrow (label : String) (act : IO Unit) : IO (Option String) := do
   try
     act
     return some s!"FAIL [{label}]: expected throw, none happened"

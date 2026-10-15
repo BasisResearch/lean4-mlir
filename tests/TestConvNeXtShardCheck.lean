@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # ConvNeXt-T **sharding** gate — the asymmetric-batch known answer
 

@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 /-! GradCAM (Zhou-2016 closed form) on a trained checkpoint.
 
@@ -52,7 +56,7 @@ def imagenetteClasses : Array String := #[
 ]
 
 /-- ImageNet de-normalization for a single channel value `v`. -/
-private def denormToU8 (c : Nat) (v : Float) : UInt8 :=
+def denormToU8 (c : Nat) (v : Float) : UInt8 :=
   let (mean, std) :=
     if c == 0      then (0.485, 0.229)
     else if c == 1 then (0.456, 0.224)
@@ -63,7 +67,7 @@ private def denormToU8 (c : Nat) (v : Float) : UInt8 :=
 
 /-- Convert a single NCHW `[3, H, W]` slice into row-major `[H, W, 3]`
     UInt8 RGB suitable for PPM / overlay. -/
-private def chwF32ToHwcU8 (chw : ByteArray) (start H W : Nat) : ByteArray := Id.run do
+def chwF32ToHwcU8 (chw : ByteArray) (start H W : Nat) : ByteArray := Id.run do
   let plane := H * W
   let mut out := ByteArray.emptyWithCapacity (H * W * 3)
   for i in [:H] do
@@ -78,7 +82,7 @@ private def chwF32ToHwcU8 (chw : ByteArray) (start H W : Nat) : ByteArray := Id.
 /-- Sum of preceding param shape sizes (in elements) up to layer index
     `targetIdx` exclusive. Used to compute the byte offset of the final
     dense W and b in the packed params buffer. -/
-private def offsetBefore (spec : NetSpec) (targetIdx : Nat) : Nat := Id.run do
+def offsetBefore (spec : NetSpec) (targetIdx : Nat) : Nat := Id.run do
   let shapes := spec.paramShapes
   let mut acc : Nat := 0
   for i in [:targetIdx] do
@@ -90,7 +94,7 @@ private def offsetBefore (spec : NetSpec) (targetIdx : Nat) : Nat := Id.run do
 
 /-- Compile (or fetch from cache) the `forward_cam` vmfb for `spec`.
     Mirrors the pattern in `Train.compileVmfbs`. -/
-private def compileCamVmfb (spec : NetSpec) (batchSize : Nat) : IO String := do
+def compileCamVmfb (spec : NetSpec) (batchSize : Nat) : IO String := do
   let pfx := spec.buildPrefix
   let mlirPath := s!"{pfx}_fwd_cam.mlir"
   let vmfbPath ← NetSpec.graphArtifact pfx "fwd_cam"

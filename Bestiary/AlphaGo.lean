@@ -1,4 +1,8 @@
-import LeanMlir.Spec
+module
+
+public import LeanMlir.Spec
+
+@[expose] public section
 
 /-! # AlphaGo — Bestiary entry
 

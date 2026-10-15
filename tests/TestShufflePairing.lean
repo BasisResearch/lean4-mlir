@@ -1,4 +1,8 @@
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-!
 # Image/label pairing regression test for `F32.shuffle`
@@ -33,7 +37,7 @@ namespace ShufflePairing
 
 /-- Build `n` records: image `k` is `pixels` copies of `k`, label `k` is
     `labelFloats` copies of `k`. -/
-private def build (n pixels labelFloats : Nat) : IO (ByteArray × ByteArray) := do
+def build (n pixels labelFloats : Nat) : IO (ByteArray × ByteArray) := do
   let mut imgs : Array ByteArray := #[]
   let mut lbls : Array ByteArray := #[]
   for k in [0:n] do
@@ -44,7 +48,7 @@ private def build (n pixels labelFloats : Nat) : IO (ByteArray × ByteArray) := 
 /-- Check the pairing invariant per element, and that the result is a genuine
     permutation of the input (every original record present exactly once).
     Returns `none` on success or the first failure explanation. -/
-private def checkPaired (n pixels labelFloats : Nat)
+def checkPaired (n pixels labelFloats : Nat)
     (imgs lbls : ByteArray) : IO (Option String) := do
   -- Sizes first: a truncated buffer would make the loops below vacuous.
   if F32.size imgs != n * pixels then
@@ -79,7 +83,7 @@ private def checkPaired (n pixels labelFloats : Nat)
   return none
 
 /-- One case: build, shuffle at the honest stride, assert pairing survived. -/
-private def runCase (name : String) (n pixels labelFloats seed : Nat) : IO Bool := do
+def runCase (name : String) (n pixels labelFloats seed : Nat) : IO Bool := do
   let (imgs, lbls) ← build n pixels labelFloats
   let (sImg, sLbl) ← F32.shuffle imgs lbls n.toUSize pixels.toUSize
                        (labelFloats * 4).toUSize seed.toUSize
@@ -97,7 +101,7 @@ private def runCase (name : String) (n pixels labelFloats seed : Nat) : IO Bool 
     only the first float of each record moves. It must be refused, not
     silently performed. Over-reporting must be refused too (it reads past the
     end of the buffer). -/
-private def runGuardCase (name : String) (n pixels labelFloats claimedBytes : Nat) : IO Bool := do
+def runGuardCase (name : String) (n pixels labelFloats claimedBytes : Nat) : IO Bool := do
   let (imgs, lbls) ← build n pixels labelFloats
   let refused ←
     try

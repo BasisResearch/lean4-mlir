@@ -1,6 +1,10 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
+
+@[expose] public section
 
 /-! # Classifier dropout — the two gates its own identity checks cannot make
 
@@ -48,7 +52,7 @@ needed, the same split `TestDropPathTie` records for stochastic depth.
 open Proofs Proofs.StableHLO
 
 /-- A float32 buffer from explicit values. Masks are tiny and must be exact. -/
-private def mkVec (vals : Array Float) : IO ByteArray := do
+def mkVec (vals : Array Float) : IO ByteArray := do
   let mut cells : Array ByteArray := #[]
   for v in vals do cells := cells.push (← F32.const 1 v)
   pure (F32.concat cells)
@@ -56,7 +60,7 @@ private def mkVec (vals : Array Float) : IO ByteArray := do
 /-- `(max |a−b|, max(|a|,|b|), bit-exact count)`. The magnitude is over BOTH buffers — a control
     that drives one side to identically zero would otherwise give a zero denominator and report a
     total collapse as agreement (`TestDropPathTie`'s `cmpBufs`). -/
-private def cmpBufs (a b : ByteArray) (n : Nat) : Float × Float × Nat := Id.run do
+def cmpBufs (a b : ByteArray) (n : Nat) : Float × Float × Nat := Id.run do
   let mut d := 0.0; let mut m := 0.0; let mut e := 0
   for i in [0:n] do
     let u := F32.read a i.toUSize
@@ -66,20 +70,20 @@ private def cmpBufs (a b : ByteArray) (n : Nat) : Float × Float × Nat := Id.ru
     if max u.abs w.abs > m then m := max u.abs w.abs
   (d, m, e)
 
-private def rel (d m : Float) : Float := if m > 1e-30 then d / m else 0.0
+def rel (d m : Float) : Float := if m > 1e-30 then d / m else 0.0
 
-private def nonFinite (a : ByteArray) (n : Nat) : Nat := Id.run do
+def nonFinite (a : ByteArray) (n : Nat) : Nat := Id.run do
   let mut c : Nat := 0
   for i in [0:n] do
     if !(F32.read a i.toUSize).isFinite then c := c + 1
   return c
 
-private def die (msg : String) : IO α := throw (IO.userError msg)
+def die (msg : String) : IO α := throw (IO.userError msg)
 
 /-- Compile fresh — delete both the bare and the backend-scoped `.vmfb` first: `compileVmfb`
     keys its cache on the output path and an mtime, never on the source, so a second run under one
     tag silently reuses the first binary. That bites exactly when running a control. -/
-private def freshSession (path tag : String) : IO LowererSession := do
+def freshSession (path tag : String) : IO LowererSession := do
   let vmfb := s!".lake/build/dropout_tie_{tag}.vmfb"
   let target := (← IO.getEnv "IREE_BACKEND").getD "cuda"
   for p in [vmfb, s!".lake/build/dropout_tie_{tag}_{target}.vmfb"] do
@@ -90,10 +94,10 @@ private def freshSession (path tag : String) : IO LowererSession := do
 -- § GATE A — the known answer. Does the mask multiply PER ELEMENT?
 -- ════════════════════════════════════════════════════════════════
 
-private def OB : Nat := 8      -- examples
-private def ON : Nat := 5      -- per-example width. ON ≠ OB — see `opModule`
+def OB : Nat := 8      -- examples
+def ON : Nat := 5      -- per-example width. ON ≠ OB — see `opModule`
 
-private def zOX : Vec (OB * ON) := fun _ => 0
+def zOX : Vec (OB * ON) := fun _ => 0
 
 /-- **The op, through the SAME `pretty` emitter the render uses** — one `dropoutB` over `%x` with
     the mask as a graph input, which is exactly the subtree `enetFwdChain` splices before the dense.
@@ -104,7 +108,7 @@ private def zOX : Vec (OB * ON) := fun _ => 0
     (8 floats) by any accident of shape. What remains to catch is the substantive error — a mask
     that is CONSTANT WITHIN each example, i.e. stochastic depth wearing dropout's types — and that
     is control C1 below, which is why the mask is deliberately non-uniform within every example. -/
-private def opModule : String :=
+def opModule : String :=
   let go : StateM Proofs.StableHLO.EmitS String := do
     let (c, o) ← pretty OB (.dropoutB (N := OB) (n := ON) "%do" (fun _ => 0 : Vec (OB * ON))
                               (.operand "%x" zOX))
@@ -121,7 +125,7 @@ private def opModule : String :=
     rounding that to float32 is by definition what float32 multiplication returns. Any difference at
     all is the render computing something else. The mask is read back out of the buffer the device
     receives, never from the literal, so both sides see identical float32 values. -/
-private def dropoutRef (x m : ByteArray) : IO ByteArray := do
+def dropoutRef (x m : ByteArray) : IO ByteArray := do
   let mut cells : Array ByteArray := #[]
   for k in [0:OB * ON] do
     cells := cells.push (← F32.const 1 (F32.read m k.toUSize * F32.read x k.toUSize))
@@ -136,7 +140,7 @@ private def dropoutRef (x m : ByteArray) : IO ByteArray := do
     only thing that separates it from dropout is that its mask is constant within each example.
     `Proofs.dropPath_scales_uniformly` is that statement on the denotation side; this is it on
     device. It must NOT match, which is why `opMask` varies within every example. -/
-private def dropoutRefPerExample (x m : ByteArray) : IO ByteArray := do
+def dropoutRefPerExample (x m : ByteArray) : IO ByteArray := do
   let mut cells : Array ByteArray := #[]
   for j in [0:OB] do
     let mj := F32.read m (j * ON).toUSize
@@ -159,7 +163,7 @@ to be constant per example would make control C1 agree with the gate, and the ga
 passing on a render that computes stochastic depth. The first value of each example is deliberately
 never `0.0`, for `TestDropPathTie`'s reason: C1 compares against "everything scaled by `m[j·n]`",
 which a zero there would turn into the trivially-different all-zero vector. -/
-private def opMask (keep : Float) : Array Float := Id.run do
+def opMask (keep : Float) : Array Float := Id.run do
   let inv := 1.0 / keep
   let pattern : Array Float := #[inv, 0.0, 1.0, 0.5, 0.25]
   let mut out : Array Float := #[]
@@ -169,7 +173,7 @@ private def opMask (keep : Float) : Array Float := Id.run do
       out := out.push pattern[(i + j) % ON]!
   return out
 
-private def gateOp (doBreak : Bool) : IO Unit := do
+def gateOp (doBreak : Bool) : IO Unit := do
   IO.println "── GATE A — the known answer: does the mask multiply PER ELEMENT?"
   let keep := (efficientnetVerified.dropoutKeep.map (·.1)).getD 0.8
   let maskVals := opMask keep
@@ -239,10 +243,10 @@ the mask at all."
 -- ════════════════════════════════════════════════════════════════
 
 /-- Read a whole file. -/
-private def slurp (p : String) : IO String := IO.FS.readFile p
+def slurp (p : String) : IO String := IO.FS.readFile p
 
 /-- All `%name` operands of the first `dot_general` on `line`, in order. -/
-private def dotOperands (line : String) : List String :=
+def dotOperands (line : String) : List String :=
   ((line.splitOn "stablehlo.dot_general").getD 1 "").splitOn ","
     |>.map (·.trimAscii.toString) |>.filter (·.startsWith "%") |>.map (fun s => (s.splitOn " ").getD 0 s)
 
@@ -262,7 +266,7 @@ private def dotOperands (line : String) : List String :=
     And note what is NOT checked here: the bias gradient, which reads only the cotangent and must
     be UNAFFECTED. It is asserted below for the same reason the others are — a render that scaled it
     too would be wrong in the opposite direction, and nothing else would notice. -/
-private def gateNet (path : String) : IO Unit := do
+def gateNet (path : String) : IO Unit := do
   IO.println s!"── GATE W — the classifier weight gradient's operand"
   IO.println s!"  artifact {path}"
   let text ← slurp path

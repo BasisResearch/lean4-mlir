@@ -1,4 +1,8 @@
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-! # `argmax-check` — the CLASS-COUNT gate on `F32.argmaxN`
 

@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # The **sharding** gate, for every net that has a data-parallel render
 
@@ -54,7 +58,7 @@ Needs TWO GPUs and the XLA backend (collectives do not exist on the IREE path).
 /-- The nets with a DP render that this construction applies to. R34 is absent on purpose: its
     `_adam_train_step` is bs32 batch-BN like these, so the *test* would work, but its DP evidence
     is tracked separately and it has no `adamdp` peer at this batch to pair with. -/
-private def netOf : String → Option (VerifiedNetSpec × Nat)
+def netOf : String → Option (VerifiedNetSpec × Nat)
   | "convnext"     => some (convnextVerified,     32)
   -- the 1000-class ImageNet twins
   | "convnextin"        => some (convnextImagenetVerified, 32)
@@ -68,7 +72,7 @@ private def netOf : String → Option (VerifiedNetSpec × Nat)
   | _              => none
 
 /-- The batch-BN rows, whose DP renders are sync-BN, and the gate that replaces each. -/
-private def retired : String → Option String
+def retired : String → Option String
   | "efficientnet"   => some "efficientnet-syncbn-check"
   | "mobilenetv2"    => some "mobilenetv2-syncbn-check"
   | "efficientnetin" => some "imagenet-syncbn-check efficientnet"

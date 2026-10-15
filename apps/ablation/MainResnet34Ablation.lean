@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `resnet34-ablation` — §5.6's leave-one-out recipe ablation, one arm per invocation
 
@@ -32,7 +36,7 @@ def cfg : VerifiedConfig where
 /-- The precision suffix, appended to every variant. It TRAILS the ablation marks (`adamwd00bf16`,
     not `adambf16wd00`), which is `r34AdamVariant`'s spelling and the `#guard`s pin it — a suffix
     assembled in the wrong order here would name an artifact that does not exist. -/
-private def pfx (bf16 : Bool) : String := if bf16 then "bf16" else ""
+def pfx (bf16 : Bool) : String := if bf16 then "bf16" else ""
 
 def main (argv : List String) : IO Unit := do
   let d    := argv.head?.getD "data"

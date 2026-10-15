@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 /-! Forward-only smoke test for the new `unetDown` / `unetUp` codegen.
 
@@ -10,7 +14,7 @@ disk, runs iree-compile on each, and exits 0 if both compile.
 Usage: `lake exe test-unet-forward` (`IREE_BACKEND` / `IREE_CHIP` pick the
 target; default cuda / sm_86) -/
 
-private def compileOne (label mlir mlirPath vmfbPath : String) : IO Unit := do
+def compileOne (label mlir mlirPath vmfbPath : String) : IO Unit := do
   IO.FS.writeFile mlirPath mlir
   IO.eprintln s!"  [{label}] wrote {mlirPath} ({mlir.length} chars)"
   let args ← ireeCompileArgs mlirPath vmfbPath

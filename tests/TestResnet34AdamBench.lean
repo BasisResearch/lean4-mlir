@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `@resnet34_adam_train_step` step-time bench — hand-written vs `pretty(provenGraph)`
 
@@ -43,7 +47,7 @@ count what survived:
 /-- Emitted `stablehlo.*` op count of a render. Counted from the file rather than hardcoded so the
     verdict stays correct when the artifacts change — or when the two paths are passed in the other
     order, which is the control run for compile-order effects. -/
-private def opCount (path : String) : IO Nat := do
+def opCount (path : String) : IO Nat := do
   let s ← IO.FS.readFile path
   pure ((s.splitOn "stablehlo.").length - 1)
 
@@ -52,7 +56,7 @@ private def opCount (path : String) : IO Nat := do
     Both are properties of the artifact, so reading them beats assuming them — it lets one bench
     compare renders at *different* `B`, and it removes the chance of invoking the wrong
     entry (the shim refuses an entry mismatch, but failing here is a clearer message). -/
-private def entryAndBatch (path : String) : IO (String × Nat) := do
+def entryAndBatch (path : String) : IO (String × Nat) := do
   let s ← IO.FS.readFile path
   let some i := (s.splitOn "func.func @")[1]? | throw (IO.userError s!"{path}: no `func.func @`")
   -- `.toString` on both: `takeWhile`/`trim` yield `String.Slice` in this toolchain.
@@ -63,7 +67,7 @@ private def entryAndBatch (path : String) : IO (String × Nat) := do
   pure (name, b)
 
 /-- min / median / mean of a sample, in ms. -/
-private def stats (xs : Array Float) : Float × Float × Float :=
+def stats (xs : Array Float) : Float × Float × Float :=
   let s := xs.qsort (· < ·)
   let n := s.size
   let mean := (s.foldl (· + ·) 0.0) / n.toFloat

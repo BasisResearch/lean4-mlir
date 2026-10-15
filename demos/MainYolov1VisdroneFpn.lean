@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 /-! # `yolov1-visdrone-fpn` — the multi-scale FPN detector
 

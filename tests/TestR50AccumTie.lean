@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # Gradient accumulation, numerically certified — k micro-steps ARE one step
 
@@ -80,7 +84,7 @@ Knobs: `R50_ACC_VARIANT` (default `acc4x64`), `R50_ACC_PEER` (default `adam64`),
 /-- Max |a−b| and max(|a|,|b|) over a float range of two blobs, plus the bit-exact count. The
     magnitude is over BOTH buffers (`TestDropPathTie.cmpBufs`): over `a` alone, an `a` driven to zero
     reads as rel 0. -/
-private def cmp (a b : ByteArray) (offA offB n : Nat) : Float × Float × Nat := Id.run do
+def cmp (a b : ByteArray) (offA offB n : Nat) : Float × Float × Nat := Id.run do
   let mut d := 0.0; let mut m := 0.0; let mut ex := 0
   for i in [0:n] do
     let x := F32.read a (offA + i).toUSize

@@ -1,4 +1,8 @@
-import LeanMlir.Spec
+module
+
+public import LeanMlir.Spec
+
+@[expose] public section
 
 /-! # ResNet — Bestiary entry (R-18 / R-50 / R-101 / R-152)
 

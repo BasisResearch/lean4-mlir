@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! # `uib` layout tie — `VLayer.toSpecs` against the baseline `Layer.nParams`
 

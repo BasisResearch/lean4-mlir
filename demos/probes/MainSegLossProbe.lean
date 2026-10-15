@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.CliArgs
+module
+
+public import LeanMlir
+public import LeanMlir.CliArgs
+
+@[expose] public section
 
 /-! Emit the standalone segmentation-loss module for FD validation.
     Writes `seg_loss_gen.mlir` for a

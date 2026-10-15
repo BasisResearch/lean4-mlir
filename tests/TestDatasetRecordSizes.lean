@@ -1,4 +1,8 @@
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-!
 # Do the declared record sizes match what the loaders actually return?
@@ -30,14 +34,14 @@ a pre-flight check to run whenever a dataset or its preprocessing changes.
 
 namespace DatasetRecordSizes
 
-private structure Case where
+structure Case where
   name        : String
   path        : String
   pixels      : Nat
   labelBytes  : Nat
   load        : IO (ByteArray × ByteArray × Nat)
 
-private def check (c : Case) : IO (Option Bool) := do
+def check (c : Case) : IO (Option Bool) := do
   if !(← System.FilePath.pathExists c.path) then
     IO.println s!"  SKIP  {c.name} — {c.path} not present"
     return none

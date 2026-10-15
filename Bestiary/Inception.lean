@@ -1,4 +1,8 @@
-import LeanMlir.Spec
+module
+
+public import LeanMlir.Spec
+
+@[expose] public section
 
 /-! # Inception (v1 / v3 / v4) — Bestiary entry
 

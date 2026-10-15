@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 /-! Sample digits from a trained tiny DDPM checkpoint.
 
@@ -25,7 +29,7 @@ Usage:
 
 open ReferenceNets (tinyDdpmUnet)
 
-private def floatToU8 (v : Float) : UInt8 :=
+def floatToU8 (v : Float) : UInt8 :=
   let p := if v < 0.0 then 0.0 else if v > 1.0 then 1.0 else v
   (p * 255.0).toUInt8
 

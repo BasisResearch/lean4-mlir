@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 open ReferenceNets (r34UnetBratsOf)
 
@@ -94,7 +98,7 @@ open ReferenceNets (r34UnetBratsOf)
 /-- Floats in a `convBn ic 64 7 2` stem, all three tensors: W `[64,ic,7,7]`
     plus BN gamma `[64]` and beta `[64]`. The two offsets the range bootstrap
     needs are just this at `ic = 4` (this spec) and `ic = 3` (the checkpoint). -/
-private def stemFloats (ic : Nat) : Nat := 64 * ic * 7 * 7 + 64 + 64
+def stemFloats (ic : Nat) : Nat := 64 * ic * 7 * 7 + 64 + 64
 
 /-- Backbone floats in `jax_r34_imagenet.bin` — the R34 conv body, stem
     through stage 4, excluding the 1000-class classifier. Same constant the
@@ -102,7 +106,7 @@ private def stemFloats (ic : Nat) : Nat := 64 * ic * 7 * 7 + 64 + 64
     `stemFloats 3` (9,536) + 221,952 + 1,116,416 + 6,822,400 + 13,114,368 for
     the four residual stages. The file itself is 21,797,672 floats; the
     difference, 513,000, is exactly the `512×1000 + 1000` classifier. -/
-private def r34BackboneFloats : Nat := 21284672
+def r34BackboneFloats : Nat := 21284672
 
 /-- **Equivalence probe.** `unetDown ic oc` is defined as
     `convBn(ic→oc) + convBn(oc→oc) + maxPool 2`, pushing the pre-pool feature as

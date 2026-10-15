@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # ConvNeXt — can the existing ops spell a **channel** LayerNorm, and do they?
 
@@ -34,19 +38,19 @@ Three gates, and the second is the one that matters:
 
 open Proofs Proofs.StableHLO
 
-private def BS : Nat := 2      -- batch
-private def C  : Nat := 4      -- channels (the axis LN must reduce over)
-private def S  : Nat := 6      -- spatial positions H·W
-private def EPS : String := "1.0e-6"
-private def epsF : Float := 1.0e-6
+def BS : Nat := 2      -- batch
+def C  : Nat := 4      -- channels (the axis LN must reduce over)
+def S  : Nat := 6      -- spatial positions H·W
+def EPS : String := "1.0e-6"
+def epsF : Float := 1.0e-6
 
-private def nX : Nat := BS * (C * S)
-private def zc : Vec C := fun _ => 0
-private def zx : Vec (C*S) := fun _ => 0
-private def zxT : Vec (S*C) := fun _ => 0
+def nX : Nat := BS * (C * S)
+def zc : Vec C := fun _ => 0
+def zx : Vec (C*S) := fun _ => 0
+def zxT : Vec (S*C) := fun _ => 0
 
 /-- **The Route-A chain.** `[C,S]ᵀ → row-LN over C → per-channel affine → transpose back.** -/
-private def chainModule : String :=
+def chainModule : String :=
   let go : StateM Proofs.StableHLO.EmitS String := do
     let (c1, t)  ← pretty BS (.transposeF (m := C) (n := S) (.operand "%x" zx))
     let (c2, n)  ← pretty BS (.lnRowF (m := S) (n := C) "%one" "%zero" EPS 0 1 0
@@ -65,7 +69,7 @@ private def chainModule : String :=
 
 /-- **The incumbent**, for the control: scalar-global `bnForward` over the whole `C·S` map. Its
     γ/β are the rank-0 scalars the committed ConvNeXt carries, so it is fed `%g0`/`%bt0`. -/
-private def bnModule : String :=
+def bnModule : String :=
   let go : StateM Proofs.StableHLO.EmitS String := do
     let (c1, o) ← pretty BS (.bnF "%g0" "%bt0" EPS 0 0 0 (.operand "%x" zx))
     pure (c1 ++ s!"    return {o} : {ty [BS, C*S]}\n")
@@ -76,7 +80,7 @@ private def bnModule : String :=
 
 /-- The closed form, recomputed from the inputs — a reference implementation, not a second render.
     `y[b,c,s] = γ[c]·(x − μ[b,s])/√(σ²[b,s] + ε) + β[c]`, μ/σ² over the `C` axis. -/
-private def channelLNRef (x g bt : ByteArray) : IO ByteArray := do
+def channelLNRef (x g bt : ByteArray) : IO ByteArray := do
   let mut cells : Array ByteArray := #[]
   for b in [0:BS] do
     for c in [0:C] do
@@ -102,7 +106,7 @@ private def channelLNRef (x g bt : ByteArray) : IO ByteArray := do
     `rowDenseBiasGrad` (dβ = Σ dy, and it contracts the BATCH as well as the rows, `dims = [0,1]`),
     `veclnGammaGrad` (dγ = Σ dy⊙x̂ recomputed from the saved LN input) and `lnRowBack` are all
     generic in their dims, ViT just instantiates them at 197×192. -/
-private def backModule (which : String) : String :=
+def backModule (which : String) : String :=
   let go : StateM Proofs.StableHLO.EmitS (String × String) := do
     let (cxT,  xT)  ← pretty BS (.transposeF (m := C) (n := S) (.operand "%x" zx))
     let (cdyT, dyT) ← pretty BS (.transposeF (m := C) (n := S) (.operand "%dy" zx))
@@ -131,7 +135,7 @@ private def backModule (which : String) : String :=
 /-- Closed-form channel-LN backward: `dβ[c] = Σ_{b,s} dy`, `dγ[c] = Σ_{b,s} dy·x̂`, and
     `dx[c,s] = (g − mean_c g − x̂·mean_c(g⊙x̂)) / σ_s` with `g = γ⊙dy` — all recomputed from the
     inputs. Returns `(dx, dγ, dβ)`. -/
-private def channelLNBackRef (x g dy : ByteArray) : IO (ByteArray × ByteArray × ByteArray) := do
+def channelLNBackRef (x g dy : ByteArray) : IO (ByteArray × ByteArray × ByteArray) := do
   let mut dxCells : Array ByteArray := #[]
   let mut dgAcc : Array Float := Array.replicate C 0.0
   let mut dbAcc : Array Float := Array.replicate C 0.0
@@ -168,7 +172,7 @@ private def channelLNBackRef (x g dy : ByteArray) : IO (ByteArray × ByteArray �
     dbCells := dbCells.push (← F32.const 1 dbAcc[c]!)
   pure (F32.concat dxCells, F32.concat dgCells, F32.concat dbCells)
 
-private def maxRel (a b : ByteArray) (n : Nat) : Float × Float := Id.run do
+def maxRel (a b : ByteArray) (n : Nat) : Float × Float := Id.run do
   let mut d := 0.0
   let mut m := 0.0
   for i in [0:n] do
@@ -185,14 +189,14 @@ private def maxRel (a b : ByteArray) (n : Nat) : Float × Float := Id.run do
 /-- The four LN shapes ConvNeXt-T actually has, with their real site counts, read off the committed
     `convnext_fwd.mlir` (flat lengths 301056×4, 150528×4, 75264×10, 37632×3, plus the head 768×1).
     `(C, S, sites)`. The head is excluded: it is already correct and needs no transpose. -/
-private def cnxSites : List (Nat × Nat × Nat) :=
+def cnxSites : List (Nat × Nat × Nat) :=
   [(96, 3136, 4), (192, 784, 4), (384, 196, 10), (768, 49, 3)]
 
-private def benchBS : Nat := 32   -- the batch the ConvNeXt artifacts are rendered at
+def benchBS : Nat := 32   -- the batch the ConvNeXt artifacts are rendered at
 
 /-- `reps` chained LN sites at one `(C,S)`, either the Route-A chain or the incumbent `.bnF`.
     Chaining is what keeps the measurement off the h2d/d2h path: one invoke, `reps` sites. -/
-private def benchModule (C' S' reps : Nat) (routeA : Bool) : String :=
+def benchModule (C' S' reps : Nat) (routeA : Bool) : String :=
   let zx' : Vec (C'*S') := fun _ => 0
   let zxT' : Vec (S'*C') := fun _ => 0
   let zc' : Vec C' := fun _ => 0
@@ -221,7 +225,7 @@ private def benchModule (C' S' reps : Nat) (routeA : Bool) : String :=
   "    %zero = stablehlo.constant dense<0.0> : tensor<f32>\n" ++
   body ++ "  }\n}\n"
 
-private def stats (xs : Array Float) : Float × Float :=
+def stats (xs : Array Float) : Float × Float :=
   let s := xs.qsort (· < ·)
   (s[0]!, s[s.size / 2]!)
 
@@ -235,7 +239,7 @@ private def stats (xs : Array Float) : Float × Float :=
     `.bnF` is the stand-in for **Route B**: both are reduce → normalize → affine with no transpose,
     so `A − bnF` is roughly what a fused rank-4 channel-LN op would save. It is a proxy, not
     Route B itself — Route B does not exist to be timed. -/
-private def benchMode : IO Unit := do
+def benchMode : IO Unit := do
   IO.println "§2m Route A — what the transposes cost, at ConvNeXt-T's real LN shapes"
   IO.println s!"  B {benchBS}, forward only, one invoke per (C,S) carrying that stage's REAL site count"
   IO.println "  (C, S)          sites   A ms   bnF ms   Δ ms   Δ/site"

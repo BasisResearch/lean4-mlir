@@ -1,6 +1,10 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.CliArgs
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.CliArgs
+
+@[expose] public section
 
 /-! # SGD `@<slug>_train_step` render tie — the `tests/` emitter vs `pretty(provenGraph)`
 
@@ -45,7 +49,7 @@ A-against-itself run, which is the determinism floor: without it "the difference
 assertion rather than a measurement.
 -/
 
-private def netBySlug (slug : String) : IO VerifiedNetSpec :=
+def netBySlug (slug : String) : IO VerifiedNetSpec :=
   match slug with
   | "convnext"     => pure convnextVerified
   | "efficientnet" => pure efficientnetVerified

@@ -1,6 +1,10 @@
-import LeanMlir
-import LeanMlir.CliArgs
-import LeanMlir.SmallClassifier
+module
+
+public import LeanMlir
+public import LeanMlir.CliArgs
+public import LeanMlir.SmallClassifier
+
+@[expose] public section
 
 /-! The CASP16 distogram demo (planning/casp16_distogram_demo.md): a residue-pair distance
     classifier on frozen ESM-2 35M features, scored against the CASP16 field.

@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `@<slug>_fwd` render tie — do two renders compute the same function?
 
@@ -36,7 +40,7 @@ Two things it does:
   3e-8 prints as `0.000000`, which reads as bit-exact when it is not.
 -/
 
-private def netBySlug (slug : String) : IO VerifiedNetSpec :=
+def netBySlug (slug : String) : IO VerifiedNetSpec :=
   match slug with
   | "convnext"     => pure convnextVerified
   | "efficientnet" => pure efficientnetVerified

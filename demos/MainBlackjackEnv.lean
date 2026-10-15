@@ -1,4 +1,8 @@
-import LeanMlir.Blackjack
+module
+
+public import LeanMlir.Blackjack
+
+@[expose] public section
 
 /-! Blackjack under Gymnasium Blackjack-v1 `sab=True` rules: the environment,
     the exact DP instrument, tabular Q, and the four comparison arms. No stack,

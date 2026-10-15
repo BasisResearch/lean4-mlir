@@ -1,6 +1,10 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.ViTRenderB
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.ViTRenderB
+
+@[expose] public section
 
 /-! # EMA **and** stochastic depth in one ViT render: the arity the driver expects is the arity the
     artifact has

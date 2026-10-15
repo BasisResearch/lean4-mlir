@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! Emit the standalone anchor-YOLO-loss module for numeric validation (brick #2,
     WS-C). Writes `anchor_loss_gen.mlir` for a concrete (B, gH, gW, A);

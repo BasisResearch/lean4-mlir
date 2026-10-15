@@ -1,6 +1,10 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
+
+@[expose] public section
 
 /-! # The stochastic-depth mask is SHARDED, not replicated
 
@@ -64,7 +68,7 @@ open Proofs.StableHLO
 /-- The entry name read OUT OF THE FILE, never derived from the path. `TestViTDpCheck`'s helper,
     and its reason holds here too: the shim checks the entry and refuses a mismatch, so a control
     file named after something else would fail on the name rather than on the number. -/
-private def entryOf (path : String) : IO String := do
+def entryOf (path : String) : IO String := do
   let txt ← IO.FS.readFile path
   match (txt.splitOn "func.func @")[1]? with
   | none      => throw (IO.userError s!"{path}: no `func.func @` line — not a render?")

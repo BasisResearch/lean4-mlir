@@ -1,4 +1,8 @@
-import LeanMlir.Spec
+module
+
+public import LeanMlir.Spec
+
+@[expose] public section
 
 /-! # SAM — Bestiary entry
 
@@ -53,7 +57,7 @@ prompt-encoder + 4M decoder are accounted for separately.
 -- Common patch-embed constants: SAM takes 1024×1024 images with 16×16
 -- patches, so there are 64×64 = 4096 patches. This is the nPatches
 -- parameter fed to .patchEmbed.
-private def SAM_PATCHES : Nat := 4096
+def SAM_PATCHES : Nat := 4096
 
 -- ════════════════════════════════════════════════════════════════
 -- § SAM ViT-B image encoder — paper total: 91M

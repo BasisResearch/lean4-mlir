@@ -79,7 +79,7 @@ structure Cfg where
   formTol   : Float := 1e-5
 
 /-- Max-abs difference and max-abs magnitude over `[lo, hi)` of `d` vs `ref`. -/
-private def regionErr (lo hi : Nat) (d : ByteArray) (ref : Nat → Float) : Float × Float := Id.run do
+def regionErr (lo hi : Nat) (d : ByteArray) (ref : Nat → Float) : Float × Float := Id.run do
   let mut err : Float := 0.0
   let mut mag : Float := 0.0
   for i in [lo:hi] do

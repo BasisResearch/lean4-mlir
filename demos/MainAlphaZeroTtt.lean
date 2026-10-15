@@ -1,7 +1,11 @@
-import LeanMlir.Train
-import LeanMlir.TicTacToe
-import Std.Data.HashSet
-import LeanMlir.CliArgs
+module
+
+public import LeanMlir.Train
+public import LeanMlir.TicTacToe
+public import Std.Data.HashSet
+public import LeanMlir.CliArgs
+
+@[expose] public section
 
 /-! AlphaZero on the Lean tic-tac-toe, scored against the solved game.
 

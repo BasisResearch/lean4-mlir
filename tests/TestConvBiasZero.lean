@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # Are the conv biases really inert?
 
@@ -44,10 +48,10 @@ belt-and-braces, dump `[θ|m|v]` from a real run and read the same slots.
 /-- Classify param `i` by the R34 layout: 36 groups of `[W, b, γ, β]` (indices 0-143), then the
     dense head `[W, b]` (144, 145). The conv biases are the `≡ 1 (mod 4)` slots below 144; the
     dense bias is 145 and is deliberately NOT one of them. -/
-private inductive Slot | convW | convB | bnG | bnB | denseW | denseB
+inductive Slot | convW | convB | bnG | bnB | denseW | denseB
   deriving BEq, Inhabited
 
-private def Slot.idx : Slot → Nat
+def Slot.idx : Slot → Nat
   | .convW => 0 | .convB => 1 | .bnG => 2 | .bnB => 3 | .denseW => 4 | .denseB => 5
 
 /-- Classify each param from the LAYOUT ITSELF rather than from a fixed stride: a rank-4 entry is
@@ -55,7 +59,7 @@ private def Slot.idx : Slot → Nat
     layout) or `[γ, β]` (bias-free). The last two entries are always the dense head. Deriving it
     this way is what lets one harness read both the biased and the bias-free layout — hardcoded
     groups of four would silently report BN slots as conv biases in the bias-free layout. -/
-private def classifyAll (specs : Array (Array Nat × Nat)) : Array Slot := Id.run do
+def classifyAll (specs : Array (Array Nat × Nat)) : Array Slot := Id.run do
   let n := specs.size
   let mut out : Array Slot := #[]
   let mut sinceConv := 0
@@ -74,14 +78,14 @@ private def classifyAll (specs : Array (Array Nat × Nat)) : Array Slot := Id.ru
       else out := out.push .bnB
   return out
 
-private def slotName : Slot → String
+def slotName : Slot → String
   | .convW => "conv W" | .convB => "conv b" | .bnG => "BN γ"
   | .bnB => "BN β" | .denseW => "dense W" | .denseB => "dense b"
 
 /-- `--ckpt <path>`: read a TRAINED `[θ|m|v]` blob instead of running a step, and report how far
     the conv biases actually drifted. This is the belt-and-braces half — the one-step gradient says
     what the math does, this says what 80 epochs of AdamW did with it. Needs no GPU. -/
-private def ckptMode (net : VerifiedNet) (path : String) : IO Unit := do
+def ckptMode (net : VerifiedNet) (path : String) : IO Unit := do
   let blob ← IO.FS.readBinFile path
   let nP := net.nParams
   let nS := net.specs.size
@@ -125,7 +129,7 @@ because AdamW's update is SCALE-FREE (§3): m̂/(√v̂+ε) is O(1) however smal
     The control is built in: the same ablation applied to BN β (which BN does NOT remove) must
     move the logits a lot. Without it, "logits unchanged" could just mean the harness re-ran the
     same buffer. -/
-private def ablateMode (net : VerifiedNet) (ckpt : String) : IO Unit := do
+def ablateMode (net : VerifiedNet) (ckpt : String) : IO Unit := do
   let blob ← IO.FS.readBinFile ckpt
   let nP := net.nParams
   let nS := net.specs.size
@@ -196,7 +200,7 @@ is exactly zero, so they stay 0\") is false in f32 — see the one-step and --ck
     Index mapping: the committed layout is 146 params, the candidate drops the 36 conv biases in
     place, so walking both in func-arg order and skipping the bias slots on the left pairs them.
     Regions compared: θ', m', v' (per param), then %loss and the 72 BN running stats. -/
-private def tieMode (net : VerifiedNet) (candidate : String) : IO Unit := do
+def tieMode (net : VerifiedNet) (candidate : String) : IO Unit := do
   let bs := 32
   let nS := net.specs.size
   let cls := classifyAll net.specs
@@ -341,7 +345,7 @@ BN running stats {eS}/{nS'} bit-exact (max {dS * sc}e-9)"
     a `μ` from a biased net is not `x − μ`. The bias-free render is consistent because the swap
     retrains from scratch and re-estimates `μ` without biases; a non-zero-`b` comparison here would
     fail for a correct render. -/
-private def fwdMode (net : VerifiedNet) (candidate : String) (isEval : Bool) : IO Unit := do
+def fwdMode (net : VerifiedNet) (candidate : String) (isEval : Bool) : IO Unit := do
   let bs := 32
   let nS := net.specs.size
   let cls := classifyAll net.specs

@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! Emit the standalone DIoU box-loss forward module for numeric validation.
     Writes `diou_loss_gen.mlir` for a concrete (B, gH, gW); `scripts/probes/diou_probe_check.py`

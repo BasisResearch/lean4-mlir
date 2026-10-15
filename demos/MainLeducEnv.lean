@@ -1,5 +1,9 @@
-import LeanMlir.Leduc
-import LeanMlir.CliArgs
+module
+
+public import LeanMlir.Leduc
+public import LeanMlir.CliArgs
+
+@[expose] public section
 
 /-! Leduc hold'em: the exact instrument, the tabular solvers and the scripted arms, no stack,
     no GPU. `lake exe leduc-env [r=3] [iters=1000] [seeds=2] [budget=100000000] [esSeeds=1]` prints the

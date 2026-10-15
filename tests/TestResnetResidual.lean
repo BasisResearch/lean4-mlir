@@ -1,7 +1,11 @@
-import LeanMlir.Types
-import LeanMlir.Spec
-import LeanMlir.MlirCodegen
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir.Types
+public import LeanMlir.Spec
+public import LeanMlir.MlirCodegen
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 /-! Test: generate ResNet-34 forward + train step MLIR with real residualBlock layers
     (skip connections, projections) and compile with IREE. -/

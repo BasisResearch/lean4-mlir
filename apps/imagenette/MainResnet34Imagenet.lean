@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `resnet34-imagenet-verified` — ResNet-34 on full ImageNet-1k, verified renderer → XLA/PJRT
 

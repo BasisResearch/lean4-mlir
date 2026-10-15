@@ -1,7 +1,11 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.ViTRender
-import LeanMlir.Proofs.Codegen.ConvNeXtRender
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.ViTRender
+public import LeanMlir.Proofs.Codegen.ConvNeXtRender
+
+@[expose] public section
 
 /-! # Global-norm gradient clipping, numerically certified
 
@@ -94,12 +98,12 @@ passes ①, because ‖g‖² is still one shared scalar. The gates are independ
 
 open Proofs.StableHLO
 
-private structure ClipNet where
+structure ClipNet where
   slug : String
   sig  : List (String × List Nat)
   spec : VerifiedNetSpec
 
-private def netBySlug (s : String) : IO ClipNet :=
+def netBySlug (s : String) : IO ClipNet :=
   match s with
   | "vit"      => pure { slug := "vit", sig := vitParamSig 10, spec := vitVerified }
   | "convnext" => pure { slug := "convnext", sig := cnxAllParams 10, spec := convnextVerified }
@@ -107,7 +111,7 @@ private def netBySlug (s : String) : IO ClipNet :=
 
 /-- `mkParam` with non-zero biases (σ = 0.02): a zeroed bias makes this gate's
     update vacuous — see the note at the comparison below. -/
-private def mkParamB (seed : Nat) (dims : Array Nat) (kind : Nat) : IO ByteArray :=
+def mkParamB (seed : Nat) (dims : Array Nat) (kind : Nat) : IO ByteArray :=
   mkParam seed dims kind (biasSigma := some 0.02)
 
 def main (argv : List String) : IO Unit := do

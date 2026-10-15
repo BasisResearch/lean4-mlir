@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.Proofs.Codegen.ResNet34RenderB
+module
+
+public import LeanMlir
+public import LeanMlir.Proofs.Codegen.ResNet34RenderB
+
+@[expose] public section
 
 /-! # ResNet-34 AdamW train step at **batch 2** — the artifact `scripts/parity/grad_tie.py` runs
 

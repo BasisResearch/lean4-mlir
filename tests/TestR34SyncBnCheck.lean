@@ -1,6 +1,10 @@
-import LeanMlir.SyncBnCheck
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Proofs.Codegen.ResNet34RenderB
+module
+
+public import LeanMlir.SyncBnCheck
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Proofs.Codegen.ResNet34RenderB
+
+@[expose] public section
 
 /-! # `resnet34-syncbn-check` — synchronised BatchNorm: 2×b IS 1×2b
 

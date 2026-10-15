@@ -1,7 +1,11 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.ViTRenderB
-import tests.ViTRender
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.ViTRenderB
+public import tests.ViTRender
+
+@[expose] public section
 
 /-! # `@vit_adam_train_step` render tie — hand-written vs `pretty(provenGraph)`
 

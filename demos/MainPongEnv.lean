@@ -1,4 +1,8 @@
-import LeanMlir.Pong
+module
+
+public import LeanMlir.Pong
+
+@[expose] public section
 
 /-! Pong in Lean — the sanity baselines
     (random, tracker, self-play) and a rendered frame strip over the game in

@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! # `yolov1-neudet448` — the single-grid arm on NEU-DET steel defects
 

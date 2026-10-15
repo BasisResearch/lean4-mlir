@@ -1,7 +1,11 @@
-import LeanMlir
-import LeanMlir.CliArgs
-import LeanMlir.ReferenceNets
-import LeanMlir.SmallClassifier
+module
+
+public import LeanMlir
+public import LeanMlir.CliArgs
+public import LeanMlir.ReferenceNets
+public import LeanMlir.SmallClassifier
+
+@[expose] public section
 
 /-! A CNN against the matched filter on LIGO strain.
 

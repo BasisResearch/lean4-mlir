@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `cifar8w-bn-ablation` — wide-head (d1=512) cifar8 **+ per-channel BN**, all three optimizers
 

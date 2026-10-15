@@ -1,8 +1,12 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
 -- for `mnv2RmsHyper` / `enetRmsHyper` — the SAME records `rmsConstsBlock` emits the graph
 -- constants from, so this gate reads its ρ/ε/wd from the render's own source rather than a copy.
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+
+@[expose] public section
 
 /-! # The RMSProp render, numerically certified
 

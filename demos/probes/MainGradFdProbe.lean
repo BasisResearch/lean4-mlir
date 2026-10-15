@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! **Gradient bisection probe**: which layer type makes the analytic gradient
     disagree with the loss surface?

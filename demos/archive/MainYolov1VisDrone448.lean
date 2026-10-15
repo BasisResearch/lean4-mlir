@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! YOLOv1 single-scale detector on VisDrone at 448 input / 14×14 grid.
 

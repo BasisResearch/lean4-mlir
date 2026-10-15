@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 open ReferenceNets (bratsNetOf)
 open SegMetrics (regionCounts regionDice)
@@ -56,21 +60,21 @@ open SegMetrics (regionCounts regionDice)
     (default: the from-scratch UNet on `data/brats`); `out=` writes one row per
     volume. The explicit params/bn_stats paths override the arm's artifacts. -/
 
-private def numClasses : Nat := 4
+def numClasses : Nat := 4
 
-private def fmt (x : Float) : String :=
+def fmt (x : Float) : String :=
   let s := toString x
   if s.length > 6 then (s.take 6).toString else s
 
-private def meanOf (xs : Array Float) : Float :=
+def meanOf (xs : Array Float) : Float :=
   if xs.isEmpty then 0.0 else (xs.foldl (· + ·) 0.0) / xs.size.toFloat
 
-private def stdOf (xs : Array Float) : Float :=
+def stdOf (xs : Array Float) : Float :=
   if xs.size < 2 then 0.0 else
     let m := meanOf xs
     Float.sqrt ((xs.foldl (fun a x => a + (x - m) * (x - m)) 0.0) / (xs.size.toFloat - 1.0))
 
-private def medianOf (xs : Array Float) : Float :=
+def medianOf (xs : Array Float) : Float :=
   if xs.isEmpty then 0.0 else
     let s := xs.qsort (· < ·)
     if s.size % 2 == 1 then s[s.size / 2]!

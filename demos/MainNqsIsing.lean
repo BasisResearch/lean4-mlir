@@ -1,6 +1,10 @@
-import LeanMlir
-import LeanMlir.FloatFmt
-import LeanMlir.CliArgs
+module
+
+public import LeanMlir
+public import LeanMlir.FloatFmt
+public import LeanMlir.CliArgs
+
+@[expose] public section
 
 /-! Neural quantum states on the transverse-field Ising chain.
 

@@ -1,6 +1,10 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.ResNet50RenderB
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.ResNet50RenderB
+
+@[expose] public section
 
 /-! # Accumulation over DIFFERENT micro-batches — the identity `r50-accum-tie` is blind to
 
@@ -70,7 +74,7 @@ Knobs: `R50_ACC_VARIANT` (default `acc4x64`; k is read from the name and must eq
 count), `R50_ACC_TOL_U` (micro-units, default 200 = 2e-4).
 -/
 
-private def cmpRegion (a b : ByteArray) (off n : Nat) : Float × Float × Nat := Id.run do
+def cmpRegion (a b : ByteArray) (off n : Nat) : Float × Float × Nat := Id.run do
   let mut d := 0.0; let mut m := 0.0; let mut ex := 0
   for i in [0:n] do
     let x := F32.read a (off + i).toUSize

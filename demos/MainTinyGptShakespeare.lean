@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! Char-level tinyGPT trained on tinyshakespeare.
 

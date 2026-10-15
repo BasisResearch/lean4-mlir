@@ -1,5 +1,9 @@
-import LeanMlir.Spec
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir.Spec
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 /-! # UNet — Bestiary entry
 

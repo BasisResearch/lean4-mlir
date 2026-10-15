@@ -1,7 +1,11 @@
-import LeanMlir
-import LeanMlir.CliArgs
-import LeanMlir.ReferenceNets
-import LeanMlir.SmallClassifier
+module
+
+public import LeanMlir
+public import LeanMlir.CliArgs
+public import LeanMlir.ReferenceNets
+public import LeanMlir.SmallClassifier
+
+@[expose] public section
 
 /-! Which wavelengths travel: chapter 4's CNN on EuroSAT's thirteen Sentinel-2 bands.
 

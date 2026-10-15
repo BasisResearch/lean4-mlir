@@ -4,9 +4,6 @@ open Lake DSL
 package «lean4-mlir» where
   version := v!"0.7.2"
   buildType := .release
-  -- Mathlib v4.35 sets `requiresModuleSystem`, so Lake warns on every non-`module` file that
-  -- imports it — here, all of them. Opt out until the corpus moves to the module system.
-  allowNonModules := true
 
 -- doc-gen4 is a conditional dependency only activated when the CI
 -- (or a local user) passes `-Kenv=dev`. Without that flag, this
@@ -376,6 +373,10 @@ lean_lib «TestSupport» where
     skip this lib by name. -/
 lean_lib «ComparatorTests» where
   srcDir := "tests/comparator"
+  -- Every other Lake-built file is a `module`. These pairs are still plain files (not yet moved,
+  -- since `lake comparator` reads them), so they keep the opt-out from the warning Lake gives a
+  -- non-module importing Mathlib, which sets `requiresModuleSystem`.
+  allowNonModules := true
   roots := #[`Challenge, `Solution, `ChallengeArch, `SolutionArch, `ChallengeTier, `SolutionTier]
 
 -- The three C objects below are compiled by the system `cc` and linked by Lean's bundled clang

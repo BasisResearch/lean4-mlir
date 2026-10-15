@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! Emit the standalone FlashAttention-forward module for validation
     Writes `flash_gen.mlir` for a

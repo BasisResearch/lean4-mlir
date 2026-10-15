@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 /-! Emit-only harness for the FPN multi-scale detector train step. Constructs the
     `r34FpnDet` spec (R34-ImageNet backbone tapped at C3/C4/C5 → `.fpnDetect` →

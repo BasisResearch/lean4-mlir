@@ -1,6 +1,10 @@
-import LeanMlir.Train
-import LeanMlir.Leduc
-import LeanMlir.CliArgs
+module
+
+public import LeanMlir.Train
+public import LeanMlir.Leduc
+public import LeanMlir.CliArgs
+
+@[expose] public section
 
 /-! Deep CFR on Leduc hold'em, scored by exact exploitability. DRAFT — written before the
     tree was available; not yet elaborated. Mirrors `demos/MainAlphaZeroTtt.lean`'s session

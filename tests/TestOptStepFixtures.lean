@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.Proofs.Codegen.RenderKit
+module
+
+public import LeanMlir
+public import LeanMlir.Proofs.Codegen.RenderKit
+
+@[expose] public section
 
 /-! # The OPTIMIZER STAGE alone, as a runnable module — `scripts/parity/opt_step_tie.py`'s input
 
@@ -47,7 +51,7 @@ only one taking `%wdz`/`%lzero`, so a fixture of rank-≥2 parameters alone woul
 open Proofs.StableHLO
 
 /-- The fixture's parameters: `(name, shape)`. See the header for why there are three. -/
-private def fixtureParams : List (String × List Nat) :=
+def fixtureParams : List (String × List Nat) :=
   [("p0", [4,3,2,2]), ("p1", [5]), ("p2", [6,4]), ("p3", [7,1,2,2])]
 
 /-- One optimizer-only module. `optAllParams` supplies the body; everything here is interface.
@@ -55,7 +59,7 @@ private def fixtureParams : List (String × List Nat) :=
     The gradient of `pI` arrives as `%dpI`, a function argument, and the parameter/moment/
     accumulator slots keep the `%pI` / `%pIm` / `%pIv` / `%pIa` spelling `optOne` emits against —
     those names are a CONTRACT with the optimizer, not a local choice. -/
-private def optStepModule (fname : String) (opt : OptRecipe)
+def optStepModule (fname : String) (opt : OptRecipe)
     (wdExclude : Bool := false) (gradClip : Bool := false) (clipNorm : Float := 1.0)
     -- `wdStr` reaches ONLY the constant block: the per-parameter ops name `%wd` as an operand, so
     -- overriding the decay changes one `stablehlo.constant` and nothing else. That is exactly the
@@ -132,7 +136,7 @@ private def optStepModule (fname : String) (opt : OptRecipe)
     No generated reference bakes R50's AdamW constants (`%eps = 1e-8`, `%wd = 1e-4`) — the
     Adam-family references in the tree are EfficientNet's and MNv2's TF-RMSProp recipes at
     `EPS = 1e-3`/`1.0`. -/
-private def variants : List (String × OptRecipe × Bool × Bool × String × Bool) :=
+def variants : List (String × OptRecipe × Bool × Bool × String × Bool) :=
   [ -- (slug, optimizer, wdExclude, gradClip, wdStr, ema); the RMSProp rows are `rmsVariants`
     ("lambclip",       .lamb,        false, true,  "", false)   -- trust ratio + clip, NO wx mask
   , ("lambwxclip",     .lamb,        true,  true,  "", false)   -- + D2 mask + D1 clip, no accumulation
@@ -170,7 +174,7 @@ private def variants : List (String × OptRecipe × Bool × Bool × String × Bo
     it has no reference and is the counterfactual that goes red (worst rel 5.19e+01 against B0's
     `default` trainer: the buffer rows by a factor of `lr`, `p1` decayed on one side only), run
     2026-10-12 and recorded in `scripts/parity/opt_step_tie.py`'s header with the earlier pair. -/
-private def rmsVariants : List (String × OptRecipe × Bool × Bool × RmsHyper × Bool) :=
+def rmsVariants : List (String × OptRecipe × Bool × Bool × RmsHyper × Bool) :=
   [ ("rmstfwxdw",    .rmspropTf, true, true,  mnv2RmsHyper, false)
   , ("emarmstfwxdw", .rmspropTf, true, true,  mnv2RmsHyper, true)
     -- EfficientNet-B0's own recipe since 2026-10-12 (recipe_prep.md §7): TF1's placement at B0's

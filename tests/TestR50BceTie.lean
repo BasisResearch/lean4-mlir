@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # BCE-with-logits, numerically certified — at a point where it has a CLOSED FORM
 
@@ -40,8 +44,8 @@ and a run with it descends perfectly well at 1/1000 of the intended learning rat
 -/
 
 /-- `softplus(x) = max(x,0) + log(1 + exp(−|x|))`, the same stable form the render emits. -/
-private def softplus (x : Float) : Float := max x 0.0 + Float.log (1.0 + Float.exp (-(x.abs)))
-private def sigmoidF (x : Float) : Float := 1.0 / (1.0 + Float.exp (-x))
+def softplus (x : Float) : Float := max x 0.0 + Float.log (1.0 + Float.exp (-(x.abs)))
+def sigmoidF (x : Float) : Float := 1.0 / (1.0 + Float.exp (-x))
 
 def main : IO Unit := do
   let net  := resnet50ImagenetVerified.toNet

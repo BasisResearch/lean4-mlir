@@ -1,7 +1,11 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.ChapterGraphs
-import LeanMlir.Proofs.Codegen.MlpRender
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.ChapterGraphs
+public import LeanMlir.Proofs.Codegen.MlpRender
+
+@[expose] public section
 
 /-! # `mnist-mlp-grid` — the width-parametric MNIST MLP demo
 

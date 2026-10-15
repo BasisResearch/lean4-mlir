@@ -1,6 +1,10 @@
-import LeanMlir.Train
-import LeanMlir.Pong
-import LeanMlir.CliArgs
+module
+
+public import LeanMlir.Train
+public import LeanMlir.Pong
+public import LeanMlir.CliArgs
+
+@[expose] public section
 
 /-! DQN on the Lean Pong.
 

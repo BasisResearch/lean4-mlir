@@ -1,7 +1,11 @@
-import LeanMlir
-import LeanMlir.CliArgs
-import LeanMlir.ReferenceNets
-import LeanMlir.SmallClassifier
+module
+
+public import LeanMlir
+public import LeanMlir.CliArgs
+public import LeanMlir.ReferenceNets
+public import LeanMlir.SmallClassifier
+
+@[expose] public section
 
 /-! Chapter 6's ResNet-34 from lab leaves to field leaves.
 

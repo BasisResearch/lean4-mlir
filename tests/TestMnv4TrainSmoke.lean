@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
+module
+
+public import LeanMlir
+public import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
+
+@[expose] public section
 
 /-! # MNv4 AdamW train-step structural smoke
 

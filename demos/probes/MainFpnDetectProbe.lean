@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! Emit the standalone whole-FPN-detector module (neck + 1×1 heads + concat +
     multi-scale loss + full DAG backward) for numeric validation. Writes

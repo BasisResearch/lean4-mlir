@@ -1,8 +1,12 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
-import LeanMlir.Proofs.Codegen.ConvNeXtRenderB
-import LeanMlir.Proofs.Codegen.ViTRenderB
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
+public import LeanMlir.Proofs.Codegen.ConvNeXtRenderB
+public import LeanMlir.Proofs.Codegen.ViTRenderB
+
+@[expose] public section
 
 /-! # Stochastic depth — the two gates that cover the op's INTERIOR
 
@@ -44,7 +48,7 @@ as the artifact-vs-theorem pair.
 open Proofs Proofs.StableHLO
 
 /-- A float32 buffer from explicit values. Used for masks, which are tiny and must be exact. -/
-private def mkVec (vals : Array Float) : IO ByteArray := do
+def mkVec (vals : Array Float) : IO ByteArray := do
   let mut cells : Array ByteArray := #[]
   for v in vals do cells := cells.push (← F32.const 1 v)
   pure (F32.concat cells)
@@ -59,7 +63,7 @@ private def mkVec (vals : Array Float) : IO ByteArray := do
     move"*: the gate fires on the wrong check with a message naming the wrong cause. `fwd-tie`
     normalises over both too. A control does not only prove the gate can go red — it proves the gate goes red for the
     reason it claims. -/
-private def cmpBufs (a b : ByteArray) (n : Nat) : Float × Float × Nat := Id.run do
+def cmpBufs (a b : ByteArray) (n : Nat) : Float × Float × Nat := Id.run do
   let mut d := 0.0
   let mut m := 0.0
   let mut e := 0
@@ -71,9 +75,9 @@ private def cmpBufs (a b : ByteArray) (n : Nat) : Float × Float × Nat := Id.ru
     if max u.abs w.abs > m then m := max u.abs w.abs
   (d, m, e)
 
-private def rel (d m : Float) : Float := if m > 1e-30 then d / m else 0.0
+def rel (d m : Float) : Float := if m > 1e-30 then d / m else 0.0
 
-private def nonFinite (a : ByteArray) (n : Nat) : Nat := Id.run do
+def nonFinite (a : ByteArray) (n : Nat) : Nat := Id.run do
   let mut c : Nat := 0
   for i in [0:n] do
     if !(F32.read a i.toUSize).isFinite then c := c + 1
@@ -82,7 +86,7 @@ private def nonFinite (a : ByteArray) (n : Nat) : Nat := Id.run do
 /-- Compile `src` fresh. Deletes both the bare and the `_$IREE_BACKEND`-scoped `.vmfb` first:
     `compileVmfb` reuses any output newer than the `.mlir`, keyed on the output path and an mtime
     rather than on the source, so a second run under one tag silently reuses the first binary. -/
-private def freshSession (path tag : String) : IO LowererSession := do
+def freshSession (path tag : String) : IO LowererSession := do
   let vmfb := s!".lake/build/droppath_tie_{tag}.vmfb"
   let target := (← IO.getEnv "IREE_BACKEND").getD "cuda"
   for p in [vmfb, s!".lake/build/droppath_tie_{tag}_{target}.vmfb"] do
@@ -93,10 +97,10 @@ private def freshSession (path tag : String) : IO LowererSession := do
 -- § GATE A — the known answer. Does a supplied scale multiply the branch by EXACTLY that?
 -- ════════════════════════════════════════════════════════════════
 
-private def OB : Nat := 8      -- examples. The mask is per-EXAMPLE, so this is the axis under test
-private def ON : Nat := 5      -- per-example width. ON ≠ OB deliberately — see `opModule`
+def OB : Nat := 8      -- examples. The mask is per-EXAMPLE, so this is the axis under test
+def ON : Nat := 5      -- per-example width. ON ≠ OB deliberately — see `opModule`
 
-private def zOX : Vec (OB * ON) := fun _ => 0
+def zOX : Vec (OB * ON) := fun _ => 0
 
 /-- **The op, through the SAME `pretty` emitter the render uses** — not a restatement of it. One
     `dropPathB` over `%x` with the mask as a graph input, which is exactly the subtree
@@ -108,7 +112,7 @@ private def zOX : Vec (OB * ON) := fun _ => 0
     than a silent different function — so the failure this gate is left to catch is the subtler
     one the op's own docstring names: a `BatchableOp` descriptor, which would denote "every example
     shares example 0's mask". That is control C1 below. -/
-private def opModule : String :=
+def opModule : String :=
   let go : StateM Proofs.StableHLO.EmitS String := do
     let (c, o) ← pretty OB (.dropPathB (N := OB) (n := ON) "%dp" (fun _ => 0 : Vec OB)
                               (.operand "%x" zOX))
@@ -126,7 +130,7 @@ private def opModule : String :=
     float32 multiplication returns. No double rounding, so any difference at all is the render
     computing something else. The mask is read back out of the buffer the device receives, never
     from the literal, so both sides see the identical float32 value. -/
-private def dropRef (x s : ByteArray) : IO ByteArray := do
+def dropRef (x s : ByteArray) : IO ByteArray := do
   let mut cells : Array ByteArray := #[]
   for j in [0:OB] do
     let sj := F32.read s j.toUSize
@@ -137,7 +141,7 @@ private def dropRef (x s : ByteArray) : IO ByteArray := do
 /-- **Control C1** — the descriptor bug: every example scaled by example 0's mask. A
     `BatchableOp` descriptor may carry only batch-INVARIANT data, and this is what one would
     denote here. It must NOT match, which is why the mask below is non-uniform. -/
-private def dropRefBroadcast0 (x s : ByteArray) : IO ByteArray := do
+def dropRefBroadcast0 (x s : ByteArray) : IO ByteArray := do
   let s0 := F32.read s 0
   let mut cells : Array ByteArray := #[]
   for k in [0:OB * ON] do
@@ -155,11 +159,11 @@ private def dropRefBroadcast0 (x s : ByteArray) : IO ByteArray := do
 
 Non-uniform, and index 0 is deliberately NOT the zero: control C1 compares against "everything
 scaled by `s[0]`", which a zero at `s[0]` would turn into the trivially-different all-zero vector. -/
-private def opMask (keeps : Array Float) : Array Float :=
+def opMask (keeps : Array Float) : Array Float :=
   let inv := fun (i : Nat) => if h : i < keeps.size then 1.0 / keeps[i] else 1.0
   #[inv 0, 0.0, 1.0, inv 8, 0.5, 0.25, inv 4, 0.75]
 
-private def gateOp (doBreak : Bool) : IO Unit := do
+def gateOp (doBreak : Bool) : IO Unit := do
   IO.println "── GATE A — the known answer: does a supplied scale multiply the branch by exactly that?"
   let keeps := efficientnetVerified.dropKeeps
   let maskVals := opMask keeps
@@ -261,14 +265,14 @@ under the misplacement:
 B3 and B4 are the load-bearing pair: B2 alone is satisfied by both placements.
 -/
 
-private structure NetRun where
+structure NetRun where
   sess   : LowererSession
   params : ByteArray      -- params (+ BN stats when eval), WITHOUT the trailing masks
   shapes : ByteArray      -- the matching shape table, masks included
   bs     : Nat
   nOut   : Nat
 
-private def uniform (bs : Nat) (v : Float) : Array Float := Array.replicate bs v
+def uniform (bs : Nat) (v : Float) : Array Float := Array.replicate bs v
 
 /-- **Which net gate B is driving.** ONE harness for both, per `rms-tie`/`wdx-tie`/`shard-check` —
     a second copy is the double-writer disease one level down, in code. What differs between the two
@@ -279,7 +283,7 @@ private def uniform (bs : Nat) (v : Float) : Array Float := Array.replicate bs v
     renderers (`EfficientNetRender.Basic.eFwd` at the per-example index, `ConvNeXtRenderB.fwdBlockB` at the
     batched one) and around different residual algebra — enet's branch is a project-BN, ConvNeXt's is
     a LayerScale. The same edit on two renderers can behave differently. -/
-private structure DropNet where
+structure DropNet where
   slug   : String                 -- artifact prefix: `<slug>_drop_fwd.mlir`
   refFn  : String                 -- the DROP-FREE forward this must equal at a ones mask
   spec   : VerifiedNetSpec
@@ -301,13 +305,13 @@ private structure DropNet where
   -- not the target's.
   b4Valid : Bool := true
 
-private def enetDropNet : DropNet :=
+def enetDropNet : DropNet :=
   { slug := "efficientnet", refFn := "efficientnet_fwd", spec := efficientnetVerified,
     sites := enetDropIdxs, hasEval := true }
 
 /-- ConvNeXt-T. No `_fwd_eval` peer and it must not grow one: LayerNorm reduces within one
     example, never over the batch, so train == eval. -/
-private def cnxDropNet : DropNet :=
+def cnxDropNet : DropNet :=
   { slug := "convnext", refFn := "convnext_fwd", spec := convnextVerified,
     sites := List.range cnxDropSites, hasEval := false }
 
@@ -315,11 +319,11 @@ private def cnxDropNet : DropNet :=
     that is exactly what B3 is sharpest on here: zeroing the attention branch of block 0 must NOT
     absorb the MLP branch of block 11, and under the misplacement it would. No `_fwd_eval` peer
     (LayerNorm ⇒ train == eval). -/
-private def vitDropNet : DropNet :=
+def vitDropNet : DropNet :=
   { slug := "vit", refFn := "vit_fwd", spec := vitVerified,
     sites := List.range vitDropSites, hasEval := false, b4Valid := false }
 
-private def gateNet (dn : DropNet) (isEval : Bool) (cand : Option String) : IO Unit := do
+def gateNet (dn : DropNet) (isEval : Bool) (cand : Option String) : IO Unit := do
   let fn   := if isEval then s!"{dn.slug}_drop_fwd_eval" else s!"{dn.slug}_drop_fwd"
   let refFn := if isEval then s!"{dn.refFn}_eval" else dn.refFn
   -- `--cand` is what makes a green run BELIEVABLE: a harness that hardcodes both paths and takes no

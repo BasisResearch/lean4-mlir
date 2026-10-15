@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! Emit the standalone FPN multi-scale-loss module for numeric validation. Writes
     `fpn_loss_gen.mlir` for concrete (B, A, 3 grids); `scripts/probes/fpn_loss_probe_check.py`

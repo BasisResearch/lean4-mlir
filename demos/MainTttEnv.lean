@@ -1,6 +1,10 @@
-import LeanMlir.TicTacToe
-import LeanMlir.F32Array
-import LeanMlir.CliArgs
+module
+
+public import LeanMlir.TicTacToe
+public import LeanMlir.F32Array
+public import LeanMlir.CliArgs
+
+@[expose] public section
 
 /-! Tic-tac-toe on an n × n board, k in a row: the solved-game instrument and the
     scripted players, no stack, no GPU. `lake exe ttt-env [n=3] [k=n] [games=1000]

@@ -1,4 +1,9 @@
-import Lake.CLI.Main
+module
+
+public import Lake.CLI.Main
+public import Lake.Load.Workspace
+
+@[expose] public section
 
 /-! # `lake exe docstring-checkrefs` — resolve every `Ident` a docstring cites
 

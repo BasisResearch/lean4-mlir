@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # ViT data-parallel gate — the collective's semantics, on a duplicated batch
 
@@ -71,7 +75,7 @@ writes one.
     has to be *named* after the entry it contains: `/tmp/vit_dp64_sum.mlir` would ask for
     `m.vit_dp64_sum` while the graph holds `@vit_adamdp64_train_step`. The shim refuses that
     loudly, but a gate whose control is awkward to build is a gate that stops being run. -/
-private def entryOf (path : String) : IO String := do
+def entryOf (path : String) : IO String := do
   let txt ← IO.FS.readFile path
   match (txt.splitOn "func.func @")[1]? with
   | none      => throw (IO.userError s!"{path}: no `func.func @` line — not a render?")

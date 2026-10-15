@@ -1,4 +1,8 @@
-import LeanMlir
+module
+
+public import LeanMlir
+
+@[expose] public section
 
 /-! Emit the standalone FPN-neck (top-down multi-scale merge) module for numeric
     validation. Writes `fpn_neck_gen.mlir` for a concrete (B, oc, c3, c4, c5, g5);

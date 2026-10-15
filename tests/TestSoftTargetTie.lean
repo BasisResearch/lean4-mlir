@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # Soft-target gate — the committed renders are AFFINE in the target, so mixup needs no new render
 
@@ -44,7 +48,7 @@ CUDA_VISIBLE_DEVICES=0 .lake/build/bin/soft-target-tie convnext
 
 /-- The `batch*nClasses*4`-byte SOFT form: `lam·onehot(i%nc) + (1−lam)·onehot((i+off)%nc)`, i.e.
     precisely what mixup produces from the two label sets `mkLabels bs 0 nc` and `mkLabels bs off nc`. -/
-private def mkSoft (bs off nc : Nat) (lam : Float) : IO ByteArray := do
+def mkSoft (bs off nc : Nat) (lam : Float) : IO ByteArray := do
   -- Built with `blit` from three one-element constants because `F32Array` has no scalar writer
   -- (only `write3`, which would clobber the two neighbouring classes).
   let one ← F32.const 1 1.0
@@ -72,7 +76,7 @@ private def mkSoft (bs off nc : Nat) (lam : Float) : IO ByteArray := do
     buys nothing for this question: the property under test is a property of the **loss cotangent**,
     which is the same expression in every one of these renders. Two nets that disagree about almost
     everything else agreeing on it is the evidence; a third and fourth would be repetition. -/
-private def netOf : String → Option (VerifiedNetSpec × Nat)
+def netOf : String → Option (VerifiedNetSpec × Nat)
   | "vit"          => some (vitVerified,      32)
   | "convnext"     => some (convnextVerified, 32)
   | _              => none

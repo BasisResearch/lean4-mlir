@@ -1,10 +1,14 @@
-import LeanMlir.SyncBnCheck
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Proofs.Codegen.ResNet34RenderB
-import LeanMlir.Proofs.Codegen.MobileNetV2RenderB
-import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
-import LeanMlir.Proofs.Codegen.ResNet50RenderB
-import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
+module
+
+public import LeanMlir.SyncBnCheck
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Proofs.Codegen.ResNet34RenderB
+public import LeanMlir.Proofs.Codegen.MobileNetV2RenderB
+public import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
+public import LeanMlir.Proofs.Codegen.ResNet50RenderB
+public import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
+
+@[expose] public section
 
 /-! # `imagenet-syncbn-check` — synchronised BatchNorm at the ImageNet shape: 4×64 IS 1×256
 

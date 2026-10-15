@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.Blackjack
+module
+
+public import LeanMlir
+public import LeanMlir.Blackjack
+
+@[expose] public section
 
 /-! DQN on blackjack.
 

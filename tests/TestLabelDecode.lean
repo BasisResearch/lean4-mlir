@@ -1,4 +1,8 @@
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-! # `label-check` — the WIDTH gate on eval label decoding
 

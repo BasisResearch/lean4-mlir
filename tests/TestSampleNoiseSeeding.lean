@@ -1,5 +1,9 @@
-import LeanMlir.Ddpm
-import LeanMlir.F32Array
+module
+
+public import LeanMlir.Ddpm
+public import LeanMlir.F32Array
+
+@[expose] public section
 
 /-!
 # Seeding regression test for `Ddpm.sampleNoise`
@@ -30,7 +34,7 @@ Hermetic: no data files, no GPU.
 namespace SampleNoiseSeeding
 
 /-- `|x|` for `n` two-dimensional draws taken at seeds `f 0 … f (n-1)`. -/
-private def radii (n : Nat) (f : Nat → Nat) : IO (Array Float) := do
+def radii (n : Nat) (f : Nat → Nat) : IO (Array Float) := do
   let mut out : Array Float := #[]
   for i in [0:n] do
     let z ← Ddpm.sampleNoise 2 (f i).toUSize
@@ -39,10 +43,10 @@ private def radii (n : Nat) (f : Nat → Nat) : IO (Array Float) := do
     out := out.push (Float.sqrt (x * x + y * y))
   return out
 
-private def mean (a : Array Float) : Float :=
+def mean (a : Array Float) : Float :=
   a.foldl (· + ·) 0.0 / a.size.toFloat
 
-private def stdev (a : Array Float) : Float :=
+def stdev (a : Array Float) : Float :=
   let m := mean a
   Float.sqrt ((a.foldl (fun s x => s + (x - m) * (x - m)) 0.0) / a.size.toFloat)
 
@@ -51,7 +55,7 @@ private def stdev (a : Array Float) : Float :=
     wide because the point is not to test the quality of the Box–Muller
     transform — it is to separate a Rayleigh from a constant. The defect scores
     a standard deviation of about `1e-6` and `E|x|² = 3.66`. -/
-private def check (label : String) (n : Nat) (f : Nat → Nat) : IO Bool := do
+def check (label : String) (n : Nat) (f : Nat → Nat) : IO Bool := do
   let r ← radii n f
   let m  := mean r
   let sd := stdev r

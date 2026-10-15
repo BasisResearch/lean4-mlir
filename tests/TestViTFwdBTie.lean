@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.ViTRenderB
+module
+
+public import LeanMlir.Proofs.Codegen.ViTRenderB
+
+@[expose] public section
 
 /-! # The batched-index ViT forward emits the committed forward, BYTE FOR BYTE
 

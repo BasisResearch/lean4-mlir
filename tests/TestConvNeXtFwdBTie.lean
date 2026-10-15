@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.ConvNeXtRenderB
+module
+
+public import LeanMlir.Proofs.Codegen.ConvNeXtRenderB
+
+@[expose] public section
 
 /-! # The batched-index ConvNeXt forward emits the committed forward, BYTE FOR BYTE
 

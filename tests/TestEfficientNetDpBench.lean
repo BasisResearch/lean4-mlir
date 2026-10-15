@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # EfficientNet-B0 data-parallel step-time bench — 1 GPU vs 2 GPUs on XLA/PJRT
 
@@ -30,7 +34,7 @@ Needs TWO GPUs and the XLA backend — collectives do not exist on the IREE path
 both a 1-replica and a 2-replica executable is fine: the replica count is per-GRAPH, not
 per-process, which `efficientnet-dp-check` already relies on. -/
 
-private def opCount (path : String) : IO Nat := do
+def opCount (path : String) : IO Nat := do
   let s ← IO.FS.readFile path
   pure ((s.splitOn "stablehlo.").length - 1)
 
@@ -38,7 +42,7 @@ private def opCount (path : String) : IO Nat := do
     Both are properties of the artifact, so reading them beats assuming them — it lets one bench
     compare renders at different `B` (the bs128 pair) with no new argument, and it
     cannot silently invoke the wrong entry. -/
-private def entryAndBatch (path : String) : IO (String × Nat) := do
+def entryAndBatch (path : String) : IO (String × Nat) := do
   let s ← IO.FS.readFile path
   let some i := (s.splitOn "func.func @")[1]? | throw (IO.userError s!"{path}: no `func.func @`")
   let name := (i.takeWhile (· != '(')).trimAscii.toString
@@ -48,7 +52,7 @@ private def entryAndBatch (path : String) : IO (String × Nat) := do
   pure (name, b)
 
 /-- min / median / mean of a sample, in ms. -/
-private def stats (xs : Array Float) : Float × Float × Float :=
+def stats (xs : Array Float) : Float × Float × Float :=
   let s := xs.qsort (· < ·)
   let n := s.size
   let mean := (s.foldl (· + ·) 0.0) / n.toFloat

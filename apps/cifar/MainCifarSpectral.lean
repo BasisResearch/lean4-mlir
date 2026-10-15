@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Attack
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Attack
+
+@[expose] public section
 
 /-! # `cifar-spectral` — spectral-norm-constrained CIFAR-10 CNN training
 

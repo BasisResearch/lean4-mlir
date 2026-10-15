@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `cifar8-bn-verified-adam` — the 8-conv CIFAR-10 CNN **+ per-channel BN** with **AdamW**
 

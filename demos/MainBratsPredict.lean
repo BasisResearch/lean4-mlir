@@ -1,5 +1,9 @@
-import LeanMlir
-import LeanMlir.ReferenceNets
+module
+
+public import LeanMlir
+public import LeanMlir.ReferenceNets
+
+@[expose] public section
 
 open ReferenceNets (bratsNetOf)
 
@@ -59,12 +63,12 @@ open ReferenceNets (bratsNetOf)
 /-- Channel index of the modality used as the grayscale backdrop, within one
     slice's four: 0 = FLAIR, 1 = T1w, 2 = T1gd, 3 = T2w (order fixed by
     `scripts/datasets/preprocess_brats.py`, which reads it from MSD's dataset.json). -/
-private def backdropModality : Nat := 2   -- T1gd
+def backdropModality : Nat := 2   -- T1gd
 
 /-- Modalities per slice. A 2.5D record holds `2k+1` slices of these; the
     centre slice's start at channel `4k`. -/
-private def numModalities : Nat := 4
-private def numClasses : Nat := 4
+def numModalities : Nat := 4
+def numClasses : Nat := 4
 
 /-- z-score → 8-bit gray over a fixed [-2σ, +3σ] window.
 
@@ -74,7 +78,7 @@ private def numClasses : Nat := 4
     figure is a CE-vs-Dice A/B. The window is asymmetric because the
     interesting signal is bright: enhancing tumour on T1gd sits well above
     the brain mean. -/
-private def zToGray (z : Float) : UInt8 :=
+def zToGray (z : Float) : UInt8 :=
   let t := (z + 2.0) / 5.0
   let tc := if t < 0.0 then 0.0 else if t > 1.0 then 1.0 else t
   (tc * 255.0).toUInt8
@@ -82,7 +86,7 @@ private def zToGray (z : Float) : UInt8 :=
 /-- Grayscale backdrop for one pixel of batch element `b`, read off the centre
     slice: `channels` per record, the centre slice's four modalities starting
     at `centre0` (0 in 2D, `4k` in 2.5D). -/
-private def backdropGray (xba : ByteArray) (b h w H W channels centre0 : Nat) : UInt8 :=
+def backdropGray (xba : ByteArray) (b h w H W channels centre0 : Nat) : UInt8 :=
   let stride := H * W
   let imgOff := b * channels * stride + centre0 * stride
   let pix := h * W + w
@@ -101,7 +105,7 @@ private def backdropGray (xba : ByteArray) (b h w H W channels centre0 : Nat) : 
 /-- Overlay colour for a tumour class, in MSD Task01's numbering
     (0 = background, 1 = edema, 2 = non-enhancing/necrotic, 3 = enhancing).
     `none` = leave the anatomy alone. -/
-private def regionColor : UInt8 → Option (Float × Float × Float)
+def regionColor : UInt8 → Option (Float × Float × Float)
   | 1 => some (60.0, 200.0, 60.0)    -- edema: green
   | 2 => some (220.0, 50.0, 50.0)    -- non-enhancing / necrotic core: red
   | 3 => some (255.0, 215.0, 0.0)    -- enhancing tumour: yellow
@@ -110,7 +114,7 @@ private def regionColor : UInt8 → Option (Float × Float × Float)
 /-- Alpha-blend the class colour over the grayscale anatomy. 0.55 keeps the
     underlying tissue readable — a solid mask would hide exactly the contrast
     a reader is trying to judge the boundary against. -/
-private def overlayPx (gray : UInt8) (cls : UInt8) : UInt8 × UInt8 × UInt8 :=
+def overlayPx (gray : UInt8) (cls : UInt8) : UInt8 × UInt8 × UInt8 :=
   match regionColor cls with
   | none => (gray, gray, gray)
   | some (r, g, b) =>
@@ -120,7 +124,7 @@ private def overlayPx (gray : UInt8) (cls : UInt8) : UInt8 × UInt8 × UInt8 :=
     (mix r, mix g, mix b)
 
 /-- Argmax over the `numClasses` channels at `(b, h, w)`. Logits are NCHW. -/
-private def argmaxChannel (logits : ByteArray) (b h w H W : Nat) : UInt8 := Id.run do
+def argmaxChannel (logits : ByteArray) (b h w H W : Nat) : UInt8 := Id.run do
   let stride := H * W
   let imgOff := b * numClasses * stride
   let pix := h * W + w
@@ -134,10 +138,10 @@ private def argmaxChannel (logits : ByteArray) (b h w H W : Nat) : UInt8 := Id.r
   return best.toUInt8
 
 /-- Display name for an arm; the empty tag is an untagged single run. -/
-private def armLabel (a : String) : String :=
+def armLabel (a : String) : String :=
   if a.isEmpty then "prediction" else a
 
-private structure SliceScore where
+structure SliceScore where
   idx : Nat
   /-- Pixels of any tumour class (1/2/3). -/
   tumour : Nat

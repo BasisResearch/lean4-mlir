@@ -1,7 +1,11 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.ViTRender
-import LeanMlir.Proofs.Codegen.ConvNeXtRender
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.ViTRender
+public import LeanMlir.Proofs.Codegen.ConvNeXtRender
+
+@[expose] public section
 
 /-! # `wdExcludeNormBias` — the timm `no_weight_decay` render, numerically certified
 
@@ -60,13 +64,13 @@ open Proofs.StableHLO
 
 /-- Everything per-net: the slug, the signature list (names + shapes, in func-arg order) and the
     mask predicate. Both entries read the RENDERER's own definitions, never a copy. -/
-private structure WdNet where
+structure WdNet where
   slug : String
   sig  : List (String × List Nat)
   mask : String → List Nat → Bool
   spec : VerifiedNetSpec
 
-private def netBySlug (s : String) : IO WdNet :=
+def netBySlug (s : String) : IO WdNet :=
   match s with
   | "vit"      => pure { slug := "vit", sig := vitParamSig 10, mask := vitWdDecays,
                          spec := vitVerified }
@@ -76,10 +80,10 @@ private def netBySlug (s : String) : IO WdNet :=
 
 /-- `mkParam` with non-zero biases (σ = 0.02): a zeroed bias makes this gate's
     update vacuous — see the note at the comparison below. -/
-private def mkParamB (seed : Nat) (dims : Array Nat) (kind : Nat) : IO ByteArray :=
+def mkParamB (seed : Nat) (dims : Array Nat) (kind : Nat) : IO ByteArray :=
   mkParam seed dims kind (biasSigma := some 0.02)
 
-private def cmpAt (a b : ByteArray) (off n : Nat) : Float × Float × Nat := Id.run do
+def cmpAt (a b : ByteArray) (off n : Nat) : Float × Float × Nat := Id.run do
   let mut d := 0.0; let mut m := 0.0; let mut e := 0
   for i in [0:n] do
     let u := F32.read a (off + i).toUSize

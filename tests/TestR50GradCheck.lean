@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # ResNet-50's GRADIENT, gated — on the committed artifact, in two tiers
 
@@ -134,7 +138,7 @@ graph directly:
     `β = 0` is a DEGENERATE point for identity B — `⟨g_β, β⟩` is then 0 whatever the render
     computes, so half of that check would be satisfied by construction rather than by being right.
     A non-degenerate base point is worth more to a gradcheck than a faithful one. -/
-private def mkParamBiasSeeded (seed : Nat) (dims : Array Nat) (kind : Nat) : IO ByteArray := do
+def mkParamBiasSeeded (seed : Nat) (dims : Array Nat) (kind : Nat) : IO ByteArray := do
   let n := dims.foldl (· * ·) 1
   match kind with
   -- Kind 4 (a bottleneck's zero-γ BN) stays at 1: the driver's `zeroGammaInit` would zero it, and
@@ -150,7 +154,7 @@ private def mkParamBiasSeeded (seed : Nat) (dims : Array Nat) (kind : Nat) : IO 
 
 /-- A contiguous run of parameter TENSORS. Parameters are packed in func-arg order, so every group
     here is a SLICE and the perturbation needs no mask. -/
-private structure Grp where
+structure Grp where
   label : String
   form  : String
   t0    : Nat
@@ -161,7 +165,7 @@ deriving Inhabited
     cannot drift from `r50ShapeList`'s own `bnkStageSig`. Block 0 of every stage carries 12 tensors
     — 9 on the main path plus `Wp/gp/btp` — and **the shortcut is split off into its own group** so
     its gradient is probed on its own rather than diluted by the main path's. -/
-private def r50Groups : Array Grp := Id.run do
+def r50Groups : Array Grp := Id.run do
   let mut gs : Array Grp := #[⟨"stem", "conv7x7-s2 + BN + maxPool3s2", 0, 3⟩]
   let mut t := 3
   for (s, count, form0) in

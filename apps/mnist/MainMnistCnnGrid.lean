@@ -1,7 +1,11 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
-import LeanMlir.Proofs.Codegen.ChapterGraphs
-import LeanMlir.Proofs.Codegen.CnnRender
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+public import LeanMlir.Proofs.Codegen.ChapterGraphs
+public import LeanMlir.Proofs.Codegen.CnnRender
+
+@[expose] public section
 
 /-! # `mnist-cnn-grid` — FC-width-parametric MNIST CNN demo (the 2D peer of `mnist-mlp-grid`)
 

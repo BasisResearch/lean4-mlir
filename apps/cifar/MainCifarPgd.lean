@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Attack
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Attack
+
+@[expose] public section
 
 /-! # `cifar-pgd` — PGD attack on the verified CIFAR-10 CNN
 

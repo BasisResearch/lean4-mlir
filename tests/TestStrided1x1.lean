@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
-import LeanMlir.Verified.Train
-import LeanMlir.Types
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+public import LeanMlir.Verified.Train
+public import LeanMlir.Types
+
+@[expose] public section
 
 /-! # Can the emitter spell a **1×1 strided** conv, and does it compute the right one?
 
@@ -46,27 +50,27 @@ Run (the numeric gate):
 
 open Proofs Proofs.StableHLO
 
-private def BS : Nat := 2
-private def IC : Nat := 4
-private def OC : Nat := 8
-private def HH : Nat := 3          -- output spatial; input is 2·HH × 2·HH
-private def HIN : Nat := 2 * HH
+def BS : Nat := 2
+def IC : Nat := 4
+def OC : Nat := 8
+def HH : Nat := 3          -- output spatial; input is 2·HH × 2·HH
+def HIN : Nat := 2 * HH
 
-private def nX  : Nat := BS * (IC * HIN * HIN)
-private def nY  : Nat := BS * (OC * HH * HH)
-private def nW  : Nat := OC * IC     -- ×1×1
-private def zk1 : Kernel4 OC IC 1 1 := fun _ _ _ _ => 0
+def nX  : Nat := BS * (IC * HIN * HIN)
+def nY  : Nat := BS * (OC * HH * HH)
+def nW  : Nat := OC * IC     -- ×1×1
+def zk1 : Kernel4 OC IC 1 1 := fun _ _ _ _ => 0
 
 -- ════════════════════════════════════════════════════════════════
 -- § The renders — every node a real `SHlo` through `pretty`
 -- ════════════════════════════════════════════════════════════════
 
-private def zc   : Vec OC := fun _ => 0
-private def zinS : Vec (BS*(IC*(2*HH)*(2*HH))) := fun _ => 0
-private def zout : Vec (BS*(OC*HH*HH)) := fun _ => 0
+def zc   : Vec OC := fun _ => 0
+def zinS : Vec (BS*(IC*(2*HH)*(2*HH))) := fun _ => 0
+def zout : Vec (BS*(OC*HH*HH)) := fun _ => 0
 
 /-- All four ops in one `func.func` — the compile-only shape check, at kernel `K×K`. -/
-private def probeModule (K : Nat) (zk : Kernel4 OC IC K K) : String :=
+def probeModule (K : Nat) (zk : Kernel4 OC IC K K) : String :=
   let go : StateM Proofs.StableHLO.EmitS String := do
     let (cF,  nF)  ← pretty BS (.batchOp (N := BS)
       (.convStrided (h := HH) (w := HH) "%W" "%b" zk zc) (.operand "%x" zinS))
@@ -90,7 +94,7 @@ private def probeModule (K : Nat) (zk : Kernel4 OC IC K K) : String :=
 
 /-- One op per module, so each can be driven through `forwardF32`'s single-output invoke.
     `x` is whichever buffer is pushed FIRST; the rest ride the packed-params slot. -/
-private def oneOpModule (which : String) : String :=
+def oneOpModule (which : String) : String :=
   let go : StateM Proofs.StableHLO.EmitS (String × String) := do
     match which with
     | "fwd" => pretty BS (.batchOp (N := BS)
@@ -127,22 +131,22 @@ private def oneOpModule (which : String) : String :=
       structural catches it.
     * `mean` — divide the batch-reducing gradients by `B`, the sum-vs-mean confusion an emitter
       can make. -/
-private def ctlAlign (ctl : String) : Bool := ctl == "align"
-private def ctlTrans (ctl : String) : Bool := ctl == "transpose"
-private def ctlMean  (ctl : String) : Bool := ctl == "mean"
+def ctlAlign (ctl : String) : Bool := ctl == "align"
+def ctlTrans (ctl : String) : Bool := ctl == "transpose"
+def ctlMean  (ctl : String) : Bool := ctl == "mean"
 
 /-- `x` is flat `[B, ic, 2h, 2w]`; read the even spatial position `(2i, 2j)` — `decimateIdx`. -/
-private def xAt (ctl : String) (x : ByteArray) (b c i j : Nat) : Float :=
+def xAt (ctl : String) (x : ByteArray) (b c i j : Nat) : Float :=
   let off := if ctlAlign ctl then 1 else 0
   F32.read x (b*(IC*HIN*HIN) + c*(HIN*HIN) + (2*i+off)*HIN + (2*j+off)).toUSize
-private def xAtRaw (x : ByteArray) (b c y z : Nat) : Float :=
+def xAtRaw (x : ByteArray) (b c y z : Nat) : Float :=
   F32.read x (b*(IC*HIN*HIN) + c*(HIN*HIN) + y*HIN + z).toUSize
-private def dyAt (dy : ByteArray) (b o i j : Nat) : Float :=
+def dyAt (dy : ByteArray) (b o i j : Nat) : Float :=
   F32.read dy (b*(OC*HH*HH) + o*(HH*HH) + i*HH + j).toUSize
-private def wAt (ctl : String) (W : ByteArray) (o c : Nat) : Float :=
+def wAt (ctl : String) (W : ByteArray) (o c : Nat) : Float :=
   F32.read W (if ctlTrans ctl then c*OC + o else o*IC + c).toUSize
 
-private def refFwd (ctl : String) (x W bias : ByteArray) : Array Float := Id.run do
+def refFwd (ctl : String) (x W bias : ByteArray) : Array Float := Id.run do
   let mut out : Array Float := #[]
   for b in [0:BS] do for o in [0:OC] do for i in [0:HH] do for j in [0:HH] do
     let mut s := F32.read bias o.toUSize
@@ -150,7 +154,7 @@ private def refFwd (ctl : String) (x W bias : ByteArray) : Array Float := Id.run
     out := out.push s
   return out
 
-private def refDx (ctl : String) (dy W : ByteArray) : Array Float := Id.run do
+def refDx (ctl : String) (dy W : ByteArray) : Array Float := Id.run do
   let hit := if ctlAlign ctl then 1 else 0     -- which parity carries the scatter
   let mut out : Array Float := #[]
   for b in [0:BS] do for c in [0:IC] do for y in [0:HIN] do for z in [0:HIN] do
@@ -161,7 +165,7 @@ private def refDx (ctl : String) (dy W : ByteArray) : Array Float := Id.run do
       out := out.push s
   return out
 
-private def refDw (ctl : String) (x dy : ByteArray) : Array Float := Id.run do
+def refDw (ctl : String) (x dy : ByteArray) : Array Float := Id.run do
   let den := if ctlMean ctl then BS.toFloat else 1.0
   let mut out : Array Float := #[]
   for o in [0:OC] do for c in [0:IC] do
@@ -171,7 +175,7 @@ private def refDw (ctl : String) (x dy : ByteArray) : Array Float := Id.run do
     out := out.push (s / den)
   return out
 
-private def refDb (ctl : String) (dy : ByteArray) : Array Float := Id.run do
+def refDb (ctl : String) (dy : ByteArray) : Array Float := Id.run do
   let den := if ctlMean ctl then BS.toFloat else 1.0
   let mut out : Array Float := #[]
   for o in [0:OC] do
@@ -185,10 +189,10 @@ private def refDb (ctl : String) (dy : ByteArray) : Array Float := Id.run do
 -- ════════════════════════════════════════════════════════════════
 
 /-- Print every `stablehlo.convolution` window line — the padding to read. -/
-private def windowLines (mlir : String) : List String :=
+def windowLines (mlir : String) : List String :=
   (mlir.splitOn "\n").filter (fun l => l.contains "window = {")
 
-private def renderProbe (K : Nat) (zk : Kernel4 OC IC K K) : IO Bool := do
+def renderProbe (K : Nat) (zk : Kernel4 OC IC K K) : IO Bool := do
   let mlir := probeModule K zk
   IO.println s!"\n══ k = {K}×{K} ══════════════════════════════════════════"
   for l in windowLines mlir do IO.println s!"  {l}"
@@ -208,7 +212,7 @@ private def renderProbe (K : Nat) (zk : Kernel4 OC IC K K) : IO Bool := do
     a reference that matches a zero buffer proves nothing, and three of these four ops CAN
     legitimately produce zeros (the odd positions of `dx`), so the check is on the max magnitude
     of the REFERENCE, which the odd zeros do not depress. -/
-private def gate (name : String) (got : ByteArray) (want : Array Float) : IO Bool := do
+def gate (name : String) (got : ByteArray) (want : Array Float) : IO Bool := do
   let mut maxAbs := 0.0
   let mut maxMag := 0.0
   let mut worst  := 0
@@ -234,7 +238,7 @@ private def gate (name : String) (got : ByteArray) (want : Array Float) : IO Boo
   IO.println s!"  ✅ {name} matches the closed form (rel {rel} ≤ 1e-5)"
   return true
 
-private def runOne (which : String) (params shapes xIn xSh : ByteArray) (nOut : Nat) :
+def runOne (which : String) (params shapes xIn xSh : ByteArray) (nOut : Nat) :
     IO ByteArray := do
   let path := s!".lake/build/k1_{which}.mlir"
   IO.FS.writeFile path (oneOpModule which)

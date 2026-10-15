@@ -1,5 +1,9 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Verified.Train
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Verified.Train
+
+@[expose] public section
 
 /-! # `cnx-init-check` — the known-answer gate for ConvNeXt's verified weight init
 
@@ -28,7 +32,7 @@ Run:  lake exe cnx-init-check
 
 
 /-- Population mean and σ of an f32 blob. -/
-private def stats (ba : ByteArray) : Float × Float := Id.run do
+def stats (ba : ByteArray) : Float × Float := Id.run do
   let n := F32.size ba
   if n == 0 then return (0.0, 0.0)
   let mut s := 0.0
@@ -40,12 +44,12 @@ private def stats (ba : ByteArray) : Float × Float := Id.run do
     v := v + d * d
   return (m, Float.sqrt (v / n.toFloat))
 
-private def fmt (x : Float) : String :=
+def fmt (x : Float) : String :=
   let r := (x * 1000000.0).round / 1000000.0
   toString r
 
 /-- Largest |x − target| over the blob. -/
-private def maxDev (ba : ByteArray) (target : Float) : Float := Id.run do
+def maxDev (ba : ByteArray) (target : Float) : Float := Id.run do
   let n := F32.size ba
   let mut m := 0.0
   for i in [0:n] do
