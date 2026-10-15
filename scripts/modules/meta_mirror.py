@@ -1,8 +1,8 @@
-"""For files whose elaboration crashed the interpreter (an #eval/#guard reaching code imported
+"""For files whose elaboration crashed the interpreter or found no native code (an #eval/#guard reaching code imported
 only at runtime phase), add a `meta import` alongside each local `public import`."""
 import re,sys
 log=open(sys.argv[1],encoding='utf-8').read()
-mods={b for b in re.findall(r"✖ \[\d+/\d+\] Building (\S+)((?:(?!✖).)*)",log,re.S) if "libc++abi: terminating" in b[1]}
+mods={b for b in re.findall(r"✖ \[\d+/\d+\] Building (\S+)((?:(?!✖).)*)",log,re.S) if "libc++abi: terminating" in b[1] or "Could not find native implementation" in b[1]}
 mods={b[0] for b in mods}
 for m in sorted(mods):
     f=m.replace('.','/')+'.lean'; L=open(f,encoding='utf-8').read().split('\n')

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Training.SgdDescent.Mlp
+module
+
+public import LeanMlir.Proofs.Training.SgdDescent.Mlp
+
+@[expose] public section
 
 /-! # Descent on the dense biases — the MLP rungs' bias columns
 

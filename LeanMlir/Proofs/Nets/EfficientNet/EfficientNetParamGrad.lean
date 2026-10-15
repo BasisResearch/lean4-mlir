@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStepTieG
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStepTieG
+
+@[expose] public section
 
 /-! # EfficientNet-B0 — every parameter gradient node IS the loss's derivative in that parameter
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.BackwardMaps
+module
+
+public import LeanMlir.Proofs.Foundation.BackwardMaps
+
+@[expose] public section
 
 /-! # The EfficientNet-B0 backward chain — the ℝ map the B0 whole-net tie is about
 

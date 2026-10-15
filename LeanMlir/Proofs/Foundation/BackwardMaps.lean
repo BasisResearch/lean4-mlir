@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # The per-op ℝ backward maps — what the certified backward ties are stated about
 

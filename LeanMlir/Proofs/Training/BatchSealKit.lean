@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.Batched.StageLayers
+module
+
+public import LeanMlir.Proofs.Foundation.Batched.StageLayers
+
+@[expose] public section
 
 /-!
 # The batch-BatchNorm seal kit — non-degeneracy machinery for the full-width nets
@@ -611,10 +615,10 @@ theorem margin192 (n : ℕ) (h : (n : ℝ) < 36864) :
     injective, which is a stem pool's no-tie condition — and the other two channels are zero (a
     centre-tap stem reads only channel 0). Both examples carry the same slab, so the carrier
     vanishes at `t = 0`. -/
-private noncomputable def rayRamp (H W : Nat) : Tensor3 3 H W :=
+noncomputable def rayRamp (H W : Nat) : Tensor3 3 H W :=
   fun ci i j => if ci.val = 0 then -((i.val : ℝ) * (W : ℝ) + (j.val : ℝ)) else 0
 
-private noncomputable def rayBase (H W : Nat) : Vec (2 * (3 * H * W)) := bfrom (fun _ => rayRamp H W)
+noncomputable def rayBase (H W : Nat) : Vec (2 * (3 * H * W)) := bfrom (fun _ => rayRamp H W)
 
 /-- The perturbation: **all** of example 0's channel 0. Uniform over the spatial grid, so it
     survives a max-pool for every `t` (`maxPool3s2_shift`) with no argmax argument. -/

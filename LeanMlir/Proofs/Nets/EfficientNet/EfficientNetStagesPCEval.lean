@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
+
+@[expose] public section
 
 /-! # EfficientNet-B0 — the inference (frozen-statistics) stages and block graphs
 

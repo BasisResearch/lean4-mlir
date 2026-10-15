@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Float.FloatBridge
+module
+
+public import LeanMlir.Proofs.Float.FloatBridge
+
+@[expose] public section
 
 /-! # The MNIST MLP and E4M3 linear-net float chains
 

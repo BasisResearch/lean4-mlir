@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.Small.LinearTrainStep
-import LeanMlir.Proofs.Codegen.ChapterGraphs
+module
+
+public import LeanMlir.Proofs.Nets.Small.LinearTrainStep
+public import LeanMlir.Proofs.Codegen.ChapterGraphs
+
+@[expose] public section
 
 /-! # The MNIST-linear train step, proof-tied to the certified SGD step
 

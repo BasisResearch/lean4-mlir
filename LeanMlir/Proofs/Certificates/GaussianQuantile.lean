@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.UpstreamDraft
+module
+
+public import LeanMlir.Proofs.Foundation.UpstreamDraft
+
+@[expose] public section
 
 /-! # The standard normal: `Φ`, its quantile `Φ⁻¹`, and full support
 

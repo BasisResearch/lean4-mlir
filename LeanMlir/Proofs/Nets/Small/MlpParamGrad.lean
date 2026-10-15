@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.Small.MlpFold
-import LeanMlir.Proofs.Nets.Small.SmallParamGrad
+module
+
+public import LeanMlir.Proofs.Nets.Small.MlpFold
+public import LeanMlir.Proofs.Nets.Small.SmallParamGrad
+
+@[expose] public section
 
 /-! # The MNIST MLP — every parameter gradient node IS the loss's derivative
 

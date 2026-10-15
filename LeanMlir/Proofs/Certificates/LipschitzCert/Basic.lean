@@ -1,4 +1,8 @@
-import Mathlib.Analysis.InnerProductSpace.PiL2
+module
+
+public import Mathlib.Analysis.InnerProductSpace.PiL2
+
+@[expose] public section
 
 /-! # Lipschitz-margin certified robustness radius (Tsuzuku–Sato–Sugiyama 2018)
 

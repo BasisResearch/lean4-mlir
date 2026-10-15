@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.Small.MnistCNN
-import LeanMlir.Proofs.Architectures.PerChannelBN
+module
+
+public import LeanMlir.Proofs.Nets.Small.MnistCNN
+public import LeanMlir.Proofs.Architectures.PerChannelBN
+
+@[expose] public section
 
 /-! # Chapter 4: CIFAR-10 2D CNN (no BatchNorm) — whole-network VJP
 
@@ -690,7 +694,7 @@ noncomputable def convBnReluPCHasVJPAt {ic oc h w kH kW : Nat}
     (reluHasVJPAt (oc * h * w) _ h_smooth)
 
 /-- **conv → per-channel-BN → relu is differentiable at a smooth point.** -/
-private theorem convBnReluPC_differentiableAt {ic oc h w kH kW : Nat}
+theorem convBnReluPC_differentiableAt {ic oc h w kH kW : Nat}
     (W : Kernel4 oc ic kH kW) (b : Vec oc) (ε : ℝ) (γ β : Vec oc) (hε : 0 < ε)
     (v : Vec (ic * h * w))
     (h_smooth : ∀ k, bnPerChannelTensor3 oc h w ε γ β (flatConv W b v) k ≠ 0) :

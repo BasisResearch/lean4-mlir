@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ViT.ViTVecLN
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTVecLN
+
+@[expose] public section
 
 /-!
 # ViT scaling pass — multi-head rendering + faithfulness

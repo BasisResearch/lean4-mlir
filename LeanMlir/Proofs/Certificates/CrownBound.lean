@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Certificates.IntervalBound
-import LeanMlir.Proofs.Foundation.ListDot
-import Mathlib.Data.List.GetD
+module
+
+public import LeanMlir.Proofs.Certificates.IntervalBound
+public import LeanMlir.Proofs.Foundation.ListDot
+public import Mathlib.Data.List.GetD
+
+@[expose] public section
 
 /-! # CROWN: a linear-relaxation bound on the seam IBP already certifies through
 
@@ -323,7 +327,7 @@ the 16×784 combination and the absolute sum in one `decide +kernel`.
 `Σₜ aₜ·⟨W1ₜ, x₀⟩`, i.e. a 16-term rational sum over the committed `hpre` dots. -/
 
 /-- Entrywise `c · row + acc`. -/
-private def scaleAddZ (c : ℤ) (row acc : List ℤ) : List ℤ :=
+def scaleAddZ (c : ℤ) (row acc : List ℤ) : List ℤ :=
   List.zipWith (fun r a => c * r + a) row acc
 
 /-- `Σₜ csₜ · rowsₜ`, entrywise: the CROWN row `A`, at integer scale. -/

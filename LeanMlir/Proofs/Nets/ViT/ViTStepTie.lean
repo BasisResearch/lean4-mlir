@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ViT.ViTFold
-import LeanMlir.Proofs.Nets.ViT.ViTMultiHeadChain
-import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTie
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTFold
+public import LeanMlir.Proofs.Nets.ViT.ViTMultiHeadChain
+public import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTie
+
+@[expose] public section
 
 /-! # ViT-Tiny step tie — the SGD-inline train step, all 200 parameters at the real backward chain
 

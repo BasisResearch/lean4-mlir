@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.Small.MlpTrainStep
-import LeanMlir.Proofs.Foundation.SgdNodes
+module
+
+public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+public import LeanMlir.Proofs.Foundation.SgdNodes
+
+@[expose] public section
 
 /-! # The MNIST-MLP train step, proof-tied to the certified SGD step
 

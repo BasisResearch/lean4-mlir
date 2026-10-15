@@ -1,15 +1,41 @@
-import LeanMlir.Proofs.Codegen.ResNet50RenderB
-import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
-import LeanMlir.Proofs.Codegen.MobileNetV2RenderB
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaperEval
-import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBEval
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBDrop
-import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
-import LeanMlir.Proofs.Codegen.ConvNeXtRender
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
+module
+
+public import LeanMlir.Proofs.Codegen.ResNet50RenderB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
+public import LeanMlir.Proofs.Codegen.MobileNetV2RenderB
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaperEval
+public import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBEval
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBDrop
+public import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
+public import LeanMlir.Proofs.Codegen.ConvNeXtRender
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
+meta import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
+meta import LeanMlir.Proofs.Codegen.MobileNetV2RenderB
+meta import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
+meta import LeanMlir.Proofs.Codegen.ResNet34RenderB
+meta import LeanMlir.Proofs.Codegen.ResNet50RenderB
+meta import LeanMlir.Proofs.Codegen.StableHLO.Basic
+meta import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaperEval
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+meta import LeanMlir.Proofs.Nets.ResNet.ResNet34FullB
+meta import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
+meta import Mathlib.Basic.Real.Basic
+meta import LeanMlir.Proofs.Codegen.ConvNeXtRender
+meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
+meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
+meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Eval
+meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
+meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPCEval
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBEval
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBDrop
+
+@[expose] public section
 
 /-! # FwdGraphTextTies — the rendered forward blocks are `pretty` of the typed block graphs
 

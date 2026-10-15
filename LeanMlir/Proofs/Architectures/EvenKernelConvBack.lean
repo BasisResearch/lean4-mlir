@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+module
+
+public import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+
+@[expose] public section
 
 /-! # `convFlatBack` is not the adjoint at an even kernel — and the one-line repair
 

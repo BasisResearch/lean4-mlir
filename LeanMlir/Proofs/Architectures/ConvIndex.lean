@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.CNN
+module
+
+public import LeanMlir.Proofs.Architectures.CNN
+
+@[expose] public section
 
 /-! # Conv and max-pool index facts — the flat ↔ tensor index vocabulary
 

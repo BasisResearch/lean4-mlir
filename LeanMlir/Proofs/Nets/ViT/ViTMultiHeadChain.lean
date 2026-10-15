@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ViT.ViTMultiHead
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTMultiHead
+
+@[expose] public section
 
 /-! # ViT multi-head backward — the per-head SDPA cotangents the real chain delivers
 
@@ -40,7 +44,7 @@ open StableHLO
 
 /-- Head `h`'s pre-softmax scaled scores `Q_h·K_hᵀ · 1/√d`, recomputed from the full saved
     Q/K — the `ss` argument the rendered per-head `vitCotDQ`/`vitCotDK` consume (`d` = d_head). -/
-private noncomputable def headScoresF (Np1 heads d : Nat) (h : Fin heads)
+noncomputable def headScoresF (Np1 heads d : Nat) (h : Fin heads)
     (q k : Vec (Np1 * (heads * d))) : Vec (Np1 * Np1) :=
   Mat.flatten (fun i j => sdpaScale d *
     Mat.mul (headSliceMat Np1 heads d h (Mat.unflatten q))
@@ -48,7 +52,7 @@ private noncomputable def headScoresF (Np1 heads d : Nat) (h : Fin heads)
 
 /-- Head `h`'s post-softmax weights `softmax(Q_h·K_hᵀ · 1/√d)`, recomputed from the full saved
     Q/K — the `p` argument the rendered per-head `vitCotDV` consumes. -/
-private noncomputable def headWeightsF (Np1 heads d : Nat) (h : Fin heads)
+noncomputable def headWeightsF (Np1 heads d : Nat) (h : Fin heads)
     (q k : Vec (Np1 * (heads * d))) : Vec (Np1 * Np1) :=
   Mat.flatten (sdpaWeights Np1 d
     (headSliceMat Np1 heads d h (Mat.unflatten q))

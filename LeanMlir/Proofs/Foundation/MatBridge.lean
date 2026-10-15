@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.Tensor
-import Mathlib.Data.Matrix.Mul
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+public import Mathlib.Data.Matrix.Mul
+
+@[expose] public section
 
 /-!
 # `Proofs.Mat` ↔ Mathlib `Matrix` bridge

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet50StepTieB
-import LeanMlir.Proofs.Nets.ResNet.ResNet34SyncStepTieB
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50StepTieB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34SyncStepTieB
+
+@[expose] public section
 
 /-! # ResNet-50's data-parallel step at SYNCHRONISED BatchNorm IS the single-device step at `R·N`
 
@@ -209,7 +213,7 @@ variable (R : Nat) (hR : 0 < R) (N h w : Nat) {mid oc : Nat} (p : R50IdW mid oc)
   (XIN : Vec ((R * N) * (oc * h * w))) (dys : Fin R → Vec (N * (oc * h * w)))
 
 /-- Replica `r`'s cotangent at the pre-relu sum. Feeds bn₃'s γ/β and the identity skip. -/
-private noncomputable def r50IdSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r50IdSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
   reluMaskB (N * (oc * h * w))
     (batchShard R N (oc * h * w)
       (residual (projB (R * N) (h := h) (w := w) p.W₃ p.b₃ p.ε₃ p.γ₃ p.β₃ ∘
@@ -218,7 +222,7 @@ private noncomputable def r50IdSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
     (dys r)
 
 /-- …at conv₃'s output, through bn₃'s sync backward. Feeds `W₃`. -/
-private noncomputable def r50IdSyncCotC3 (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r50IdSyncCotC3 (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w p.ε₃ p.γ₃
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConv p.W₃ p.b₃)
       (cbReluB (R * N) (h := h) (w := w) p.W₂ p.b₂ p.ε₂ p.γ₂ p.β₂
@@ -226,7 +230,7 @@ private noncomputable def r50IdSyncCotC3 (r : Fin R) : Vec (N * (oc * h * w)) :=
     (r50IdSyncCotA R N h w p XIN dys) r
 
 /-- …at bn₂'s output. Feeds `γ₂`/`β₂`. -/
-private noncomputable def r50IdSyncCotN2 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50IdSyncCotN2 (r : Fin R) : Vec (N * (mid * h * w)) :=
   reluMaskB (N * (mid * h * w))
     (batchShard R N (mid * h * w)
       (bnBatchLA (R * N) mid h w p.ε₂ p.γ₂ p.β₂ (batchMap (R * N) (flatConv p.W₂ p.b₂)
@@ -234,21 +238,21 @@ private noncomputable def r50IdSyncCotN2 (r : Fin R) : Vec (N * (mid * h * w)) :
     (cInB N p.W₃ p.b₃ (r50IdSyncCotC3 R hR N h w p XIN dys r))
 
 /-- …at conv₂'s output. Feeds `W₂`. -/
-private noncomputable def r50IdSyncCotC2 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50IdSyncCotC2 (r : Fin R) : Vec (N * (mid * h * w)) :=
   bnSyncInB R hR N mid h w p.ε₂ p.γ₂
     (fun r => batchShard R N (mid * h * w) (batchMap (R * N) (flatConv p.W₂ p.b₂)
       (cbReluB (R * N) (h := h) (w := w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁ XIN)) r)
     (r50IdSyncCotN2 R hR N h w p XIN dys) r
 
 /-- …at bn₁'s output. Feeds `γ₁`/`β₁`. -/
-private noncomputable def r50IdSyncCotN1 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50IdSyncCotN1 (r : Fin R) : Vec (N * (mid * h * w)) :=
   reluMaskB (N * (mid * h * w))
     (batchShard R N (mid * h * w)
       (bnBatchLA (R * N) mid h w p.ε₁ p.γ₁ p.β₁ (batchMap (R * N) (flatConv p.W₁ p.b₁) XIN)) r)
     (cInB N p.W₂ p.b₂ (r50IdSyncCotC2 R hR N h w p XIN dys r))
 
 /-- …at conv₁'s output. Feeds `W₁`. -/
-private noncomputable def r50IdSyncCotC1 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50IdSyncCotC1 (r : Fin R) : Vec (N * (mid * h * w)) :=
   bnSyncInB R hR N mid h w p.ε₁ p.γ₁
     (fun r => batchShard R N (mid * h * w) (batchMap (R * N) (flatConv p.W₁ p.b₁) XIN) r)
     (r50IdSyncCotN1 R hR N h w p XIN dys) r
@@ -326,7 +330,7 @@ variable (R : Nat) (hR : 0 < R) (N h w : Nat) {ic mid oc : Nat} (p : R50ProjW ic
 
 /-- Replica `r`'s cotangent at the stride-1 projection block's pre-relu sum. Feeds bn₃'s and the
     projection's γ/β, and the projection's backward branch. -/
-private noncomputable def r50ProjSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r50ProjSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
   reluMaskB (N * (oc * h * w))
     (batchShard R N (oc * h * w)
       (residualProj (projB (R * N) (h := h) (w := w) p.Wp p.bp p.εp p.γp p.βp)
@@ -335,40 +339,40 @@ private noncomputable def r50ProjSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :
           cbReluB (R * N) (h := h) (w := w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁) XIN) r)
     (dys r)
 
-private noncomputable def r50ProjSyncCotC3 (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r50ProjSyncCotC3 (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w p.ε₃ p.γ₃
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConv p.W₃ p.b₃)
       (cbReluB (R * N) (h := h) (w := w) p.W₂ p.b₂ p.ε₂ p.γ₂ p.β₂
         (cbReluB (R * N) (h := h) (w := w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁ XIN))) r)
     (r50ProjSyncCotA R N h w p XIN dys) r
 
-private noncomputable def r50ProjSyncCotN2 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50ProjSyncCotN2 (r : Fin R) : Vec (N * (mid * h * w)) :=
   reluMaskB (N * (mid * h * w))
     (batchShard R N (mid * h * w)
       (bnBatchLA (R * N) mid h w p.ε₂ p.γ₂ p.β₂ (batchMap (R * N) (flatConv p.W₂ p.b₂)
         (cbReluB (R * N) (h := h) (w := w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁ XIN))) r)
     (cInB N p.W₃ p.b₃ (r50ProjSyncCotC3 R hR N h w p XIN dys r))
 
-private noncomputable def r50ProjSyncCotC2 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50ProjSyncCotC2 (r : Fin R) : Vec (N * (mid * h * w)) :=
   bnSyncInB R hR N mid h w p.ε₂ p.γ₂
     (fun r => batchShard R N (mid * h * w) (batchMap (R * N) (flatConv p.W₂ p.b₂)
       (cbReluB (R * N) (h := h) (w := w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁ XIN)) r)
     (r50ProjSyncCotN2 R hR N h w p XIN dys) r
 
-private noncomputable def r50ProjSyncCotN1 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50ProjSyncCotN1 (r : Fin R) : Vec (N * (mid * h * w)) :=
   reluMaskB (N * (mid * h * w))
     (batchShard R N (mid * h * w)
       (bnBatchLA (R * N) mid h w p.ε₁ p.γ₁ p.β₁ (batchMap (R * N) (flatConv p.W₁ p.b₁) XIN)) r)
     (cInB N p.W₂ p.b₂ (r50ProjSyncCotC2 R hR N h w p XIN dys r))
 
-private noncomputable def r50ProjSyncCotC1 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50ProjSyncCotC1 (r : Fin R) : Vec (N * (mid * h * w)) :=
   bnSyncInB R hR N mid h w p.ε₁ p.γ₁
     (fun r => batchShard R N (mid * h * w) (batchMap (R * N) (flatConv p.W₁ p.b₁) XIN) r)
     (r50ProjSyncCotN1 R hR N h w p XIN dys) r
 
 /-- …at the stride-1 1×1 projection conv's output, through the skip BN's sync backward. Feeds
     `Wp`. -/
-private noncomputable def r50ProjSyncCotCp (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r50ProjSyncCotCp (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w p.εp p.γp
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConv p.Wp p.bp) XIN) r)
     (r50ProjSyncCotA R N h w p XIN dys) r
@@ -452,7 +456,7 @@ variable (R : Nat) (hR : 0 < R) (N h w : Nat) {ic mid oc : Nat} (p : R50ProjW ic
   (XIN : Vec ((R * N) * (ic * (2 * h) * (2 * w)))) (dys : Fin R → Vec (N * (oc * h * w)))
 
 /-- Replica `r`'s cotangent at the strided block's pre-relu sum. -/
-private noncomputable def r50DownSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r50DownSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
   reluMaskB (N * (oc * h * w))
     (batchShard R N (oc * h * w)
       (residualProj (projStridedB (R * N) (h := h) (w := w) p.Wp p.bp p.εp p.γp p.βp)
@@ -461,14 +465,14 @@ private noncomputable def r50DownSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :
           cbReluB (R * N) (h := 2 * h) (w := 2 * w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁) XIN) r)
     (dys r)
 
-private noncomputable def r50DownSyncCotC3 (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r50DownSyncCotC3 (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w p.ε₃ p.γ₃
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConv p.W₃ p.b₃)
       (cbReluStridedB (R * N) (h := h) (w := w) p.W₂ p.b₂ p.ε₂ p.γ₂ p.β₂
         (cbReluB (R * N) (h := 2 * h) (w := 2 * w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁ XIN))) r)
     (r50DownSyncCotA R N h w p XIN dys) r
 
-private noncomputable def r50DownSyncCotN2 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50DownSyncCotN2 (r : Fin R) : Vec (N * (mid * h * w)) :=
   reluMaskB (N * (mid * h * w))
     (batchShard R N (mid * h * w)
       (bnBatchLA (R * N) mid h w p.ε₂ p.γ₂ p.β₂ (batchMap (R * N) (flatConvStride2 p.W₂ p.b₂)
@@ -476,14 +480,14 @@ private noncomputable def r50DownSyncCotN2 (r : Fin R) : Vec (N * (mid * h * w))
     (cInB N p.W₃ p.b₃ (r50DownSyncCotC3 R hR N h w p XIN dys r))
 
 /-- …at the STRIDED 3×3's output. Feeds `W₂`. -/
-private noncomputable def r50DownSyncCotC2 (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def r50DownSyncCotC2 (r : Fin R) : Vec (N * (mid * h * w)) :=
   bnSyncInB R hR N mid h w p.ε₂ p.γ₂
     (fun r => batchShard R N (mid * h * w) (batchMap (R * N) (flatConvStride2 p.W₂ p.b₂)
       (cbReluB (R * N) (h := 2 * h) (w := 2 * w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁ XIN)) r)
     (r50DownSyncCotN2 R hR N h w p XIN dys) r
 
 /-- …at bn₁'s output — at the INPUT grid `2h × 2w`, the strided 3×3's input-VJP having upsampled. -/
-private noncomputable def r50DownSyncCotN1 (r : Fin R) : Vec (N * (mid * (2 * h) * (2 * w))) :=
+noncomputable def r50DownSyncCotN1 (r : Fin R) : Vec (N * (mid * (2 * h) * (2 * w))) :=
   reluMaskB (N * (mid * (2 * h) * (2 * w)))
     (batchShard R N (mid * (2 * h) * (2 * w))
       (bnBatchLA (R * N) mid (2 * h) (2 * w) p.ε₁ p.γ₁ p.β₁
@@ -491,13 +495,13 @@ private noncomputable def r50DownSyncCotN1 (r : Fin R) : Vec (N * (mid * (2 * h)
     (cStridedInB N p.W₂ p.b₂ (r50DownSyncCotC2 R hR N h w p XIN dys r))
 
 /-- …at conv₁'s output, through bn₁'s sync backward at `2h × 2w`. Feeds `W₁`. -/
-private noncomputable def r50DownSyncCotC1 (r : Fin R) : Vec (N * (mid * (2 * h) * (2 * w))) :=
+noncomputable def r50DownSyncCotC1 (r : Fin R) : Vec (N * (mid * (2 * h) * (2 * w))) :=
   bnSyncInB R hR N mid (2 * h) (2 * w) p.ε₁ p.γ₁
     (fun r => batchShard R N (mid * (2 * h) * (2 * w)) (batchMap (R * N) (flatConv p.W₁ p.b₁) XIN) r)
     (r50DownSyncCotN1 R hR N h w p XIN dys) r
 
 /-- …at the strided 1×1 projection's output. Feeds `Wp`. -/
-private noncomputable def r50DownSyncCotCp (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r50DownSyncCotCp (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w p.εp p.γp
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConvStride2 p.Wp p.bp) XIN) r)
     (r50DownSyncCotA R N h w p XIN dys) r

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.ViT.ViTStepTie
-import LeanMlir.Proofs.Foundation.Batched.Indexed
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTStepTie
+public import LeanMlir.Proofs.Foundation.Batched.Indexed
+
+@[expose] public section
 
 /-! # One ViT block with its two drop sites, per example — forward, VJP, input cotangent
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Float.FloatBridge
+module
+
+public import LeanMlir.Proofs.Float.FloatBridge
+
+@[expose] public section
 
 /-! # `FloatClose` — the float tier's one closeness form, and how it composes
 

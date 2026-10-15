@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
-import LeanMlir.Proofs.Foundation.OpaquePrefix
-import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
-import LeanMlir.Proofs.Nets.ResNet.ResNetBackChains
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
+public import LeanMlir.Proofs.Foundation.OpaquePrefix
+public import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+public import LeanMlir.Proofs.Nets.ResNet.ResNetBackChains
+
+@[expose] public section
 
 /-! # `r34InputGradB` IS the certified whole-net ResNet-34 gradient AT BATCH BATCH-NORM
 

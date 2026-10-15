@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.Depthwise
-import LeanMlir.Proofs.Float.ConvFloat
+module
+
+public import LeanMlir.Proofs.Architectures.Depthwise
+public import LeanMlir.Proofs.Float.ConvFloat
+
+@[expose] public section
 
 /-!
 # ℝ→Float32 bridge: depthwise convolution

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.Batched.BackLinks
-import LeanMlir.Proofs.Foundation.CertifiedChain
+module
+
+public import LeanMlir.Proofs.Foundation.Batched.BackLinks
+public import LeanMlir.Proofs.Foundation.CertifiedChain
+
+@[expose] public section
 
 /-! # Batched activation stages — conv/depthwise → true BN → relu or relu6, as `CertLayer`s
 

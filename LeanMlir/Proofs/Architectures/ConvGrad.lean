@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.Depthwise
-import LeanMlir.Proofs.Architectures.ConvIndex
+module
+
+public import LeanMlir.Proofs.Architectures.Depthwise
+public import LeanMlir.Proofs.Architectures.ConvIndex
+
+@[expose] public section
 
 /-! # Convolution parameter-gradient bridges (the MNIST CNN train step's conv parameters)
 

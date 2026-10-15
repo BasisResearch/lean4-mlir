@@ -1,9 +1,13 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtChainClose
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFold
-import LeanMlir.Proofs.Architectures.ChannelLNBack
-import LeanMlir.Proofs.Foundation.SgdNodes
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
-import LeanMlir.Proofs.Foundation.ParamGradNodes
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtChainClose
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFold
+public import LeanMlir.Proofs.Architectures.ChannelLNBack
+public import LeanMlir.Proofs.Foundation.SgdNodes
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
+public import LeanMlir.Proofs.Foundation.ParamGradNodes
+
+@[expose] public section
 
 /-! # The full [3,3,9,3] ConvNeXt-T step tie — the whole net tied through the real forward
 
@@ -302,7 +306,7 @@ noncomputable def cnxStemFwdO {c h w : Nat} (ε : ℝ)
     (x : Vec (3*(2*(2*h))*(2*(2*w)))) : Vec (c*h*w) :=
   chanLNTensor3 c h w ε psng psnbt (flatConvStride4 Wst bst x)
 
-private noncomputable def cnxBlockBodyChO (gf : GeluForm) {c cExp h w : Nat} (ε : ℝ)
+noncomputable def cnxBlockBodyChO (gf : GeluForm) {c cExp h w : Nat} (ε : ℝ)
     (Wdw : DepthwiseKernel c 7 7) (bdw : Vec c) (ng nbt : Vec c)
     (Wex : Kernel4 cExp c 1 1) (bex : Vec cExp) (Wpr : Kernel4 c cExp 1 1) (bpr : Vec c)
     (lg : Vec c) (xin : Vec (c*h*w)) : Vec (c*h*w) :=
@@ -364,7 +368,7 @@ Note: only `cnxStemChTiedAt` is `@[irreducible]`: without it the capstone's
 `refine ⟨cnx_stem_ch_tiedAt …, ?_, …⟩` times out in `whnf`, and moving it to its own goal does not
 help. Every other definition in this section and the two above is a plain `def`. -/
 
-private def cnxBlockChTiedAt (gf : GeluForm) {c cExp h w : Nat}
+def cnxBlockChTiedAt (gf : GeluForm) {c cExp h w : Nat}
     (xN wN bN gN epsStr lrStr cotN : String) (ε : ℝ)
     (Wdw : DepthwiseKernel c 7 7) (bdw : Vec c) (ng nbt : Vec c)
     (Wex : Kernel4 cExp c 1 1) (bex : Vec cExp) (Wpr : Kernel4 c cExp 1 1) (bpr : Vec c)
@@ -388,7 +392,7 @@ private theorem cnx_block_ch_tiedAt {gf : GeluForm} {c cExp h w : Nat}
   exact cnx_block_ch_tied xN wN bN gN epsStr lrStr cotN ε Wdw bdw ng nbt Wex bex Wpr bpr lg
     xin d nl p e g dyOut lr
 
-private def cnxDownChTiedAt {ci co h w : Nat}
+def cnxDownChTiedAt {ci co h w : Nat}
     (xN wN bN gN epsStr lrStr cotN : String) (ε : ℝ)
     (dng dnbt : Vec ci) (Wd : Kernel4 co ci 2 2) (bd : Vec co)
     (xin : Vec (ci*(2*h)*(2*w))) (dyOut : Vec (co*h*w)) (lr : ℝ) : Prop :=
@@ -565,14 +569,14 @@ private theorem cnxDownFwdChO_eq_cnxDownChW {ci co h w : Nat} (ε : ℝ) (dng dn
 
 namespace CnxTieBlk
 /-- The FullT record for this block at the shared `ε`. -/
-private def toCh {c cExp : Nat} (p : CnxTieBlk c cExp) (h w : Nat) (ε : ℝ) :
+abbrev toCh {c cExp : Nat} (p : CnxTieBlk c cExp) (h w : Nat) (ε : ℝ) :
     CnxBlockParamsCh c cExp h w 7 7 :=
   ⟨p.aW, p.aB, ε, p.nG, p.nB, p.eW, p.eB, p.pW, p.pB, p.sL⟩
 end CnxTieBlk
 
 namespace CnxTieDown
 /-- The FullT record for this downsample at the shared `ε`. -/
-private def toCh {ci co : Nat} (p : CnxTieDown ci co) (ε : ℝ) : CnxDownParamsCh ci co :=
+def toCh {ci co : Nat} (p : CnxTieDown ci co) (ε : ℝ) : CnxDownParamsCh ci co :=
   ⟨ε, p.G, p.T, p.W, p.B⟩
 end CnxTieDown
 

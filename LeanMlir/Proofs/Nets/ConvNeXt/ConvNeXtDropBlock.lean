@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtStepTie
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtWholeBackCertifiedTie
-import LeanMlir.Proofs.Foundation.Batched.Indexed
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtStepTie
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtWholeBackCertifiedTie
+public import LeanMlir.Proofs.Foundation.Batched.Indexed
+
+@[expose] public section
 
 /-! # One ConvNeXt block with its drop site, per example — forward, VJP, input cotangent
 
@@ -50,10 +54,7 @@ theorem cnxBlockCotInChAt_eq_vjp {gf : GeluForm} {c cExp h w : Nat} (ε : ℝ) (
         (chanLNTensor3 c h w ε ng nbt (depthwiseFlat (h := h) (w := w) Wdw bdw xin))))]
   rfl
 
-/-- The block's weights as `ConvNeXtFullT`'s record, at the shared `ε`. -/
-abbrev _root_.Proofs.CnxTie.CnxTieBlk.toCh (p : CnxTieBlk c cExp) (h w : Nat) (ε : ℝ) :
-    CnxBlockParamsCh c cExp h w 7 7 :=
-  ⟨p.aW, p.aB, ε, p.nG, p.nB, p.eW, p.eB, p.pW, p.pB, p.sL⟩
+-- `CnxTieBlk.toCh` (the block's FullT record) lives in `ConvNeXtStepTie`.
 
 /-- The block's residual branch, flat: depthwise → channel LN → expand → GELU → project →
     LayerScale (`cnxBodyWith` at the record). -/

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.DataParallel.Sync
+module
+
+public import LeanMlir.Proofs.Foundation.DataParallel.Sync
+
+@[expose] public section
 
 /-! # Optional drop sites — stochastic depth and classifier dropout as `Option` binders
 

@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.Small.Cifar8BnStepTieG
-import LeanMlir.Proofs.Nets.Small.Cifar8ParamGrad
-import LeanMlir.Proofs.Foundation.ParamGradNodes
+module
+
+public import LeanMlir.Proofs.Nets.Small.Cifar8BnStepTieG
+public import LeanMlir.Proofs.Nets.Small.Cifar8ParamGrad
+public import LeanMlir.Proofs.Foundation.ParamGradNodes
+
+@[expose] public section
 
 /-! # The 8-conv CIFAR CNN with per-channel BN — every gradient node IS the loss's derivative
 

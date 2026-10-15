@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.BackwardMaps
+module
+
+public import LeanMlir.Proofs.Foundation.BackwardMaps
+
+@[expose] public section
 
 /-! # The ConvNeXt-T backward chains — the ℝ maps the ConvNeXt ties are about
 

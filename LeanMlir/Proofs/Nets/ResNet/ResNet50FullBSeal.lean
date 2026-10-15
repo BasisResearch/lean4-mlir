@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet50FullBVJP
-import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBSeal
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullBVJP
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBSeal
+
+@[expose] public section
 
 /-!
 # ResNet-50's non-degeneracy seal, on the full-width batched net (levels 2 and 3)
@@ -710,7 +714,7 @@ noncomputable def dS (q : Nat) (t : ℝ) : Fin 64 → ℝ :=
     (bnRowLA 2 64 (2 * (2 * (2 * (2 * q)))) (2 * (2 * (2 * (2 * q)))) (Zs q t) ci) 1
 
 /-- The stage-1 projection's pre-BN activation. -/
-private noncomputable def Zp1 (q : Nat) (nCls : Nat) (t : ℝ) : Vec (2 * (256 * (2 * (2 * (2 * q))) * (2 * (2 * (2 * q))))) :=
+noncomputable def Zp1 (q : Nat) (nCls : Nat) (t : ℝ) : Vec (2 * (256 * (2 * (2 * (2 * q))) * (2 * (2 * (2 * q))))) :=
   StableHLO.batchMap 2 (flatConv (ctK 256 64 1 1 1) (kv 256 0))
     (r50Pre0 2 q (sealW nCls) (sealX q t))
 

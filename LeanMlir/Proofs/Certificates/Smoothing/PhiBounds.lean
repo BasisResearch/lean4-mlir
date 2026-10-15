@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
-import Mathlib.Analysis.Real.Pi.Bounds
+module
+
+public import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
+public import Mathlib.Analysis.Real.Pi.Bounds
+
+@[expose] public section
 
 /-! # Certified decimal quantile bounds — `Φ⁻¹` leaves symbolic-land
 

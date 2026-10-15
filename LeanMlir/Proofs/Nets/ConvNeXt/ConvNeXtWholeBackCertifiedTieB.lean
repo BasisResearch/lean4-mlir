@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtWholeBackCertifiedTie
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtWholeBackCertifiedTie
+
+@[expose] public section
 
 /-! # `convnextInputGradB` is the certified whole-net ConvNeXt-T gradient at a batch
 
@@ -102,7 +106,7 @@ noncomputable abbrev cnxSavedB7 (gf : GeluForm) (B : Nat) {nC : Nat} (w : CnxTWe
   StableHLO.batchMap B (cnxDn3 w) ∘ cnxSavedB6 gf B w
 
 /-- GAP's batched saved input. -/
-private noncomputable abbrev cnxSavedB8 (gf : GeluForm) (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) :
+noncomputable abbrev cnxSavedB8 (gf : GeluForm) (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) :
     Vec (B * (3 * 224 * 224)) → Vec (B * (768 * 7 * 7)) :=
   StableHLO.batchMap B (convNextStageChK gf 3 w.s4) ∘ cnxSavedB7 gf B w
 
@@ -134,7 +138,7 @@ noncomputable def cnxChanLNBAt (B c h w : Nat) (ε : ℝ) (hε : 0 < ε) (γ β 
     (fun _ => (chanLNTensor3_differentiable c h w ε γ β hε).differentiableAt)
 
 /-- The batched stem-LayerNorm witness at `v`. -/
-private noncomputable def cnxStemLNBAt (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε)
+noncomputable def cnxStemLNBAt (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε)
     (v : Vec (B * (96 * 56 * 56))) :
     HasVJPAt (StableHLO.batchMap B (chanLNTensor3 96 56 56 w.sε w.sγ w.sβ)) v :=
   cnxChanLNBAt B 96 56 56 w.sε hsε w.sγ w.sβ v
@@ -156,17 +160,17 @@ noncomputable def cnxDownBAt (B h w : Nat) {cin cout : Nat} (p : CnxDownParamsCh
     (fun _ => (cnxDownChW_differentiable h w p hε).differentiableAt)
 
 /-- The batched downsample-1 witness at `v`, at the chain's dimension spelling (`cnxDn1`). -/
-private noncomputable def cnxDn1BAt (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) (hd1 : 0 < w.d1.ε)
+noncomputable def cnxDn1BAt (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) (hd1 : 0 < w.d1.ε)
     (v : Vec (B * (96 * 56 * 56))) : HasVJPAt (StableHLO.batchMap B (cnxDn1 w)) v :=
   cnxDownBAt B 28 28 w.d1 hd1 v
 
 /-- The batched downsample-2 witness at `v`, at the chain's dimension spelling (`cnxDn2`). -/
-private noncomputable def cnxDn2BAt (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) (hd2 : 0 < w.d2.ε)
+noncomputable def cnxDn2BAt (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) (hd2 : 0 < w.d2.ε)
     (v : Vec (B * (192 * 28 * 28))) : HasVJPAt (StableHLO.batchMap B (cnxDn2 w)) v :=
   cnxDownBAt B 14 14 w.d2 hd2 v
 
 /-- The batched downsample-3 witness at `v`, at the chain's dimension spelling (`cnxDn3`). -/
-private noncomputable def cnxDn3BAt (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) (hd3 : 0 < w.d3.ε)
+noncomputable def cnxDn3BAt (B : Nat) {nC : Nat} (w : CnxTWeightsCh nC) (hd3 : 0 < w.d3.ε)
     (v : Vec (B * (384 * 14 * 14))) : HasVJPAt (StableHLO.batchMap B (cnxDn3 w)) v :=
   cnxDownBAt B 7 7 w.d3 hd3 v
 

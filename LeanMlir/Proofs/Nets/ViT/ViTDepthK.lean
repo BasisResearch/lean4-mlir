@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ViT.ViTMultiHead
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTMultiHead
+
+@[expose] public section
 
 /-!
 # ViT depth-k (general-depth tower, distinct per-block params)

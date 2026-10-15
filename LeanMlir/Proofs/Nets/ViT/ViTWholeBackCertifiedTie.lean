@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ViT.ViTVecLNBackCertifiedTie
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTVecLNBackCertifiedTie
+
+@[expose] public section
 
 /-! # `vitInputGradK` is the certified whole-net ViT gradient
 

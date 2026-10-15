@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.BackwardMaps
+module
+
+public import LeanMlir.Proofs.Foundation.BackwardMaps
+
+@[expose] public section
 
 /-! # The MobileNetV2 / MobileNetV4 backward chains — the ℝ maps the MobileNet ties are about
 

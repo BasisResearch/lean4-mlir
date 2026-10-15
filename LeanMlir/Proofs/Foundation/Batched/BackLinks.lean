@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.Batched.Stages
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Foundation.Batched.Stages
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # Batched backward links — the backward graphs and cotangent steps at the batched index
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.Small.MnistCNN
+module
+
+public import LeanMlir.Proofs.Nets.Small.MnistCNN
+
+@[expose] public section
 
 /-! # Trained-weight whole-network VJP witness — CNN rung
 

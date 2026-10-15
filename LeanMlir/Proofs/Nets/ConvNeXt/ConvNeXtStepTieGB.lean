@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFoldGB
-import LeanMlir.Proofs.Foundation.GradNodesBAt
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtDropBlock
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFoldGB
+public import LeanMlir.Proofs.Foundation.GradNodesBAt
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtDropBlock
+
+@[expose] public section
 
 /-! # ConvNeXt-T's step tie at the batched index, the un-fused gradient and the smoothed loss
 

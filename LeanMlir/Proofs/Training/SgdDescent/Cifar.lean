@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Training.SgdDescent.Cnn
-import LeanMlir.Proofs.Nets.Small.CifarCNN
+module
+
+public import LeanMlir.Proofs.Training.SgdDescent.Cnn
+public import LeanMlir.Proofs.Nets.Small.CifarCNN
+
+@[expose] public section
 
 /-! # CIFAR-8 last-conv SGD descent
 

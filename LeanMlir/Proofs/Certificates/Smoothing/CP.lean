@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
-import Mathlib.Probability.Distributions.Binomial
+module
+
+public import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
+public import Mathlib.Probability.Distributions.Binomial
+
+@[expose] public section
 
 /-! # The exact Clopper–Pearson tie for randomized smoothing
 

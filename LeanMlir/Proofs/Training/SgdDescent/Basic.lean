@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.Tensor
-import Mathlib.Analysis.Calculus.Deriv.MeanValue
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+public import Mathlib.Analysis.Calculus.Deriv.MeanValue
+
+@[expose] public section
 
 /-! # Inexact-gradient descent over ℝ
 

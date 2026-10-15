@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # Data parallelism with synchronised BatchNorm — the DP step IS the global-batch step
 

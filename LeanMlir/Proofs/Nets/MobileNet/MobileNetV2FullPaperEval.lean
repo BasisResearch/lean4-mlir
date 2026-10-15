@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2StagesPCEval
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2StagesPCEval
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # The paper-spec MobileNetV2 at inference — all 17 bottlenecks, forward + graph + faithfulness
 

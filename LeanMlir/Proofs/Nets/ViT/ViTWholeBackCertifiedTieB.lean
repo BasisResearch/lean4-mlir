@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTie
-import LeanMlir.Proofs.Foundation.BatchMapVJPAt
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTie
+public import LeanMlir.Proofs.Foundation.BatchMapVJPAt
+
+@[expose] public section
 
 /-! # `vitInputGradKB` is the certified whole-net ViT gradient at a batch
 
@@ -45,7 +49,7 @@ open scoped BigOperators
 
 /-- The batched patch-embed witness at `x`: `batchMapHasVJPAt` over the global per-example
     witness at each row. -/
-private noncomputable def vitEmbedBAt (B ic H W patchSize N D : Nat)
+noncomputable def vitEmbedBAt (B ic H W patchSize N D : Nat)
     (W_conv : Kernel4 D ic patchSize patchSize) (b_conv cls_token : Vec D)
     (pos_embed : Mat (N + 1) D) (x : Vec (B * (ic * H * W))) :
     HasVJPAt (StableHLO.batchMap B

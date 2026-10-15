@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.LipschitzCert.PairSDP
-import LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard
+module
+
+public import LeanMlir.Proofs.Certificates.LipschitzCert.PairSDP
+public import LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard
+
+@[expose] public section
 
 /-! # Per-pair LipSDP scorecard — unconstrained /128 net (`mlpT`)
 

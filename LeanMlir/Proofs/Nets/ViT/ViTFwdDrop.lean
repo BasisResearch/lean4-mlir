@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ViT.ViTDepthK
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
-import LeanMlir.Proofs.Foundation.Bf16Erasure
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTDepthK
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+public import LeanMlir.Proofs.Foundation.Bf16Erasure
+
+@[expose] public section
 
 /-! # ViT with stochastic depth — the batched forward graph and its faithfulness
 

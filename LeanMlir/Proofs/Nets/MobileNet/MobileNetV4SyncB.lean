@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
-import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
+public import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+
+@[expose] public section
 
 /-! # MobileNetV4-Conv-M's data-parallel forward at synchronised BatchNorm — replica `r` is shard `r`
 
@@ -460,7 +464,7 @@ theorem mnv4HeadGraphSync_shard (epsStr : String) (R : Nat) (hR : 0 < R) (N h w 
 -- ════════════════════════════════════════════════════════════════
 
 /-- Trunk group **Res28** at sync-BN — rows 1–2. -/
-private def mnv4Res28GraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
+def mnv4Res28GraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
     (w : Mnv4BWeights nCls) (bf16 : Bool) (e : Fin R → SHlo (N * (48 * 56 * 56))) :
     Fin R → SHlo (N * (80 * 28 * 28)) :=
   mnv4SkipGraphSync (mnv4ExtraDWBodyGraphSync epsStr R hR N mnv4Row2 w.b2 bf16)
@@ -482,7 +486,7 @@ private theorem mnv4Res28GraphSync_shard (R : Nat) (hR : 0 < R) (N : Nat) (hN : 
     _ _ b1 r
 
 /-- Trunk group **Res14a** at sync-BN — rows 3–6. -/
-private def mnv4Res14aGraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
+def mnv4Res14aGraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
     (w : Mnv4BWeights nCls) (bf16 : Bool) (e : Fin R → SHlo (N * (80 * 28 * 28))) :
     Fin R → SHlo (N * (160 * 14 * 14)) :=
   mnv4SkipGraphSync (mnv4ExtraDWBodyGraphSync epsStr R hR N mnv4Row6 w.b6 bf16)
@@ -514,7 +518,7 @@ private theorem mnv4Res14aGraphSync_shard (R : Nat) (hR : 0 < R) (N : Nat) (hN :
       (by decide)) _ _ b5 r
 
 /-- Trunk group **Res14b** at sync-BN — rows 7–10: ExtraDW, ConvNeXt, FFN, ConvNeXt. -/
-private def mnv4Res14bGraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
+def mnv4Res14bGraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
     (w : Mnv4BWeights nCls) (bf16 : Bool) (e : Fin R → SHlo (N * (160 * 14 * 14))) :
     Fin R → SHlo (N * (160 * 14 * 14)) :=
   mnv4SkipGraphSync (mnv4ConvNeXtBodyGraphSync epsStr R hR N mnv4Row10 w.b10 bf16)
@@ -548,7 +552,7 @@ private theorem mnv4Res14bGraphSync_shard (R : Nat) (hR : 0 < R) (N : Nat) (hN :
       (by decide)) _ _ b9 r
 
 /-- Trunk group **Res7a** at sync-BN — rows 11–15. -/
-private def mnv4Res7aGraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
+def mnv4Res7aGraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
     (w : Mnv4BWeights nCls) (bf16 : Bool) (e : Fin R → SHlo (N * (160 * 14 * 14))) :
     Fin R → SHlo (N * (256 * 7 * 7)) :=
   mnv4SkipGraphSync (mnv4FfnBodyGraphSync epsStr R hR N mnv4Row15 w.b15 bf16)
@@ -585,7 +589,7 @@ private theorem mnv4Res7aGraphSync_shard (R : Nat) (hR : 0 < R) (N : Nat) (hN : 
       (by decide)) _ _ b14 r
 
 /-- Trunk group **Res7b** at sync-BN — rows 16–21. -/
-private def mnv4Res7bGraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
+def mnv4Res7bGraphSync (R : Nat) (hR : 0 < R) (N : Nat) (epsStr : String) {nCls : Nat}
     (w : Mnv4BWeights nCls) (bf16 : Bool) (e : Fin R → SHlo (N * (256 * 7 * 7))) :
     Fin R → SHlo (N * (256 * 7 * 7)) :=
   mnv4SkipGraphSync (mnv4ConvNeXtBodyGraphSync epsStr R hR N mnv4Row21 w.b21 bf16)

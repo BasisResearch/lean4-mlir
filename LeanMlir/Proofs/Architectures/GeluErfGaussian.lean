@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Architectures.GeluErf
-import Mathlib.Probability.Distributions.Gaussian.Real
-import Mathlib.Probability.CDF
+module
+
+public import LeanMlir.Proofs.Architectures.GeluErf
+public import Mathlib.Probability.Distributions.Gaussian.Real
+public import Mathlib.Probability.CDF
+
+@[expose] public section
 
 /-!
 # `gaussPhi` is the standard normal CDF

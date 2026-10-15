@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Training.SgdDescent.Cnn
+module
+
+public import LeanMlir.Proofs.Training.SgdDescent.Cnn
+
+@[expose] public section
 
 /-! # The MNIST CNN descent rungs with the FloatModel binary32 gradient
 

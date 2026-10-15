@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ViT.ViTFoldGB
-import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTieB
-import LeanMlir.Proofs.Nets.ViT.ViTDropBlock
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTFoldGB
+public import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTieB
+public import LeanMlir.Proofs.Nets.ViT.ViTDropBlock
+
+@[expose] public section
 
 /-! # ViT-Tiny's step tie at the batched index, the un-fused gradient and the smoothed loss
 

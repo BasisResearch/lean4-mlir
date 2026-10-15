@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
+
+@[expose] public section
 
 /-! # The FULL EfficientNet-B0 — all 16 MBConv blocks, batched forward graph + faithfulness
 

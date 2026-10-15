@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # The LAMB triple, assembled — the peer of `adamW_triple_faithful`
 

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.GradNodesBAt
-import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
+module
+
+public import LeanMlir.Proofs.Foundation.GradNodesBAt
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
+
+@[expose] public section
 
 /-! # ResNet-34's step TIE at TRUE BATCH-NORM — the un-fused, batched whole-net thread
 

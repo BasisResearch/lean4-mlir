@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFold
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFold
+
+@[expose] public section
 
 /-! # ConvNeXt-T un-fused gradient nodes at the per-example index
 

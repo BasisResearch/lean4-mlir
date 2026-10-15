@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtStepTieGB
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtStepTieGB
+
+@[expose] public section
 
 /-! # ConvNeXt-T — every parameter gradient node IS the loss's derivative in that parameter
 

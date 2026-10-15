@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.BackwardMaps
-import LeanMlir.Proofs.Foundation.Batched.StageLayers
+module
+
+public import LeanMlir.Proofs.Foundation.BackwardMaps
+public import LeanMlir.Proofs.Foundation.Batched.StageLayers
+
+@[expose] public section
 
 /-! # Conv / dense / GAP leaf ties — each per-op backward map IS the certified VJP
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.Small.CifarFold
+module
+
+public import LeanMlir.Proofs.Nets.Small.CifarFold
+
+@[expose] public section
 
 /-! # The cifar8 (Chapter 4 deeper, 8-conv no-BN) TIE — tied through the real forward
 

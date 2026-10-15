@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.DenseEuclid
+module
+
+public import LeanMlir.Proofs.Certificates.DenseEuclid
+
+@[expose] public section
 
 /-! # Interval bound propagation (IBP), sound and kernel-checkable
 

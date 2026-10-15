@@ -1,3 +1,7 @@
+module
+
+@[expose] public section
+
 /-! # Little-endian packing for the FFI buffers
 
 Every buffer the runtimes read — shape descriptors, labels, token ids, anchor priors, f32

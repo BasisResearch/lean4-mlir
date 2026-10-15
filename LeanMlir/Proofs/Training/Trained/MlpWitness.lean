@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Foundation.MLP
-import LeanMlir.Proofs.Training.JacobianSeal
-import LeanMlir.Proofs.Certificates.LipschitzCert.Instance
+module
+
+public import LeanMlir.Proofs.Foundation.MLP
+public import LeanMlir.Proofs.Training.JacobianSeal
+public import LeanMlir.Proofs.Certificates.LipschitzCert.Instance
+
+@[expose] public section
 
 /-! # Trained-weight whole-network VJP witness (MLP rung)
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.ConvIndex
+module
+
+public import LeanMlir.Proofs.Architectures.ConvIndex
+
+@[expose] public section
 
 /-! # IBP at conv depth — a compositional interval-bound engine
 

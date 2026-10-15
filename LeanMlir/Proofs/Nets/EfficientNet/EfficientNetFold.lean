@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.GradNodesB
+module
+
+public import LeanMlir.Proofs.Foundation.GradNodesB
+
+@[expose] public section
 
 /-! # The full-16 (262-param) EfficientNet-B0 train step, proof-tied (the fold, den)
 

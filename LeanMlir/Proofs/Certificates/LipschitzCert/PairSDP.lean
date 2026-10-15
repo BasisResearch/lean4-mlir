@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.DenseEuclid
+module
+
+public import LeanMlir.Proofs.Certificates.DenseEuclid
+
+@[expose] public section
 
 /-! # Per-pair LipSDP certificates (Fazlyab–Robey–Hassani–Morari–Pappas 2019)
 

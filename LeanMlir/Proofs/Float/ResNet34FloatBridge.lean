@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Float.ConvFloat
-import LeanMlir.Proofs.Float.BnFloatBridge
+module
+
+public import LeanMlir.Proofs.Float.ConvFloat
+public import LeanMlir.Proofs.Float.BnFloatBridge
+
+@[expose] public section
 
 /-!
 # ℝ→Float32 bridge: global average pooling

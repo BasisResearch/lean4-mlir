@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.Bf16Erasure
-import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+module
+
+public import LeanMlir.Proofs.Foundation.Bf16Erasure
+public import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+
+@[expose] public section
 
 /-! # The tie predicates at either precision — `ConvWTiedBAt bf16`, `ConvWSyncAt bf16`, …
 

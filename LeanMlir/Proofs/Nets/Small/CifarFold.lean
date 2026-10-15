@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Nets.Small.CnnChainClose
-import LeanMlir.Proofs.Nets.Small.CifarCNN
-import LeanMlir.Proofs.Nets.Small.MlpTrainStep
-import LeanMlir.Proofs.Foundation.SgdNodes
+module
+
+public import LeanMlir.Proofs.Nets.Small.CnnChainClose
+public import LeanMlir.Proofs.Nets.Small.CifarCNN
+public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+public import LeanMlir.Proofs.Foundation.SgdNodes
+
+@[expose] public section
 
 /-! # The CIFAR-CNN (Chapter 4, no-BN) train step, proof-tied to the certified SGD step
 

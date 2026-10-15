@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Float.Binary32Instance
+module
+
+public import LeanMlir.Proofs.Float.Binary32Instance
+
+@[expose] public section
 
 /-! # Descent at TRAINED weights
 

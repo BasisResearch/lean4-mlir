@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBVJP
-import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
-import LeanMlir.Proofs.Foundation.OpaquePrefix
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetBackChains
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBVJP
+public import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+public import LeanMlir.Proofs.Foundation.OpaquePrefix
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetBackChains
+
+@[expose] public section
 
 /-! # `mnv4InputGradB` and the certified whole-net MobileNetV4-Conv-M input VJP
 
@@ -127,12 +131,12 @@ private theorem reindex_cast_backward {n m : Nat} (h : n = m) (x : Vec n) (dy : 
     Vec (N * (c * h * w)) → Vec (N * (c * 1 * 1)) :=
   reindexCLM (Fin.cast (mnv4_pool11 N c).symm) ∘ StableHLO.batchMap N (globalAvgPoolFlat c h w)
 
-private theorem mnv4PoolB_differentiable (N h w : Nat) {c : Nat} :
+theorem mnv4PoolB_differentiable (N h w : Nat) {c : Nat} :
     Differentiable ℝ (mnv4PoolB N h w (c := c)) :=
   (reindexCLM _).differentiable.comp
     (batchMap_differentiable _ (globalAvgPoolFlat_differentiable c h w))
 
-private noncomputable def mnv4PoolBHasVJP (N h w : Nat) {c : Nat} : HasVJP (mnv4PoolB N h w (c := c)) :=
+noncomputable def mnv4PoolBHasVJP (N h w : Nat) {c : Nat} : HasVJP (mnv4PoolB N h w (c := c)) :=
   vjpComp _ _ (batchMap_differentiable _ (globalAvgPoolFlat_differentiable c h w))
     (reindexCLM _).differentiable
     (batchMapHasVJP _ (globalAvgPoolFlatHasVJP c h w) (globalAvgPoolFlat_differentiable c h w))

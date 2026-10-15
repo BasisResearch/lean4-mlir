@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
-import LeanMlir.Proofs.Foundation.OpaquePrefix
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetWholeBackCertifiedTie
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetBackChains
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
+public import LeanMlir.Proofs.Foundation.OpaquePrefix
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetWholeBackCertifiedTie
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetBackChains
+
+@[expose] public section
 
 /-! # `efficientnetInputGradBFull` is the certified whole-net paper EfficientNet-B0 gradient
 

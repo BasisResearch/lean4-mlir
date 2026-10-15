@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet34FullB
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullB
+
+@[expose] public section
 
 /-! # ResNet-50 at TRUE BATCH-NORM — the whole net's forward and graph
 

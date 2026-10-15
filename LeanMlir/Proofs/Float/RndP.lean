@@ -1,5 +1,9 @@
-import Mathlib.Data.Int.Log
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
+module
+
+public import Mathlib.Data.Int.Log
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+
+@[expose] public section
 
 /-! # `rndP` — round-to-nearest on the unbounded-exponent `p`-bit grid
 

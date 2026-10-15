@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.CertifiedChain
-import LeanMlir.Proofs.Nets.ViT.ViTBackB0
+module
+
+public import LeanMlir.Proofs.Foundation.CertifiedChain
+public import LeanMlir.Proofs.Nets.ViT.ViTBackB0
+
+@[expose] public section
 
 /-! # ViT on `CertLayer`, folded image → logits
 
@@ -57,7 +61,7 @@ namespace Proofs.StableHLO
 
     `ok = True`: GELU and LayerNorm are smooth, so the graph denotes the VJP at **every**
     input, with no side condition to discharge. -/
-private noncomputable def vitBlockVLayer (gf : GeluForm) {Np1 hm1 d mlpDim : Nat} (ε : ℝ) (hε : 0 < ε)
+noncomputable def vitBlockVLayer (gf : GeluForm) {Np1 hm1 d mlpDim : Nat} (ε : ℝ) (hε : 0 < ε)
     (p : BlockParamsV ((hm1+1) * d) mlpDim) :
     CertLayer (Np1 * ((hm1+1) * d)) (Np1 * ((hm1+1) * d)) where
   fwd := blockVFlat gf Np1 (hm1+1) d mlpDim ε p

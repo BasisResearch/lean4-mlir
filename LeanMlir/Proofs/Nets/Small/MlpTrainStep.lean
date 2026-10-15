@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.Small.LinearTrainStep
+module
+
+public import LeanMlir.Proofs.Nets.Small.LinearTrainStep
+
+@[expose] public section
 
 /-! # The MLP train step: per-layer parameter-gradient assembly
 

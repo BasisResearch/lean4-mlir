@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Training.SgdDescent.Mlp
-import LeanMlir.Proofs.Nets.Small.MlpFold
+module
+
+public import LeanMlir.Proofs.Training.SgdDescent.Mlp
+public import LeanMlir.Proofs.Nets.Small.MlpFold
+
+@[expose] public section
 
 /-! # The CANONICAL MNIST MLP — 784→512→512→10 (ReLU, biased)
 

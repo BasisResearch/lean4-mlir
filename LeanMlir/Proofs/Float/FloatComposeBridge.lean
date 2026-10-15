@@ -1,10 +1,14 @@
-import LeanMlir.Proofs.Float.FloatClose
-import LeanMlir.Proofs.Float.BnInputBridge
+module
+
+public import LeanMlir.Proofs.Float.FloatClose
+public import LeanMlir.Proofs.Float.BnInputBridge
 -- He et al.'s 3×3/s2 stem pool, for `floatClose_maxPool3s2` below. It imports only
 -- `Architectures.CNN`, which this file already has transitively (it uses `maxPoolFlat_abs_le`),
 -- so this adds no cycle.
-import LeanMlir.Proofs.Architectures.MaxPool3s2
-import LeanMlir.Proofs.Float.ResNet34FloatBridge
+public import LeanMlir.Proofs.Architectures.MaxPool3s2
+public import LeanMlir.Proofs.Float.ResNet34FloatBridge
+
+@[expose] public section
 
 /-!
 # ℝ→Float32 bridge: per-op `FloatClose` instances for the conv-net op set

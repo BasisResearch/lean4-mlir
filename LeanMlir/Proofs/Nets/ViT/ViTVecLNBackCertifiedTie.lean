@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ViT.ViTMhsaBackCertifiedTie
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTMhsaBackCertifiedTie
+
+@[expose] public section
 
 /-! # The ViT encoder-block backward tie at the VECTOR LayerNorm the net runs
 

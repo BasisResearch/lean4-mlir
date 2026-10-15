@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+
+@[expose] public section
 
 /-! # MobileNetV4-Conv-M with stochastic depth and classifier dropout — forward, graph, faithfulness
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.Batched.Basic
+module
+
+public import LeanMlir.Proofs.Foundation.Batched.Basic
+
+@[expose] public section
 
 /-! # ParamGrad — the loss gradient in a parameter, from the gradient at its op's output
 

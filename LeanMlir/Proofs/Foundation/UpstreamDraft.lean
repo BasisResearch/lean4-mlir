@@ -1,5 +1,9 @@
-import Mathlib.Probability.CDF
-import Mathlib.Probability.Distributions.Gaussian.Multivariate
+module
+
+public import Mathlib.Probability.CDF
+public import Mathlib.Probability.Distributions.Gaussian.Multivariate
+
+@[expose] public section
 
 /-! # Mathlib upstreaming drafts — CI-guarded copies
 

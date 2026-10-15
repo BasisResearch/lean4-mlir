@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
-import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
+public import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+
+@[expose] public section
 
 /-! # EfficientNet-B0's stem and head endpoint ties
 

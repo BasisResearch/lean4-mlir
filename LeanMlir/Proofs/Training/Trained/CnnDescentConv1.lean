@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Training.SgdDescent.Cnn
+module
+
+public import LeanMlir.Proofs.Training.SgdDescent.Cnn
+
+@[expose] public section
 
 /-! # Descent at TRAINED weights — the CNN conv1 rungs, through two-layer twins
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+
+@[expose] public section
 
 /-! # StableHLOParse — the token skeleton of an `SHlo` term round-trips
 

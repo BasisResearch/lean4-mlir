@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Foundation.ParamGrad
-import LeanMlir.Proofs.Foundation.BatchMapVJPAt
-import LeanMlir.Proofs.Foundation.DropSites
+module
+
+public import LeanMlir.Proofs.Foundation.ParamGrad
+public import LeanMlir.Proofs.Foundation.BatchMapVJPAt
+public import LeanMlir.Proofs.Foundation.DropSites
+
+@[expose] public section
 
 /-! # The indexed lift — a different per-example map at every example
 

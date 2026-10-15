@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNet
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNet
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
+
+@[expose] public section
 
 /-! # EfficientNet-B0 block backward graphs — the residual and squeeze-excite fan-ins
 

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.DenseEuclid
-import LeanMlir.Proofs.Foundation.GramQ
+module
+
+public import LeanMlir.Proofs.Certificates.DenseEuclid
+public import LeanMlir.Proofs.Foundation.GramQ
+
+@[expose] public section
 
 /-! # A concrete instantiation of the Lipschitz-margin certified radius
 

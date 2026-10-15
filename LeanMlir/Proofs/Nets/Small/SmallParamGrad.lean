@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Foundation.ParamGrad
-import LeanMlir.Proofs.Foundation.SgdNodes
-import LeanMlir.Proofs.Foundation.SmoothedLossCot
+module
+
+public import LeanMlir.Proofs.Foundation.ParamGrad
+public import LeanMlir.Proofs.Foundation.SgdNodes
+public import LeanMlir.Proofs.Foundation.SmoothedLossCot
+
+@[expose] public section
 
 /-! # SmallParamGrad — the per-example kit for the chapter nets' loss gradients
 

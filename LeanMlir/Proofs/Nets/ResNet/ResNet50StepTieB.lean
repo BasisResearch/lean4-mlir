@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet34StepTieB
-import LeanMlir.Proofs.Nets.ResNet.ResNet50FullBVJP
-import LeanMlir.Proofs.Foundation.BceLossCot
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34StepTieB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullBVJP
+public import LeanMlir.Proofs.Foundation.BceLossCot
+
+@[expose] public section
 
 /-! # ResNet-50's step TIE — the un-fused, batched whole-net thread
 

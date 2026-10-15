@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.Smoothing.PhiBounds
+module
+
+public import LeanMlir.Proofs.Certificates.Smoothing.PhiBounds
+
+@[expose] public section
 
 /-! # Decimal-radius scorecard, scan chunk 1/6 (panels 0…550)
 

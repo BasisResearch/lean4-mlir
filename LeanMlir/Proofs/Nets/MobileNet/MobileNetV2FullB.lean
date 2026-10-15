@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2BackB0
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaper
-import LeanMlir.Proofs.Foundation.Bf16Erasure
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2BackB0
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaper
+public import LeanMlir.Proofs.Foundation.Bf16Erasure
+
+@[expose] public section
 
 /-! # MobileNetV2 at batch BatchNorm — the whole net's forward and graph
 

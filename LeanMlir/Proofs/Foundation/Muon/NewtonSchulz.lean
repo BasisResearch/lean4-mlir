@@ -1,8 +1,12 @@
-import Mathlib.Algebra.Order.Star.Real
-import Mathlib.Analysis.Normed.Field.Basic
-import Mathlib.Topology.Instances.Matrix
-import Mathlib.Topology.Metrizable.Uniformity
-import Mathlib.Dynamics.FixedPoints.Topology
+module
+
+public import Mathlib.Algebra.Order.Star.Real
+public import Mathlib.Analysis.Normed.Field.Basic
+public import Mathlib.Topology.Instances.Matrix
+public import Mathlib.Topology.Metrizable.Uniformity
+public import Mathlib.Dynamics.FixedPoints.Topology
+
+@[expose] public section
 
 /-! # Newton–Schulz iteration for the polar factor
 

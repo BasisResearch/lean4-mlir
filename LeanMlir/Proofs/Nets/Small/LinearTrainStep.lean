@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.SmoothedLossCot
+module
+
+public import LeanMlir.Proofs.Foundation.SmoothedLossCot
+
+@[expose] public section
 
 /-! # The linear train step descends the certified softmax-CE gradient
 

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.Smoothing.NetSemantics
-import LeanMlir.Proofs.Certificates.LipschitzCert.Instance
+module
+
+public import LeanMlir.Proofs.Certificates.Smoothing.NetSemantics
+public import LeanMlir.Proofs.Certificates.LipschitzCert.Instance
+
+@[expose] public section
 
 /-! # The net-semantics tie, INSTANTIATED — CERTIFY for a concrete trained net
 

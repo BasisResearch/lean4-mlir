@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
-import LeanMlir.Proofs.Training.BatchSealKit
-import LeanMlir.Proofs.Training.JacobianSeal
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
+public import LeanMlir.Proofs.Training.BatchSealKit
+public import LeanMlir.Proofs.Training.JacobianSeal
+
+@[expose] public section
 
 /-!
 # MobileNetV2's non-degeneracy seal, on the full-width batched net (levels 2 and 3)
@@ -69,7 +73,7 @@ open Proofs BatchSeal Proofs.BatchSeal
 --   body is the constant `0` and its block is the exact identity.
 -- ════════════════════════════════════════════════════════════════
 
-private noncomputable def sealIVW (ic mid oc : Nat) : IVW ic mid oc where
+noncomputable def sealIVW (ic mid oc : Nat) : IVW ic mid oc where
   eW := ctK mid ic 1 1 1
   eb := kv mid 0
   eε := 1
@@ -86,7 +90,7 @@ private noncomputable def sealIVW (ic mid oc : Nat) : IVW ic mid oc where
   pγ := kv oc (1 / 64)
   pβ := kv oc 0
 
-private noncomputable def sealResW (c mid : Nat) : IVW c mid c where
+noncomputable def sealResW (c mid : Nat) : IVW c mid c where
   eW := zk mid c 1 1
   eb := kv mid 0
   eε := 1
@@ -103,7 +107,7 @@ private noncomputable def sealResW (c mid : Nat) : IVW c mid c where
   pγ := kv c (1 / 64)
   pβ := kv c 0
 
-private noncomputable def sealNoExpW (ic oc : Nat) : IVWNoExp ic oc where
+noncomputable def sealNoExpW (ic oc : Nat) : IVWNoExp ic oc where
   dW := ctDW ic 3 3 1
   db := kv ic 0
   dε := 1
@@ -447,113 +451,113 @@ noncomputable def Zs (t : ℝ) : Vec (2 * (32 * 112 * 112)) :=
   StableHLO.batchMap 2 (flatConvStride2Xla (h := 112) (w := 112) (ctK 32 3 3 3 1) (kv 32 0))
     (sealX t)
 
-private noncomputable def Z1d (nCls : Nat) (t : ℝ) : Vec (2 * (32 * 112 * 112)) :=
+noncomputable def Z1d (nCls : Nat) (t : ℝ) : Vec (2 * (32 * 112 * 112)) :=
   StableHLO.batchMap 2 (depthwiseFlat (h := 112) (w := 112) (ctDW 32 3 3 1) (kv 32 0))
     (mnv2PreB0 2 (sealW nCls) (sealX t))
 
-private noncomputable def A1d (nCls : Nat) (t : ℝ) : Vec (2 * (32 * 112 * 112)) :=
+noncomputable def A1d (nCls : Nat) (t : ℝ) : Vec (2 * (32 * 112 * 112)) :=
   StableHLO.bnBatchLA 2 32 112 112 1 (kv 32 (1 / 64)) (kv 32 3) (Z1d nCls t)
 
 noncomputable def Z1p (nCls : Nat) (t : ℝ) : Vec (2 * (16 * 112 * 112)) :=
   StableHLO.batchMap 2 (flatConv (h := 112) (w := 112) (ctK 16 32 1 1 1) (kv 16 0)) (A1d nCls t)
 
-private noncomputable def Z2e (nCls : Nat) (t : ℝ) : Vec (2 * (96 * (2 * 56) * (2 * 56))) :=
+noncomputable def Z2e (nCls : Nat) (t : ℝ) : Vec (2 * (96 * (2 * 56) * (2 * 56))) :=
   StableHLO.batchMap 2 (flatConv (h := (2 * 56)) (w := (2 * 56)) (ctK 96 16 1 1 1) (kv 96 0))
     (mnv2PreB1 2 (sealW nCls) (sealX t))
 
-private noncomputable def A2e (nCls : Nat) (t : ℝ) : Vec (2 * (96 * (2 * 56) * (2 * 56))) :=
+noncomputable def A2e (nCls : Nat) (t : ℝ) : Vec (2 * (96 * (2 * 56) * (2 * 56))) :=
   StableHLO.bnBatchLA 2 96 (2 * 56) (2 * 56) 1 (kv 96 (1 / 64)) (kv 96 3) (Z2e nCls t)
 
-private noncomputable def Z2d (nCls : Nat) (t : ℝ) : Vec (2 * (96 * 56 * 56)) :=
+noncomputable def Z2d (nCls : Nat) (t : ℝ) : Vec (2 * (96 * 56 * 56)) :=
   StableHLO.batchMap 2 (depthwiseStride2FlatXla (h := 56) (w := 56) (ctDW 96 3 3 1) (kv 96 0)) (A2e nCls t)
 
-private noncomputable def A2d (nCls : Nat) (t : ℝ) : Vec (2 * (96 * 56 * 56)) :=
+noncomputable def A2d (nCls : Nat) (t : ℝ) : Vec (2 * (96 * 56 * 56)) :=
   StableHLO.bnBatchLA 2 96 56 56 1 (kv 96 (1 / 64)) (kv 96 3) (Z2d nCls t)
 
 noncomputable def Z2p (nCls : Nat) (t : ℝ) : Vec (2 * (24 * 56 * 56)) :=
   StableHLO.batchMap 2 (flatConv (h := 56) (w := 56) (ctK 24 96 1 1 1) (kv 24 0)) (A2d nCls t)
 
-private noncomputable def Z4e (nCls : Nat) (t : ℝ) : Vec (2 * (144 * (2 * 28) * (2 * 28))) :=
+noncomputable def Z4e (nCls : Nat) (t : ℝ) : Vec (2 * (144 * (2 * 28) * (2 * 28))) :=
   StableHLO.batchMap 2 (flatConv (h := (2 * 28)) (w := (2 * 28)) (ctK 144 24 1 1 1) (kv 144 0))
     (mnv2PreB3 2 (sealW nCls) (sealX t))
 
-private noncomputable def A4e (nCls : Nat) (t : ℝ) : Vec (2 * (144 * (2 * 28) * (2 * 28))) :=
+noncomputable def A4e (nCls : Nat) (t : ℝ) : Vec (2 * (144 * (2 * 28) * (2 * 28))) :=
   StableHLO.bnBatchLA 2 144 (2 * 28) (2 * 28) 1 (kv 144 (1 / 64)) (kv 144 3) (Z4e nCls t)
 
-private noncomputable def Z4d (nCls : Nat) (t : ℝ) : Vec (2 * (144 * 28 * 28)) :=
+noncomputable def Z4d (nCls : Nat) (t : ℝ) : Vec (2 * (144 * 28 * 28)) :=
   StableHLO.batchMap 2 (depthwiseStride2FlatXla (h := 28) (w := 28) (ctDW 144 3 3 1) (kv 144 0)) (A4e nCls t)
 
-private noncomputable def A4d (nCls : Nat) (t : ℝ) : Vec (2 * (144 * 28 * 28)) :=
+noncomputable def A4d (nCls : Nat) (t : ℝ) : Vec (2 * (144 * 28 * 28)) :=
   StableHLO.bnBatchLA 2 144 28 28 1 (kv 144 (1 / 64)) (kv 144 3) (Z4d nCls t)
 
 noncomputable def Z4p (nCls : Nat) (t : ℝ) : Vec (2 * (32 * 28 * 28)) :=
   StableHLO.batchMap 2 (flatConv (h := 28) (w := 28) (ctK 32 144 1 1 1) (kv 32 0)) (A4d nCls t)
 
-private noncomputable def Z7e (nCls : Nat) (t : ℝ) : Vec (2 * (192 * (2 * 14) * (2 * 14))) :=
+noncomputable def Z7e (nCls : Nat) (t : ℝ) : Vec (2 * (192 * (2 * 14) * (2 * 14))) :=
   StableHLO.batchMap 2 (flatConv (h := (2 * 14)) (w := (2 * 14)) (ctK 192 32 1 1 1) (kv 192 0))
     (mnv2PreB6 2 (sealW nCls) (sealX t))
 
-private noncomputable def A7e (nCls : Nat) (t : ℝ) : Vec (2 * (192 * (2 * 14) * (2 * 14))) :=
+noncomputable def A7e (nCls : Nat) (t : ℝ) : Vec (2 * (192 * (2 * 14) * (2 * 14))) :=
   StableHLO.bnBatchLA 2 192 (2 * 14) (2 * 14) 1 (kv 192 (1 / 64)) (kv 192 3) (Z7e nCls t)
 
-private noncomputable def Z7d (nCls : Nat) (t : ℝ) : Vec (2 * (192 * 14 * 14)) :=
+noncomputable def Z7d (nCls : Nat) (t : ℝ) : Vec (2 * (192 * 14 * 14)) :=
   StableHLO.batchMap 2 (depthwiseStride2FlatXla (h := 14) (w := 14) (ctDW 192 3 3 1) (kv 192 0)) (A7e nCls t)
 
-private noncomputable def A7d (nCls : Nat) (t : ℝ) : Vec (2 * (192 * 14 * 14)) :=
+noncomputable def A7d (nCls : Nat) (t : ℝ) : Vec (2 * (192 * 14 * 14)) :=
   StableHLO.bnBatchLA 2 192 14 14 1 (kv 192 (1 / 64)) (kv 192 3) (Z7d nCls t)
 
 noncomputable def Z7p (nCls : Nat) (t : ℝ) : Vec (2 * (64 * 14 * 14)) :=
   StableHLO.batchMap 2 (flatConv (h := 14) (w := 14) (ctK 64 192 1 1 1) (kv 64 0)) (A7d nCls t)
 
-private noncomputable def Z11e (nCls : Nat) (t : ℝ) : Vec (2 * (384 * 14 * 14)) :=
+noncomputable def Z11e (nCls : Nat) (t : ℝ) : Vec (2 * (384 * 14 * 14)) :=
   StableHLO.batchMap 2 (flatConv (h := 14) (w := 14) (ctK 384 64 1 1 1) (kv 384 0))
     (mnv2PreB10 2 (sealW nCls) (sealX t))
 
-private noncomputable def A11e (nCls : Nat) (t : ℝ) : Vec (2 * (384 * 14 * 14)) :=
+noncomputable def A11e (nCls : Nat) (t : ℝ) : Vec (2 * (384 * 14 * 14)) :=
   StableHLO.bnBatchLA 2 384 14 14 1 (kv 384 (1 / 64)) (kv 384 3) (Z11e nCls t)
 
-private noncomputable def Z11d (nCls : Nat) (t : ℝ) : Vec (2 * (384 * 14 * 14)) :=
+noncomputable def Z11d (nCls : Nat) (t : ℝ) : Vec (2 * (384 * 14 * 14)) :=
   StableHLO.batchMap 2 (depthwiseFlat (h := 14) (w := 14) (ctDW 384 3 3 1) (kv 384 0)) (A11e nCls t)
 
-private noncomputable def A11d (nCls : Nat) (t : ℝ) : Vec (2 * (384 * 14 * 14)) :=
+noncomputable def A11d (nCls : Nat) (t : ℝ) : Vec (2 * (384 * 14 * 14)) :=
   StableHLO.bnBatchLA 2 384 14 14 1 (kv 384 (1 / 64)) (kv 384 3) (Z11d nCls t)
 
 noncomputable def Z11p (nCls : Nat) (t : ℝ) : Vec (2 * (96 * 14 * 14)) :=
   StableHLO.batchMap 2 (flatConv (h := 14) (w := 14) (ctK 96 384 1 1 1) (kv 96 0)) (A11d nCls t)
 
-private noncomputable def Z14e (nCls : Nat) (t : ℝ) : Vec (2 * (576 * (2 * 7) * (2 * 7))) :=
+noncomputable def Z14e (nCls : Nat) (t : ℝ) : Vec (2 * (576 * (2 * 7) * (2 * 7))) :=
   StableHLO.batchMap 2 (flatConv (h := (2 * 7)) (w := (2 * 7)) (ctK 576 96 1 1 1) (kv 576 0))
     (mnv2PreB13 2 (sealW nCls) (sealX t))
 
-private noncomputable def A14e (nCls : Nat) (t : ℝ) : Vec (2 * (576 * (2 * 7) * (2 * 7))) :=
+noncomputable def A14e (nCls : Nat) (t : ℝ) : Vec (2 * (576 * (2 * 7) * (2 * 7))) :=
   StableHLO.bnBatchLA 2 576 (2 * 7) (2 * 7) 1 (kv 576 (1 / 64)) (kv 576 3) (Z14e nCls t)
 
-private noncomputable def Z14d (nCls : Nat) (t : ℝ) : Vec (2 * (576 * 7 * 7)) :=
+noncomputable def Z14d (nCls : Nat) (t : ℝ) : Vec (2 * (576 * 7 * 7)) :=
   StableHLO.batchMap 2 (depthwiseStride2FlatXla (h := 7) (w := 7) (ctDW 576 3 3 1) (kv 576 0)) (A14e nCls t)
 
-private noncomputable def A14d (nCls : Nat) (t : ℝ) : Vec (2 * (576 * 7 * 7)) :=
+noncomputable def A14d (nCls : Nat) (t : ℝ) : Vec (2 * (576 * 7 * 7)) :=
   StableHLO.bnBatchLA 2 576 7 7 1 (kv 576 (1 / 64)) (kv 576 3) (Z14d nCls t)
 
 noncomputable def Z14p (nCls : Nat) (t : ℝ) : Vec (2 * (160 * 7 * 7)) :=
   StableHLO.batchMap 2 (flatConv (h := 7) (w := 7) (ctK 160 576 1 1 1) (kv 160 0)) (A14d nCls t)
 
-private noncomputable def Z17e (nCls : Nat) (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
+noncomputable def Z17e (nCls : Nat) (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
   StableHLO.batchMap 2 (flatConv (h := 7) (w := 7) (ctK 960 160 1 1 1) (kv 960 0))
     (mnv2PreB16 2 (sealW nCls) (sealX t))
 
-private noncomputable def A17e (nCls : Nat) (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
+noncomputable def A17e (nCls : Nat) (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
   StableHLO.bnBatchLA 2 960 7 7 1 (kv 960 (1 / 64)) (kv 960 3) (Z17e nCls t)
 
-private noncomputable def Z17d (nCls : Nat) (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
+noncomputable def Z17d (nCls : Nat) (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
   StableHLO.batchMap 2 (depthwiseFlat (h := 7) (w := 7) (ctDW 960 3 3 1) (kv 960 0)) (A17e nCls t)
 
-private noncomputable def A17d (nCls : Nat) (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
+noncomputable def A17d (nCls : Nat) (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
   StableHLO.bnBatchLA 2 960 7 7 1 (kv 960 (1 / 64)) (kv 960 3) (Z17d nCls t)
 
-private noncomputable def Z17p (nCls : Nat) (t : ℝ) : Vec (2 * (320 * 7 * 7)) :=
+noncomputable def Z17p (nCls : Nat) (t : ℝ) : Vec (2 * (320 * 7 * 7)) :=
   StableHLO.batchMap 2 (flatConv (h := 7) (w := 7) (ctK 320 960 1 1 1) (kv 320 0)) (A17d nCls t)
 
-private noncomputable def Zh (nCls : Nat) (t : ℝ) : Vec (2 * (1280 * 7 * 7)) :=
+noncomputable def Zh (nCls : Nat) (t : ℝ) : Vec (2 * (1280 * 7 * 7)) :=
   StableHLO.batchMap 2 (flatConv (h := 7) (w := 7) (ctK 1280 320 1 1 1) (kv 1280 0))
     (mnv2PreB17 2 (sealW nCls) (sealX t))
 
@@ -677,7 +681,7 @@ noncomputable def d1d (nCls : Nat) (t : ℝ) : Fin 32 → ℝ :=
 noncomputable def d1p (nCls : Nat) (t : ℝ) : Fin 16 → ℝ :=
   fun ci => d1d nCls t 0 * rf (2 * (112 * 112)) (bnRowLA 2 16 112 112 (Z1p nCls t) ci)
 
-private noncomputable def d2e (nCls : Nat) (t : ℝ) : Fin 96 → ℝ :=
+noncomputable def d2e (nCls : Nat) (t : ℝ) : Fin 96 → ℝ :=
   fun ci => d1p nCls t 0 * rf (2 * ((2 * 56) * (2 * 56))) (bnRowLA 2 96 (2 * 56) (2 * 56) (Z2e nCls t) ci)
 
 noncomputable def d2d (nCls : Nat) (t : ℝ) : Fin 96 → ℝ :=
@@ -686,49 +690,49 @@ noncomputable def d2d (nCls : Nat) (t : ℝ) : Fin 96 → ℝ :=
 noncomputable def d2p (nCls : Nat) (t : ℝ) : Fin 24 → ℝ :=
   fun ci => d2d nCls t 0 * rf (2 * (56 * 56)) (bnRowLA 2 24 56 56 (Z2p nCls t) ci)
 
-private noncomputable def d4e (nCls : Nat) (t : ℝ) : Fin 144 → ℝ :=
+noncomputable def d4e (nCls : Nat) (t : ℝ) : Fin 144 → ℝ :=
   fun ci => d2p nCls t 0 * rf (2 * ((2 * 28) * (2 * 28))) (bnRowLA 2 144 (2 * 28) (2 * 28) (Z4e nCls t) ci)
 
-private noncomputable def d4d (nCls : Nat) (t : ℝ) : Fin 144 → ℝ :=
+noncomputable def d4d (nCls : Nat) (t : ℝ) : Fin 144 → ℝ :=
   fun ci => d4e nCls t ci * rf (2 * (28 * 28)) (bnRowLA 2 144 28 28 (Z4d nCls t) ci)
 
 noncomputable def d4p (nCls : Nat) (t : ℝ) : Fin 32 → ℝ :=
   fun ci => d4d nCls t 0 * rf (2 * (28 * 28)) (bnRowLA 2 32 28 28 (Z4p nCls t) ci)
 
-private noncomputable def d7e (nCls : Nat) (t : ℝ) : Fin 192 → ℝ :=
+noncomputable def d7e (nCls : Nat) (t : ℝ) : Fin 192 → ℝ :=
   fun ci => d4p nCls t 0 * rf (2 * ((2 * 14) * (2 * 14))) (bnRowLA 2 192 (2 * 14) (2 * 14) (Z7e nCls t) ci)
 
-private noncomputable def d7d (nCls : Nat) (t : ℝ) : Fin 192 → ℝ :=
+noncomputable def d7d (nCls : Nat) (t : ℝ) : Fin 192 → ℝ :=
   fun ci => d7e nCls t ci * rf (2 * (14 * 14)) (bnRowLA 2 192 14 14 (Z7d nCls t) ci)
 
 noncomputable def d7p (nCls : Nat) (t : ℝ) : Fin 64 → ℝ :=
   fun ci => d7d nCls t 0 * rf (2 * (14 * 14)) (bnRowLA 2 64 14 14 (Z7p nCls t) ci)
 
-private noncomputable def d11e (nCls : Nat) (t : ℝ) : Fin 384 → ℝ :=
+noncomputable def d11e (nCls : Nat) (t : ℝ) : Fin 384 → ℝ :=
   fun ci => d7p nCls t 0 * rf (2 * (14 * 14)) (bnRowLA 2 384 14 14 (Z11e nCls t) ci)
 
-private noncomputable def d11d (nCls : Nat) (t : ℝ) : Fin 384 → ℝ :=
+noncomputable def d11d (nCls : Nat) (t : ℝ) : Fin 384 → ℝ :=
   fun ci => d11e nCls t ci * rf (2 * (14 * 14)) (bnRowLA 2 384 14 14 (Z11d nCls t) ci)
 
 noncomputable def d11p (nCls : Nat) (t : ℝ) : Fin 96 → ℝ :=
   fun ci => d11d nCls t 0 * rf (2 * (14 * 14)) (bnRowLA 2 96 14 14 (Z11p nCls t) ci)
 
-private noncomputable def d14e (nCls : Nat) (t : ℝ) : Fin 576 → ℝ :=
+noncomputable def d14e (nCls : Nat) (t : ℝ) : Fin 576 → ℝ :=
   fun ci => d11p nCls t 0 * rf (2 * ((2 * 7) * (2 * 7))) (bnRowLA 2 576 (2 * 7) (2 * 7) (Z14e nCls t) ci)
 
-private noncomputable def d14d (nCls : Nat) (t : ℝ) : Fin 576 → ℝ :=
+noncomputable def d14d (nCls : Nat) (t : ℝ) : Fin 576 → ℝ :=
   fun ci => d14e nCls t ci * rf (2 * (7 * 7)) (bnRowLA 2 576 7 7 (Z14d nCls t) ci)
 
 noncomputable def d14p (nCls : Nat) (t : ℝ) : Fin 160 → ℝ :=
   fun ci => d14d nCls t 0 * rf (2 * (7 * 7)) (bnRowLA 2 160 7 7 (Z14p nCls t) ci)
 
-private noncomputable def d17e (nCls : Nat) (t : ℝ) : Fin 960 → ℝ :=
+noncomputable def d17e (nCls : Nat) (t : ℝ) : Fin 960 → ℝ :=
   fun ci => d14p nCls t 0 * rf (2 * (7 * 7)) (bnRowLA 2 960 7 7 (Z17e nCls t) ci)
 
-private noncomputable def d17d (nCls : Nat) (t : ℝ) : Fin 960 → ℝ :=
+noncomputable def d17d (nCls : Nat) (t : ℝ) : Fin 960 → ℝ :=
   fun ci => d17e nCls t ci * rf (2 * (7 * 7)) (bnRowLA 2 960 7 7 (Z17d nCls t) ci)
 
-private noncomputable def d17p (nCls : Nat) (t : ℝ) : Fin 320 → ℝ :=
+noncomputable def d17p (nCls : Nat) (t : ℝ) : Fin 320 → ℝ :=
   fun ci => d17d nCls t 0 * rf (2 * (7 * 7)) (bnRowLA 2 320 7 7 (Z17p nCls t) ci)
 
 noncomputable def dH (nCls : Nat) (t : ℝ) : Fin 1280 → ℝ :=

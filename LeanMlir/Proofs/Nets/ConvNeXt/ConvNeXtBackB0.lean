@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+
+@[expose] public section
 
 /-! # ConvNeXt whole-block backward-graph faithfulness (per-example / batch-1)
 
@@ -118,7 +122,7 @@ theorem cnxBlockBodyChBackGraph_faithful {gf : GeluForm} {c cExp h w kH kW : Nat
   rfl
 
 /-- The whole channel-LN residual block backward graph (block body + identity skip). -/
-private noncomputable def cnxResidBlockChBackGraph (gf : GeluForm) {c cExp h w kH kW : Nat}
+noncomputable def cnxResidBlockChBackGraph (gf : GeluForm) {c cExp h w kH kW : Nat}
     (p : CnxBlockParamsCh c cExp h w kH kW) (x : Vec (c * h * w)) (ecot : SHlo (c * h * w)) : SHlo (c * h * w) :=
   residualBackGraph
     (cnxBlockBodyChBackGraph gf p.Wdw p.bdw p.εn p.γn p.βn p.Wex p.bex p.Wpr p.bpr (cnxGlsCh p) x
@@ -128,7 +132,7 @@ private noncomputable def cnxResidBlockChBackGraph (gf : GeluForm) {c cExp h w k
     the shipped stages are built from. Assembles the
     body backward graph + the identity skip into `cnxBlockChWHasVJP`'s backward via
     `residualBackGraph_faithful`, no hypotheses beyond `0 < p.εn`. -/
-private theorem cnxResidBlockChBackGraph_faithful {gf : GeluForm} {c cExp h w kH kW : Nat}
+theorem cnxResidBlockChBackGraph_faithful {gf : GeluForm} {c cExp h w kH kW : Nat}
     (p : CnxBlockParamsCh c cExp h w kH kW) (hε : 0 < p.εn) (x : Vec (c * h * w)) (ecot : SHlo (c * h * w)) :
     den (cnxResidBlockChBackGraph gf p x ecot) = (cnxBlockChWHasVJP gf p hε).backward x (den ecot) :=
   residualBackGraph_faithful

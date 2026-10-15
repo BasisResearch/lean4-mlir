@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.Bf16Erasure
+module
+
+public import LeanMlir.Proofs.Foundation.Bf16Erasure
+
+@[expose] public section
 
 /-! # The BATCHED EfficientNet-B0 block forwards and graphs (true batch-norm, matches the render)
 

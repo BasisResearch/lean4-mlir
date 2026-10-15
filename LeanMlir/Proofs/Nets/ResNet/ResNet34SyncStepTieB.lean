@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet34StepTieB
-import LeanMlir.Proofs.Nets.ResNet.ResNet34BackCertifiedTieB
-import LeanMlir.Proofs.Nets.ResNet.ResNet34SyncB
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34StepTieB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34BackCertifiedTieB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34SyncB
+
+@[expose] public section
 
 /-! # ResNet-34's data-parallel step at SYNCHRONISED BatchNorm IS the single-device step at `R·N`
 
@@ -186,24 +190,24 @@ section IdBlock
 variable (R : Nat) (hR : 0 < R) (N h w : Nat) {c : Nat} (p : R34IdW c)
   (XIN : Vec ((R * N) * (c * h * w))) (dys : Fin R → Vec (N * (c * h * w)))
 
-private noncomputable def r34IdSyncCotA (r : Fin R) : Vec (N * (c * h * w)) :=
+noncomputable def r34IdSyncCotA (r : Fin R) : Vec (N * (c * h * w)) :=
   reluMaskB (N * (c * h * w))
     (batchShard R N (c * h * w) (residual (projB (R * N) (h := h) (w := w) p.W₂ p.b₂ p.ε₂ p.γ₂ p.β₂ ∘
       cbReluB (R * N) (h := h) (w := w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁) XIN) r) (dys r)
 
-private noncomputable def r34IdSyncCotC2 (r : Fin R) : Vec (N * (c * h * w)) :=
+noncomputable def r34IdSyncCotC2 (r : Fin R) : Vec (N * (c * h * w)) :=
   bnSyncInB R hR N c h w p.ε₂ p.γ₂
     (fun r => batchShard R N (c * h * w) (batchMap (R * N) (flatConv p.W₂ p.b₂)
       (cbReluB (R * N) (h := h) (w := w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁ XIN)) r)
     (r34IdSyncCotA R N h w p XIN dys) r
 
-private noncomputable def r34IdSyncCotN1 (r : Fin R) : Vec (N * (c * h * w)) :=
+noncomputable def r34IdSyncCotN1 (r : Fin R) : Vec (N * (c * h * w)) :=
   reluMaskB (N * (c * h * w))
     (batchShard R N (c * h * w)
       (bnBatchLA (R * N) c h w p.ε₁ p.γ₁ p.β₁ (batchMap (R * N) (flatConv p.W₁ p.b₁) XIN)) r)
     (cInB N p.W₂ p.b₂ (r34IdSyncCotC2 R hR N h w p XIN dys r))
 
-private noncomputable def r34IdSyncCotC1 (r : Fin R) : Vec (N * (c * h * w)) :=
+noncomputable def r34IdSyncCotC1 (r : Fin R) : Vec (N * (c * h * w)) :=
   bnSyncInB R hR N c h w p.ε₁ p.γ₁
     (fun r => batchShard R N (c * h * w) (batchMap (R * N) (flatConv p.W₁ p.b₁) XIN) r)
     (r34IdSyncCotN1 R hR N h w p XIN dys) r
@@ -262,27 +266,27 @@ section DownBlock
 variable (R : Nat) (hR : 0 < R) (N h w : Nat) {ic oc : Nat} (p : R34DownW ic oc)
   (XIN : Vec ((R * N) * (ic * (2 * h) * (2 * w)))) (dys : Fin R → Vec (N * (oc * h * w)))
 
-private noncomputable def r34DownSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r34DownSyncCotA (r : Fin R) : Vec (N * (oc * h * w)) :=
   reluMaskB (N * (oc * h * w)) (batchShard R N (oc * h * w) (r34DownPre (R * N) h w p XIN) r) (dys r)
 
-private noncomputable def r34DownSyncCotC2 (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r34DownSyncCotC2 (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w p.ε₂ p.γ₂
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConv p.W₂ p.b₂)
       (cbReluStridedB (R * N) (h := h) (w := w) p.W₁ p.b₁ p.ε₁ p.γ₁ p.β₁ XIN)) r)
     (r34DownSyncCotA R N h w p XIN dys) r
 
-private noncomputable def r34DownSyncCotN1 (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r34DownSyncCotN1 (r : Fin R) : Vec (N * (oc * h * w)) :=
   reluMaskB (N * (oc * h * w))
     (batchShard R N (oc * h * w)
       (bnBatchLA (R * N) oc h w p.ε₁ p.γ₁ p.β₁ (batchMap (R * N) (flatConvStride2 p.W₁ p.b₁) XIN)) r)
     (cInB N p.W₂ p.b₂ (r34DownSyncCotC2 R hR N h w p XIN dys r))
 
-private noncomputable def r34DownSyncCotC1 (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r34DownSyncCotC1 (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w p.ε₁ p.γ₁
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConvStride2 p.W₁ p.b₁) XIN) r)
     (r34DownSyncCotN1 R hR N h w p XIN dys) r
 
-private noncomputable def r34DownSyncCotCp (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def r34DownSyncCotCp (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w p.εp p.γp
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConvStride2 p.Wp p.bp) XIN) r)
     (r34DownSyncCotA R N h w p XIN dys) r
@@ -351,11 +355,11 @@ variable (R : Nat) (hR : 0 < R) (N h w : Nat) {ic oc : Nat} (Ws : Kernel4 oc ic 
   (εs : ℝ) (γs βs : Vec oc) (X : Vec ((R * N) * (ic * (2 * (2 * h)) * (2 * (2 * w)))))
   (dys : Fin R → Vec (N * (oc * h * w)))
 
-private noncomputable def r34StemSyncCotP (r : Fin R) : Vec (N * (oc * (2 * h) * (2 * w))) :=
+noncomputable def r34StemSyncCotP (r : Fin R) : Vec (N * (oc * (2 * h) * (2 * w))) :=
   mpInB N oc h w
     (batchShard R N _ (cbReluStridedB (R * N) (h := 2 * h) (w := 2 * w) Ws bs εs γs βs X) r) (dys r)
 
-private noncomputable def r34StemSyncCotN (r : Fin R) : Vec (N * (oc * (2 * h) * (2 * w))) :=
+noncomputable def r34StemSyncCotN (r : Fin R) : Vec (N * (oc * (2 * h) * (2 * w))) :=
   reluMaskB (N * (oc * (2 * h) * (2 * w)))
     (batchShard R N _
       (bnBatchLA (R * N) oc (2 * h) (2 * w) εs γs βs (batchMap (R * N) (flatConvStride2 Ws bs) X)) r)
@@ -403,7 +407,7 @@ end StemShard
     weights, bn₁/bn₂ γ and β — each equal the single-device node at the global batch, at the
     single-device chain cotangents driven by `DY`, when the replicas' block-output cotangents are
     `R ×` its shards. -/
-private def r34IdSyncTiedB (R : Nat) (hR : 0 < R) (N h w : Nat) {c : Nat} (pfx xN cotN vN epsStr : String)
+def r34IdSyncTiedB (R : Nat) (hR : 0 < R) (N h w : Nat) {c : Nat} (pfx xN cotN vN epsStr : String)
     (p : R34IdW c) (bf16 : Bool) (XIN : Vec ((R * N) * (c * h * w)))
     (dys : Fin R → Vec (N * (c * h * w)))
     (DY : Vec ((R * N) * (c * h * w))) : Prop :=
@@ -448,7 +452,7 @@ private theorem r34_idblock_syncTiedB (R : Nat) (hR : 0 < R) (N h w : Nat) {c : 
 
 /-- **Downsample basic block, DP-tied** — nine emitted collectives: the strided conv₁, the
     stride-1 conv₂ and the 1×1/s2 projection weights, and the three BatchNorms' γ and β. -/
-private def r34DownSyncTiedB (R : Nat) (hR : 0 < R) (N h w : Nat) {ic oc : Nat}
+def r34DownSyncTiedB (R : Nat) (hR : 0 < R) (N h w : Nat) {ic oc : Nat}
     (pfx xN cotN vN epsStr : String) (p : R34DownW ic oc) (bf16 : Bool)
     (XIN : Vec ((R * N) * (ic * (2 * h) * (2 * w)))) (dys : Fin R → Vec (N * (oc * h * w)))
     (DY : Vec ((R * N) * (oc * h * w))) : Prop :=

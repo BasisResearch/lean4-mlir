@@ -1,3 +1,7 @@
+module
+
+@[expose] public section
+
 /-! # NetSpec-style layer DSL for the verified trainers
 
 A verified trainer should read like a `NetSpec` trainer — a layer
@@ -170,20 +174,20 @@ deriving Repr
 namespace VLayer
 
 /-- conv → per-channel BN → relu: `{W=[oc,ic,k,k], b=[oc], γ=[oc], β=[oc]}`. -/
-private def convBnSpec (ic oc k : Nat) : Array (Array Nat × Nat) :=
+def convBnSpec (ic oc k : Nat) : Array (Array Nat × Nat) :=
   #[(#[oc,ic,k,k],0),(#[oc],2),(#[oc],1),(#[oc],2)]
 /-- conv → per-channel BN → relu, **no conv bias**: `{W=[oc,ic,k,k], γ=[oc], β=[oc]}`. -/
-private def convBnNBSpec (ic oc k : Nat) : Array (Array Nat × Nat) :=
+def convBnNBSpec (ic oc k : Nat) : Array (Array Nat × Nat) :=
   #[(#[oc,ic,k,k],0),(#[oc],1),(#[oc],2)]
 /-- identity basic block @ `c`: two conv→BN→relu units, no projection. -/
-private def idBlk (c : Nat) : Array (Array Nat × Nat) :=
+def idBlk (c : Nat) : Array (Array Nat × Nat) :=
   #[(#[c,c,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],1),(#[c],2)]
 /-- downsampling basic block `cin→c`: two conv→BN→relu + the **1×1** option-B projection
     shortcut (He et al. §3.3). -/
-private def downBlk (cin c : Nat) : Array (Array Nat × Nat) :=
+def downBlk (cin c : Nat) : Array (Array Nat × Nat) :=
   #[(#[c,cin,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],1),(#[c],2),
     (#[c,cin,1,1],0),(#[c],1),(#[c],2)]   -- option-B 1×1 projection
-private def stageSpec (ic oc count stride : Nat) : Array (Array Nat × Nat) := Id.run do
+def stageSpec (ic oc count stride : Nat) : Array (Array Nat × Nat) := Id.run do
   let mut a : Array (Array Nat × Nat) :=
     if stride != 1 || ic != oc then downBlk ic oc else idBlk oc
   for _ in [0:count-1] do a := a ++ idBlk oc
@@ -193,7 +197,7 @@ private def stageSpec (ic oc count stride : Nat) : Array (Array Nat × Nat) := I
     `3×3 → BN → relu`, `1×1 → BN`, skip = identity. Nine tensors. The last BN's γ is init
     kind 4 (zero-γ): it closes the residual branch, and the JAX reference starts it at 0
     (`emitConvBnInit … (zeroGamma := true)`, timm's `zero_init_last`). -/
-private def bneckIdBlk (cin mid oc : Nat) : Array (Array Nat × Nat) :=
+def bneckIdBlk (cin mid oc : Nat) : Array (Array Nat × Nat) :=
   #[(#[mid,cin,1,1],0),(#[mid],1),(#[mid],2),
     (#[mid,mid,3,3],0),(#[mid],1),(#[mid],2),
     (#[oc,mid,1,1],0),(#[oc],4),(#[oc],2)]
@@ -201,11 +205,11 @@ private def bneckIdBlk (cin mid oc : Nat) : Array (Array Nat × Nat) :=
     The projection comes **last**, matching the reference's `conv_bn` call order
     (`bottleneck_block_down` does idx, idx+1, idx+2, then idx+3 for the shortcut) — the same
     convention `downBlk` uses. Twelve tensors. -/
-private def bneckDownBlk (cin mid oc : Nat) : Array (Array Nat × Nat) :=
+def bneckDownBlk (cin mid oc : Nat) : Array (Array Nat × Nat) :=
   bneckIdBlk cin mid oc ++ #[(#[oc,cin,1,1],0),(#[oc],1),(#[oc],2)]
 /-- A bottleneck stage. Width is `mid = oc/4` (the standard 4× expansion); the later blocks
     take `oc` as their input, so only the first one can change channels. -/
-private def bottleneckStageSpec (ic oc count stride : Nat) : Array (Array Nat × Nat) := Id.run do
+def bottleneckStageSpec (ic oc count stride : Nat) : Array (Array Nat × Nat) := Id.run do
   let mid := oc / 4
   let mut a : Array (Array Nat × Nat) :=
     if stride != 1 || ic != oc then bneckDownBlk ic mid oc else bneckIdBlk ic mid oc

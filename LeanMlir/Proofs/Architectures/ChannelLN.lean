@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # The channel LayerNorm — per-position LN over channels, with a per-channel affine
 

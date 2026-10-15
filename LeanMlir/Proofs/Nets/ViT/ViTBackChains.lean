@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.ChannelLNBack
-import LeanMlir.Proofs.Nets.ViT.ViTDepthK
+module
+
+public import LeanMlir.Proofs.Architectures.ChannelLNBack
+public import LeanMlir.Proofs.Nets.ViT.ViTDepthK
+
+@[expose] public section
 
 /-! # The ViT-Tiny backward chains — the ℝ maps the ViT ties are about
 
@@ -126,7 +130,7 @@ noncomputable def vitBlockBackV {dff : Nat} (Wq Wk Wv Wo : Mat (h * dh) (h * dh)
 /-- The block's attention-sublayer output at a flat saved input — the LN₂ site's saved activation,
     and the point the MLP sublayer's backward is taken at. Named because it appears three times in
     `vitBlockBackVAt` and once more in every tie about it. -/
-private noncomputable def vitAttnOutAt (Np1 heads d_head mlpDim : Nat) (ε : ℝ)
+noncomputable def vitAttnOutAt (Np1 heads d_head mlpDim : Nat) (ε : ℝ)
     (p : BlockParamsV (heads * d_head) mlpDim) (v : Vec (Np1 * (heads * d_head))) :
     Mat Np1 (heads * d_head) :=
   transformerAttnSublayerV Np1 heads d_head ε p.γ1 p.β1 p.Wq p.Wk p.Wv p.Wo

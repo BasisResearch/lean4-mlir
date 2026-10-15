@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # `CertLayer` — composing certified backward graphs, so a NET is one object
 

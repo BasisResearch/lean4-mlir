@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Foundation.DataParallel.Basic
-import LeanMlir.Proofs.Foundation.GradNodesB
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+module
+
+public import LeanMlir.Proofs.Foundation.DataParallel.Basic
+public import LeanMlir.Proofs.Foundation.GradNodesB
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+
+@[expose] public section
 
 /-! # Data parallelism: the collective as an AST node
 

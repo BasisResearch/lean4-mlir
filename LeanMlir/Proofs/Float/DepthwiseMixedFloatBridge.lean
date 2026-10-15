@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Float.DepthwiseFloatBridge
-import LeanMlir.Proofs.Float.ConvMixedFloatBridge
+module
+
+public import LeanMlir.Proofs.Float.DepthwiseFloatBridge
+public import LeanMlir.Proofs.Float.ConvMixedFloatBridge
+
+@[expose] public section
 
 /-! # `depthwise_close_mixed` — the bf16-mixed DEPTHWISE convolution against exact ℝ
 

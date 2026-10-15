@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Foundation.GradNodesBAt
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
-import LeanMlir.Proofs.Foundation.DropSites
+module
+
+public import LeanMlir.Proofs.Foundation.GradNodesBAt
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
+public import LeanMlir.Proofs.Foundation.DropSites
+
+@[expose] public section
 
 /-! # MobileNetV2's train-step tie at batch BatchNorm — the un-fused, batched whole-net thread
 

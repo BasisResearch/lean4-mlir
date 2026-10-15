@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPCEval
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPCEval
+
+@[expose] public section
 
 /-! # The full EfficientNet-B0 at inference — all 16 MBConv blocks, eval forward + graph +
 faithfulness

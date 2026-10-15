@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4StepTieB
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4StepTieB
+
+@[expose] public section
 
 /-! # MobileNetV4-Conv-M's data-parallel step at synchronised BatchNorm is the single-device step at `R·N`
 
@@ -303,7 +307,7 @@ variable (R : Nat) (hR : 0 < R) (N : Nat) (s : UibSpec) (p : UibParams s)
 
 /-- Stride-1 body, replica `r`: the project BatchNorm's sync backward of the block-output cotangent
     (the bottleneck is linear, so nothing masks it). Feeds `u{p}pW`. -/
-private noncomputable def mnv4SyncCotPc (r : Fin R) : Vec (N * (s.oc * s.h * s.h)) :=
+noncomputable def mnv4SyncCotPc (r : Fin R) : Vec (N * (s.oc * s.h * s.h)) :=
   bnSyncInB R hR N s.oc s.h s.h p.ez p.gz
     (fun r => batchShard R N (s.oc * s.h * s.h) (batchMap (R * N) (flatConv p.Wz p.bz)
       ((mnv4PostDWSlot (h := s.h) (w := s.h) (R * N) s.postDWk p.Wd p.bd p.ed p.hd p.gd p.bd2).fwd
@@ -313,7 +317,7 @@ private noncomputable def mnv4SyncCotPc (r : Fin R) : Vec (N * (s.oc * s.h * s.h
     dys r
 
 /-- Stride-1 body, replica `r`: the post-DW BN's output cotangent. Feeds `u{p}dg`/`u{p}dbt`. -/
-private noncomputable def mnv4SyncCotDn (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
+noncomputable def mnv4SyncCotDn (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
   reluMaskB (N * (s.ic * s.expand * s.h * s.h))
     (batchShard R N (s.ic * s.expand * s.h * s.h)
       (bnBatchLA (R * N) (s.ic * s.expand) s.h s.h p.ed p.gd p.bd2
@@ -324,7 +328,7 @@ private noncomputable def mnv4SyncCotDn (r : Fin R) : Vec (N * (s.ic * s.expand 
     (cInB N p.Wz p.bz (mnv4SyncCotPc R hR N s p XIN dys r))
 
 /-- Stride-1 body, replica `r`: the post-DW conv's output cotangent. Feeds `u{p}dW`. -/
-private noncomputable def mnv4SyncCotDc (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
+noncomputable def mnv4SyncCotDc (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
   bnSyncInB R hR N (s.ic * s.expand) s.h s.h p.ed p.gd
     (fun r => batchShard R N (s.ic * s.expand * s.h * s.h) (batchMap (R * N) (depthwiseFlat p.Wd p.bd)
       ((cbReluLayer (h := s.h) (w := s.h) (R * N) p.We p.be p.ee p.he p.ge p.be2).fwd
@@ -334,7 +338,7 @@ private noncomputable def mnv4SyncCotDc (r : Fin R) : Vec (N * (s.ic * s.expand 
 
 /-- Stride-1 body, replica `r`: the expand BN's output cotangent — dispatching on the row exactly
     as `mnv4CotEn` does. Feeds `u{p}eg`/`u{p}ebt`. -/
-private noncomputable def mnv4SyncCotEn (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
+noncomputable def mnv4SyncCotEn (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
   reluMaskB (N * (s.ic * s.expand * s.h * s.h))
     (batchShard R N (s.ic * s.expand * s.h * s.h)
       (bnBatchLA (R * N) (s.ic * s.expand) s.h s.h p.ee p.ge p.be2
@@ -345,7 +349,7 @@ private noncomputable def mnv4SyncCotEn (r : Fin R) : Vec (N * (s.ic * s.expand 
      else dInB N p.Wd p.bd (mnv4SyncCotDc R hR N s p XIN dys r))
 
 /-- Stride-1 body, replica `r`: the expand conv's output cotangent. Feeds `u{p}eW`. -/
-private noncomputable def mnv4SyncCotEc (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
+noncomputable def mnv4SyncCotEc (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
   bnSyncInB R hR N (s.ic * s.expand) s.h s.h p.ee p.ge
     (fun r => batchShard R N (s.ic * s.expand * s.h * s.h) (batchMap (R * N) (flatConv p.We p.be)
       ((mnv4PreDWSlot (h := s.h) (w := s.h) (R * N) s.preDWk p.Wq p.bq p.eq_ p.hq p.gq
@@ -354,11 +358,11 @@ private noncomputable def mnv4SyncCotEc (r : Fin R) : Vec (N * (s.ic * s.expand 
 
 /-- Stride-1 body, replica `r`: the pre-DW BN's output cotangent — unmasked, the pre-DW is BN
     only. Feeds `u{p}qg`/`u{p}qbt`. -/
-private noncomputable def mnv4SyncCotQn (r : Fin R) : Vec (N * (s.ic * s.h * s.h)) :=
+noncomputable def mnv4SyncCotQn (r : Fin R) : Vec (N * (s.ic * s.h * s.h)) :=
   cInB N p.We p.be (mnv4SyncCotEc R hR N s p XIN dys r)
 
 /-- Stride-1 body, replica `r`: the pre-DW conv's output cotangent. Feeds `u{p}qW`. -/
-private noncomputable def mnv4SyncCotQc (r : Fin R) : Vec (N * (s.ic * s.h * s.h)) :=
+noncomputable def mnv4SyncCotQc (r : Fin R) : Vec (N * (s.ic * s.h * s.h)) :=
   bnSyncInB R hR N s.ic s.h s.h p.eq_ p.gq
     (fun r => batchShard R N (s.ic * s.h * s.h) (batchMap (R * N) (depthwiseFlat p.Wq p.bq) XIN) r)
     (mnv4SyncCotQn R hR N s p XIN dys) r
@@ -441,7 +445,7 @@ variable (R : Nat) (hR : 0 < R) (N : Nat) (s : UibSpec) (p : UibParams s)
   (dys : Fin R → Vec (N * (s.oc * s.h * s.h)))
 
 /-- Strided block, replica `r`: the project BatchNorm's sync backward. Feeds `u{p}pW`. -/
-private noncomputable def mnv4SSyncCotPc (r : Fin R) : Vec (N * (s.oc * s.h * s.h)) :=
+noncomputable def mnv4SSyncCotPc (r : Fin R) : Vec (N * (s.oc * s.h * s.h)) :=
   bnSyncInB R hR N s.oc s.h s.h p.ez p.gz
     (fun r => batchShard R N (s.oc * s.h * s.h) (batchMap (R * N) (flatConv p.Wz p.bz)
       ((mnv4DWReluStridedLayer (h := s.h) (w := s.h) (R * N) p.Wd p.bd p.ed p.hd p.gd p.bd2).fwd
@@ -452,7 +456,7 @@ private noncomputable def mnv4SSyncCotPc (r : Fin R) : Vec (N * (s.oc * s.h * s.
 
 /-- Strided block, replica `r`: the strided post-DW BN's output cotangent. Feeds
     `u{p}dg`/`u{p}dbt`. -/
-private noncomputable def mnv4SSyncCotDn (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
+noncomputable def mnv4SSyncCotDn (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
   reluMaskB (N * (s.ic * s.expand * s.h * s.h))
     (batchShard R N (s.ic * s.expand * s.h * s.h)
       (bnBatchLA (R * N) (s.ic * s.expand) s.h s.h p.ed p.gd p.bd2
@@ -463,7 +467,7 @@ private noncomputable def mnv4SSyncCotDn (r : Fin R) : Vec (N * (s.ic * s.expand
     (cInB N p.Wz p.bz (mnv4SSyncCotPc R hR N s p XIN dys r))
 
 /-- Strided block, replica `r`: the strided post-DW conv's output cotangent. Feeds `u{p}dW`. -/
-private noncomputable def mnv4SSyncCotDc (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
+noncomputable def mnv4SSyncCotDc (r : Fin R) : Vec (N * (s.ic * s.expand * s.h * s.h)) :=
   bnSyncInB R hR N (s.ic * s.expand) s.h s.h p.ed p.gd
     (fun r => batchShard R N (s.ic * s.expand * s.h * s.h)
       (batchMap (R * N) (depthwiseStride2Flat p.Wd p.bd)
@@ -474,7 +478,7 @@ private noncomputable def mnv4SSyncCotDc (r : Fin R) : Vec (N * (s.ic * s.expand
 
 /-- Strided block, replica `r`: the expand BN's output cotangent, at `2h`. Feeds
     `u{p}eg`/`u{p}ebt`. -/
-private noncomputable def mnv4SSyncCotEn (r : Fin R) : Vec (N * (s.ic * s.expand * (2 * s.h) * (2 * s.h))) :=
+noncomputable def mnv4SSyncCotEn (r : Fin R) : Vec (N * (s.ic * s.expand * (2 * s.h) * (2 * s.h))) :=
   reluMaskB (N * (s.ic * s.expand * (2 * s.h) * (2 * s.h)))
     (batchShard R N (s.ic * s.expand * (2 * s.h) * (2 * s.h))
       (bnBatchLA (R * N) (s.ic * s.expand) (2 * s.h) (2 * s.h) p.ee p.ge p.be2
@@ -484,7 +488,7 @@ private noncomputable def mnv4SSyncCotEn (r : Fin R) : Vec (N * (s.ic * s.expand
     (dStridedInB N p.Wd p.bd (mnv4SSyncCotDc R hR N s p XIN dys r))
 
 /-- Strided block, replica `r`: the expand conv's output cotangent, at `2h`. Feeds `u{p}eW`. -/
-private noncomputable def mnv4SSyncCotEc (r : Fin R) : Vec (N * (s.ic * s.expand * (2 * s.h) * (2 * s.h))) :=
+noncomputable def mnv4SSyncCotEc (r : Fin R) : Vec (N * (s.ic * s.expand * (2 * s.h) * (2 * s.h))) :=
   bnSyncInB R hR N (s.ic * s.expand) (2 * s.h) (2 * s.h) p.ee p.ge
     (fun r => batchShard R N (s.ic * s.expand * (2 * s.h) * (2 * s.h))
       (batchMap (R * N) (flatConv p.We p.be)
@@ -494,11 +498,11 @@ private noncomputable def mnv4SSyncCotEc (r : Fin R) : Vec (N * (s.ic * s.expand
 
 /-- Strided block, replica `r`: the pre-DW BN's output cotangent, at `2h` — unmasked. Feeds
     `u{p}qg`/`u{p}qbt`. -/
-private noncomputable def mnv4SSyncCotQn (r : Fin R) : Vec (N * (s.ic * (2 * s.h) * (2 * s.h))) :=
+noncomputable def mnv4SSyncCotQn (r : Fin R) : Vec (N * (s.ic * (2 * s.h) * (2 * s.h))) :=
   cInB N p.We p.be (mnv4SSyncCotEc R hR N s p XIN dys r)
 
 /-- Strided block, replica `r`: the pre-DW conv's output cotangent, at `2h`. Feeds `u{p}qW`. -/
-private noncomputable def mnv4SSyncCotQc (r : Fin R) : Vec (N * (s.ic * (2 * s.h) * (2 * s.h))) :=
+noncomputable def mnv4SSyncCotQc (r : Fin R) : Vec (N * (s.ic * (2 * s.h) * (2 * s.h))) :=
   bnSyncInB R hR N s.ic (2 * s.h) (2 * s.h) p.eq_ p.gq
     (fun r => batchShard R N (s.ic * (2 * s.h) * (2 * s.h))
       (batchMap (R * N) (depthwiseFlat p.Wq p.bq) XIN) r)
@@ -582,7 +586,7 @@ variable (R : Nat) (hR : 0 < R) (N h w : Nat) {ic oc kH kW : Nat} (Ws : Kernel4 
 
 /-- Stem, replica `r`: the stem relu's mask of the cotangent the fused stage hands down. Feeds
     `sg`/`sbt`. -/
-private noncomputable def mnv4StemSyncCotN (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def mnv4StemSyncCotN (r : Fin R) : Vec (N * (oc * h * w)) :=
   reluMaskB (N * (oc * h * w))
     (batchShard R N (oc * h * w)
       (bnBatchLA (R * N) oc h w εs γs βs (batchMap (R * N) (flatConvStride2 Ws bs) X)) r)
@@ -625,7 +629,7 @@ variable (R : Nat) (hR : 0 < R) (N h w : Nat) {ic mid oc kH kW : Nat} (Wc : Kern
 
 /-- Fused stage, replica `r`: the project BatchNorm's sync backward of the stage-output cotangent
     (no activation after the project). Feeds `f0pW`. -/
-private noncomputable def mnv4FusedSyncCotPc (r : Fin R) : Vec (N * (oc * h * w)) :=
+noncomputable def mnv4FusedSyncCotPc (r : Fin R) : Vec (N * (oc * h * w)) :=
   bnSyncInB R hR N oc h w εp γp
     (fun r => batchShard R N (oc * h * w) (batchMap (R * N) (flatConv Wp bp)
       (cbReluStridedB (R * N) (h := h) (w := w) Wc bc εc γc βc XIN)) r)
@@ -633,14 +637,14 @@ private noncomputable def mnv4FusedSyncCotPc (r : Fin R) : Vec (N * (oc * h * w)
 
 /-- Fused stage, replica `r`: the fused BN's output cotangent, masked by the fused relu. Feeds
     `f0cg`/`f0cbt`. -/
-private noncomputable def mnv4FusedSyncCotN (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def mnv4FusedSyncCotN (r : Fin R) : Vec (N * (mid * h * w)) :=
   reluMaskB (N * (mid * h * w))
     (batchShard R N (mid * h * w)
       (bnBatchLA (R * N) mid h w εc γc βc (batchMap (R * N) (flatConvStride2 Wc bc) XIN)) r)
     (cInB N Wp bp (mnv4FusedSyncCotPc R hR N h w Wc bc εc γc βc Wp bp εp γp XIN dys r))
 
 /-- Fused stage, replica `r`: the fused conv's output cotangent. Feeds `f0cW`. -/
-private noncomputable def mnv4FusedSyncCotC (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def mnv4FusedSyncCotC (r : Fin R) : Vec (N * (mid * h * w)) :=
   bnSyncInB R hR N mid h w εc γc
     (fun r => batchShard R N (mid * h * w) (batchMap (R * N) (flatConvStride2 Wc bc) XIN) r)
     (mnv4FusedSyncCotN R hR N h w Wc bc εc γc βc Wp bp εp γp XIN dys) r
@@ -704,7 +708,7 @@ variable (R : Nat) (hR : 0 < R) (N h w : Nat) {c mid oc nCls : Nat}
 
 /-- Head, replica `r`: `conv_head`'s relu mask of the classifier's input-VJP of this replica's loss
     cotangent, relabelled to `[N, oc, 1, 1]`. Feeds `hg`/`hbt`. -/
-private noncomputable def mnv4HeadSyncCotHn (r : Fin R) : Vec (N * (oc * 1 * 1)) :=
+noncomputable def mnv4HeadSyncCotHn (r : Fin R) : Vec (N * (oc * 1 * 1)) :=
   -- `bd` is read by no head cotangent (the dense input-VJP does not see the bias); named here so
   -- the section keeps it in every head chain's argument list, as `mnv4_net_tiedB`'s.
   let _bias := bd
@@ -715,14 +719,14 @@ private noncomputable def mnv4HeadSyncCotHn (r : Fin R) : Vec (N * (oc * 1 * 1))
 
 /-- Head, replica `r`: `conv_head`'s BatchNorm sync backward — its statistics over the GLOBAL batch
     alone (`h = w = 1`). Feeds `hW`. -/
-private noncomputable def mnv4HeadSyncCotHc (r : Fin R) : Vec (N * (oc * 1 * 1)) :=
+noncomputable def mnv4HeadSyncCotHc (r : Fin R) : Vec (N * (oc * 1 * 1)) :=
   bnSyncInB R hR N oc 1 1 ε2 γ2
     (fun r => batchShard R N (oc * 1 * 1) (batchMap (R * N) (flatConv W2 b2) (mnv4HeadPool (R * N) h w W1 b1 ε1 γ1 β1 XIN)) r)
     (mnv4HeadSyncCotHn R N h w W1 b1 ε1 γ1 β1 W2 b2 ε2 γ2 β2 Wd bd XIN gs) r
 
 /-- Head, replica `r`: the first head relu's mask of the GAP backward of `conv_head`'s input-VJP,
     relabelled. Feeds `h1g`/`h1bt`. -/
-private noncomputable def mnv4HeadSyncCotH1n (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def mnv4HeadSyncCotH1n (r : Fin R) : Vec (N * (mid * h * w)) :=
   reluMaskB (N * (mid * h * w))
     (batchShard R N (mid * h * w)
       (bnBatchLA (R * N) mid h w ε1 γ1 β1 (batchMap (R * N) (flatConv W1 b1) XIN)) r)
@@ -731,7 +735,7 @@ private noncomputable def mnv4HeadSyncCotH1n (r : Fin R) : Vec (N * (mid * h * w
         gs r))))
 
 /-- Head, replica `r`: the first head BatchNorm's sync backward. Feeds `h1W`. -/
-private noncomputable def mnv4HeadSyncCotH1c (r : Fin R) : Vec (N * (mid * h * w)) :=
+noncomputable def mnv4HeadSyncCotH1c (r : Fin R) : Vec (N * (mid * h * w)) :=
   bnSyncInB R hR N mid h w ε1 γ1
     (fun r => batchShard R N (mid * h * w) (batchMap (R * N) (flatConv W1 b1) XIN) r)
     (mnv4HeadSyncCotH1n R hR N h w W1 b1 ε1 γ1 β1 W2 b2 ε2 γ2 β2 Wd bd XIN gs) r

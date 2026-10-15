@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.GaussianQuantile
-import LeanMlir.Proofs.Certificates.LipschitzCert.Basic
+module
+
+public import LeanMlir.Proofs.Certificates.GaussianQuantile
+public import LeanMlir.Proofs.Certificates.LipschitzCert.Basic
+
+@[expose] public section
 
 /-! # The real Gaussian probit: Φ, Φ⁻¹, and the Cohen radius as a THEOREM
 

@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
-import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
-import LeanMlir.Proofs.Foundation.OpaquePrefix
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetBackChains
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
+public import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+public import LeanMlir.Proofs.Foundation.OpaquePrefix
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetBackChains
+
+@[expose] public section
 
 /-! # `mnv2InputGradB` and the certified whole-net MobileNetV2 input VJP at batch BatchNorm
 

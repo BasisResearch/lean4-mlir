@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.Depthwise
-import LeanMlir.Proofs.Architectures.PerChannelBN
+module
+
+public import LeanMlir.Proofs.Architectures.Depthwise
+public import LeanMlir.Proofs.Architectures.PerChannelBN
+
+@[expose] public section
 
 /-! # The per-channel-BN MobileNetV2 stage vocabulary
 

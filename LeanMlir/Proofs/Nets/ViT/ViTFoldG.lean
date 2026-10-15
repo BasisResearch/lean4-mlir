@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.TokenParamGrad
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Architectures.TokenParamGrad
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # ViT-Tiny un-fused embedding-gradient nodes at the per-example index
 

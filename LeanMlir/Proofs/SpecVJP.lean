@@ -1,10 +1,14 @@
-import LeanMlir.Verified.NetsCore
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
-import LeanMlir.Proofs.Nets.ViT.ViTDepthK
-import LeanMlir.Proofs.Nets.ResNet.ResNet34FullB
-import LeanMlir.Proofs.Nets.Small.ChapterGraphTies
+module
+
+public import LeanMlir.Verified.NetsCore
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
+public import LeanMlir.Proofs.Nets.ViT.ViTDepthK
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullB
+public import LeanMlir.Proofs.Nets.Small.ChapterGraphTies
+
+@[expose] public section
 
 /-! # Spec → math: nine committed `VerifiedNetSpec`s denote their proven forwards
 

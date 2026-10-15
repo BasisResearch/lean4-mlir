@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
+
+@[expose] public section
 
 /-! # EfficientNet's per-block batched VJPs
 

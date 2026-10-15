@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
-import Mathlib.Probability.Moments.SubGaussian
+module
+
+public import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
+public import Mathlib.Probability.Moments.SubGaussian
+
+@[expose] public section
 
 /-! # The Monte-Carlo tie for randomized smoothing
 

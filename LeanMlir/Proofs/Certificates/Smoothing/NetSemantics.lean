@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.Smoothing.CP
+module
+
+public import LeanMlir.Proofs.Certificates.Smoothing.CP
+
+@[expose] public section
 
 /-! # Net semantics for the smoothing chain — the classifier becomes a NET
 
@@ -37,7 +41,7 @@ open scoped BigOperators ENNReal NNReal RealInnerProductSpace
 
 open scoped Classical in
 /-- Some logit is maximal: the maximizer set `argmaxNet` takes the least of is nonempty. -/
-private lemma argmaxNet_nonempty {E : Type*} {k : ℕ} (f : E → Fin (k + 1) → ℝ) (x : E) :
+lemma argmaxNet_nonempty {E : Type*} {k : ℕ} (f : E → Fin (k + 1) → ℝ) (x : E) :
     (Finset.univ.filter fun c => ∀ j, f x j ≤ f x c).Nonempty := by
   obtain ⟨c, -, hc⟩ := Finset.exists_max_image Finset.univ (f x) ⟨0, Finset.mem_univ 0⟩
   exact ⟨c, Finset.mem_filter.mpr ⟨Finset.mem_univ c, fun j => hc j (Finset.mem_univ j)⟩⟩

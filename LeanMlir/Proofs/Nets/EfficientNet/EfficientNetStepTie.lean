@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFold
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetBackB0
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFold
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetBackB0
+
+@[expose] public section
 
 /-! # EfficientNet-B0 train-step tie (fused SGD) — `efficientnet_net_tied`
 

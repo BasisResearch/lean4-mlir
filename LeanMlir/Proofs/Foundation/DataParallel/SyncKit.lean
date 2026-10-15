@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Foundation.IndexCast
-import LeanMlir.Proofs.Foundation.DataParallel.Sync
-import LeanMlir.Proofs.Foundation.Batched.BackLinks
-import LeanMlir.Proofs.Foundation.SmoothedLossCot
+module
+
+public import LeanMlir.Proofs.Foundation.IndexCast
+public import LeanMlir.Proofs.Foundation.DataParallel.Sync
+public import LeanMlir.Proofs.Foundation.Batched.BackLinks
+public import LeanMlir.Proofs.Foundation.SmoothedLossCot
+
+@[expose] public section
 
 /-! # The sync-BN data-parallel kit — sharding, homogeneity and the collectives, per op kind
 

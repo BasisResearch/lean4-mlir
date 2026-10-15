@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2StepTieB
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2StepTieB
+
+@[expose] public section
 
 /-! # MobileNetV2 — every parameter gradient node IS the loss's derivative in that parameter
 

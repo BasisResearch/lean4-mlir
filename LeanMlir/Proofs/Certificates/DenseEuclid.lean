@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.LipschitzCert.Basic
+module
+
+public import LeanMlir.Proofs.Certificates.LipschitzCert.Basic
+
+@[expose] public section
 
 /-! # The dense Euclidean engine — dense and ReLU layers on `EuclideanSpace`, and their L2 bounds
 

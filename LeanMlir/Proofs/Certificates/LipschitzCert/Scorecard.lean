@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.LipschitzCert.Instance
+module
+
+public import LeanMlir.Proofs.Certificates.LipschitzCert.Instance
+
+@[expose] public section
 
 /-! # Certified-accuracy scorecard
 

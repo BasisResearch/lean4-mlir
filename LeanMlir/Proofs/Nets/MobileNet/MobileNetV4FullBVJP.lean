@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
+
+@[expose] public section
 
 /-! # MobileNetV4-Conv-M's whole-net input-VJP at batch BatchNorm
 
@@ -120,7 +124,7 @@ structure Mnv4SmoothAt (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
 
 /-- The chain's VJP and its differentiability together, one `vjpCompDiffAt` per join: the apex
     is `.fst`, `mobilenetv4ForwardBFull_differentiableAt` is `.snd`. -/
-private noncomputable def mnv4ChainB (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+noncomputable def mnv4ChainB (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
     (x : Vec (N * (3 * 224 * 224))) (hx : Mnv4SmoothAt N w x) :
     HasVJPDiffAt (mobilenetv4ForwardBFull N w) x :=
   let p0 : HasVJPDiffAt (mnv4Pre0 N w) x :=

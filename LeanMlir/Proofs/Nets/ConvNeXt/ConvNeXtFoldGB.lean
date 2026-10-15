@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFoldG
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFoldG
+
+@[expose] public section
 
 /-! # The gradient-node fold for ConvNeXt-T at the batched index
 

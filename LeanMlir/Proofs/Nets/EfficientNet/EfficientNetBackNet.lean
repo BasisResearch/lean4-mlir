@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
+
+@[expose] public section
 
 /-! # EfficientNet's MBConv1 and head backward graphs
 

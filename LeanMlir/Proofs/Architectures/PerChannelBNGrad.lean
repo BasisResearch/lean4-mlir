@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.PerChannelBN
+module
+
+public import LeanMlir.Proofs.Architectures.PerChannelBN
+
+@[expose] public section
 
 /-! # Per-channel BN parameter-gradient bridges (dγ, dβ certified)
 

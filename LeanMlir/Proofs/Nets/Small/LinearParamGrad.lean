@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.Small.LinearFold
-import LeanMlir.Proofs.Nets.Small.SmallParamGrad
+module
+
+public import LeanMlir.Proofs.Nets.Small.LinearFold
+public import LeanMlir.Proofs.Nets.Small.SmallParamGrad
+
+@[expose] public section
 
 /-! # The linear classifier — both parameter gradient nodes ARE the loss's derivative
 

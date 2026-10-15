@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.DataParallel.Sync
-import LeanMlir.Proofs.Float.RndP
+module
+
+public import LeanMlir.Proofs.Foundation.DataParallel.Sync
+public import LeanMlir.Proofs.Float.RndP
+
+@[expose] public section
 
 /-! # Data parallelism at bf16 — every node shards exactly but the conv weight gradient
 

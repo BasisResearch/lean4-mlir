@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.ViT.ViTFoldG
-import LeanMlir.Proofs.Foundation.Bf16Erasure
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTFoldG
+public import LeanMlir.Proofs.Foundation.Bf16Erasure
+
+@[expose] public section
 
 /-! # The gradient-node fold for ViT-Tiny at the batched index
 

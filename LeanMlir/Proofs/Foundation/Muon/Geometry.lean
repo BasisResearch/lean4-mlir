@@ -1,4 +1,9 @@
-import Mathlib.Analysis.Matrix.Order
+module
+
+public import Mathlib.Analysis.Matrix.Order
+public import Mathlib.Algebra.Group.Pi.Units
+
+@[expose] public section
 
 /-! # Muon geometry: the optimizer as steepest descent under a norm
 

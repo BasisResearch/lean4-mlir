@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
-import LeanMlir.Proofs.Nets.ResNet.ResNet34SyncB
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34SyncB
+
+@[expose] public section
 
 /-! # ResNet-50's data-parallel forward at SYNCHRONISED BatchNorm — replica `r` IS shard `r`
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ViT.ViTChainClose
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTChainClose
+
+@[expose] public section
 
 /-! # ViT at vector-[D] LayerNorm
 
@@ -81,7 +85,7 @@ private lemma transformerAttnSublayerV_inner_flat_differentiable
       (layerNormVec_per_token_flat_differentiable N (heads * d_head) ε γ1 β1 hε)
 
 /-- Flat Diff of the attentionᵥ sublayer. -/
-private lemma transformerAttnSublayerV_flat_differentiable
+lemma transformerAttnSublayerV_flat_differentiable
     (N heads d_head : Nat) (ε : ℝ) (γ1 β1 : Vec (heads * d_head)) (hε : 0 < ε)
     (Wq Wk Wv Wo : Mat (heads * d_head) (heads * d_head))
     (bq bk bv bo : Vec (heads * d_head)) :
@@ -119,7 +123,7 @@ private lemma transformerMlpSublayerV_inner_flat_differentiable {gf : GeluForm}
       (layerNormVec_per_token_flat_differentiable N (heads * d_head) ε γ2 β2 hε)
 
 /-- Flat Diff of the MLPᵥ sublayer. -/
-private lemma transformerMlpSublayerV_flat_differentiable {gf : GeluForm}
+lemma transformerMlpSublayerV_flat_differentiable {gf : GeluForm}
     (N heads d_head mlpDim : Nat) (ε : ℝ) (γ2 β2 : Vec (heads * d_head)) (hε : 0 < ε)
     (Wfc1 : Mat (heads * d_head) mlpDim) (bfc1 : Vec mlpDim)
     (Wfc2 : Mat mlpDim (heads * d_head)) (bfc2 : Vec (heads * d_head)) :

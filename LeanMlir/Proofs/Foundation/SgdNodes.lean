@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
-import LeanMlir.Proofs.Architectures.ConvGrad
-import LeanMlir.Proofs.Architectures.PerChannelBNGrad
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+public import LeanMlir.Proofs.Architectures.ConvGrad
+public import LeanMlir.Proofs.Architectures.PerChannelBNGrad
+
+@[expose] public section
 
 /-! # The per-example fused-SGD nodes — one `*_den` per op kind, shared by every per-example chain
 

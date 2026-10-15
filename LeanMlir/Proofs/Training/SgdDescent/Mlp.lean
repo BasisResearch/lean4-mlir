@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Training.SgdDescent.Linear
-import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+module
+
+public import LeanMlir.Proofs.Training.SgdDescent.Linear
+public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+
+@[expose] public section
 
 /-! # Lipschitz constants for the MLP softmax-CE loss — descent through the ReLU kinks
 

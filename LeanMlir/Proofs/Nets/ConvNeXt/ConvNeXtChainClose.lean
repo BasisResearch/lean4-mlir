@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXt
+module
+
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXt
+
+@[expose] public section
 
 /-! # ConvNeXt — the block cotangent chain
 

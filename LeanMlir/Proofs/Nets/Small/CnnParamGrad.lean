@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.Small.CnnFold
-import LeanMlir.Proofs.Nets.Small.SmallParamGrad
+module
+
+public import LeanMlir.Proofs.Nets.Small.CnnFold
+public import LeanMlir.Proofs.Nets.Small.SmallParamGrad
+
+@[expose] public section
 
 /-! # The MNIST CNN — every parameter gradient node IS the loss's derivative, at real MNIST
 

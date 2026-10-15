@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.Small.Cifar8StepTie
+module
+
+public import LeanMlir.Proofs.Nets.Small.Cifar8StepTie
+
+@[expose] public section
 
 /-! # The cifar8 step tie at its UN-FUSED gradient nodes — the packed `cifar8w_*` arms
 

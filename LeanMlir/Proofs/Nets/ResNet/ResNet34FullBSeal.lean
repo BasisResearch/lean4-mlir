@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
-import LeanMlir.Proofs.Training.BatchSealKit
-import LeanMlir.Proofs.Training.JacobianSeal
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
+public import LeanMlir.Proofs.Training.BatchSealKit
+public import LeanMlir.Proofs.Training.JacobianSeal
+
+@[expose] public section
 
 /-!
 # ResNet-34's non-degeneracy seal, on the full-width batched net (levels 2 and 3)

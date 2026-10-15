@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.EvenKernelConvBack
-import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+module
+
+public import LeanMlir.Proofs.Architectures.EvenKernelConvBack
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+
+@[expose] public section
 
 /-! # ConvNeXt-T's whole-net backward tie — the stage fold and the even-kernel repair
 
@@ -181,7 +185,7 @@ noncomputable def cnxDn2 {nC : Nat} (w : CnxTWeightsCh nC) : Vec (192 * 28 * 28)
   cnxDownChW 14 14 w.d2
 theorem cnxDn2_differentiable {nC : Nat} (w : CnxTWeightsCh nC) (hd2 : 0 < w.d2.ε) :
     Differentiable ℝ (cnxDn2 w) := cnxDownChW_differentiable 14 14 w.d2 hd2
-private noncomputable def cnxDn2Vjp {nC : Nat} (w : CnxTWeightsCh nC) (hd2 : 0 < w.d2.ε) :
+noncomputable def cnxDn2Vjp {nC : Nat} (w : CnxTWeightsCh nC) (hd2 : 0 < w.d2.ε) :
     HasVJP (cnxDn2 w) := cnxDownChWHasVJP 14 14 w.d2 hd2
 
 /-- Downsample 3 at the chain's dimension spelling. -/
@@ -221,9 +225,9 @@ noncomputable def cnxV0 {nC : Nat} (w : CnxTWeightsCh nC) : HasVJP (cnxSavedA0 w
 noncomputable def cnxSavedA1 {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (96 * 56 * 56) :=
   chanLNTensor3 96 56 56 w.sε w.sγ w.sβ ∘ cnxSavedA0 w
 
-private theorem cnxSavedA1_differentiable {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) : Differentiable ℝ (cnxSavedA1 w) :=
+theorem cnxSavedA1_differentiable {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) : Differentiable ℝ (cnxSavedA1 w) :=
   (chanLNTensor3_differentiable 96 56 56 w.sε w.sγ w.sβ hsε).comp (cnxSavedA0_differentiable w)
-private noncomputable def cnxV1 {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) : HasVJP (cnxSavedA1 w) :=
+noncomputable def cnxV1 {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) : HasVJP (cnxSavedA1 w) :=
   vjpComp (cnxSavedA0 w) _ (cnxSavedA0_differentiable w) (chanLNTensor3_differentiable 96 56 56 w.sε w.sγ w.sβ hsε) (cnxV0 w)
     (chanLNTensor3HasVJP 96 56 56 w.sε w.sγ w.sβ hsε)
 
@@ -231,10 +235,10 @@ private noncomputable def cnxV1 {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.
 noncomputable def cnxSavedA2 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (96 * 56 * 56) :=
   convNextStageChK gf 3 w.s1 ∘ cnxSavedA1 w
 
-private theorem cnxSavedA2_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn) :
+theorem cnxSavedA2_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn) :
     Differentiable ℝ (cnxSavedA2 gf w) :=
   (convNextStageChK_differentiable 3 w.s1 h1).comp (cnxSavedA1_differentiable w hsε)
-private noncomputable def cnxV2 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn) :
+noncomputable def cnxV2 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn) :
     HasVJP (cnxSavedA2 gf w) :=
   vjpComp (cnxSavedA1 w) _ (cnxSavedA1_differentiable w hsε) (convNextStageChK_differentiable 3 w.s1 h1) (cnxV1 w hsε)
     (convNextStageChKHasVJP gf 3 w.s1 h1)
@@ -243,10 +247,10 @@ private noncomputable def cnxV2 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC
 noncomputable def cnxSavedA3 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (192 * 28 * 28) :=
   cnxDn1 w ∘ cnxSavedA2 gf w
 
-private theorem cnxSavedA3_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+theorem cnxSavedA3_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) : Differentiable ℝ (cnxSavedA3 gf w) :=
   (cnxDn1_differentiable w hd1).comp (cnxSavedA2_differentiable w hsε h1)
-private noncomputable def cnxV3 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV3 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) : HasVJP (cnxSavedA3 gf w) :=
   vjpComp (cnxSavedA2 gf w) _ (cnxSavedA2_differentiable w hsε h1) (cnxDn1_differentiable w hd1) (cnxV2 gf w hsε h1) (cnxDn1Vjp w hd1)
 
@@ -254,10 +258,10 @@ private noncomputable def cnxV3 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC
 noncomputable def cnxSavedA4 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (192 * 28 * 28) :=
   convNextStageChK gf 3 w.s2 ∘ cnxSavedA3 gf w
 
-private theorem cnxSavedA4_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+theorem cnxSavedA4_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) : Differentiable ℝ (cnxSavedA4 gf w) :=
   (convNextStageChK_differentiable 3 w.s2 h2).comp (cnxSavedA3_differentiable w hsε h1 hd1)
-private noncomputable def cnxV4 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV4 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) : HasVJP (cnxSavedA4 gf w) :=
   vjpComp (cnxSavedA3 gf w) _ (cnxSavedA3_differentiable w hsε h1 hd1) (convNextStageChK_differentiable 3 w.s2 h2)
     (cnxV3 gf w hsε h1 hd1) (convNextStageChKHasVJP gf 3 w.s2 h2)
@@ -266,11 +270,11 @@ private noncomputable def cnxV4 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC
 noncomputable def cnxSavedA5 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (384 * 14 * 14) :=
   cnxDn2 w ∘ cnxSavedA4 gf w
 
-private theorem cnxSavedA5_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+theorem cnxSavedA5_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) : Differentiable ℝ
     (cnxSavedA5 gf w) :=
   (cnxDn2_differentiable w hd2).comp (cnxSavedA4_differentiable w hsε h1 hd1 h2)
-private noncomputable def cnxV5 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV5 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) : HasVJP (cnxSavedA5 gf w) :=
   vjpComp (cnxSavedA4 gf w) _ (cnxSavedA4_differentiable w hsε h1 hd1 h2) (cnxDn2_differentiable w hd2) (cnxV4 gf w hsε h1 hd1 h2)
     (cnxDn2Vjp w hd2)
@@ -279,11 +283,11 @@ private noncomputable def cnxV5 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC
 noncomputable def cnxSavedA6 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (384 * 14 * 14) :=
   convNextStageChK gf 9 w.s3 ∘ cnxSavedA5 gf w
 
-private theorem cnxSavedA6_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+theorem cnxSavedA6_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn) :
     Differentiable ℝ (cnxSavedA6 gf w) :=
   (convNextStageChK_differentiable 9 w.s3 h3).comp (cnxSavedA5_differentiable w hsε h1 hd1 h2 hd2)
-private noncomputable def cnxV6 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV6 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn) :
     HasVJP (cnxSavedA6 gf w) :=
   vjpComp (cnxSavedA5 gf w) _ (cnxSavedA5_differentiable w hsε h1 hd1 h2 hd2) (convNextStageChK_differentiable 9 w.s3 h3)
@@ -293,25 +297,25 @@ private noncomputable def cnxV6 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC
 noncomputable def cnxSavedA7 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (768 * 7 * 7) :=
   cnxDn3 w ∘ cnxSavedA6 gf w
 
-private theorem cnxSavedA7_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+theorem cnxSavedA7_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) : Differentiable ℝ (cnxSavedA7 gf w) :=
   (cnxDn3_differentiable w hd3).comp (cnxSavedA6_differentiable w hsε h1 hd1 h2 hd2 h3)
-private noncomputable def cnxV7 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV7 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) : HasVJP (cnxSavedA7 gf w) :=
   vjpComp (cnxSavedA6 gf w) _ (cnxSavedA6_differentiable w hsε h1 hd1 h2 hd2 h3) (cnxDn3_differentiable w hd3)
     (cnxV6 gf w hsε h1 hd1 h2 hd2 h3) (cnxDn3Vjp w hd3)
 
 /-- GAP's saved input. -/
-private noncomputable def cnxSavedA8 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (768 * 7 * 7) :=
+noncomputable def cnxSavedA8 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (768 * 7 * 7) :=
   convNextStageChK gf 3 w.s4 ∘ cnxSavedA7 gf w
 
-private theorem cnxSavedA8_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+theorem cnxSavedA8_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) (h4 : ∀ i, 0 < (w.s4 i).εn) : Differentiable ℝ (cnxSavedA8 gf w) :=
   (convNextStageChK_differentiable 3 w.s4 h4).comp (cnxSavedA7_differentiable w hsε h1 hd1 h2 hd2 h3 hd3)
-private noncomputable def cnxV8 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV8 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) (h4 : ∀ i, 0 < (w.s4 i).εn) : HasVJP (cnxSavedA8 gf w) :=
   vjpComp (cnxSavedA7 gf w) _ (cnxSavedA7_differentiable w hsε h1 hd1 h2 hd2 h3 hd3) (convNextStageChK_differentiable 3 w.s4 h4)
@@ -321,11 +325,11 @@ private noncomputable def cnxV8 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC
 noncomputable def cnxSavedA9 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (768) :=
   globalAvgPoolFlat 768 7 7 ∘ cnxSavedA8 gf w
 
-private theorem cnxSavedA9_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+theorem cnxSavedA9_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) (h4 : ∀ i, 0 < (w.s4 i).εn) : Differentiable ℝ (cnxSavedA9 gf w) :=
   (globalAvgPoolFlat_differentiable 768 7 7).comp (cnxSavedA8_differentiable w hsε h1 hd1 h2 hd2 h3 hd3 h4)
-private noncomputable def cnxV9 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV9 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) (h4 : ∀ i, 0 < (w.s4 i).εn) : HasVJP (cnxSavedA9 gf w) :=
   vjpComp (cnxSavedA8 gf w) _ (cnxSavedA8_differentiable w hsε h1 hd1 h2 hd2 h3 hd3 h4)
@@ -336,18 +340,18 @@ private noncomputable def cnxV9 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC
 noncomputable def cnxSavedA10 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) : Vec (3 * 224 * 224) → Vec (768) :=
   cnxLNh w ∘ cnxSavedA9 gf w
 
-private theorem cnxSavedA10_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+theorem cnxSavedA10_differentiable {gf : GeluForm} {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) (h4 : ∀ i, 0 < (w.s4 i).εn) (hhε : 0 < w.hε) : Differentiable ℝ
     (cnxSavedA10 gf w) :=
   (cnxLNh_differentiable w hhε).comp (cnxSavedA9_differentiable w hsε h1 hd1 h2 hd2 h3 hd3 h4)
-private noncomputable def cnxV10 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV10 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) (h4 : ∀ i, 0 < (w.s4 i).εn) (hhε : 0 < w.hε) : HasVJP (cnxSavedA10 gf w) :=
   vjpComp (cnxSavedA9 gf w) _ (cnxSavedA9_differentiable w hsε h1 hd1 h2 hd2 h3 hd3 h4) (cnxLNh_differentiable w hhε)
     (cnxV9 gf w hsε h1 hd1 h2 hd2 h3 hd3 h4) (cnxLNhVjp w hhε)
 
-private noncomputable def cnxV11 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
+noncomputable def cnxV11 (gf : GeluForm) {nC : Nat} (w : CnxTWeightsCh nC) (hsε : 0 < w.sε) (h1 : ∀ i, 0 < (w.s1 i).εn)
     (hd1 : 0 < w.d1.ε) (h2 : ∀ i, 0 < (w.s2 i).εn) (hd2 : 0 < w.d2.ε) (h3 : ∀ i, 0 < (w.s3 i).εn)
     (hd3 : 0 < w.d3.ε) (h4 : ∀ i, 0 < (w.s4 i).εn) (hhε : 0 < w.hε) :
     HasVJP (dense w.Wd w.bd ∘ cnxSavedA10 gf w) :=

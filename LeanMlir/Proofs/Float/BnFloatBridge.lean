@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.BatchNorm
-import LeanMlir.Proofs.Float.FloatBridge
+module
+
+public import LeanMlir.Proofs.Architectures.BatchNorm
+public import LeanMlir.Proofs.Float.FloatBridge
+
+@[expose] public section
 
 /-!
 # ℝ→Float32 bridge for BatchNorm: the inverse-stddev keystone

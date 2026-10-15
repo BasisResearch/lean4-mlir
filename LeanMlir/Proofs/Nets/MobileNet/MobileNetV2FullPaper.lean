@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.Depthwise
+module
+
+public import LeanMlir.Proofs.Architectures.Depthwise
+
+@[expose] public section
 
 /-! # MobileNetV2's bottleneck weight records
 

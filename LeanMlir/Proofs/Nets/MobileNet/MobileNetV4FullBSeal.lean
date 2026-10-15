@@ -1,6 +1,11 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBVJP
-import LeanMlir.Proofs.Training.BatchSealKit
-import LeanMlir.Proofs.Training.JacobianSeal
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBVJP
+public import LeanMlir.Proofs.Training.BatchSealKit
+public import LeanMlir.Proofs.Training.JacobianSeal
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+
+@[expose] public section
 
 /-!
 # MobileNetV4-Conv-M's non-degeneracy seal, on the full-width batched net (levels 2 and 3)
@@ -68,7 +73,7 @@ open Proofs BatchSeal StableHLO Proofs.BatchSeal
 --   rows pass centre taps, the eighteen skipped rows pass zeros, and every lemma below is proved
 --   once over `sealP`.
 -- ════════════════════════════════════════════════════════════════
-private noncomputable def sealP (s : UibSpec)
+noncomputable def sealP (s : UibSpec)
     (Wq : DepthwiseKernel s.ic s.preDWk s.preDWk)
     (We : Kernel4 (s.ic * s.expand) s.ic 1 1)
     (Wd : DepthwiseKernel (s.ic * s.expand) s.postDWk s.postDWk)
@@ -108,12 +113,12 @@ private theorem sealP_post_params (s : UibSpec) (Wq : DepthwiseKernel s.ic s.pre
   DWSlot.params_ofParams hk _
 
 /-- a carrier row: every kernel a centre tap. -/
-private noncomputable def sealCT (s : UibSpec) : UibParams s :=
+noncomputable def sealCT (s : UibSpec) : UibParams s :=
   sealP s (ctDW s.ic s.preDWk s.preDWk 1) (ctK (s.ic * s.expand) s.ic 1 1 1)
     (ctDW (s.ic * s.expand) s.postDWk s.postDWk 1) (ctK s.oc (s.ic * s.expand) 1 1 1)
 
 /-- a skipped row: every kernel zero, so the body is the constant `0`. -/
-private noncomputable def sealZ (s : UibSpec) : UibParams s :=
+noncomputable def sealZ (s : UibSpec) : UibParams s :=
   sealP s (dzk s.ic s.preDWk s.preDWk) (zk (s.ic * s.expand) s.ic 1 1)
     (dzk (s.ic * s.expand) s.postDWk s.postDWk) (zk s.oc (s.ic * s.expand) 1 1)
 
@@ -496,11 +501,11 @@ noncomputable def Zs (t : ℝ) : Vec (2 * (32 * 112 * 112)) :=
 noncomputable def As (t : ℝ) : Vec (2 * (32 * 112 * 112)) :=
   StableHLO.bnBatchLA 2 32 112 112 1 (kv 32 1) (kv 32 160) (Zs t)
 
-private noncomputable def Zf (t : ℝ) : Vec (2 * (128 * 56 * 56)) :=
+noncomputable def Zf (t : ℝ) : Vec (2 * (128 * 56 * 56)) :=
   StableHLO.batchMap 2 (flatConvStride2 (h := 56) (w := 56) (ctK 128 32 3 3 1) (kv 128 0))
     (As t)
 
-private noncomputable def Af (t : ℝ) : Vec (2 * (128 * 56 * 56)) :=
+noncomputable def Af (t : ℝ) : Vec (2 * (128 * 56 * 56)) :=
   StableHLO.bnBatchLA 2 128 56 56 1 (kv 128 1) (kv 128 160) (Zf t)
 
 noncomputable def Z1p (t : ℝ) : Vec (2 * (48 * 56 * 56)) :=
@@ -509,92 +514,92 @@ noncomputable def Z1p (t : ℝ) : Vec (2 * (48 * 56 * 56)) :=
 noncomputable def A1p (t : ℝ) : Vec (2 * (48 * 56 * 56)) :=
   StableHLO.bnBatchLA 2 48 56 56 1 (kv 48 1) (kv 48 0) (Z1p t)
 
-private noncomputable def Zaq (t : ℝ) : Vec (2 * (48 * 56 * 56)) :=
+noncomputable def Zaq (t : ℝ) : Vec (2 * (48 * 56 * 56)) :=
   StableHLO.batchMap 2 (depthwiseFlat (h := 56) (w := 56) (ctDW 48 3 3 1) (kv 48 0)) (A1p t)
 
-private noncomputable def Aaq (t : ℝ) : Vec (2 * (48 * 56 * 56)) :=
+noncomputable def Aaq (t : ℝ) : Vec (2 * (48 * 56 * 56)) :=
   StableHLO.bnBatchLA 2 48 56 56 1 (kv 48 1) (kv 48 160) (Zaq t)
 
-private noncomputable def Zae (t : ℝ) : Vec (2 * (192 * 56 * 56)) :=
+noncomputable def Zae (t : ℝ) : Vec (2 * (192 * 56 * 56)) :=
   StableHLO.batchMap 2 (flatConv (h := 56) (w := 56) (ctK 192 48 1 1 1) (kv 192 0)) (Aaq t)
 
-private noncomputable def Aae (t : ℝ) : Vec (2 * (192 * 56 * 56)) :=
+noncomputable def Aae (t : ℝ) : Vec (2 * (192 * 56 * 56)) :=
   StableHLO.bnBatchLA 2 192 56 56 1 (kv 192 1) (kv 192 160) (Zae t)
 
-private noncomputable def Zad (t : ℝ) : Vec (2 * (192 * 28 * 28)) :=
+noncomputable def Zad (t : ℝ) : Vec (2 * (192 * 28 * 28)) :=
   StableHLO.batchMap 2 (depthwiseStride2Flat (h := 28) (w := 28) (ctDW 192 5 5 1) (kv 192 0))
     (Aae t)
 
-private noncomputable def Aad (t : ℝ) : Vec (2 * (192 * 28 * 28)) :=
+noncomputable def Aad (t : ℝ) : Vec (2 * (192 * 28 * 28)) :=
   StableHLO.bnBatchLA 2 192 28 28 1 (kv 192 1) (kv 192 160) (Zad t)
 
-private noncomputable def Zaz (t : ℝ) : Vec (2 * (80 * 28 * 28)) :=
+noncomputable def Zaz (t : ℝ) : Vec (2 * (80 * 28 * 28)) :=
   StableHLO.batchMap 2 (flatConv (h := 28) (w := 28) (ctK 80 192 1 1 1) (kv 80 0)) (Aad t)
 
 noncomputable def Aaz (t : ℝ) : Vec (2 * (80 * 28 * 28)) :=
   StableHLO.bnBatchLA 2 80 28 28 1 (kv 80 1) (kv 80 0) (Zaz t)
 
-private noncomputable def Zbq (t : ℝ) : Vec (2 * (80 * 28 * 28)) :=
+noncomputable def Zbq (t : ℝ) : Vec (2 * (80 * 28 * 28)) :=
   StableHLO.batchMap 2 (depthwiseFlat (h := 28) (w := 28) (ctDW 80 3 3 1) (kv 80 0)) (Aaz t)
 
-private noncomputable def Abq (t : ℝ) : Vec (2 * (80 * 28 * 28)) :=
+noncomputable def Abq (t : ℝ) : Vec (2 * (80 * 28 * 28)) :=
   StableHLO.bnBatchLA 2 80 28 28 1 (kv 80 1) (kv 80 160) (Zbq t)
 
-private noncomputable def Zbe (t : ℝ) : Vec (2 * (480 * 28 * 28)) :=
+noncomputable def Zbe (t : ℝ) : Vec (2 * (480 * 28 * 28)) :=
   StableHLO.batchMap 2 (flatConv (h := 28) (w := 28) (ctK 480 80 1 1 1) (kv 480 0)) (Abq t)
 
-private noncomputable def Abe (t : ℝ) : Vec (2 * (480 * 28 * 28)) :=
+noncomputable def Abe (t : ℝ) : Vec (2 * (480 * 28 * 28)) :=
   StableHLO.bnBatchLA 2 480 28 28 1 (kv 480 1) (kv 480 160) (Zbe t)
 
-private noncomputable def Zbd (t : ℝ) : Vec (2 * (480 * 14 * 14)) :=
+noncomputable def Zbd (t : ℝ) : Vec (2 * (480 * 14 * 14)) :=
   StableHLO.batchMap 2 (depthwiseStride2Flat (h := 14) (w := 14) (ctDW 480 5 5 1) (kv 480 0))
     (Abe t)
 
-private noncomputable def Abd (t : ℝ) : Vec (2 * (480 * 14 * 14)) :=
+noncomputable def Abd (t : ℝ) : Vec (2 * (480 * 14 * 14)) :=
   StableHLO.bnBatchLA 2 480 14 14 1 (kv 480 1) (kv 480 160) (Zbd t)
 
-private noncomputable def Zbz (t : ℝ) : Vec (2 * (160 * 14 * 14)) :=
+noncomputable def Zbz (t : ℝ) : Vec (2 * (160 * 14 * 14)) :=
   StableHLO.batchMap 2 (flatConv (h := 14) (w := 14) (ctK 160 480 1 1 1) (kv 160 0)) (Abd t)
 
 noncomputable def Abz (t : ℝ) : Vec (2 * (160 * 14 * 14)) :=
   StableHLO.bnBatchLA 2 160 14 14 1 (kv 160 1) (kv 160 0) (Zbz t)
 
-private noncomputable def Zcq (t : ℝ) : Vec (2 * (160 * 14 * 14)) :=
+noncomputable def Zcq (t : ℝ) : Vec (2 * (160 * 14 * 14)) :=
   StableHLO.batchMap 2 (depthwiseFlat (h := 14) (w := 14) (ctDW 160 5 5 1) (kv 160 0)) (Abz t)
 
-private noncomputable def Acq (t : ℝ) : Vec (2 * (160 * 14 * 14)) :=
+noncomputable def Acq (t : ℝ) : Vec (2 * (160 * 14 * 14)) :=
   StableHLO.bnBatchLA 2 160 14 14 1 (kv 160 1) (kv 160 160) (Zcq t)
 
-private noncomputable def Zce (t : ℝ) : Vec (2 * (960 * 14 * 14)) :=
+noncomputable def Zce (t : ℝ) : Vec (2 * (960 * 14 * 14)) :=
   StableHLO.batchMap 2 (flatConv (h := 14) (w := 14) (ctK 960 160 1 1 1) (kv 960 0)) (Acq t)
 
-private noncomputable def Ace (t : ℝ) : Vec (2 * (960 * 14 * 14)) :=
+noncomputable def Ace (t : ℝ) : Vec (2 * (960 * 14 * 14)) :=
   StableHLO.bnBatchLA 2 960 14 14 1 (kv 960 1) (kv 960 160) (Zce t)
 
-private noncomputable def Zcd (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
+noncomputable def Zcd (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
   StableHLO.batchMap 2 (depthwiseStride2Flat (h := 7) (w := 7) (ctDW 960 5 5 1) (kv 960 0))
     (Ace t)
 
-private noncomputable def Acd (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
+noncomputable def Acd (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
   StableHLO.bnBatchLA 2 960 7 7 1 (kv 960 1) (kv 960 160) (Zcd t)
 
-private noncomputable def Zcz (t : ℝ) : Vec (2 * (256 * 7 * 7)) :=
+noncomputable def Zcz (t : ℝ) : Vec (2 * (256 * 7 * 7)) :=
   StableHLO.batchMap 2 (flatConv (h := 7) (w := 7) (ctK 256 960 1 1 1) (kv 256 0)) (Acd t)
 
 noncomputable def Acz (t : ℝ) : Vec (2 * (256 * 7 * 7)) :=
   StableHLO.bnBatchLA 2 256 7 7 1 (kv 256 1) (kv 256 0) (Zcz t)
 
-private noncomputable def Zh1 (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
+noncomputable def Zh1 (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
   StableHLO.batchMap 2 (flatConv (h := 7) (w := 7) (ctK 960 256 1 1 1) (kv 960 0)) (Acz t)
 
-private noncomputable def Ah1 (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
+noncomputable def Ah1 (t : ℝ) : Vec (2 * (960 * 7 * 7)) :=
   StableHLO.bnBatchLA 2 960 7 7 1 (kv 960 1) (kv 960 160) (Zh1 t)
 
 /-- the pooled head features at `[2, 960, 1, 1]`: GAP of the first head stage, relabelled. -/
-private noncomputable def Pl (t : ℝ) : Vec (2 * (960 * 1 * 1)) :=
+noncomputable def Pl (t : ℝ) : Vec (2 * (960 * 1 * 1)) :=
   fun k => StableHLO.batchMap 2 (globalAvgPoolFlat 960 7 7) (Ah1 t) (Fin.cast (mnv4_pool11 2 960).symm k)
 
-private noncomputable def Zh2 (t : ℝ) : Vec (2 * (1280 * 1 * 1)) :=
+noncomputable def Zh2 (t : ℝ) : Vec (2 * (1280 * 1 * 1)) :=
   StableHLO.batchMap 2 (flatConv (h := 1) (w := 1) (ctK 1280 960 1 1 1) (kv 1280 0)) (Pl t)
 
 noncomputable def Ah2 (t : ℝ) : Vec (2 * (1280 * 1 * 1)) :=
@@ -622,16 +627,16 @@ noncomputable def df (t : ℝ) : Fin 128 → ℝ :=
 noncomputable def d1p (t : ℝ) : Fin 48 → ℝ :=
   fun o => df t 0 * rf (2 * (56 * 56)) (bnRowLA 2 48 56 56 (Z1p t) o)
 
-private noncomputable def daq (t : ℝ) : Fin 48 → ℝ :=
+noncomputable def daq (t : ℝ) : Fin 48 → ℝ :=
   fun ch => d1p t ch * rf (2 * (56 * 56)) (bnRowLA 2 48 56 56 (Zaq t) ch)
 
-private noncomputable def dae (t : ℝ) : Fin 192 → ℝ :=
+noncomputable def dae (t : ℝ) : Fin 192 → ℝ :=
   fun o => daq t 0 * rf (2 * (56 * 56)) (bnRowLA 2 192 56 56 (Zae t) o)
 
-private noncomputable def dad (t : ℝ) : Fin 192 → ℝ :=
+noncomputable def dad (t : ℝ) : Fin 192 → ℝ :=
   fun ch => dae t ch * rf (2 * (28 * 28)) (bnRowLA 2 192 28 28 (Zad t) ch)
 
-private noncomputable def daz (t : ℝ) : Fin 80 → ℝ :=
+noncomputable def daz (t : ℝ) : Fin 80 → ℝ :=
   fun o => dad t 0 * rf (2 * (28 * 28)) (bnRowLA 2 80 28 28 (Zaz t) o)
 
 noncomputable def dbq (t : ℝ) : Fin 80 → ℝ :=
@@ -643,19 +648,19 @@ noncomputable def dbe (t : ℝ) : Fin 480 → ℝ :=
 noncomputable def dbd (t : ℝ) : Fin 480 → ℝ :=
   fun ch => dbe t ch * rf (2 * (14 * 14)) (bnRowLA 2 480 14 14 (Zbd t) ch)
 
-private noncomputable def dbz (t : ℝ) : Fin 160 → ℝ :=
+noncomputable def dbz (t : ℝ) : Fin 160 → ℝ :=
   fun o => dbd t 0 * rf (2 * (14 * 14)) (bnRowLA 2 160 14 14 (Zbz t) o)
 
-private noncomputable def dcq (t : ℝ) : Fin 160 → ℝ :=
+noncomputable def dcq (t : ℝ) : Fin 160 → ℝ :=
   fun ch => dbz t ch * rf (2 * (14 * 14)) (bnRowLA 2 160 14 14 (Zcq t) ch)
 
-private noncomputable def dce (t : ℝ) : Fin 960 → ℝ :=
+noncomputable def dce (t : ℝ) : Fin 960 → ℝ :=
   fun o => dcq t 0 * rf (2 * (14 * 14)) (bnRowLA 2 960 14 14 (Zce t) o)
 
-private noncomputable def dcd (t : ℝ) : Fin 960 → ℝ :=
+noncomputable def dcd (t : ℝ) : Fin 960 → ℝ :=
   fun ch => dce t ch * rf (2 * (7 * 7)) (bnRowLA 2 960 7 7 (Zcd t) ch)
 
-private noncomputable def dcz (t : ℝ) : Fin 256 → ℝ :=
+noncomputable def dcz (t : ℝ) : Fin 256 → ℝ :=
   fun o => dcd t 0 * rf (2 * (7 * 7)) (bnRowLA 2 256 7 7 (Zcz t) o)
 
 noncomputable def dh1 (t : ℝ) : Fin 960 → ℝ :=

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.BackwardMaps
+module
+
+public import LeanMlir.Proofs.Foundation.BackwardMaps
+
+@[expose] public section
 
 /-! # The ResNet-34 / ResNet-50 backward chains — the ℝ maps the ResNet ties are about
 

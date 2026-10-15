@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
-import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
+public import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+
+@[expose] public section
 
 /-! # EfficientNet-B0's data-parallel forward at SYNCHRONISED BatchNorm — replica `r` IS shard `r`
 
@@ -150,7 +154,7 @@ theorem mbBodyGraphSync_shard (p epsStr : String) (R : Nat) (hR : 0 < R) (N h w 
     R hR hm q.pε q.pγ q.pβ _ _ hpc r
 
 /-- The no-skip widening block (b9, b16) is the body alone. -/
-private def mbExpGraphSync (p epsStr : String) (R : Nat) (hR : 0 < R) (N h w : Nat)
+def mbExpGraphSync (p epsStr : String) (R : Nat) (hR : 0 < R) (N h w : Nat)
     {ic mid oc rd kh kw : Nat} (q : MBW ic mid oc rd kh kw) (bf16 : Bool)
     (e : Fin R → SHlo (N * (ic * h * w))) :
     Fin R → SHlo (N * (oc * h * w)) :=

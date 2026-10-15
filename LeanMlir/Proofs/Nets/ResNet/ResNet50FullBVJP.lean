@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
-import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
-import LeanMlir.Proofs.Nets.ResNet.ResNet50BackB0
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50BackB0
+
+@[expose] public section
 
 /-! # ResNet-50's whole-net input-VJP at TRUE BATCH-NORM
 
@@ -140,19 +144,19 @@ noncomputable def r50DownBHasVJPAt (N h w : Nat) {ic mid oc : Nat} (p : R50ProjW
     p.Wp p.bp p.εp hq.hp p.γp p.βp v hs.hm1 hs.hm2 hs.hout
 
 /-- The identity bottleneck as a `CertLayer`, at its weight record. -/
-private noncomputable def r50IdLayer (N h w : Nat) {mid oc : Nat} (p : R50IdW mid oc) (hq : R50IdPos p) :
+noncomputable def r50IdLayer (N h w : Nat) {mid oc : Nat} (p : R50IdW mid oc) (hq : R50IdPos p) :
     StableHLO.CertLayer (N * (oc * h * w)) (N * (oc * h * w)) :=
   StableHLO.r50BottleneckLayer N (h := h) (w := w) p.W₁ p.b₁ p.ε₁ hq.h1 p.γ₁ p.β₁
     p.W₂ p.b₂ p.ε₂ hq.h2 p.γ₂ p.β₂ p.W₃ p.b₃ p.ε₃ hq.h3 p.γ₃ p.β₃
 
 /-- The stride-1 projection bottleneck as a `CertLayer`, at its weight record. -/
-private noncomputable def r50ProjLayer (N h w : Nat) {ic mid oc : Nat} (p : R50ProjW ic mid oc)
+noncomputable def r50ProjLayer (N h w : Nat) {ic mid oc : Nat} (p : R50ProjW ic mid oc)
     (hq : R50ProjPos p) : StableHLO.CertLayer (N * (ic * h * w)) (N * (oc * h * w)) :=
   StableHLO.r50ProjBlockLayer N (h := h) (w := w) p.W₁ p.b₁ p.ε₁ hq.h1 p.γ₁ p.β₁
     p.W₂ p.b₂ p.ε₂ hq.h2 p.γ₂ p.β₂ p.W₃ p.b₃ p.ε₃ hq.h3 p.γ₃ p.β₃ p.Wp p.bp p.εp hq.hp p.γp p.βp
 
 /-- The strided projection bottleneck as a `CertLayer`, at its weight record. -/
-private noncomputable def r50DownLayer (N h w : Nat) {ic mid oc : Nat} (p : R50ProjW ic mid oc)
+noncomputable def r50DownLayer (N h w : Nat) {ic mid oc : Nat} (p : R50ProjW ic mid oc)
     (hq : R50ProjPos p) : StableHLO.CertLayer (N * (ic * (2 * h) * (2 * w))) (N * (oc * h * w)) :=
   StableHLO.r50DownBlockLayer N (h := h) (w := w) p.W₁ p.b₁ p.ε₁ hq.h1 p.γ₁ p.β₁
     p.W₂ p.b₂ p.ε₂ hq.h2 p.γ₂ p.β₂ p.W₃ p.b₃ p.ε₃ hq.h3 p.γ₃ p.β₃ p.Wp p.bp p.εp hq.hp p.γp p.βp
@@ -384,7 +388,7 @@ theorem r50NetLayer_fwd_apply (N q : Nat) {nCls : Nat} (w : R50BWeights nCls)
 
 /-- `R50SmoothAtB` is the layer's `.ok`: one `comp_ok_of` per block, each naming its block's
     input `r50PreK`, so every step is a one-level `rfl`. -/
-private theorem r50SmoothAtB_ok (N q : Nat) {nCls : Nat} (w : R50BWeights nCls)
+theorem r50SmoothAtB_ok (N q : Nat) {nCls : Nat} (w : R50BWeights nCls)
     (hp : R50PosB w) (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * q))))) * (2 * (2 * (2 * (2 * (2 * q))))))))
     (hx : R50SmoothAtB N q w x) : (r50NetLayer N q w hp).ok x := by
   refine StableHLO.CertLayer.comp_ok_of ⟨hx.stem, hx.pool⟩ (r50Pre0 N q w x) rfl ?_

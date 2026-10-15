@@ -1,4 +1,8 @@
-import LeanMlir.LEBytes
+module
+
+public import LeanMlir.LEBytes
+
+@[expose] public section
 /-! # The verified trainers' packed-parameter layouts
 
 One namespace per verified ImageNet-scale net (`ResNet34Layout`, `MobileNetV2Layout`,
@@ -44,9 +48,9 @@ namespace ResNet34Layout
 -- moves the logits by rel 1e-6 (the same ablation on BN β moves them by 0.79), and the bias-free
 -- render ties the biased one with every forward-only output BIT-EXACT.
 -- `tests/TestConvBiasZero.lean`.
-private def idBlk (c : Nat) : Array (Array Nat × Nat) :=
+def idBlk (c : Nat) : Array (Array Nat × Nat) :=
   #[(#[c,c,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],1),(#[c],2)]
-private def downBlk (cin c : Nat) : Array (Array Nat × Nat) :=
+def downBlk (cin c : Nat) : Array (Array Nat × Nat) :=
   #[(#[c,cin,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],1),(#[c],2),
     (#[c,cin,1,1],0),(#[c],1),(#[c],2)]   -- option-B 1×1 projection
 /-- `(dims, initKind)` for every param, in func-arg order. -/
@@ -76,12 +80,12 @@ namespace MobileNetV2Layout
     `@mobilenetv2_adam_train_step`'s signature (and `@mobilenetv2_fwd`'s) — both rendered from the
     same `Proofs.StableHLO.mnv2FwdChainB` traversal. Strides live only in the renderers (no
     param-shape effect). `initKind`: 0 = random weight (`mkParam`: conv He fan-out, dense Glorot), 1 = ones (γ), 2 = zeros. -/
-private def irBlk (ic mid oc : Nat) : Array (Array Nat × Nat) :=
+def irBlk (ic mid oc : Nat) : Array (Array Nat × Nat) :=
   (if mid != ic then #[(#[mid,ic,1,1],0),(#[mid],1),(#[mid],2)] else #[]) ++  -- expand 1×1 (skip if t=1, mid=ic)
   #[(#[mid,1,3,3],0),(#[mid],1),(#[mid],2),                -- depthwise 3×3 (stride 1 or 2)
     (#[oc,mid,1,1],0),(#[oc],1),(#[oc],2)]                 -- project 1×1
 /-- (ic, mid, oc) per block — MUST match tests/TestMobilenetV2*.lean `blocks`. Full paper net (17). -/
-private def blocks : Array (Nat × Nat × Nat) :=
+def blocks : Array (Nat × Nat × Nat) :=
   #[(32,32,16),
     (16,96,24),(24,144,24),
     (24,144,32),(32,192,32),(32,192,32),
@@ -114,9 +118,9 @@ namespace EfficientNetLayout
     `@efficientnet_train_step`'s signature, rendered by Proofs/Codegen/EfficientNetRender/Basic.lean.
     `initKind`: 0 = random weight (`mkParam`: conv He fan-out, dense Glorot), 1 = ones (γ), 2 = zeros (β / bias),
     7 = SE FC (var 2/out under `seFanOutInit`, the reference's 1×1-conv fan-out; else Glorot). -/
-private def stages : Array (Nat × Nat × Nat × Nat × Nat) :=
+def stages : Array (Nat × Nat × Nat × Nat × Nat) :=
   #[(1,16,1,1,3),(6,24,2,2,3),(6,40,2,2,5),(6,80,3,2,3),(6,112,3,1,5),(6,192,4,2,5),(6,320,1,1,3)]
-private def mbBlk (ic mid oc r k : Nat) : Array (Array Nat × Nat) :=
+def mbBlk (ic mid oc r k : Nat) : Array (Array Nat × Nat) :=
   (if mid != ic then #[(#[mid,ic,1,1],0),(#[mid],1),(#[mid],2)] else #[]) ++  -- expand (skip if t=1)
   #[(#[mid,1,k,k],0),(#[mid],1),(#[mid],2),               -- depthwise k×k (stride 1 or 2)
     (#[mid,r],7),(#[r],2),(#[r,mid],7),(#[mid],2),        -- squeeze-excite dense₁/dense₂ (kind 7) — biases KEPT
@@ -149,14 +153,14 @@ namespace ConvNeXtLayout
     Proofs/Codegen/ConvNeXtRender.lean. `initKind`: 0 = random weight (`mkParam`; σ = 0.02
     under its ConvNeXt flag), 1 = ones (LN γ), 2 = zeros (LN β / bias), 3 = 1e-6 (layerScale γ,
     the paper's init). -/
-private def depths : Array Nat := #[3, 3, 9, 3]
-private def dims   : Array Nat := #[96, 192, 384, 768]
-private def blockSpec (c e : Nat) : Array (Array Nat × Nat) :=
+def depths : Array Nat := #[3, 3, 9, 3]
+def dims   : Array Nat := #[96, 192, 384, 768]
+def blockSpec (c e : Nat) : Array (Array Nat × Nat) :=
   #[(#[c,1,7,7],0),(#[c],2),(#[c],1),(#[c],2),   -- depthwise W,b ; LN γ,β (PER-CHANNEL)
     (#[e,c,1,1],0),(#[e],2),                      -- expand W,b
     (#[c,e,1,1],0),(#[c],2),                      -- project W,b
     (#[c],3)]                                     -- layerScale γ (per-channel), kind 3 = 1e-6
-private def downSpec (ci co : Nat) : Array (Array Nat × Nat) :=
+def downSpec (ci co : Nat) : Array (Array Nat × Nat) :=
   #[(#[ci],1),(#[ci],2),(#[co,ci,2,2],0),(#[co],2)]  -- LN γ,β at the PRE-conv width ; conv W,b
 /-- `(dims, initKind)` for every param, in func-arg order.
 
@@ -193,13 +197,13 @@ namespace ViTLayout
     weight (`mkParam`: conv He fan-out, dense Glorot, or timm's σ = 0.02 under its ViT flag),
     1 = ones (LN γ), 2 = zeros (LN β / bias), 5 = embedding (CLS / pos: σ = 0.02 under the ViT
     flag, zeros without it). -/
-private def D : Nat := 192
-private def M : Nat := 768
-private def S : Nat := 16
-private def nTok : Nat := 197    -- 14·14 + 1 (CLS)
-private def depth : Nat := 12
-private def nCls : Nat := 10
-private def blockSpec : Array (Array Nat × Nat) :=
+def D : Nat := 192
+def M : Nat := 768
+def S : Nat := 16
+def nTok : Nat := 197    -- 14·14 + 1 (CLS)
+def depth : Nat := 12
+def nCls : Nat := 10
+def blockSpec : Array (Array Nat × Nat) :=
   #[(#[D],1),(#[D],2),                                                       -- LN1 γ,β
     (#[D,D],0),(#[D],2),(#[D,D],0),(#[D],2),(#[D,D],0),(#[D],2),(#[D,D],0),(#[D],2),  -- Wq..bo
     (#[D],1),(#[D],2),                                                       -- LN2 γ,β

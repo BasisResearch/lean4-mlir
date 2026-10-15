@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.Small.CifarFold
-import LeanMlir.Proofs.Nets.Small.CnnParamGrad
+module
+
+public import LeanMlir.Proofs.Nets.Small.CifarFold
+public import LeanMlir.Proofs.Nets.Small.CnnParamGrad
+
+@[expose] public section
 
 /-! # The CIFAR CNN — every parameter gradient node IS the loss's derivative, up to pool twins
 

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
-import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
+public import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+
+@[expose] public section
 
 /-! # MobileNetV2's data-parallel forward at SYNCHRONISED BatchNorm — replica `r` IS shard `r`
 

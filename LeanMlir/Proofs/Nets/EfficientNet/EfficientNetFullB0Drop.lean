@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
-import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Eval
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
-import LeanMlir.Proofs.Foundation.DropSites
+module
+
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Eval
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+public import LeanMlir.Proofs.Foundation.DropSites
+
+@[expose] public section
 
 /-! # EfficientNet-B0 with stochastic depth and classifier dropout — forward, graph, faithfulness
 

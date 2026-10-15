@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.Smoothing.CP
+module
+
+public import LeanMlir.Proofs.Certificates.Smoothing.CP
+
+@[expose] public section
 
 /-! # The smoothing CP scorecard — the driver's reported bounds, kernel-checked
 

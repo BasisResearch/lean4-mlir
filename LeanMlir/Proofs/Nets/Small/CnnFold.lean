@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Nets.Small.CnnChainClose
-import LeanMlir.Proofs.Nets.Small.MnistCNN
-import LeanMlir.Proofs.Nets.Small.MlpTrainStep
-import LeanMlir.Proofs.Foundation.SgdNodes
+module
+
+public import LeanMlir.Proofs.Nets.Small.CnnChainClose
+public import LeanMlir.Proofs.Nets.Small.MnistCNN
+public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+public import LeanMlir.Proofs.Foundation.SgdNodes
+
+@[expose] public section
 
 /-! # The MNIST-CNN train step, proof-tied to the certified SGD step
 

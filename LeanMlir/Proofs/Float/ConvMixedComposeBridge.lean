@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Float.ConvFloat
-import LeanMlir.Proofs.Float.ConvMixedFloatBridge
+module
+
+public import LeanMlir.Proofs.Float.ConvFloat
+public import LeanMlir.Proofs.Float.ConvMixedFloatBridge
+
+@[expose] public section
 
 /-! # The mixed-precision conv at a perturbed input
 

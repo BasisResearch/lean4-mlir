@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.SmoothedBatchLoss
-import LeanMlir.Proofs.Foundation.BceLossCot
+module
+
+public import LeanMlir.Proofs.Foundation.SmoothedBatchLoss
+public import LeanMlir.Proofs.Foundation.BceLossCot
+
+@[expose] public section
 
 /-! # The batched BCE-with-logits loss, and its gradient is the emitted cotangent
 

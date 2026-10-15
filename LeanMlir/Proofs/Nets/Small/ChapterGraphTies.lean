@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Codegen.ChapterGraphs
-import LeanMlir.Proofs.Nets.Small.CifarCNN
+module
+
+public import LeanMlir.Proofs.Codegen.ChapterGraphs
+public import LeanMlir.Proofs.Nets.Small.CifarCNN
+
+@[expose] public section
 
 /-! # The chapter 3–4 graphs denote the chapter nets
 

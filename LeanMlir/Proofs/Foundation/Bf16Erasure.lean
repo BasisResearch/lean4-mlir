@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
-import LeanMlir.Proofs.Foundation.ParamGradNodes
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
+public import LeanMlir.Proofs.Foundation.ParamGradNodes
+
+@[expose] public section
 
 /-! # Erasure — every batched bf16 kind is its f32 peer at the identity rounding
 

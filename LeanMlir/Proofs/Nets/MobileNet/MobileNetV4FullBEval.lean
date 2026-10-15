@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
+
+@[expose] public section
 
 /-! # MobileNetV4-Conv-M at inference — eval forward + graph + faithfulness, at every input side 32·f
 

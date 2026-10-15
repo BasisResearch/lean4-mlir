@@ -1,7 +1,11 @@
-import Mathlib.Basic.Real.Basic
-import Mathlib.Data.Rat.BigOperators
-import Mathlib.Data.Rat.Cast.Order
-import Mathlib.Algebra.BigOperators.Fin
+module
+
+public import Mathlib.Basic.Real.Basic
+public import Mathlib.Data.Rat.BigOperators
+public import Mathlib.Data.Rat.Cast.Order
+public import Mathlib.Algebra.BigOperators.Fin
+
+@[expose] public section
 
 /-! # Gram-matrix identities by one kernel check
 

@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.SmoothedLossCot
-import LeanMlir.Proofs.Foundation.Batched.BackLinks
+module
+
+public import LeanMlir.Proofs.Foundation.SmoothedLossCot
+public import LeanMlir.Proofs.Foundation.Batched.BackLinks
+
+@[expose] public section
 
 /-! # The batched label-smoothed loss, and its gradient is the emitted cotangent
 

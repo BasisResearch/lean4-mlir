@@ -1,6 +1,12 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4BackB0
-import LeanMlir.Proofs.Foundation.HeadLayers
-import LeanMlir.Proofs.Foundation.Bf16Erasure
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4BackB0
+public import LeanMlir.Proofs.Foundation.HeadLayers
+public import LeanMlir.Proofs.Foundation.Bf16Erasure
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4BackB0
+
+@[expose] public section
 
 /-! # MobileNetV4-Conv-M at batch BatchNorm — the whole net's forward and graph
 
@@ -661,7 +667,7 @@ private theorem mnv4HeadGraphB_faithful (epsStr : String) (N h w : Nat) {c mid o
 -- ════════════════════════════════════════════════════════════════
 
 /-- Trunk group **Res28**'s graph — rows 1–2: the 56→28 reduction and the block that follows it. -/
-private def mnv4Res28GraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+def mnv4Res28GraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
     (bf16 : Bool) (e : SHlo (N * (48 * 56 * 56))) : SHlo (N * (80 * 28 * 28)) :=
   mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row2 w.b2 bf16)
       (mnv4StridedGraphB epsStr N mnv4Row1 w.b1 bf16
@@ -677,7 +683,7 @@ private theorem mnv4Res28GraphB_faithful (N : Nat) (epsStr : String) {nCls : Nat
       (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row2 w.b2 bf16 (by decide) (by decide)),]
 
 /-- Trunk group **Res14a**'s graph — rows 3–6: the 28→14 reduction, then three ExtraDW blocks. -/
-private def mnv4Res14aGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+def mnv4Res14aGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
     (bf16 : Bool) (e : SHlo (N * (80 * 28 * 28))) : SHlo (N * (160 * 14 * 14)) :=
   mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row6 w.b6 bf16)
       (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row5 w.b5 bf16)
@@ -699,7 +705,7 @@ private theorem mnv4Res14aGraphB_faithful (N : Nat) (epsStr : String) {nCls : Na
       (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row6 w.b6 bf16 (by decide) (by decide)),]
 
 /-- Trunk group **Res14b**'s graph — rows 7–10 at 14×14: ExtraDW, ConvNeXt, FFN, ConvNeXt — three families in four blocks. -/
-private def mnv4Res14bGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+def mnv4Res14bGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
     (bf16 : Bool) (e : SHlo (N * (160 * 14 * 14))) : SHlo (N * (160 * 14 * 14)) :=
   mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row10 w.b10 bf16)
       (mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N mnv4Row9 w.b9 bf16)
@@ -722,7 +728,7 @@ private theorem mnv4Res14bGraphB_faithful (N : Nat) (epsStr : String) {nCls : Na
       (mnv4ConvNeXtBodyGraphB_faithful epsStr N mnv4Row10 w.b10 bf16 (by decide) (by decide)),]
 
 /-- Trunk group **Res7a**'s graph — rows 11–15: the last reduction (14→7), then four blocks at 7×7. -/
-private def mnv4Res7aGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+def mnv4Res7aGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
     (bf16 : Bool) (e : SHlo (N * (160 * 14 * 14))) : SHlo (N * (256 * 7 * 7)) :=
   mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N mnv4Row15 w.b15 bf16)
       (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row14 w.b14 bf16)
@@ -747,7 +753,7 @@ private theorem mnv4Res7aGraphB_faithful (N : Nat) (epsStr : String) {nCls : Nat
       (mnv4FfnBodyGraphB_faithful epsStr N mnv4Row15 w.b15 bf16 (by decide) (by decide)),]
 
 /-- Trunk group **Res7b**'s graph — rows 16–21 at 7×7: the net's tail. -/
-private def mnv4Res7bGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+def mnv4Res7bGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
     (bf16 : Bool) (e : SHlo (N * (256 * 7 * 7))) : SHlo (N * (256 * 7 * 7)) :=
   mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row21 w.b21 bf16)
       (mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N mnv4Row20 w.b20 bf16)

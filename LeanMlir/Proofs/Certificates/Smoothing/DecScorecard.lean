@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Certificates.Smoothing.DecChunk6
+module
+
+public import LeanMlir.Proofs.Certificates.Smoothing.DecChunk6
+
+@[expose] public section
 
 /-! # The smoothing DECIMAL-radius scorecard — Φ⁻¹ leaves symbolic-land, corpus-wide
 

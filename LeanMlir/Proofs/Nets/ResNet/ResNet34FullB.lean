@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet34BackB0
-import LeanMlir.Proofs.Foundation.Bf16Erasure
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34BackB0
+public import LeanMlir.Proofs.Foundation.Bf16Erasure
+
+@[expose] public section
 
 /-! # ResNet-34 at TRUE BATCH-NORM — the whole net's forward and graph
 

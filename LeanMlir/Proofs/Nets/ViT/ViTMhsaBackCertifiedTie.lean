@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.ViT.ViTBackChains
-import LeanMlir.Proofs.Nets.ViT.ViTBackB0
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTBackChains
+public import LeanMlir.Proofs.Nets.ViT.ViTBackB0
+
+@[expose] public section
 
 /-! # The ViT MHSA backward chain IS the certified VJP (the sdpa adjoint)
 

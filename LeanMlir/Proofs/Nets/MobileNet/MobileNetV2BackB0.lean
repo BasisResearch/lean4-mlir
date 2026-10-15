@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.Batched.StageLayers
+module
+
+public import LeanMlir.Proofs.Foundation.Batched.StageLayers
+
+@[expose] public section
 
 /-! # Backward-graph faithfulness for the batched MobileNetV2 inverted-residual block
 

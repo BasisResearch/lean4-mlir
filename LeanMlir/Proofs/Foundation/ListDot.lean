@@ -1,4 +1,8 @@
-import Mathlib.Analysis.InnerProductSpace.EuclideanDist
+module
+
+public import Mathlib.Analysis.InnerProductSpace.EuclideanDist
+
+@[expose] public section
 
 /-! # Kernel-fast ℤ-list dot products for certificate data
 

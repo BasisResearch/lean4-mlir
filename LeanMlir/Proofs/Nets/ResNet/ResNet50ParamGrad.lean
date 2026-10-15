@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Nets.ResNet.ResNet50StepTieB
-import LeanMlir.Proofs.Nets.ResNet.ResNet34ParamGrad
-import LeanMlir.Proofs.Foundation.BceBatchLoss
+module
+
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50StepTieB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34ParamGrad
+public import LeanMlir.Proofs.Foundation.BceBatchLoss
+
+@[expose] public section
 
 /-! # ResNet-50 — every parameter gradient node IS the loss's derivative in that parameter
 

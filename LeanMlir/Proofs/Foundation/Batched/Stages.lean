@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Foundation.BatchMapVJPAt
-import LeanMlir.Proofs.Architectures.Depthwise
-import LeanMlir.Proofs.Architectures.SE
+module
+
+public import LeanMlir.Proofs.Foundation.BatchMapVJPAt
+public import LeanMlir.Proofs.Architectures.Depthwise
+public import LeanMlir.Proofs.Architectures.SE
+
+@[expose] public section
 
 /-! # Batched stages — conv/depthwise → true batch-norm (→ swish) at the batched index, with VJPs
 

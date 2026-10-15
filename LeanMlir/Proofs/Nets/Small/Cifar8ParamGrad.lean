@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Nets.Small.Cifar8StepTieG
-import LeanMlir.Proofs.Nets.Small.CifarParamGrad
+module
+
+public import LeanMlir.Proofs.Nets.Small.Cifar8StepTieG
+public import LeanMlir.Proofs.Nets.Small.CifarParamGrad
+
+@[expose] public section
 
 /-! # The 8-conv CIFAR CNN — every gradient node IS the loss's derivative, up to pool twins
 

@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Foundation.ParamGrad
-import LeanMlir.Proofs.Foundation.GradNodesB
-import LeanMlir.Proofs.Foundation.SmoothedBatchLoss
-import LeanMlir.Proofs.Foundation.CertifiedChain
+module
+
+public import LeanMlir.Proofs.Foundation.ParamGrad
+public import LeanMlir.Proofs.Foundation.GradNodesB
+public import LeanMlir.Proofs.Foundation.SmoothedBatchLoss
+public import LeanMlir.Proofs.Foundation.CertifiedChain
+
+@[expose] public section
 
 /-! # ParamGradNodes — each batched parameter gradient node is a loss derivative
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Nets.ViT.ViTDepthK
+module
+
+public import LeanMlir.Proofs.Nets.ViT.ViTDepthK
+
+@[expose] public section
 
 /-! # ViT backward-graph faithfulness (per-token Mat VJP)
 
@@ -321,7 +325,7 @@ theorem mhsa_backward_collapseMH (N heads d : Nat)
 
 /-- SDPA dQ-segment subgraph: `matmulF(scaleF(softmaxRowBack(matmulF(dAtt, transposeF v))), k)`
     — denotes `vitCotDQ`. `ss` = saved pre-softmax scaled scores; `k`/`v`/`dAtt` saved. -/
-private noncomputable def sdpaBackQGraph (Np1 D : Nat) (ss : Vec (Np1*Np1))
+noncomputable def sdpaBackQGraph (Np1 D : Nat) (ss : Vec (Np1*Np1))
     (k v : Vec (Np1*D)) (e : SHlo (Np1*D)) : SHlo (Np1*D) :=
   .matmulF (m := Np1) (k := Np1) (n := D)
     (.scaleF "%sdpaS" (sdpaScale D)
@@ -330,7 +334,7 @@ private noncomputable def sdpaBackQGraph (Np1 D : Nat) (ss : Vec (Np1*Np1))
     (.operand "%k" k)
 
 /-- SDPA dK-segment subgraph — denotes `vitCotDK`. -/
-private noncomputable def sdpaBackKGraph (Np1 D : Nat) (ss : Vec (Np1*Np1))
+noncomputable def sdpaBackKGraph (Np1 D : Nat) (ss : Vec (Np1*Np1))
     (q v : Vec (Np1*D)) (e : SHlo (Np1*D)) : SHlo (Np1*D) :=
   .matmulF (m := Np1) (k := Np1) (n := D)
     (.transposeF (m := Np1) (n := Np1)
@@ -340,7 +344,7 @@ private noncomputable def sdpaBackKGraph (Np1 D : Nat) (ss : Vec (Np1*Np1))
     (.operand "%q" q)
 
 /-- SDPA dV-segment subgraph — denotes `vitCotDV`. `p` = saved post-softmax weights. -/
-private noncomputable def sdpaBackVGraph (Np1 D : Nat) (p : Vec (Np1*Np1))
+noncomputable def sdpaBackVGraph (Np1 D : Nat) (p : Vec (Np1*Np1))
     (e : SHlo (Np1*D)) : SHlo (Np1*D) :=
   .matmulF (m := Np1) (k := Np1) (n := D)
     (.transposeF (m := Np1) (n := Np1) (.operand "%p" p)) e
@@ -598,7 +602,7 @@ theorem rowVecLNBack_eq_backward {N D : Nat} (ε : ℝ) (γv βv : Vec D) (hε :
     outermost backward token = earliest forward op = LN₂). REUSES `transformerMlpBackGraph`
     verbatim (the MLP body is LN-agnostic), after the vector-LN back fragment
     `lnRowBack(γ=1) ∘ rowScaleF γ2v`. `Y = LNᵥ₂ h` is the saved MLP input. -/
-private noncomputable def mlpSublayerVInnerBackGraph (gf : GeluForm) {Np1 D mlpDim : Nat}
+noncomputable def mlpSublayerVInnerBackGraph (gf : GeluForm) {Np1 D mlpDim : Nat}
     (ε : ℝ) (γ2v : Vec D)
     (Wfc1 : Mat D mlpDim) (bfc1 : Vec mlpDim) (Wfc2 : Mat mlpDim D)
     (h : Vec (Np1 * D)) (Y : Mat Np1 D) (e : SHlo (Np1 * D)) : SHlo (Np1 * D) :=

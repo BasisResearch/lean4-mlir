@@ -1,6 +1,13 @@
-import LeanMlir.Verified.Spec
-import LeanMlir.ParamLayouts
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+module
+
+public import LeanMlir.Verified.Spec
+public import LeanMlir.ParamLayouts
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+meta import LeanMlir.ParamLayouts
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+meta import LeanMlir.Verified.Spec
+
+@[expose] public section
 
 /-! # Concrete verified architectures — the shared specs
 

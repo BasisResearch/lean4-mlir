@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.TokenParamGrad
-import LeanMlir.Proofs.Foundation.SgdNodes
+module
+
+public import LeanMlir.Proofs.Architectures.TokenParamGrad
+public import LeanMlir.Proofs.Foundation.SgdNodes
+
+@[expose] public section
 
 /-! # ViT-Tiny fold — each emitted param-SGD op `den`otes the certified SGD step at its cotangent
 

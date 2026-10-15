@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Foundation.Tensor
-import Mathlib.Analysis.Calculus.Deriv.Mul
-import Mathlib.Analysis.Calculus.Deriv.Slope
-import Mathlib.Analysis.RCLike.Basic
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+public import Mathlib.Analysis.Calculus.Deriv.Mul
+public import Mathlib.Analysis.Calculus.Deriv.Slope
+public import Mathlib.Analysis.RCLike.Basic
+
+@[expose] public section
 
 /-!
 # Nonzero-Jacobian seal — the generic "the backward is non-trivial here" bridge

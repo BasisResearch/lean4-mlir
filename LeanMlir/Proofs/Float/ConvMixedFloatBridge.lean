@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Float.FloatBridge
-import LeanMlir.Proofs.Architectures.ConvIndex
+module
+
+public import LeanMlir.Proofs.Float.FloatBridge
+public import LeanMlir.Proofs.Architectures.ConvIndex
+
+@[expose] public section
 
 /-! # Mixed-precision convolution forward error
 

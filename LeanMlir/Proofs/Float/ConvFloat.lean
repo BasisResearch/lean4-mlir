@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.ConvIndex
-import LeanMlir.Proofs.Float.FloatBridge
+module
+
+public import LeanMlir.Proofs.Architectures.ConvIndex
+public import LeanMlir.Proofs.Float.FloatBridge
+
+@[expose] public section
 
 /-! # The conv forward in floating point — conv as a weight-shared dense layer, and its rounding budget
 
