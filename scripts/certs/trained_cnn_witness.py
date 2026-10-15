@@ -522,7 +522,7 @@ theorem z1_eq :
     (fun o hi wi => if c1V o hi wi > 0 then c1V o hi wi else 0) = z1V := by
   funext o hi wi
   fin_cases o <;> fin_cases hi <;> fin_cases wi <;>
-    (simp [c1V, z1V]; try norm_num)
+    (simp [c1V, z1V])
 
 /-- First conv→relu block at the witness = the exact table. -/
 theorem block1_eq :
@@ -560,7 +560,7 @@ theorem r2_eq :
     (fun o hi wi => if c2V o hi wi > 0 then c2V o hi wi else 0) = r2V := by
   funext o hi wi
   fin_cases o <;> fin_cases hi <;> fin_cases wi <;>
-    (simp [c2V, r2V]; try norm_num)
+    (simp [c2V, r2V])
 
 /-- Both conv→relu blocks fold to the exact max-pool input table. -/
 theorem blockZ_eq :
@@ -618,7 +618,7 @@ theorem r3_eq : relu 8 (dense W3 b3 p2f) = r3V := by
   funext k
   show (if dense W3 b3 p2f k > 0 then dense W3 b3 p2f k else 0) = r3V k
   rw [d3_eq]
-  fin_cases k <;> (simp [d3V, r3V]; try norm_num)
+  fin_cases k <;> (simp [d3V, r3V])
 
 /-- dense4 pre-activations at the witness, exact. -/
 noncomputable def d4V : Fin 8 → ℝ := {vec_lit(d4F)}

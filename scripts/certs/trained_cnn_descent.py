@@ -408,15 +408,18 @@ def fm(k, n):
     return f"(⟨{k}, by norm_num⟩ : Fin {n})"
 
 
-def conv_rows(name, Wn, bn, xn, tab, oc):
-    """per-row conv lemmas + aggregator for conv2d Wn bn xn = tab (S×S)."""
+def conv_rows(name, Wn, bn, xn, tab, oc, x):
+    """per-row conv lemmas + aggregator for conv2d Wn bn xn = tab (S×S). `x` is xn's table: a row
+    whose every patch is zero is the bias alone, which `simp` closes without `norm_num`."""
     out = []
     for o in range(oc):
         for hi in range(S):
+            blank = all(v == 0 for wi in range(S) for v in patch(x, hi, wi))
+            fin = "" if blank else "; try norm_num"
             out.append(f"""theorem {name}_r{o}_{hi} : ∀ wi : Fin {S},
     conv2d {Wn} {bn} {xn} {fm(o, oc)} {fm(hi, S)} wi = {tab} {fm(o, oc)} {fm(hi, S)} wi := by
   intro wi
-  fin_cases wi <;> (simp [conv2d, {Wn}, {bn}, {xn}, {tab}, Fin.sum_univ_succ]; try norm_num)
+  fin_cases wi <;> (simp [conv2d, {Wn}, {bn}, {xn}, {tab}, Fin.sum_univ_succ]{fin})
 """)
     bullets = "\n".join(f"  · exact {name}_r{o}_{hi} wi" for o in range(oc) for hi in range(S))
     out.append(f"""theorem {name} : ∀ (o : Fin {oc}) (hi wi : Fin {S}),
@@ -513,16 +516,20 @@ cert_lemmas = cert_lemmas_text(T["certs"], "ConvPatchEq 3 3 x1V", AR,
 cert_bullets = "\n".join(f"  · exact cert_{ci}_{ho} wo" for ci in range(C) for ho in range(H))
 
 
-def pool_bullets_text(fF):
+def pool_bullets_text(fF, r2):
+    """A window of four equal values is closed by `simp` alone; the rest need `norm_num`."""
+    def fin(k):
+        ci, ho, wo = k // 36, (k % 36) // 6, k % 6
+        win = {r2[ci, 2 * ho + a, 2 * wo + b] for a, b in CELLS}
+        return "" if len(win) == 1 else "\n    try norm_num"
     return "\n".join(
         f"""  · show maxPool2 (c := 2) (h := 6) (w := 6) r2V {fm(k // 36, 2)} {fm((k % 36) // 6, 6)} {fm(k % 6, 6)}
         = {lit(fF[k])}
-    simp [maxPool2, r2V, max_def]
-    try norm_num"""
+    simp [maxPool2, r2V, max_def]{fin(k)}"""
         for k in range(C * H * H))
 
 
-pool_bullets = pool_bullets_text(fF)
+pool_bullets = pool_bullets_text(fF, T["r2"])
 
 def weight_bound(name, mat, bound):
     """`|W i j| ≤ bound` for every entry, peeling the `![…]` literal row by row
@@ -629,12 +636,12 @@ def lbl : Fin 10 := {LBL}
 noncomputable def c1V : Tensor3 2 12 12 :=
   {t3_lit(c1T)}
 
-{conv_rows("conv1_eq", "W1", "b1", "T0", "c1V", C)}
+{conv_rows("conv1_eq", "W1", "b1", "T0", "c1V", C, T["x0"])}
 /-- relu(conv1) at the image: the conv2 rung's input, exact. -/
 noncomputable def x1V : Tensor3 2 12 12 :=
   {t3_lit(x1T)}
 
-{table_rows("x1_cell", lambda o, hi, wi: f"x1V {o} {hi} {wi} = if c1V {o} {hi} {wi} > 0 then c1V {o} {hi} {wi} else 0", "(simp [c1V, x1V]; try norm_num)", C)}
+{table_rows("x1_cell", lambda o, hi, wi: f"x1V {o} {hi} {wi} = if c1V {o} {hi} {wi} > 0 then c1V {o} {hi} {wi} else 0", "(simp [c1V, x1V])", C)}
 /-- **The rung's input is the real image's conv1 activation.** -/
 theorem x1_eq : x1V = fun o hi wi =>
     if conv2d W1 b1 T0 o hi wi > 0 then conv2d W1 b1 T0 o hi wi else 0 := by
@@ -650,7 +657,7 @@ theorem x1_eq : x1V = fun o hi wi =>
 noncomputable def c2V : Tensor3 2 12 12 :=
   {t3_lit(c2T)}
 
-{conv_rows("conv2_eq", "W2", "b2", "x1V", "c2V", C)}
+{conv_rows("conv2_eq", "W2", "b2", "x1V", "c2V", C, T["x1"])}
 theorem conv2_fun : conv2d W2 b2 x1V = c2V := by
   funext o hi wi
   exact conv2_eq o hi wi
@@ -660,7 +667,7 @@ theorem conv2_fun : conv2d W2 b2 x1V = c2V := by
 noncomputable def r2V : Tensor3 2 12 12 :=
   {t3_lit(r2T)}
 
-{table_rows("r2_cell", lambda o, hi, wi: f"r2V {o} {hi} {wi} = if c2V {o} {hi} {wi} > 0 then c2V {o} {hi} {wi} else 0", "(simp [c2V, r2V]; try norm_num)", C)}
+{table_rows("r2_cell", lambda o, hi, wi: f"r2V {o} {hi} {wi} = if c2V {o} {hi} {wi} > 0 then c2V {o} {hi} {wi} else 0", "(simp [c2V, r2V])", C)}
 theorem relu_c2 : relu (2 * (2*6) * (2*6)) (Tensor3.flatten c2V) = Tensor3.flatten r2V := by
   funext k
   obtain ⟨o, hi, wi, rfl⟩ := t3Idx_surj k
@@ -713,7 +720,7 @@ theorem r3_eq : relu 8 (dense W3 b3 p2f) = r3V := by
   funext k
   show (if dense W3 b3 p2f k > 0 then dense W3 b3 p2f k else 0) = r3V k
   rw [d3_eq]
-  fin_cases k <;> (simp [d3V, r3V]; try norm_num)
+  fin_cases k <;> (simp [d3V, r3V])
 
 /-- dense4 pre-activations at the image, exact. -/
 noncomputable def d4V : Fin 8 → ℝ := {vec_lit(d4F)}
@@ -1057,7 +1064,7 @@ def lbl : Fin 10 := {LBLB}
 noncomputable def c1V : Tensor3 2 12 12 :=
   {t3_lit(TB["c1"])}
 
-{conv_rows("conv1_eq", "W1", "b1", "T0", "c1V", C)}
+{conv_rows("conv1_eq", "W1", "b1", "T0", "c1V", C, TB["x0"])}
 theorem conv1_fun : conv2d W1 b1 T0 = c1V := by
   funext o hi wi
   exact conv1_eq o hi wi
@@ -1067,7 +1074,7 @@ theorem conv1_fun : conv2d W1 b1 T0 = c1V := by
 noncomputable def x1V : Tensor3 2 12 12 :=
   {t3_lit(TB["x1"])}
 
-{table_rows("x1_cell", lambda o, hi, wi: f"x1V {o} {hi} {wi} = if c1V {o} {hi} {wi} > 0 then c1V {o} {hi} {wi} else 0", "(simp [c1V, x1V]; try norm_num)", C)}
+{table_rows("x1_cell", lambda o, hi, wi: f"x1V {o} {hi} {wi} = if c1V {o} {hi} {wi} > 0 then c1V {o} {hi} {wi} else 0", "(simp [c1V, x1V])", C)}
 theorem relu_c1 : relu (2 * (2*6) * (2*6)) (Tensor3.flatten c1V) = Tensor3.flatten x1V := by
   funext k
   obtain ⟨o, hi, wi, rfl⟩ := t3Idx_surj k
@@ -1086,7 +1093,7 @@ theorem x1_fun : Tensor3.unflatten (relu (2 * (2*6) * (2*6)) (Tensor3.flatten (c
 noncomputable def c2V : Tensor3 2 12 12 :=
   {t3_lit(TB["c2"])}
 
-{conv_rows("conv2_eq", "W2", "b2", "x1V", "c2V", C)}
+{conv_rows("conv2_eq", "W2", "b2", "x1V", "c2V", C, TB["x1"])}
 theorem conv2_fun : conv2d W2 b2 x1V = c2V := by
   funext o hi wi
   exact conv2_eq o hi wi
@@ -1096,7 +1103,7 @@ theorem conv2_fun : conv2d W2 b2 x1V = c2V := by
 noncomputable def r2V : Tensor3 2 12 12 :=
   {t3_lit(TB["r2"])}
 
-{table_rows("r2_cell", lambda o, hi, wi: f"r2V {o} {hi} {wi} = if c2V {o} {hi} {wi} > 0 then c2V {o} {hi} {wi} else 0", "(simp [c2V, r2V]; try norm_num)", C)}
+{table_rows("r2_cell", lambda o, hi, wi: f"r2V {o} {hi} {wi} = if c2V {o} {hi} {wi} > 0 then c2V {o} {hi} {wi} else 0", "(simp [c2V, r2V])", C)}
 theorem relu_c2 : relu (2 * (2*6) * (2*6)) (Tensor3.flatten c2V) = Tensor3.flatten r2V := by
   funext k
   obtain ⟨o, hi, wi, rfl⟩ := t3Idx_surj k
@@ -1114,7 +1121,7 @@ theorem pooled_eq : maxPoolFlat 2 6 6 (Tensor3.flatten r2V) = p2f := by
   rw [Tensor3.unflatten_flatten]
   funext i
   fin_cases i
-{pool_bullets_text(TB["f"])}
+{pool_bullets_text(TB["f"], TB["r2"])}
 
 -- ════════════════════════════════════════════════════════════════
 -- § The pool margin up to two-layer twins
@@ -1149,7 +1156,7 @@ theorem r3_eq : relu 8 (dense W3 b3 p2f) = r3V := by
   funext k
   show (if dense W3 b3 p2f k > 0 then dense W3 b3 p2f k else 0) = r3V k
   rw [d3_eq]
-  fin_cases k <;> (simp [d3V, r3V]; try norm_num)
+  fin_cases k <;> (simp [d3V, r3V])
 
 /-- dense4 pre-activations at the image, exact. -/
 noncomputable def d4V : Fin 8 → ℝ := {vec_lit(TB["d4"])}
