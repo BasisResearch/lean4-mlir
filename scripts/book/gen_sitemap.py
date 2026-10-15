@@ -7,16 +7,15 @@ stale the moment leanblueprint or doc-gen4 emits a different set of pages.
 
     python3 scripts/book/gen_sitemap.py public https://lean.brettkoonce.com
 
-⭐ THE ONE DECISION THAT MATTERS: `public/docs/` is a doc-gen4 tree that contains a
-LOCALLY REBUILT MATHLIB (doc-gen4 cannot yet reference hosted Mathlib docs — see the
-blueprint workflow's doc-gen4 step). That is tens of thousands of pages of somebody
-else's library. Listing it would
-
-  * blow the sitemap spec's 50,000-URL / 50 MB cap, and
-  * ask Google to index a duplicate of Mathlib's own docs under this domain,
-    which is precisely the duplicate-content pattern that earns a ranking penalty.
-
-So `docs/` is included ONLY under the project's own namespaces (DOC_KEEP below).
+⭐ `docs/` IS ONLY PARTLY OURS. doc-gen4 renders every library the docs link into, so
+the build carries a locally rebuilt Mathlib (+ core, Batteries, …: ~5,700 pages). Since
+2026-10-15 scripts/book/externalize_docs.py points those links at the hosted Mathlib docs
+and deletes the pages before this runs, keeping only the few the hosted site lacks; if the
+hosted index was unreachable, the full copy ships instead. Either way the rule is the same:
+`docs/` is listed ONLY under the project's own namespaces (DOC_KEEP below), and robots.txt
+blocks the rest. Listing a vendored copy would ask Google to index a duplicate of Mathlib's
+own docs under this domain — the duplicate-content pattern that earns a ranking penalty —
+and the full copy alone would blow the sitemap's 50,000-URL cap.
 
 Excluded outright: build-logs/ (CI diagnostics, deliberately published for curl-ing
 but not for indexing), 404.html, and the Search Console verification token.

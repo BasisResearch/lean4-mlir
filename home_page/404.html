@@ -57,6 +57,12 @@ found through the <a href="/docs/search.html">API docs search</a>.</p>
 (function () {
   var m = location.pathname.match(/^\/docs\/(.+)\.html$/);
   if (!m) return;
+  // docs/ ships only our own modules; Mathlib, core and the other libraries link to their
+  // hosted docs (scripts/book/externalize_docs.py), so an old docs/Mathlib/… URL goes there.
+  if (!/^LeanMlir[\/.]/.test(m[1]) && m[1] !== "404" && m[1] !== "index") {
+    location.replace("https://leanprover-community.github.io/mathlib4_docs/" + m[1] + ".html" + location.hash);
+    return;
+  }
   var box = document.getElementById("moved");
   var say = function (html) { box.innerHTML = html; box.hidden = false; };
   var link = function (u) { return "/docs/" + u.replace(/^\.\//, ""); };

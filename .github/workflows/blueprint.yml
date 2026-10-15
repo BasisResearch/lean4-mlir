@@ -38,11 +38,12 @@ on:
       - 'tests/DocstringCheckRefs.lean'
       - 'scripts/gates/docstring_ref_baseline.txt'
       - 'scripts/book/gen_sitemap.py'
+      - 'scripts/book/externalize_docs.py'
       - 'scripts/book/inject_umami.sh'
   workflow_dispatch:
     inputs:
       full_site:
-        description: "Also upload the whole public/ tree as a downloadable artifact (includes the locally-rebuilt Mathlib doc-gen4 output — gigabytes, slow)"
+        description: "Also upload the whole public/ tree as a downloadable artifact (includes public/docs/: ~20 MB, or the full local Mathlib copy if the hosted index was unreachable)"
         type: boolean
         default: false
 
@@ -450,6 +451,23 @@ jobs:
           else
             echo "::warning::public/docs/LeanMlir.html missing; docs/ keeps doc-gen4's bare index"
           fi
+          # ⭐ Ship only OUR docs (2026-10-15). doc-gen4 links every Mathlib/core name to a
+          # page it rendered itself, so docs/ carried ~3,500 modules of other people's
+          # libraries, and crawlers mirrored them whatever robots.txt said. Those links now go
+          # to the hosted Mathlib docs, resolved by declaration name through the hosted search
+          # index (master moves modules our pinned release still has), and the pages are
+          # deleted; a page the hosted site lacks stays. See scripts/book/externalize_docs.py.
+          # The hosted index unreachable → ship the full local copy, as before, rather than
+          # fail the deploy.
+          if [ -d public/docs ]; then
+            hosted="$RUNNER_TEMP/mathlib4_docs-declaration-data.json"
+            if curl -fsSL --retry 3 -o "$hosted" \
+                 https://leanprover-community.github.io/mathlib4_docs/declarations/declaration-data.bmp; then
+              python3 scripts/book/externalize_docs.py public/docs "$hosted"
+            else
+              echo "::warning::hosted Mathlib docs index unreachable; docs/ ships the local Mathlib copy"
+            fi
+          fi
           # ⭐ Version the declaration index's URL (2026-09-22). doc-gen4's find/ page and every
           # page's search box fetch declarations/declaration-data.bmp — a 36 MB JSON that changes
           # on every deploy — and the site's CDN hands a .bmp to browsers with a THREE-DAY TTL
@@ -511,9 +529,9 @@ jobs:
         # Generated, never committed: blueprint/ and docs/ are build products, so a
         # static sitemap would be stale the moment leanblueprint or doc-gen4 emits a
         # different page set. The script deliberately lists only OUR doc namespaces —
-        # public/docs/ carries a locally rebuilt Mathlib, and pointing crawlers at a
-        # duplicate of Mathlib's own docs would both blow the 50k-URL cap and invite a
-        # duplicate-content penalty. See scripts/book/gen_sitemap.py.
+        # whatever of the locally rebuilt Mathlib survives externalize_docs.py above (all of
+        # it, if the hosted index was unreachable) is a duplicate of Mathlib's own docs, and
+        # robots.txt keeps crawlers out of it. See scripts/book/gen_sitemap.py.
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -600,8 +618,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: blueprint-${{ github.sha }}
-          # NOT public/docs — that tree is a locally rebuilt Mathlib doc-gen4 corpus
-          # (see the doc-gen4 step's comment) and is gigabytes. Opt into it below.
+          # NOT public/docs — it falls back to a full local Mathlib corpus when the hosted
+          # index is unreachable (see the assemble step). Opt into it below.
           path: |
             public/blueprint.pdf
             public/blueprint/**
