@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+
+@[expose] public section
 
 /-! # The chapter-net graphs and their printers (chapters 1–4)
 

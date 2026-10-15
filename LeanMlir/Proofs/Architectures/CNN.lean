@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Foundation.MLP
-import LeanMlir.Proofs.Architectures.BatchNorm
-import LeanMlir.Proofs.Architectures.Residual
-import LeanMlir.Proofs.Architectures.WindowMax
+module
+
+public import LeanMlir.Proofs.Foundation.MLP
+public import LeanMlir.Proofs.Architectures.BatchNorm
+public import LeanMlir.Proofs.Architectures.Residual
+public import LeanMlir.Proofs.Architectures.WindowMax
+
+@[expose] public section
 
 /-!
 # CNN VJP Proofs

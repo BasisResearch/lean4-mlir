@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.Activations
-import LeanMlir.Proofs.Architectures.GeluErf
+module
+
+public import LeanMlir.Proofs.Architectures.Activations
+public import LeanMlir.Proofs.Architectures.GeluErf
+
+@[expose] public section
 
 /-!
 # Either GELU

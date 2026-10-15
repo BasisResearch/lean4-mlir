@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Architectures.Depthwise
-import LeanMlir.Proofs.Architectures.LayerNorm
-import LeanMlir.Proofs.Architectures.GeluForm
+module
+
+public import LeanMlir.Proofs.Architectures.Depthwise
+public import LeanMlir.Proofs.Architectures.LayerNorm
+public import LeanMlir.Proofs.Architectures.GeluForm
+
+@[expose] public section
 
 /-!
 # ConvNeXt
@@ -91,7 +95,7 @@ noncomputable def convNextBlockBody (gf : GeluForm) {c cExp h w kH kW : Nat}
 
 /-- The block body is differentiable everywhere (composition of
     everywhere-differentiable maps). -/
-private theorem convNextBlockBody_differentiable {gf : GeluForm} {c cExp h w kH kW : Nat}
+theorem convNextBlockBody_differentiable {gf : GeluForm} {c cExp h w kH kW : Nat}
     (Wdw : DepthwiseKernel c kH kW) (bdw : Vec c)
     (εn : ℝ) (hεn : 0 < εn) (γn βn : ℝ)
     (Wex : Kernel4 cExp c 1 1) (bex : Vec cExp)
@@ -156,7 +160,7 @@ noncomputable def convNextBlock (gf : GeluForm) {c cExp h w kH kW : Nat}
 
 /-- The full ConvNeXt block is differentiable everywhere (residual of an
     everywhere-differentiable body). -/
-private theorem convNextBlock_differentiable {gf : GeluForm} {c cExp h w kH kW : Nat}
+theorem convNextBlock_differentiable {gf : GeluForm} {c cExp h w kH kW : Nat}
     (Wdw : DepthwiseKernel c kH kW) (bdw : Vec c)
     (εn : ℝ) (hεn : 0 < εn) (γn βn : ℝ)
     (Wex : Kernel4 cExp c 1 1) (bex : Vec cExp)

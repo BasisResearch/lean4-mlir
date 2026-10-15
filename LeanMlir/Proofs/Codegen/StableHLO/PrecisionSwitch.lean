@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Basic
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+
+@[expose] public section
 
 /-! # Precision-switched constructors — `XAt bf16 rnd …` is `XBf16 rnd …` or `X …`
 

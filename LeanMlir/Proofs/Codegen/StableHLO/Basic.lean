@@ -1,7 +1,9 @@
-import LeanMlir.Proofs.Foundation.IR
-import LeanMlir.Proofs.Foundation.Batched.Basic
-import LeanMlir.Proofs.Architectures.Depthwise
-import LeanMlir.Proofs.Architectures.Attention
+module
+
+public import LeanMlir.Proofs.Foundation.IR
+public import LeanMlir.Proofs.Foundation.Batched.Basic
+public import LeanMlir.Proofs.Architectures.Depthwise
+public import LeanMlir.Proofs.Architectures.Attention
 -- The ℝ AdamW spec (`adamMNext`/`adamVNext`/`adamWParam`), so the optimizer ops can denote it.
 -- AdamStep only imports Foundation.Tensor + Mathlib, so this adds no cycle.
 -- The ℝ global-norm clip spec (`gradSumSq`/`clipFactor`/`clipScale`), so the four clip ops can
@@ -9,16 +11,18 @@ import LeanMlir.Proofs.Architectures.Attention
 -- LAMB (`lambDir`/`lambTrust`/`lambScale`), RSB-A3's optimizer. Imports GradClip for `scalarOf`
 -- and `gradSumSq` — the per-leaf squared norm is SHARED with the clip rather than re-derived, so
 -- the two features cannot drift on what a norm is.
-import LeanMlir.Proofs.Training.Optim.Lamb
+public import LeanMlir.Proofs.Training.Optim.Lamb
 -- RmsPropStep imports only the two above, so this adds no cycle either.
-import LeanMlir.Proofs.Training.Optim.RmsPropStep
+public import LeanMlir.Proofs.Training.Optim.RmsPropStep
 -- DropPath imports only Architectures.LayerNorm (for `layerScale`, which this file already has in
 -- scope), so it adds no cycle either.
-import LeanMlir.Proofs.Training.DropPath
+public import LeanMlir.Proofs.Training.DropPath
 -- He et al.'s 3×3/s2 stem pool (`maxPool3s2Flat` + its VJP witness), so the stem-pool ops can
 -- denote it. MaxPool3s2 imports only Architectures.CNN, which this file already has in scope
 -- transitively, so it adds no cycle.
-import LeanMlir.Proofs.Architectures.MaxPool3s2
+public import LeanMlir.Proofs.Architectures.MaxPool3s2
+
+@[expose] public section
 
 /-! # StableHLO — the emitted-graph AST and its ℝ semantics
 
@@ -2394,7 +2398,7 @@ open Lean Meta in
     match reduces the way the `den_*` lemmas' `rfl` does, and nothing asks for `den.eq_def`.
     Fires only when `e` is an `SHlo` constructor up to reducible unfolding, so a graph built by a
     `def` (`denseF`, `fwdGraph`, …) stays folded for its own `_faithful` lemma. -/
-def denUnfold? (e : Expr) : MetaM (Option Expr) := do
+meta def denUnfold? (e : Expr) : MetaM (Option Expr) := do
   let args := e.getAppArgs
   if args.size < 2 then return none
   let g ← whnfR args[1]!

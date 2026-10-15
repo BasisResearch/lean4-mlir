@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.MLP
+module
+
+public import LeanMlir.Proofs.Foundation.MLP
+
+@[expose] public section
 
 /-!
 # Pair-tile VJP

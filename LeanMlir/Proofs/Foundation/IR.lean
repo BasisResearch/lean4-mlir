@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Architectures.Softmax
-import LeanMlir.Proofs.Architectures.SE
-import LeanMlir.Proofs.Architectures.GeluForm
+module
+
+public import LeanMlir.Proofs.Architectures.Softmax
+public import LeanMlir.Proofs.Architectures.SE
+public import LeanMlir.Proofs.Architectures.GeluForm
+
+@[expose] public section
 
 /-! # The small-net backward IR — `Back` / `Fwd` and their denotations
 

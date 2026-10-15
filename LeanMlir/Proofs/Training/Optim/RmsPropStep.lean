@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Training.Optim.AdamStep
-import LeanMlir.Proofs.Training.Optim.SgdMomentumStep
+module
+
+public import LeanMlir.Proofs.Training.Optim.AdamStep
+public import LeanMlir.Proofs.Training.Optim.SgdMomentumStep
+
+@[expose] public section
 
 /-! # RMSProp with momentum over ℝ — the optimizer MobileNetV2 and EfficientNet actually use
 

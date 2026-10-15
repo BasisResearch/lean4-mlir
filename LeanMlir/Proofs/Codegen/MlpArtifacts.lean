@@ -1,4 +1,10 @@
-import LeanMlir.Proofs.Codegen.MlpRender
+module
+
+public import LeanMlir.Proofs.Codegen.MlpRender
+meta import Mathlib.Basic.Real.Basic
+meta import LeanMlir.Proofs.Codegen.MlpRender
+
+@[expose] public section
 
 /-! # The chapter 2 artifact writer
 

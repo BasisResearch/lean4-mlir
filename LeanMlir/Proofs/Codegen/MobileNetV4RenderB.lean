@@ -1,6 +1,13 @@
-import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
-import LeanMlir.Proofs.Codegen.SyncBnSites
-import LeanMlir.Proofs.Codegen.RenderKit
+module
+
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+public import LeanMlir.Proofs.Codegen.SyncBnSites
+public import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+meta import LeanMlir.Proofs.Codegen.SyncBnSites
+meta import LeanMlir.Proofs.Codegen.RenderKit
+
+@[expose] public section
 
 /-! # MobileNetV4 — the Universal Inverted Bottleneck render
 
@@ -91,7 +98,7 @@ def mnv4DropSite (bi : Nat) : Option Nat := mnv4DropSites.idxOf? bi
 
     A depthwise kernel is `[c, 1, k, k]`, not `[c, c, k, k]`. That is the whole difference between
     a depthwise and a regular conv at this layer, and it is 3 orders of magnitude of parameters. -/
-private def uibSig (p : String) (ic oc expand preDWk postDWk : Nat) : List (String × List Nat) :=
+def uibSig (p : String) (ic oc expand preDWk postDWk : Nat) : List (String × List Nat) :=
   let mid := ic * expand
   (if preDWk > 0 then
      [(s!"%u{p}qW", [ic, 1, preDWk, preDWk]), (s!"%u{p}qg", [ic]), (s!"%u{p}qbt", [ic])] else []) ++
@@ -101,7 +108,7 @@ private def uibSig (p : String) (ic oc expand preDWk postDWk : Nat) : List (Stri
   [(s!"%u{p}pW", [oc, mid, 1, 1]), (s!"%u{p}pg", [oc]), (s!"%u{p}pbt", [oc])]
 
 /-- The fused stage's parameters, in `toSpecs` order: the `k×k` regular conv then the 1×1 project. -/
-private def fusedSig (p : String) (ic oc expand k : Nat) : List (String × List Nat) :=
+def fusedSig (p : String) (ic oc expand k : Nat) : List (String × List Nat) :=
   let mid := if expand == 1 then oc else ic * expand
   [(s!"%f{p}cW", [mid, ic, k, k]), (s!"%f{p}cg", [mid]), (s!"%f{p}cbt", [mid])] ++
   (if expand == 1 then [] else
@@ -130,7 +137,7 @@ def mnv4SigList (nClasses : Nat) : List (String × String) :=
     (at `ic`), expand (at `mid`), post-DW (at `mid`), project (at `oc`), each present exactly when
     its conv is. The `if`s are the same `k = 0` dispatch, so a family that drops a depthwise drops
     its stat slot too and the two lists cannot go out of step. -/
-private def uibStatSig (p : String) (ic oc expand preDWk postDWk : Nat) : List (String × List Nat) :=
+def uibStatSig (p : String) (ic oc expand preDWk postDWk : Nat) : List (String × List Nat) :=
   let mid := ic * expand
   (if preDWk > 0 then bnStatSlots s!"u{p}qn" ic else []) ++
   bnStatSlots s!"u{p}en" mid ++
@@ -138,7 +145,7 @@ private def uibStatSig (p : String) (ic oc expand preDWk postDWk : Nat) : List (
   bnStatSlots s!"u{p}pn" oc
 
 /-- The fused stage's BN stat slots — the `k×k` conv's, then the 1×1 project's. -/
-private def fusedStatSig (p : String) (ic oc expand : Nat) : List (String × List Nat) :=
+def fusedStatSig (p : String) (ic oc expand : Nat) : List (String × List Nat) :=
   let mid := if expand == 1 then oc else ic * expand
   bnStatSlots s!"f{p}cn" mid ++ (if expand == 1 then [] else bnStatSlots s!"f{p}pn" oc)
 
@@ -175,7 +182,7 @@ def mnv4StatSigList : List (String × String) :=
     emits the all-reduced composition and returns the packed `[μ ‖ σ²]` as the third component
     (`""` otherwise, and always at `.eval`). The collectives are tagged with the γ parameter's name
     without `%`. -/
-private def mnv4Bn (B oc h : Nat) (mode : BnMode) (epsStr gName btName statP xin : String)
+def mnv4Bn (B oc h : Nat) (mode : BnMode) (epsStr gName btName statP xin : String)
     (replicas : Nat := 1) (sync : Bool := false) :
     StateM Proofs.StableHLO.EmitS (String × String × String) := do
   let zc  : Vec oc := fun _ => 0
@@ -215,7 +222,7 @@ deriving Inhabited
     three of the four families (Conv-M uses no IB). Everything runs at `h×h`: both depthwise
     positions are shape-preserving, so the `k = 0` omissions are plain `if`s. Block output = `addVB (project-BN out) (block input)`; the
     bottleneck is LINEAR, no activation after the add. -/
-private def uibFwdSkipB (B c expand preDWk postDWk h : Nat) (mode : BnMode)
+def uibFwdSkipB (B c expand preDWk postDWk h : Nat) (mode : BnMode)
     (epsStr p xName : String)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false)
     -- stochastic depth: `some i` scales the project-BN output (the residual branch) by the
@@ -278,7 +285,7 @@ private def uibFwdSkipB (B c expand preDWk postDWk h : Nat) (mode : BnMode)
     downsamples to `h×h`. No skip — `ic ≠ oc`. All three Conv-M downsamples (rows 1, 3, 11) are
     ExtraDW, so they take this form with the pre-DW present; a strided row without a post-DW does
     not occur in Conv-M and is refused by the `#guard` below. -/
-private def uibFwdStridedB (B ic oc expand preDWk postDWk h : Nat) (mode : BnMode)
+def uibFwdStridedB (B ic oc expand preDWk postDWk h : Nat) (mode : BnMode)
     (epsStr p xName : String)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) :
     StateM Proofs.StableHLO.EmitS UibFwdB := do
@@ -624,7 +631,7 @@ def mnv4FwdEvalText (B nClasses : Nat) (epsStr : String)
     the list the func header is built from is literally the list the AdamW tail folds over, so a
     parameter cannot be one shape in the signature and another in the optimizer. The `k = 0`
     dispatch is then written once, in `uibSig`, instead of once per family per direction. -/
-private def zipPs (sig : List (String × List Nat)) (grads : List String) : List PGrad :=
+def zipPs (sig : List (String × List Nat)) (grads : List String) : List PGrad :=
   -- `nm` is the emitted name WITHOUT the leading `%`, because the AdamW tail spells `%{nm}m` /
   -- `%{nm}v` off it. (`String.drop` returns a `String.Slice` on this toolchain.)
   (sig.zip grads).map (fun ((n, ds), g) => ⟨String.ofList n.toList.tail, g, ds⟩)
@@ -637,7 +644,7 @@ private def zipPs (sig : List (String × List Nat)) (grads : List String) : List
     shape-preserving at stride 1) and still descends — it computes the gradient of a different net.
     So the forward record `f` is read for which
     positions exist (`f.qr`/`f.dn` are `""` when absent) rather than re-deriving it. -/
-private def uibBackSkipGradB (B c expand preDWk postDWk h : Nat)
+def uibBackSkipGradB (B c expand preDWk postDWk h : Nat)
     (epsStr p xName : String) (f : UibFwdB) (dyName0 : String)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false)
     (drop : Option Nat := none) :
@@ -724,7 +731,7 @@ private def uibBackSkipGradB (B c expand preDWk postDWk h : Nat)
     pre-DW and the expand run at the INPUT resolution `2h×2h`, so their weight gradients contract
     at `2h` while the project's runs at `h`. The pre-DW is BN only, so its cotangent is the
     expand's input-VJP unmasked. No skip (`ic ≠ oc`). -/
-private def uibBackStridedGradB (B ic oc expand preDWk postDWk h : Nat)
+def uibBackStridedGradB (B ic oc expand preDWk postDWk h : Nat)
     (epsStr p xName : String) (f : UibFwdB) (dyName : String)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) :
     StateM Proofs.StableHLO.EmitS BlockBack := do
@@ -797,7 +804,7 @@ private def uibBackStridedGradB (B ic oc expand preDWk postDWk h : Nat)
 /-- **Fused inverted-bottleneck backward, stride 2** — MobileNetV4's stage 0.
 
     The forward is relu (timm's `EdgeResidual`), so the mask is `selectPosB` at the BN output. -/
-private def fusedMbConvBackStridedGradB (B ic oc expand k h : Nat)
+def fusedMbConvBackStridedGradB (B ic oc expand k h : Nat)
     (epsStr p xName : String) (f : UibFwdB) (dyName : String)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) :
     StateM Proofs.StableHLO.EmitS BlockBack := do
@@ -839,7 +846,7 @@ private def fusedMbConvBackStridedGradB (B ic oc expand k h : Nat)
     are shape-preserving), produces the right shapes, trains and descends — and computes the
     gradient of a net nobody built. With one table and one row per call there is no second place
     for the dispatch to be written down differently. -/
-private def uibBackDispatch (B : Nat) (b : UibSpec) (epsStr xName : String)
+def uibBackDispatch (B : Nat) (b : UibSpec) (epsStr xName : String)
     (f : UibFwdB) (dyName : String) (bf16 : Bool := false)
     (replicas : Nat := 1) (sync : Bool := false) (drop : Option Nat := none) :
     StateM Proofs.StableHLO.EmitS BlockBack :=

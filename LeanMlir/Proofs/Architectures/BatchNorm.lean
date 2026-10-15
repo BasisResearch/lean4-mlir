@@ -1,9 +1,13 @@
-import LeanMlir.Proofs.Foundation.Tensor
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
 -- `Real.sqrt` + lemmas come transitively via `Analysis.SpecialFunctions.Sqrt` below,
 -- which exists on both v4.30 (`Data.Real.Sqrt`) and v4.31 (`Analysis.Real.Sqrt`, moved
 -- by mathlib #39964; old path is a deprecation shim on 4.31) — so we don't name it.
-import Mathlib.Analysis.SpecialFunctions.Sqrt
-import Mathlib.Analysis.Calculus.Deriv.Inv
+public import Mathlib.Analysis.SpecialFunctions.Sqrt
+public import Mathlib.Analysis.Calculus.Deriv.Inv
+
+@[expose] public section
 
 /-!
 # Batch Normalization VJP

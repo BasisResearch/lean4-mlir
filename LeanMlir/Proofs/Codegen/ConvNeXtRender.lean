@@ -1,5 +1,11 @@
-import LeanMlir.Proofs.Foundation.IndexCast
-import LeanMlir.Proofs.Codegen.RenderKit
+module
+
+public import LeanMlir.Proofs.Foundation.IndexCast
+public import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Architectures.GeluForm
+meta import LeanMlir.Proofs.Codegen.RenderKit
+
+@[expose] public section
 
 /-! # ConvNeXt-T train step rendered from the verified AST, with declared carve-outs
 
@@ -65,12 +71,12 @@ namespace Proofs.StableHLO
    the drop-path signature) while that one renders the BODY at `N := bB`. Either alone is a
    wrapper whose declared shape disagrees with its own graph — which the lowerer rejects, loudly,
    so this is a loud coupling rather than a silent one. -/
-private def cEPS : String := "1.0e-6"
-private def cLR : String := "0.1"
+def cEPS : String := "1.0e-6"
+def cLR : String := "0.1"
 /-- The SPATIAL table, and it is the one thing that is NOT a size parameter: 224 with a 4×4/s4
     patchify stem gives 56/28/14/7 at every ConvNeXt size. T, S and B differ in depth and width
     only, so this stays a constant and the `7`s in the GAP backward stay literals. -/
-private def cSpats  : Array Nat := #[56, 28, 14, 7]
+def cSpats  : Array Nat := #[56, 28, 14, 7]
 
 /-- **The ConvNeXt size — depths and channel dims TOGETHER, in one record.**
 
@@ -230,7 +236,7 @@ def cnxDropSig (B : Nat) (sd : Bool) (V : CnxDims := cnxTiny) : String :=
 
 /-- The SGD update wrap for ConvNeXt's stem weight, taking the gradient's SSA name explicitly:
     the certified `SHlo` ops emit a fresh `%vN`. -/
-private def sgdOf (gradN nm t : String) : String :=
+def sgdOf (gradN nm t : String) : String :=
   s!"    %{nm}l = stablehlo.constant dense<{cLR}> : {t}\n" ++
   s!"    %{nm}s = stablehlo.multiply {gradN}, %{nm}l : {t}\n" ++
   s!"    %{nm}n = stablehlo.subtract %{nm}, %{nm}s : {t}\n"
@@ -300,7 +306,7 @@ def cnxHeadLnFwdSite (cBS : Nat) (gN btN xin : String) (d : Nat) :
 
 /-- The head LN's **input-VJP**: `dx = lnRowBack γ=1 (rowScale γ dy)`. `xName` is the saved LN
     input — the GAP output — which `lnRowBack` re-normalises from rather than saving x̂/istd. -/
-private def headLnBackSite (cBS : Nat) (gN xName cot : String) (d : Nat) :
+def headLnBackSite (cBS : Nat) (gN xName cot : String) (d : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, da) ← pretty cBS (.rowScaleF (m := 1) (n := d) gN (0 : Vec d)
                                   (.operand cot (0 : Vec (1*d))))
@@ -309,7 +315,7 @@ private def headLnBackSite (cBS : Nat) (gN xName cot : String) (d : Nat) :
     pure (k1 ++ k2, o)
 
 /-- The head LN's **γ tail** — `veclnGamma{Grad,Sgd}` at `N = 1`. -/
-private def headLnGammaTail (cBS : Nat) (adam : Bool) (gN xName cot : String) (d : Nat) :
+def headLnGammaTail (cBS : Nat) (adam : Bool) (gN xName cot : String) (d : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     if adam then
       pretty cBS (.veclnGammaGrad (N := 1) (D := d) xName cEPS 0 (0 : Vec (1*d))
@@ -319,7 +325,7 @@ private def headLnGammaTail (cBS : Nat) (adam : Bool) (gN xName cot : String) (d
 
 /-- The head LN's **β tail** — `rowDenseBias{Grad,Sgd}` at `N = 1`, reducing `dims = [0,1]`, i.e.
     contracting the batch (and the single row) as a shared `[d]` parameter needs. -/
-private def headLnBetaTail (cBS : Nat) (adam : Bool) (btN cot : String) (d : Nat) :
+def headLnBetaTail (cBS : Nat) (adam : Bool) (btN cot : String) (d : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     if adam then
       pretty cBS (.rowDenseBiasGrad (N := 1) (c := d) (.operand cot (0 : Vec (1*d))))
@@ -328,7 +334,7 @@ private def headLnBetaTail (cBS : Nat) (adam : Bool) (btN cot : String) (d : Nat
 
 /-- One **LayerNorm input-VJP** site: `dx = transposeᵀ (lnRowBack γ=1 (rowScale γ dyᵀ))`. `xName`
     is the saved LN INPUT — `lnRowBack` recomputes x̂/istd from it rather than saving them. -/
-private def lnBackSite (cBS : Nat) (gN xName cot : String) (c h : Nat) :
+def lnBackSite (cBS : Nat) (gN xName cot : String) (c h : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, xT)  ← pretty cBS (.transposeF (m := c) (n := h*h)
                                    (reassoc (.operand xName (0 : Vec (c*h*h)))))
@@ -344,7 +350,7 @@ private def lnBackSite (cBS : Nat) (gN xName cot : String) (c h : Nat) :
 /-- The **γ tail** for one LN site — the per-channel `veclnGamma{Grad,Sgd}`. The transposes of `xName`/`cot` are re-emitted here rather
     than threaded from `lnBackSite`: `pretty` has no CSE, but XLA does, and XLA collapses
     exactly this kind of duplicated subtree. -/
-private def lnGammaTail (cBS : Nat) (adam : Bool) (gN xName cot : String) (c h : Nat) :
+def lnGammaTail (cBS : Nat) (adam : Bool) (gN xName cot : String) (c h : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, xT) ← pretty cBS (.transposeF (m := c) (n := h*h)
                                   (reassoc (.operand xName (0 : Vec (c*h*h)))))
@@ -359,7 +365,7 @@ private def lnGammaTail (cBS : Nat) (adam : Bool) (gN xName cot : String) (c h :
 
 /-- The **β tail** — the per-channel `rowDenseBias{Grad,Sgd}`. It reduces `dims = [0,1]`, i.e. it contracts the
     BATCH as well as the spatial rows, which is what a shared `[c]` parameter needs. -/
-private def lnBetaTail (cBS : Nat) (adam : Bool) (btN cot : String) (c h : Nat) :
+def lnBetaTail (cBS : Nat) (adam : Bool) (btN cot : String) (c h : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, dT) ← pretty cBS (.transposeF (m := c) (n := h*h)
                                   (reassoc (.operand cot (0 : Vec (c*h*h)))))
@@ -391,7 +397,7 @@ def cnxFwdBlock (gf : GeluForm) (cBS : Nat) (pfx xin : String) (c e h : Nat) : S
   let (k7, bout) ← pretty cBS (.addV (.operand ls (0 : Vec (c*h*h))) (.operand xin 0))
   pure (k1 ++ k2 ++ k3 ++ k4 ++ k5 ++ k6 ++ k7, ⟨xin, d, n, e', g, p, bout⟩)
 
-private def bwdBlock (gf : GeluForm) (cBS : Nat) (pfx dy : String) (b : FNames) (c e h : Nat) :
+def bwdBlock (gf : GeluForm) (cBS : Nat) (pfx dy : String) (b : FNames) (c e h : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String × String × String × String × String) := do
   let (k1, cot_p) ← pretty cBS (.layerScaleChF (h := h) (w := h) s!"%{pfx}lg" (0 : Vec c) (.operand dy 0))
   let (k2, cot_g) ← pretty cBS (.convBack (h := h) (w := h) s!"%{pfx}pW" (0 : Kernel4 c e 1 1) 0 0 (.operand cot_p 0))
@@ -407,7 +413,7 @@ def cnxFwdDown (cBS : Nat) (pfx xin : String) (ci co h2 : Nat) : StateM Proofs.S
   let (k2, o) ← pretty cBS (.flatConvStridedF (h := h2) (w := h2) s!"%{pfx}W" s!"%{pfx}b" (0 : Kernel4 co ci 2 2) 0 (.operand n 0))
   pure (k1 ++ k2, n, o)
 
-private def bwdDown (cBS : Nat) (pfx dy xin : String) (ci co h2 : Nat) :
+def bwdDown (cBS : Nat) (pfx dy xin : String) (ci co h2 : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String × String) := do
   let (k1, cot_n) ← pretty cBS (.convStridedBack (h := h2) (w := h2) s!"%{pfx}W" (0 : Kernel4 co ci 2 2) 0 0 (.operand dy (0 : Vec (co*h2*h2))))
   let (k2, cot_x) ← lnBackSite cBS s!"%{pfx}ng" xin cot_n ci (2*h2)
@@ -424,7 +430,7 @@ ConvNeXt's param tails are **factored out** of the cotangent traversal — `bwdB
 cotangents and nothing else. `lrStr` is threaded but unused in `adam` mode: AdamW's learning rate
 is the runtime `%lr` argument, not a baked literal. -/
 
-private def blockParamSgd (cBS : Nat) (adam : Bool) (pfx : String) (b : FNames)
+def blockParamSgd (cBS : Nat) (adam : Bool) (pfx : String) (b : FNames)
     (cot_p cot_e cot_n cot_d dy : String) (c e h : Nat) :
     StateM Proofs.StableHLO.EmitS (String × List (String × String)) := do
   let (cLg, nLg) ← if adam then
@@ -454,7 +460,7 @@ private def blockParamSgd (cBS : Nat) (adam : Bool) (pfx : String) (b : FNames)
     [(s!"{pfx}dW", nDw), (s!"{pfx}db", nDb), (s!"{pfx}ng", nNg), (s!"{pfx}nbt", nNb),
      (s!"{pfx}eW", nEw), (s!"{pfx}eb", nEb), (s!"{pfx}pW", nPw), (s!"{pfx}pb", nPb), (s!"{pfx}lg", nLg)])
 
-private def downParamSgd (cBS : Nat) (adam : Bool) (pfx downLn downIn cot_n dy : String) (ci co h2 : Nat) :
+def downParamSgd (cBS : Nat) (adam : Bool) (pfx downLn downIn cot_n dy : String) (ci co h2 : Nat) :
     StateM Proofs.StableHLO.EmitS (String × List (String × String)) := do
   -- dXb (channel-sum) + dXng/dXnbt + dXW: ALL FOUR are SHlo ops.
   --
@@ -486,7 +492,7 @@ Adam ops. -/
 /-- The LN γ/β are `[c]` — the real channel-LN's per-channel affine. This list is the func
     signature AND the return types, so getting it wrong is not silent — the body uses `%…ng` at
     `tensor<{c}xf32>` and the compiler rejects a signature that disagrees with itself. -/
-private def blkParams (pfx : String) (c e : Nat) : List (String × List Nat) :=
+def blkParams (pfx : String) (c e : Nat) : List (String × List Nat) :=
   let lnSh : List Nat := [c]
   [(s!"{pfx}dW", [c,1,7,7]), (s!"{pfx}db", [c]),
    (s!"{pfx}ng", lnSh), (s!"{pfx}nbt", lnSh),
@@ -496,7 +502,7 @@ private def blkParams (pfx : String) (c e : Nat) : List (String × List Nat) :=
 
 /-- `nClasses` defaults to 10 (Imagenette) so every existing call site is unchanged; the ImageNet
     renders pass 1000. Only the head moves — 180 of the 182 entries are class-independent. -/
-private def allParams (nClasses : Nat := 10) (V : CnxDims := cnxTiny)
+def allParams (nClasses : Nat := 10) (V : CnxDims := cnxTiny)
     : List (String × List Nat) := Id.run do
   let c0 := V.dims[0]!
   let mut ps : List (String × List Nat) :=
@@ -592,7 +598,7 @@ structure CFwd where
     LayerNorm, which reduces over the channel/spatial axes of ONE example and never over the batch.
     So the forward is already class-batch-independent: train == eval, and `@convnext_fwd` is the
     only forward artifact this net needs (unlike the BN nets, which need a frozen-stats peer). -/
-private def convNextFwdChain (gf : GeluForm) (cBS : Nat) (nClasses : Nat := 10) (V : CnxDims := cnxTiny)
+def convNextFwdChain (gf : GeluForm) (cBS : Nat) (nClasses : Nat := 10) (V : CnxDims := cnxTiny)
     : StateM Proofs.StableHLO.EmitS CFwd := do
   let (cS, stemC) ← pretty cBS (.flatConvStride4F (h := 56) (w := 56) "%psW" "%psb"
     (0 : Kernel4 (V.dims[0]!) 3 4 4) 0 (.operand "%x" (0 : Vec (3*(2*(2*56))*(2*(2*56))))))
@@ -872,7 +878,7 @@ def cnxAdamVariant (replicas : Nat) (ema : Bool := false) (wdExclude : Bool := f
     ImageNet configs disagree on it by **500×**. `convnextVerified`'s recipe is the baked 1e-4;
     `convnextTinyImagenetConfig.weightDecay := 0.05`. The default is unchanged, so every committed
     artifact keeps its bytes; only the ImageNet `wx` render passes 0.05. -/
-private def convnextAdamConsts (nClasses : Nat) (V : CnxDims) (wdExclude : Bool := false)
+def convnextAdamConsts (nClasses : Nat) (V : CnxDims) (wdExclude : Bool := false)
     (wdStr : String := "0.0001")
     -- `.adamw` emits `adamWConsts wdStr`, byte for byte; `.adamwAccum k` emits the `%aup`-computed
     -- β block (`accumScalarConsts`) with `1/k` folded into `%ob1` / `%ob2`. `optConstsB` owns that
@@ -883,7 +889,7 @@ private def convnextAdamConsts (nClasses : Nat) (V : CnxDims) (wdExclude : Bool 
 
 /-- The hand-written block the AdamW train-step banners name beside `trainStepHandNote`'s list:
     the GAP backward (`%dgi` … `%dgapf`) on the gradient path. -/
-private def cnxGapBackNote : String :=
+def cnxGapBackNote : String :=
   "the hand-written GAP-backward block (%dgi…%dgapf), "
 
 /-- **ConvNeXt AdamW train step rendered from the verified AST** — the wrapper `ConvNeXtRenderB`

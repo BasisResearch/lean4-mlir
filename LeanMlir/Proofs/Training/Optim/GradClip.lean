@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.Tensor
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+
+@[expose] public section
 
 /-! # Global-norm gradient clipping over ℝ — the ViT / ConvNeXt recipes' clip
 

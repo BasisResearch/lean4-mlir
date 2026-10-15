@@ -1,3 +1,7 @@
+module
+
+@[expose] public section
+
 /-! # MobileNetV4-Conv-M's block table
 
 `UibSpec` (one Universal Inverted Bottleneck row) and `mnv4Blocks` (the 21 rows of Conv-M), the one

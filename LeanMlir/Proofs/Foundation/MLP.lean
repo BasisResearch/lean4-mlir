@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Foundation.Tensor
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
+
+@[expose] public section
 
 /-!
 # MLP VJP Proofs

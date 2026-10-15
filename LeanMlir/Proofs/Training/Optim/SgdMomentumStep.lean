@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.Tensor
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+
+@[expose] public section
 
 /-! # Plain SGD and Nesterov-momentum steps over ℝ — the optimizer peers of `AdamStep`
 

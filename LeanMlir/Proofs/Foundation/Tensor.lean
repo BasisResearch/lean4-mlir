@@ -1,5 +1,9 @@
-import Mathlib.Analysis.Calculus.FDeriv.Mul
-import Mathlib.Analysis.Calculus.Deriv.Comp
+module
+
+public import Mathlib.Analysis.Calculus.FDeriv.Mul
+public import Mathlib.Analysis.Calculus.Deriv.Comp
+
+@[expose] public section
 
 /-!
 # Tensor algebra and the VJP framework — the root of the proof suite

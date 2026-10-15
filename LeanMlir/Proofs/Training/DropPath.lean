@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.LayerNorm
+module
+
+public import LeanMlir.Proofs.Architectures.LayerNorm
+
+@[expose] public section
 
 /-! # Stochastic depth (drop-path) over ℝ — the per-example branch scale
 

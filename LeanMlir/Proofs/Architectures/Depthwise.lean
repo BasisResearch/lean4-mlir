@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.StridedConv
+module
+
+public import LeanMlir.Proofs.Architectures.StridedConv
+
+@[expose] public section
 
 /-!
 # Depthwise Convolution

@@ -1,4 +1,10 @@
-import LeanMlir.Proofs.Codegen.ConvNeXtRender
+module
+
+public import LeanMlir.Proofs.Codegen.ConvNeXtRender
+meta import LeanMlir.Proofs.Architectures.GeluForm
+meta import LeanMlir.Proofs.Codegen.ConvNeXtRender
+
+@[expose] public section
 
 /-! # ConvNeXt at the BATCHED index `N := B` — forward, backward and AdamW renders
 
@@ -41,7 +47,7 @@ namespace Proofs.StableHLO
 batched index the same cast has to happen UNDER `N * ·`, which is `bnBatchLA`'s existing move
 (`congrArg (N * ·) (Nat.mul_assoc …)`). It is a reindex, not a function change — the emitted text
 is unaffected, since `skel` never sees the index. -/
-private def reassocB {N c h : Nat} (e : SHlo (N*(c*h*h))) : SHlo (N*(c*(h*h))) :=
+def reassocB {N c h : Nat} (e : SHlo (N*(c*h*h))) : SHlo (N*(c*(h*h))) :=
   castIdx (la_assoc N c h h) e
 
 
@@ -95,14 +101,14 @@ def cnxInBS : Nat := 64
     byte tie fails loudly, which is the point of tying against the committed artifact rather than
     against a second copy of the shapes. The batch is a parameter, not one of these constants —
     see the note above. -/
-private def bEPS : String := "1.0e-6"
-private def bSpats  : Array Nat := #[56, 28, 14, 7]
+def bEPS : String := "1.0e-6"
+def bSpats  : Array Nat := #[56, 28, 14, 7]
 
 -- The three sizes, RESTATED (not imported) and `#guard`ed against `ConvNeXtRender`'s — the same
 -- discipline `bB`/`bEPS` carry, kept because the byte tie is meant to test the RENDER rather than
 -- the constants. Restating a RECORD is what makes that discipline work when a size is
 -- two tables: an `#[3,3,27,3]` that drifted into the wrong `dims` would be caught by one `==`.
-private def bTiny  : CnxDims := { depths := #v[3, 3,  9, 3], dims := #v[ 96, 192, 384,  768] }
+def bTiny  : CnxDims := { depths := #v[3, 3,  9, 3], dims := #v[ 96, 192, 384,  768] }
 private def bSmall : CnxDims := { depths := #v[3, 3, 27, 3], dims := #v[ 96, 192, 384,  768] }
 private def bBase  : CnxDims := { depths := #v[3, 3, 27, 3], dims := #v[128, 256, 512, 1024] }
 #guard bTiny  == cnxTiny
@@ -124,7 +130,7 @@ private def bBase  : CnxDims := { depths := #v[3, 3, 27, 3], dims := #v[128, 256
     `m := h*h` is the SPATIAL row count PER EXAMPLE and `N := bB` is the batch. Collapsing those
     two into one index is exactly the defect this file exists to remove, and it is why the
     descriptors carry `(m, n)` internally instead of reading the SHlo index. -/
-private def lnFwdSiteB (bB : Nat) (gN btN xin : String) (c h : Nat) :
+def lnFwdSiteB (bB : Nat) (gN btN xin : String) (c h : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, t)  ← pretty bB (.batchOp (N := bB) (.transpose (m := c) (n := h*h))
                                   (reassocB (.operand xin (0 : Vec (bB*(c*h*h))))))
@@ -134,7 +140,7 @@ private def lnFwdSiteB (bB : Nat) (gN btN xin : String) (c h : Nat) :
     pure (k1 ++ k2 ++ k5, o)
 
 /-- The head LN's **input-VJP**, batched peer. -/
-private def headLnBackSiteB (bB : Nat) (gN xName cot : String) (d : Nat) :
+def headLnBackSiteB (bB : Nat) (gN xName cot : String) (d : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, da) ← pretty bB (.batchOp (N := bB) (.rowScale (m := 1) (n := d) gN (0 : Vec d))
                                  (.operand cot (0 : Vec (bB*(1*d)))))
@@ -147,12 +153,12 @@ private def headLnBackSiteB (bB : Nat) (gN xName cot : String) (d : Nat) :
 -- GRADIENT (`veclnGammaGradB`), which does not read the current γ — only the SGD peer does, and
 -- this batched renderer has no SGD arm. Named `_` so the linter says so instead of the reader
 -- having to work it out.
-private def headLnGammaTailB (bB : Nat) (_gN xName cot : String) (d : Nat) :
+def headLnGammaTailB (bB : Nat) (_gN xName cot : String) (d : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) :=
   pretty bB (.veclnGammaGradB (N := bB) (R := 1) (D := d) xName bEPS 0
                 (0 : Vec (bB*(1*d))) (.operand cot (0 : Vec (bB*(1*d)))))
 
-private def headLnBetaTailB (bB : Nat) (cot : String) (d : Nat) :
+def headLnBetaTailB (bB : Nat) (cot : String) (d : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) :=
   pretty bB (.rowDenseBiasGradB (N := bB) (R := 1) (c := d)
                 (.operand cot (0 : Vec (bB*(1*d)))))
@@ -172,7 +178,7 @@ private def headLnBetaTailB (bB : Nat) (cot : String) (d : Nat) :
     At `drop = none` **no `pretty` call happens**, so the fresh-name counter does not move and the
     drop-free chain re-renders byte-identically. That is what keeps `convnext-fwd-b-tie` and the
     committed artifacts free of this feature. -/
-private def fwdBlockB (gf : GeluForm) (bB : Nat) (pfx xin : String) (c e h : Nat) (drop : Option Nat := none)
+def fwdBlockB (gf : GeluForm) (bB : Nat) (pfx xin : String) (c e h : Nat) (drop : Option Nat := none)
     -- TRAILING and defaulted, the `wx`/`clip`/`sd` idiom: every existing call site re-renders
     -- byte-identically.
     (bf16 : Bool := false) :
@@ -202,7 +208,7 @@ private def fwdBlockB (gf : GeluForm) (bB : Nat) (pfx xin : String) (c e h : Nat
   pure (k1 ++ k2 ++ k3 ++ k4 ++ k5 ++ k6 ++ kD ++ k7, ⟨xin, d, n, e', g, p, bout⟩)
 
 /-- One **downsample** forward, batched: channel-LN then 2×2/s2 conv. -/
-private def fwdDownB (bB : Nat) (pfx xin : String) (ci co h2 : Nat) (bf16 : Bool := false) :
+def fwdDownB (bB : Nat) (pfx xin : String) (ci co h2 : Nat) (bf16 : Bool := false) :
     StateM Proofs.StableHLO.EmitS (String × String × String) := do
   let (k1, n) ← lnFwdSiteB bB s!"%{pfx}ng" s!"%{pfx}nbt" xin ci (2*h2)
   -- SYMMETRIC pad (`convStrided`, not `convStridedXla`) — ConvNeXt is torchvision-origin. Both
@@ -324,7 +330,7 @@ cannot judge:
   one-example check. -/
 
 /-- One **channel-LN input-VJP** site, batched. -/
-private def lnBackSiteB (bB : Nat) (gN xName cot : String) (c h : Nat) :
+def lnBackSiteB (bB : Nat) (gN xName cot : String) (c h : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, xT)  ← pretty bB (.batchOp (N := bB) (.transpose (m := c) (n := h*h))
                                    (reassocB (.operand xName (0 : Vec (bB*(c*h*h))))))
@@ -339,7 +345,7 @@ private def lnBackSiteB (bB : Nat) (gN xName cot : String) (c h : Nat) :
     pure (k1 ++ k2 ++ k3 ++ k4 ++ k5, o)
 
 /-- The **γ tail** for one LN site — the two-level `veclnGammaGradB`. -/
-private def lnGammaTailB (bB : Nat) (_gN xName cot : String) (c h : Nat) :
+def lnGammaTailB (bB : Nat) (_gN xName cot : String) (c h : Nat) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, xT) ← pretty bB (.batchOp (N := bB) (.transpose (m := c) (n := h*h))
                                   (reassocB (.operand xName (0 : Vec (bB*(c*h*h))))))
@@ -350,7 +356,7 @@ private def lnGammaTailB (bB : Nat) (_gN xName cot : String) (c h : Nat) :
     pure (k1 ++ k2 ++ k3, o)
 
 /-- The **β tail** — the two-level `rowDenseBiasGradB`, contracting batch and spatial rows. -/
-private def lnBetaTailB (bB : Nat) (cot : String) (c h : Nat) : StateM Proofs.StableHLO.EmitS (String × String) := do
+def lnBetaTailB (bB : Nat) (cot : String) (c h : Nat) : StateM Proofs.StableHLO.EmitS (String × String) := do
     let (k1, dT) ← pretty bB (.batchOp (N := bB) (.transpose (m := c) (n := h*h))
                                   (reassocB (.operand cot (0 : Vec (bB*(c*h*h))))))
     let (k2, o) ← pretty bB (.rowDenseBiasGradB (N := bB) (R := h*h) (c := c)
@@ -378,7 +384,7 @@ private def lnBetaTailB (bB : Nat) (cot : String) (c h : Nat) : StateM Proofs.St
     against an undropped cotangent. It type-checks, trains and descends: 18 of 180 gradients wrong
     by a per-example factor, on the parameter stochastic depth is *about*. At `drop = none` this is
     `dy` itself, so nothing moves. -/
-private def bwdBlockB (gf : GeluForm) (bB : Nat) (pfx dy : String) (b : FNames) (c e h : Nat) (drop : Option Nat := none)
+def bwdBlockB (gf : GeluForm) (bB : Nat) (pfx dy : String) (b : FNames) (c e h : Nat) (drop : Option Nat := none)
     (bf16 : Bool := false) :
     StateM Proofs.StableHLO.EmitS (String × String × String × String × String × String × String) := do
   let (kD, dyd) ← match drop with
@@ -401,7 +407,7 @@ private def bwdBlockB (gf : GeluForm) (bB : Nat) (pfx dy : String) (b : FNames) 
   pure (kD ++ k1 ++ k2 ++ k3 ++ k4 ++ k5 ++ k6 ++ k7, cot_xin, cot_p, cot_e, cot_n, cot_d, dyd)
 
 /-- One **downsample** backward. -/
-private def bwdDownB (bB : Nat) (pfx dy xin : String) (ci co h2 : Nat) (bf16 : Bool := false) :
+def bwdDownB (bB : Nat) (pfx dy xin : String) (ci co h2 : Nat) (bf16 : Bool := false) :
     StateM Proofs.StableHLO.EmitS (String × String × String) := do
   -- **THE 2×2/s2 ASYMMETRIC-PAD TRAP.** `convStridedBackBatched`'s dgrad pad is
   -- `[[kH-1-pH, pH], …]`, which agrees with the symmetric spelling at every ODD kernel and is
@@ -418,7 +424,7 @@ private def bwdDownB (bB : Nat) (pfx dy xin : String) (ci co h2 : Nat) (bf16 : B
     the per-example gradient on `batchSlice n`. AdamW only: the SGD-inline tail stays in the
     per-example renderer, since `%lr` is a runtime operand on the AdamW path and a baked literal
     on the SGD one — and `ConvNeXtStepTie.lean` is stated at those bytes. -/
-private def blockParamGradB (bB : Nat) (pfx : String) (b : FNames)
+def blockParamGradB (bB : Nat) (pfx : String) (b : FNames)
     (cot_p cot_e cot_n cot_d dy : String) (c e h : Nat)
     -- `bf16` reaches the WEIGHT grads only. Every BIAS grad below stays f32 in every net:
     -- `Σ_{batch,spatial} dy` is a reduction, not a contraction, so there is nothing for a tensor
@@ -455,7 +461,7 @@ private def blockParamGradB (bB : Nat) (pfx : String) (b : FNames)
      (s!"{pfx}lg", nLg)])
 
 /-- The **parameter gradients of one downsample**. -/
-private def downParamGradB (bB : Nat) (pfx downLn downIn cot_n dy : String) (ci co h2 : Nat)
+def downParamGradB (bB : Nat) (pfx downLn downIn cot_n dy : String) (ci co h2 : Nat)
     (bf16 : Bool := false) :
     StateM Proofs.StableHLO.EmitS (String × List (String × String)) := do
   let (cB, nB) ← pretty bB (.convStridedBiasGradB (N := bB) (ic := ci) (oc := co) (h := h2)

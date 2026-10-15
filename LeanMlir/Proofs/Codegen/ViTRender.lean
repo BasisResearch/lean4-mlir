@@ -1,4 +1,10 @@
-import LeanMlir.Proofs.Codegen.RenderKit
+module
+
+public import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Architectures.GeluForm
+meta import LeanMlir.Proofs.Codegen.RenderKit
+
+@[expose] public section
 
 /-! # ViT per-example render: forward, backward traversal, SGD step, AdamW tail
 
@@ -154,7 +160,7 @@ structure BSaves where
     summed) → out dense → +res → LN2 → fc1 → GELU → fc2 → +res. Returns (code, the saved SSA names).
     Not text-guarded against the graph, unlike the other nets' blocks: the graph shares LN1, Q/K/V
     and the first residual, which `pretty` would print again at each use (`FwdGraphTextTies`). -/
-private def vBlockFwd (gf : GeluForm) (bs : Nat) (pfx xin : String) : StateM Proofs.StableHLO.EmitS (String × BSaves) := do
+def vBlockFwd (gf : GeluForm) (bs : Nat) (pfx xin : String) : StateM Proofs.StableHLO.EmitS (String × BSaves) := do
   let (c1, ln1) ← vecLnSite bs 197 192 vEPS s!"%{pfx}g1" s!"%{pfx}bt1" xin
   let (cq, q) ← pretty bs (.denseRowF s!"%{pfx}Wq" s!"%{pfx}bq" (0 : Mat 192 192) 0 (.operand ln1 (0 : Vec (197*192))))
   let (ck, k) ← pretty bs (.denseRowF s!"%{pfx}Wk" s!"%{pfx}bk" (0 : Mat 192 192) 0 (.operand ln1 (0 : Vec (197*192))))
@@ -202,7 +208,7 @@ structure FwdSaves where
   deriving Inhabited
 
 /-- The depth-12 ViT-Tiny **forward**, node-by-node. Returns (body, saves). -/
-private def vitFwd12 (gf : GeluForm) (bs : Nat) (nClasses : Nat) : StateM Proofs.StableHLO.EmitS (String × FwdSaves) := do
+def vitFwd12 (gf : GeluForm) (bs : Nat) (nClasses : Nat) : StateM Proofs.StableHLO.EmitS (String × FwdSaves) := do
   let (ce, embed) ← pretty bs (.patchEmbedF "%wConv" "%bConv" "%cls" "%pos"
     (0 : Kernel4 192 3 16 16) 0 0 (0 : Mat 197 192) (.operand "%x" (0 : Vec (3*224*224))))
   let mut code := ce
@@ -255,13 +261,13 @@ def vitFwdRenderV (gf : GeluForm) (funcName : String := "vit_fwd") (bs : Nat := 
     `*Sgd` one ([`tests/TestBatchedEmitTie.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestBatchedEmitTie.lean)), so this is the only place the two tails differ —
     one backward traversal, two endings, which is what keeps `vit_train_step.mlir` byte-identical
     while `vit_adam_train_step.mlir` gets its gradients. -/
-private def rdB (bs : Nat) (adam : Bool) (c : Nat) (bN lrS dy : String) : StateM Proofs.StableHLO.EmitS (String × String) :=
+def rdB (bs : Nat) (adam : Bool) (c : Nat) (bN lrS dy : String) : StateM Proofs.StableHLO.EmitS (String × String) :=
   if adam then pretty bs (.rowDenseBiasGrad (N := 197) (c := c) (.operand dy (0 : Vec (197*c))))
   else pretty bs (.rowDenseBiasSgd (N := 197) (c := c) bN lrS (0 : Vec c) 0
                     (.operand dy (0 : Vec (197*c))))
 
 /-- Rowwise-dense **weight** tail, same dispatch. -/
-private def rdW (bs : Nat) (adam : Bool) (a c : Nat) (xSSA wN lrS dy : String) : StateM Proofs.StableHLO.EmitS (String × String) :=
+def rdW (bs : Nat) (adam : Bool) (a c : Nat) (xSSA wN lrS dy : String) : StateM Proofs.StableHLO.EmitS (String × String) :=
   if adam then pretty bs (.rowDenseWeightGrad (N := 197) (a := a) (c := c) xSSA
                             (0 : Vec (197*a)) (.operand dy (0 : Vec (197*c))))
   else pretty bs (.rowDenseWeightSgd (N := 197) (a := a) (c := c) xSSA wN lrS
@@ -273,7 +279,7 @@ private def rdW (bs : Nat) (adam : Bool) (a c : Nat) (xSSA wN lrS dy : String) :
     input cotangent `dxin = lnRowBack(γ=1)(rowScale γ (dy))` (back through normalize after the
     γ-scale). Returns (code, dxin, ngamma, nbeta) — updates at `adam := false`, gradients at `true`.
     `lr` is the mean-loss-equiv literal, and is unused in adam mode. -/
-private def vlnBack (bs : Nat) (gName btName xin dyOut lrStr : String) (adam : Bool) :
+def vlnBack (bs : Nat) (gName btName xin dyOut lrStr : String) (adam : Bool) :
     StateM Proofs.StableHLO.EmitS (String × String × String × String) := do
   let (cb, nb) ← rdB bs adam 192 btName lrStr dyOut
   let (cg, ng) ← if adam then
@@ -294,7 +300,7 @@ private def vlnBack (bs : Nat) (gName btName xin dyOut lrStr : String) (adam : B
     → per-head SDPA backward (slice-back / matmul-backs / softmax-back / scale / transpose-backs) →
     Q/K/V-dense-back (summed) → LN1-back → +res₁ fan-in (dxin). Returns (code, dxin, the 16 param
     SGD-update SSAs in `BlockParams` order: g1,bt1, Wq,bq,Wk,bk,Wv,bv,Wo,bo, g2,bt2, Wfc1,bfc1,Wfc2,bfc2). -/
-private def vBlockBack (gf : GeluForm) (bs : Nat) (pfx : String) (sv : BSaves) (dyOut lrStr : String) (adam : Bool) :
+def vBlockBack (gf : GeluForm) (bs : Nat) (pfx : String) (sv : BSaves) (dyOut lrStr : String) (adam : Bool) :
     StateM Proofs.StableHLO.EmitS (String × String × List String) := do
   let p := pfx
   -- ─ MLP sublayer back: bout = addV(hres, f2); df2 = dyOut, dhres ⊇ dyOut ─
@@ -376,7 +382,7 @@ private def vBlockBack (gf : GeluForm) (bs : Nat) (pfx : String) (sv : BSaves) (
   pure (code ++ cq1 ++ cq2 ++ cq3 ++ ck1 ++ ck2 ++ ck3 ++ cv1 ++ cv2 ++ cv3 ++ cs1 ++ cs2 ++ cl1 ++ cx, dxin, names)
 
 /-- The 16 per-block return TYPE strings (BlockParams order), matching `blkArgSig`. -/
-private def blkRetTys : List String :=
+def blkRetTys : List String :=
   [ty [192], ty [192], ty [192,192], ty [192], ty [192,192], ty [192], ty [192,192], ty [192],
    ty [192,192], ty [192], ty [192], ty [192], ty [192,768], ty [768], ty [768,192], ty [192]]
 
@@ -647,12 +653,12 @@ def vitAdamVariant (bs : Nat := 32) (replicas : Nat := 1) (ema : Bool := false)
 
     **`vitin_adam128` and `vitin_adamdp128x4` are at 1e-4**; changing them is a separate call with
     its own blast radius (the DP peer, the residency-gate row). -/
-private def vitAdamConsts (wdExclude : Bool := false) (wdStr : String := "0.0001") : String :=
+def vitAdamConsts (wdExclude : Bool := false) (wdStr : String := "0.0001") : String :=
   wdzConst wdExclude "126 of 200 params" ++ adamWConsts wdStr
 
 /-- The hand-written line the AdamW train-step banners name beside `trainStepHandNote`'s list:
     the prelude's `%x → %ximg` reshape, which a `pretty` leaf reads on the gradient path. -/
-private def vitInputReshapeNote : String :=
+def vitInputReshapeNote : String :=
   "the input reshape %ximg, "
 
 /-- **ViT-Tiny depth-12 AdamW train step, rendered from the verified AST.** The certified peer of

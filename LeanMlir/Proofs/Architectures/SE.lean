@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.CNN
-import LeanMlir.Proofs.Architectures.LayerNorm
+module
+
+public import LeanMlir.Proofs.Architectures.CNN
+public import LeanMlir.Proofs.Architectures.LayerNorm
+
+@[expose] public section
 
 /-!
 # Squeeze-and-Excitation — the "main × gate" pattern

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.RenderKit
+module
+
+public import LeanMlir.Proofs.Codegen.RenderKit
+
+@[expose] public section
 
 /-! # CNN + CIFAR render half — conv train-step text as `pretty` of proven graphs
 
@@ -356,7 +360,7 @@ def CifarOpt.label : CifarOpt → String
       (`mom_pair_faithful`). Velocity occupies the `v` slot; `m` passes through.
 
     `%mu` is a baked constant and `%lr` a runtime arg. -/
-private def optTail (opt : CifarOpt) (B replicas n : Nat) (pName : String) (ds : List Nat)
+def optTail (opt : CifarOpt) (B replicas n : Nat) (pName : String) (ds : List Nat)
     (gradSSA : String) : StateM Proofs.StableHLO.EmitS (String × String × String × String) := do
   let z : Vec n := fun _ => 0
   -- At `replicas > 1`, average the gradient across devices first — `pretty` of the

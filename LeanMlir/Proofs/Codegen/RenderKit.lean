@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Codegen.StableHLO.Pretty
-import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
-import LeanMlir.Proofs.Foundation.SmoothedLossCot
-import LeanMlir.Proofs.Foundation.BceLossCot
+module
+
+public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
+public import LeanMlir.Proofs.Foundation.SmoothedLossCot
+public import LeanMlir.Proofs.Foundation.BceLossCot
+
+@[expose] public section
 
 /-! # The renderers' shared optimizer tail
 

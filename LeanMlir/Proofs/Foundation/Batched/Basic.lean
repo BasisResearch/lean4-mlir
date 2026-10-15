@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.PerChannelBN
+module
+
+public import LeanMlir.Proofs.Architectures.PerChannelBN
+
+@[expose] public section
 
 /-! # The batched index — per-example lifts and true batch-norm on `Vec (N·a)`
 

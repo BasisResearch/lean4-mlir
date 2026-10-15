@@ -1,7 +1,11 @@
-import LeanMlir.Proofs.Architectures.Softmax
-import LeanMlir.Proofs.Architectures.CNN          -- needed for Kernel4 in patchEmbed
-import LeanMlir.Proofs.Architectures.LayerNorm
-import LeanMlir.Proofs.Architectures.GeluForm
+module
+
+public import LeanMlir.Proofs.Architectures.Softmax
+public import LeanMlir.Proofs.Architectures.CNN          -- needed for Kernel4 in patchEmbed
+public import LeanMlir.Proofs.Architectures.LayerNorm
+public import LeanMlir.Proofs.Architectures.GeluForm
+
+@[expose] public section
 
 /-!
 # Attention — the Capstone

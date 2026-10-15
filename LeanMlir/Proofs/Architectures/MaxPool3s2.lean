@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.WindowMax
+module
+
+public import LeanMlir.Proofs.Architectures.WindowMax
+
+@[expose] public section
 
 /-! # `maxPool3s2` — the 3×3 stride-2 max pool of He et al.'s ResNet stem
 

@@ -1,4 +1,9 @@
-import LeanMlir.Proofs.Codegen.ChapterGraphs
+module
+
+public import LeanMlir.Proofs.Codegen.ChapterGraphs
+meta import LeanMlir.Proofs.Codegen.ChapterGraphs
+
+@[expose] public section
 
 /-! # The chapter 1–4 forward-artifact writers
 

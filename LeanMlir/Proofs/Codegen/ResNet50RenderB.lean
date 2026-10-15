@@ -1,4 +1,10 @@
-import LeanMlir.Proofs.Codegen.ResNet34RenderB
+module
+
+public import LeanMlir.Proofs.Codegen.ResNet34RenderB
+meta import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Codegen.ResNet34RenderB
+
+@[expose] public section
 
 /-! # ResNet-50 train step rendered from the verified AST, at the BATCHED index
 
@@ -58,7 +64,7 @@ namespace Proofs.StableHLO
     proven conv ops still TAKE a bias, so it binds to `%zb{c}` and `zeroBiasPrelude` emits those
     constants once at the top of the body. Routed through `biasName` rather than spelled inline so
     the naming has one definition shared with R34's renderer. -/
-private def zb (c : Nat) : String := biasName false "" c
+def zb (c : Nat) : String := biasName false "" c
 
 -- ════════════════════════════════════════════════════════════════
 -- § Signature lists — the render's side of the driver contract
@@ -67,7 +73,7 @@ private def zb (c : Nat) : String := biasName false "" c
 /-- One bottleneck block's parameters, in `bneckIdBlk` order: `W1 g1 bt1 W2 g2 bt2 W3 g3 bt3`,
     plus `Wp gp btp` LAST when it projects. The projection going last is not cosmetic — it is
     `bneckDownBlk`'s order and therefore the order the driver's `[θ|m|v]` walk assumes. -/
-private def bnkSig (p : String) (cin mid oc : Nat) (proj : Bool) : List (String × List Nat) :=
+def bnkSig (p : String) (cin mid oc : Nat) (proj : Bool) : List (String × List Nat) :=
   [(s!"%{p}W1", [mid,cin,1,1]), (s!"%{p}g1", [mid]), (s!"%{p}bt1", [mid]),
    (s!"%{p}W2", [mid,mid,3,3]), (s!"%{p}g2", [mid]), (s!"%{p}bt2", [mid]),
    (s!"%{p}W3", [oc,mid,1,1]),  (s!"%{p}g3", [oc]),  (s!"%{p}bt3", [oc])] ++
@@ -77,7 +83,7 @@ private def bnkSig (p : String) (cin mid oc : Nat) (proj : Bool) : List (String 
 
 /-- One bottleneck STAGE's parameters: block 0 projects (channels change, and in stage 1 that is
     the only thing that changes), the rest are identity blocks reading `oc`. -/
-private def bnkStageSig (s : String) (ic oc count : Nat) : List (String × List Nat) :=
+def bnkStageSig (s : String) (ic oc count : Nat) : List (String × List Nat) :=
   let mid := oc / 4
   (bnkSig s!"{s}b0" ic mid oc true) ++
   ((List.range (count - 1)).flatMap (fun i => bnkSig s!"{s}b{i+1}" oc mid oc false))
@@ -97,11 +103,11 @@ def r50SigList (nClasses : Nat) : List (String × String) :=
   (r50ShapeList nClasses).map (fun (n, ds) => (n, ty ds))
 
 /-- One block's BN running-stat slots, in BN-forward order `n1 n2 n3 [np]`. -/
-private def bnkStatSig (p : String) (mid oc : Nat) (proj : Bool) : List (String × List Nat) :=
+def bnkStatSig (p : String) (mid oc : Nat) (proj : Bool) : List (String × List Nat) :=
   bnStatSlots s!"{p}n1" mid ++ bnStatSlots s!"{p}n2" mid ++ bnStatSlots s!"{p}n3" oc ++
   (if proj then bnStatSlots s!"{p}np" oc else [])
 
-private def bnkStageStatSig (s : String) (oc count : Nat) : List (String × List Nat) :=
+def bnkStageStatSig (s : String) (oc count : Nat) : List (String × List Nat) :=
   let mid := oc / 4
   (bnkStatSig s!"{s}b0" mid oc true) ++
   ((List.range (count - 1)).flatMap (fun i => bnkStatSig s!"{s}b{i+1}" mid oc false))
@@ -294,7 +300,7 @@ def bnkStridedFwdB (B cin mid oc hh : Nat) (epsStr p xName : String)
     → `bn1` → `conv1`, then `dx = dc1 + da` (the identity skip carries `da` unchanged).
     Each BN's γ/β gradient reads the cotangent at that BN's OUTPUT: `da` for bn3, `dr2` for
     bn2, `dr1` for bn1 — off by one and the gradient is silently wrong. -/
-private def bnkIdBackGradB (B mid oc hh : Nat) (epsStr p : String) (f : BNFwd) (dyName : String)
+def bnkIdBackGradB (B mid oc hh : Nat) (epsStr p : String) (f : BNFwd) (dyName : String)
     (bf16 : Bool := false) (drop : Option Nat := none)
     (replicas : Nat := 1) (sync : Bool := false) : StateM Proofs.StableHLO.EmitS BlockBack := do
   let xName := f.xin
@@ -354,7 +360,7 @@ private def bnkIdBackGradB (B mid oc hh : Nat) (epsStr p : String) (f : BNFwd) (
 /-- **Stride-1 projection bottleneck backward** + its 12 parameter gradients — stage 1 block 0.
     Identical to the identity backward except the skip branch carries its own `bn→conv` backward
     (`dnp`/`dcp`) and `dx = dc1 + dcp`. -/
-private def bnkProjBackGradB (B cin mid oc hh : Nat) (epsStr p : String) (f : BNFwd)
+def bnkProjBackGradB (B cin mid oc hh : Nat) (epsStr p : String) (f : BNFwd)
     (dyName : String) (bf16 : Bool := false) (drop : Option Nat := none)
     (replicas : Nat := 1) (sync : Bool := false) : StateM Proofs.StableHLO.EmitS BlockBack := do
   let xName := f.xin
@@ -423,7 +429,7 @@ private def bnkProjBackGradB (B cin mid oc hh : Nat) (epsStr p : String) (f : BN
 
     `dc2` is the STRIDED conv backward, so it takes the cotangent from `hh` back up to `2hh`;
     everything upstream of it (`dr1`, `dn1`, `dc1`, `W1`'s grad) lives at `2hh`. -/
-private def bnkStridedBackGradB (B cin mid oc hh : Nat) (epsStr p : String) (f : BNFwd)
+def bnkStridedBackGradB (B cin mid oc hh : Nat) (epsStr p : String) (f : BNFwd)
     (dyName : String) (bf16 : Bool := false) (drop : Option Nat := none)
     (replicas : Nat := 1) (sync : Bool := false) : StateM Proofs.StableHLO.EmitS BlockBack := do
   let xName := f.xin
@@ -988,7 +994,7 @@ statistics, the per-example index), shared with ResNet-34's eval chain. The trai
 the batched `r50FwdChainB`. -/
 
 /-- Identity bottleneck forward, per-example vocabulary. -/
-private def bnkIdFwdV (B mid oc hh : Nat) (epsStr p xName : String) :
+def bnkIdFwdV (B mid oc hh : Nat) (epsStr p xName : String) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
   let ww := hh
   let zm   : Vec mid := fun _ => 0
@@ -1012,7 +1018,7 @@ private def bnkIdFwdV (B mid oc hh : Nat) (epsStr p xName : String) :
 
 /-- Stride-1 projection bottleneck forward — stage 1 block 0. The projection is `.flatConvF`,
     NOT `.flatConvStridedF`. -/
-private def bnkProjFwdV (B cin mid oc hh : Nat) (epsStr p xName : String) :
+def bnkProjFwdV (B cin mid oc hh : Nat) (epsStr p xName : String) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
   let ww := hh
   let zm   : Vec mid := fun _ => 0
@@ -1039,7 +1045,7 @@ private def bnkProjFwdV (B cin mid oc hh : Nat) (epsStr p xName : String) :
   pure (cC1 ++ cN1 ++ cR1 ++ cC2 ++ cN2 ++ cR2 ++ cC3 ++ cN3 ++ cCp ++ cNp ++ cA ++ cO, nO)
 
 /-- Strided projection bottleneck forward. `conv1`/`bn1`/`relu1` at `2hh`; only `conv2` strides. -/
-private def bnkStridedFwdV (B cin mid oc hh : Nat) (epsStr p xName : String) :
+def bnkStridedFwdV (B cin mid oc hh : Nat) (epsStr p xName : String) :
     StateM Proofs.StableHLO.EmitS (String × String) := do
   let ww := hh
   let zm     : Vec mid := fun _ => 0
@@ -1068,7 +1074,7 @@ private def bnkStridedFwdV (B cin mid oc hh : Nat) (epsStr p xName : String) :
 
 /-- The R50 EVAL forward: stem → `[3,4,6,3]` bottlenecks → GAP(q×q) → dense(2048→nClasses), every
     BN at frozen running statistics (`bnEvalSite`). Writes `@resnet50in_fwd_eval`. -/
-private def r50FwdChain (B nClasses : Nat) (epsStr : String)
+def r50FwdChain (B nClasses : Nat) (epsStr : String)
     -- TRAILING, and the SAME ladder the train step uses (`q = 7` is 224, `q = 5` is 160). It has
     -- to be the same derivation, not merely the same numbers: the prefix check only means
     -- anything if the forward and the train step are one chain at one resolution.

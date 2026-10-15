@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Foundation.Tensor
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+
+@[expose] public section
 
 /-! # `windowMax` — the max pool over a family of product windows
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Codegen.RenderKit
+module
+
+public import LeanMlir.Proofs.Codegen.RenderKit
+
+@[expose] public section
 
 /-! # MLP render half — the train-step text as `pretty` of proven graphs
 

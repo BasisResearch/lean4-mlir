@@ -1,6 +1,10 @@
-import LeanMlir.Proofs.Foundation.Tensor
-import Mathlib.Analysis.Calculus.Deriv.Mul
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+public import Mathlib.Analysis.Calculus.Deriv.Mul
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+
+@[expose] public section
 
 /-!
 # The exact GELU: `x · Φ(x)`

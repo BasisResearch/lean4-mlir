@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.CNN
+module
+
+public import LeanMlir.Proofs.Architectures.CNN
+
+@[expose] public section
 
 /-! # Strided convolution (stride-2 SAME)
 

@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.BatchNorm
+module
+
+public import LeanMlir.Proofs.Architectures.BatchNorm
+
+@[expose] public section
 
 /-! # Per-channel BatchNorm — the block-diagonal VJP
 

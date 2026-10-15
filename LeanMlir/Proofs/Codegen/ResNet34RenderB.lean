@@ -1,5 +1,11 @@
-import LeanMlir.Proofs.Codegen.SyncBnSites
-import LeanMlir.Proofs.Codegen.RenderKit
+module
+
+public import LeanMlir.Proofs.Codegen.SyncBnSites
+public import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Codegen.SyncBnSites
+meta import LeanMlir.Proofs.Codegen.RenderKit
+
+@[expose] public section
 
 /-! # ResNet-34 AdamW train step rendered from the verified AST, at the BATCHED index
 
@@ -51,7 +57,7 @@ deriving Inhabited
 -- ════════════════════════════════════════════════════════════════
 
 /-- Identity block forward: `conv1→BN1→relu1→conv2→BN2→(+x)→relu`. `c` channels, `hh×ww` spatial. -/
-private def idFwd (B c hh : Nat) (epsStr p xName : String)
+def idFwd (B c hh : Nat) (epsStr p xName : String)
     (convBias : Bool) : StateM Proofs.StableHLO.EmitS BFwd := do
   let ww := hh
   let zc  : Vec c := fun _ => 0
@@ -68,7 +74,7 @@ private def idFwd (B c hh : Nat) (epsStr p xName : String)
 
 /-- Downsample block forward: strided `conv1→BN1→relu1→conv2→BN2` body + strided projection
     `convp→BNp` skip, `add`, `relu`. `cin→c` channels, input `2hh×2ww`, output `hh×ww`. -/
-private def downFwd (B cin c hh : Nat) (epsStr p xName : String)
+def downFwd (B cin c hh : Nat) (epsStr p xName : String)
     (convBias : Bool) : StateM Proofs.StableHLO.EmitS BFwd := do
   let ww := hh
   let zc   : Vec c := fun _ => 0
@@ -94,12 +100,12 @@ private def downFwd (B cin c hh : Nat) (epsStr p xName : String)
 -- § Param signature lists (func-arg order — names + types, shared by sig + return types)
 -- ════════════════════════════════════════════════════════════════
 
-private def idSig (p : String) (c : Nat) (convBias : Bool) : List (String × String) :=
+def idSig (p : String) (c : Nat) (convBias : Bool) : List (String × String) :=
   let b (nm : String) : List (String × String) := if convBias then [(nm, ty [c])] else []
   [(s!"%{p}W1", ty [c,c,3,3])] ++ b s!"%{p}b1" ++ [(s!"%{p}g1", ty [c]), (s!"%{p}bt1", ty [c])] ++
   [(s!"%{p}W2", ty [c,c,3,3])] ++ b s!"%{p}b2" ++ [(s!"%{p}g2", ty [c]), (s!"%{p}bt2", ty [c])]
 
-private def downSig (p : String) (cin c : Nat) (convBias : Bool) : List (String × String) :=
+def downSig (p : String) (cin c : Nat) (convBias : Bool) : List (String × String) :=
   let b (nm : String) : List (String × String) := if convBias then [(nm, ty [c])] else []
   [(s!"%{p}W1", ty [c,cin,3,3])] ++ b s!"%{p}b1" ++ [(s!"%{p}g1", ty [c]), (s!"%{p}bt1", ty [c])] ++
   [(s!"%{p}W2", ty [c,c,3,3])] ++ b s!"%{p}b2" ++ [(s!"%{p}g2", ty [c]), (s!"%{p}bt2", ty [c])] ++
@@ -157,7 +163,7 @@ structure R34Fwd where
     (stages 2–4 open with a strided downsample block) → GAP(7×7) → dense(512→`nClasses`). Every BN
     site is `bnEvalSite` — frozen running statistics — so this writes `@resnet34_fwd_eval` only; the
     training forward is the batched `r34FwdChainB`. -/
-private def r34FwdChain (B nClasses : Nat) (epsStr : String)
+def r34FwdChain (B nClasses : Nat) (epsStr : String)
     (convBias : Bool) : StateM Proofs.StableHLO.EmitS R34Fwd := do
   -- ═══ stem: 7×7/s2 conv → BN → relu → maxpool ═══
   let zx   : Vec (3*224*224) := fun _ => 0
@@ -296,7 +302,7 @@ def downFwdB (B cin c hh : Nat) (epsStr p xName : String)
 -- ════════════════════════════════════════════════════════════════
 
 /-- Identity block backward + its 8 parameter gradients. -/
-private def idBackGradB (B c hh : Nat) (epsStr p : String) (f : BFwdB) (dyName : String)
+def idBackGradB (B c hh : Nat) (epsStr p : String) (f : BFwdB) (dyName : String)
     (convBias : Bool) (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) : StateM Proofs.StableHLO.EmitS BlockBack := do
   let xName := f.xin
   let ww := hh
@@ -331,7 +337,7 @@ private def idBackGradB (B c hh : Nat) (epsStr p : String) (f : BFwdB) (dyName :
                 [⟨s!"{p}g2", ng2, [c]⟩, ⟨s!"{p}bt2", nt2, [c]⟩] }
 
 /-- Downsample block backward + its 12 parameter gradients. -/
-private def downBackGradB (B cin c hh : Nat) (epsStr p : String) (f : BFwdB) (dyName : String)
+def downBackGradB (B cin c hh : Nat) (epsStr p : String) (f : BFwdB) (dyName : String)
     (convBias : Bool) (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) : StateM Proofs.StableHLO.EmitS BlockBack := do
   let xName := f.xin
   let ww := hh

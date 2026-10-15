@@ -1,4 +1,8 @@
-import LeanMlir.Proofs.Architectures.CNN
+module
+
+public import LeanMlir.Proofs.Architectures.CNN
+
+@[expose] public section
 
 /-! # Chapter 3: MNIST 2D CNN (no BatchNorm) — whole-network VJP
 
@@ -291,7 +295,7 @@ noncomputable def b₂ : Vec 2 := fun _ => 1
 noncomputable def x  : Vec 2 := fun _ => 1
 
 /-- First-layer pre-activation is strictly positive at every coordinate. -/
-private theorem preact0_pos (k : Fin 2) : 0 < dense W₀ b₀ x k :=
+theorem preact0_pos (k : Fin 2) : 0 < dense W₀ b₀ x k :=
   dense_pos_of_nonneg (fun _ _ => by simp [W₀]) (fun _ => by simp [b₀]) (fun _ => by simp [x]) k
 
 /-- **Unconditional whole-network VJP for a concrete 3-layer MLP.** Both

@@ -1,6 +1,11 @@
-import LeanMlir.Proofs.Foundation.Tensor
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
-import Mathlib.Analysis.SpecialFunctions.Sigmoid
+module
+
+public import LeanMlir.Proofs.Foundation.Tensor
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+public import Mathlib.Analysis.SpecialFunctions.Sigmoid
+public import Mathlib.Analysis.Calculus.Deriv.Pow
+
+@[expose] public section
 
 /-!
 # Smooth activations: GELU, Swish, sigmoid

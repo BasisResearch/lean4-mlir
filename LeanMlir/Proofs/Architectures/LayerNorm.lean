@@ -1,5 +1,9 @@
-import LeanMlir.Proofs.Architectures.BatchNorm
-import LeanMlir.Proofs.Architectures.Activations
+module
+
+public import LeanMlir.Proofs.Architectures.BatchNorm
+public import LeanMlir.Proofs.Architectures.Activations
+
+@[expose] public section
 
 /-!
 # LayerNorm

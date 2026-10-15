@@ -1,4 +1,10 @@
-import LeanMlir.Proofs.Codegen.ViTRender
+module
+
+public import LeanMlir.Proofs.Codegen.ViTRender
+meta import LeanMlir.Proofs.Architectures.GeluForm
+meta import LeanMlir.Proofs.Codegen.ViTRender
+
+@[expose] public section
 
 /-! # ViT at the BATCHED index `N := B` — forward, backward and AdamW renders
 
@@ -80,7 +86,7 @@ MLP 768; depth 12. -/
     `Qₖ·Kₖᵀ` — its own `Q` against its own `K`. A descriptor would hand every example operand 0's
     left factor, and a `den` reading the batched index as one big matrix would multiply the whole
     batch together; **both type-check and both emit the identical `dot_general`**. -/
-private def vBlockFwdB (gf : GeluForm) (V : VitDims) (vbB : Nat) (pfx xin : String) (drop : Option Nat := none)
+def vBlockFwdB (gf : GeluForm) (V : VitDims) (vbB : Nat) (pfx xin : String) (drop : Option Nat := none)
     -- bf16 TRAILING and defaulted, the `wx`/`clip`/`sd` idiom — so every existing call site
     -- elaborates unchanged and every committed artifact re-renders byte-identically.
     -- It reaches the SIX matmuls and the TWO SDPA products only. LN, GELU, softmax, the
@@ -308,7 +314,7 @@ end Proofs.StableHLO
 namespace Proofs.StableHLO
 
 /-- One **vector-LN backward** site, batched. Returns `(code, dxin, dγ, dβ)`. -/
-private def vlnBackB (V : VitDims) (vbB : Nat) (gName _btName xin dyOut : String)
+def vlnBackB (V : VitDims) (vbB : Nat) (gName _btName xin dyOut : String)
     (eps : String := vEPS) :
     StateM Proofs.StableHLO.EmitS (String × String × String × String) := do
   let vbTok := V.tok
@@ -331,7 +337,7 @@ private def vlnBackB (V : VitDims) (vbB : Nat) (gName _btName xin dyOut : String
     `dvs = smᵀ·dpv`, `dqs = dqk·ks`, `dkt = qsᵀ·dqk` — four matmuls, every one with BOTH operands
     per-example. A descriptor would pair example `k`'s cotangent with example 0's saved activation:
     it type-checks, it emits the identical `dot_general`, and it trains. -/
-private def vBlockBackB (gf : GeluForm) (V : VitDims) (vbB : Nat) (pfx : String) (sv : BSaves) (dyOut : String)
+def vBlockBackB (gf : GeluForm) (V : VitDims) (vbB : Nat) (pfx : String) (sv : BSaves) (dyOut : String)
     (drop : Option Nat := none)
     -- bf16 TRAILING. It reaches the six input-VJPs, the six WEIGHT gradients and the four SDPA
     -- backward matmuls. Every BIAS gradient beside them stays f32, in this net as in all six:

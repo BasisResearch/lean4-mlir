@@ -1,5 +1,11 @@
-import LeanMlir.Proofs.Codegen.SyncBnSites
-import LeanMlir.Proofs.Codegen.RenderKit
+module
+
+public import LeanMlir.Proofs.Codegen.SyncBnSites
+public import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Codegen.SyncBnSites
+meta import LeanMlir.Proofs.Codegen.RenderKit
+
+@[expose] public section
 
 /-! # MobileNetV2 rendered from the verified AST, at the BATCHED index — the SOLE renderer
 
@@ -187,7 +193,7 @@ def irFwdNoExpB (B ic oc hh : Nat) (epsStr p xName : String) (convBias : Bool)
 
 /-- **STRIDED backward + 12 un-fused gradients.** The depthwise input gradient lands at `2hh×2ww`;
     no skip, so the dx handed to the previous block is the expand-conv backward directly. -/
-private def irBackStridedGradB (B ic mid oc hh : Nat) (epsStr p xName : String)
+def irBackStridedGradB (B ic mid oc hh : Nat) (epsStr p xName : String)
     (f : MBFwdB) (dyName : String) (convBias : Bool)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) :
     StateM Proofs.StableHLO.EmitS BlockBack := do
@@ -258,7 +264,7 @@ private def irBackStridedGradB (B ic mid oc hh : Nat) (epsStr p xName : String)
     no-skip block kinds — the ONLY difference is the skip's `addVB` fan-in on the dx, which is why
     they are one function with a flag rather than two near-copies (the double-writer disease one
     level down). `ic = oc` whenever `skip` is true. -/
-private def irBackStride1GradB (B ic mid oc hh : Nat) (skip : Bool) (epsStr p xName : String)
+def irBackStride1GradB (B ic mid oc hh : Nat) (skip : Bool) (epsStr p xName : String)
     (f : MBFwdB) (dyName : String) (convBias : Bool)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) :
     StateM Proofs.StableHLO.EmitS BlockBack := do
@@ -328,7 +334,7 @@ private def irBackStride1GradB (B ic mid oc hh : Nat) (skip : Bool) (epsStr p xN
 
 /-- **NO-EXPAND backward + 8 un-fused gradients** (b1). No expand conv and no skip, so the dx to
     the stem is the depthwise backward directly. -/
-private def irBackNoExpGradB (B ic oc hh : Nat) (epsStr p xName : String)
+def irBackNoExpGradB (B ic oc hh : Nat) (epsStr p xName : String)
     (f : MBFwdB) (dyName : String) (convBias : Bool)
     (bf16 : Bool := false) (replicas : Nat := 1) (sync : Bool := false) :
     StateM Proofs.StableHLO.EmitS BlockBack := do
@@ -380,7 +386,7 @@ private def irBackNoExpGradB (B ic oc hh : Nat) (epsStr p xName : String)
 -- ════════════════════════════════════════════════════════════════
 
 /-- A 12-param inverted-residual block's signature, func-arg order. -/
-private def mnv2BlockSig (i : String) (ic mid oc : Nat) (convBias : Bool) : List (String × String) :=
+def mnv2BlockSig (i : String) (ic mid oc : Nat) (convBias : Bool) : List (String × String) :=
   let b (nm : String) (c : Nat) : List (String × String) := if convBias then [(nm, ty [c])] else []
   [(s!"%b{i}eW", ty [mid,ic,1,1])] ++ b s!"%b{i}eb" mid ++
   [(s!"%b{i}eg", ty [mid]), (s!"%b{i}ebt", ty [mid]),
@@ -390,7 +396,7 @@ private def mnv2BlockSig (i : String) (ic mid oc : Nat) (convBias : Bool) : List
   [(s!"%b{i}pg", ty [oc]), (s!"%b{i}pbt", ty [oc])]
 
 /-- The no-expand block's signature (b1): depthwise on `ic` channels + project `ic→oc`. 8 params. -/
-private def mnv2NoExpSig (i : String) (ic oc : Nat) (convBias : Bool) : List (String × String) :=
+def mnv2NoExpSig (i : String) (ic oc : Nat) (convBias : Bool) : List (String × String) :=
   let b (nm : String) (c : Nat) : List (String × String) := if convBias then [(nm, ty [c])] else []
   [(s!"%b{i}dW", ty [ic,1,3,3])] ++ b s!"%b{i}db" ic ++
   [(s!"%b{i}dg", ty [ic]), (s!"%b{i}dbt", ty [ic]),
@@ -417,7 +423,7 @@ def mnv2SigList (nClasses : Nat) (convBias : Bool) : List (String × String) :=
   [("%Wd", ty [1280, nClasses]), ("%bd", ty [nClasses])]
 
 /-- A 3-BN block's stat slots (expand-BN, depthwise-BN, project-BN). -/
-private def blockStatSig (i : String) (mid oc : Nat) : List (String × List Nat) :=
+def blockStatSig (i : String) (mid oc : Nat) : List (String × List Nat) :=
   bnStatSlots s!"b{i}en" mid ++ bnStatSlots s!"b{i}dn" mid ++ bnStatSlots s!"b{i}pn" oc
 
 /-- **The 104 BN running-statistic slots** = 52 BN layers × (μ, var): stem 1, b1 two (no expand
@@ -1068,7 +1074,7 @@ def irFwdNoSkip (B ic mid oc hh : Nat) (epsStr p xName : String) (convBias : Boo
 -- § Param signature lists (func-arg order — names + types, shared by sig + return types)
 -- ════════════════════════════════════════════════════════════════
 
-private def irSig (p : String) (ic mid oc : Nat) (convBias : Bool) : List (String × String) :=
+def irSig (p : String) (ic mid oc : Nat) (convBias : Bool) : List (String × String) :=
   let b (nm : String) (c : Nat) : List (String × String) := if convBias then [(nm, ty [c])] else []
   [(s!"%We{p}", ty [mid,ic,1,1])] ++ b s!"%be{p}" mid ++
   [(s!"%ge{p}", ty [mid]), (s!"%bte{p}", ty [mid]),
@@ -1078,7 +1084,7 @@ private def irSig (p : String) (ic mid oc : Nat) (convBias : Bool) : List (Strin
   [(s!"%gp{p}", ty [oc]), (s!"%btp{p}", ty [oc])]
 
 /-- **NO-EXPAND block sig** (b1): depthwise on `ic` channels + project `ic→oc`. 8 params. -/
-private def irSigNoExp (p : String) (ic oc : Nat) (convBias : Bool) : List (String × String) :=
+def irSigNoExp (p : String) (ic oc : Nat) (convBias : Bool) : List (String × String) :=
   let b (nm : String) (c : Nat) : List (String × String) := if convBias then [(nm, ty [c])] else []
   [(s!"%Wd{p}", ty [ic,1,3,3])] ++ b s!"%bd{p}" ic ++
   [(s!"%gd{p}", ty [ic]), (s!"%btd{p}", ty [ic]),
@@ -1090,7 +1096,7 @@ private def irSigNoExp (p : String) (ic oc : Nat) (convBias : Bool) : List (Stri
     return types and the demo's own arity — it was written out twice, which is the same
     two-lists-one-net shape that let the stem/head gate go missing in `paperSig`. -/
 
-private def paperSig (nClasses : Nat) (convBias : Bool) : List (String × String) :=
+def paperSig (nClasses : Nat) (convBias : Bool) : List (String × String) :=
   [("%Ws", ty [32,3,3,3])] ++ (if convBias then [("%bs", ty [32])] else []) ++
   [("%gs", ty [32]), ("%bts", ty [32])] ++
   irSigNoExp "1" 32 16 convBias ++
@@ -1155,7 +1161,7 @@ def mnv2EvalHeadFwd (B nClasses : Nat) (epsStr : String) (convBias : Bool) (xin 
 
     The EVAL forward: every BN site is `RenderKit.bnEvalSite` (frozen running statistics), so this
     writes `@mobilenetv2_fwd_eval` only; the training forward is the batched `mnv2FwdChainB`. -/
-private def mnv2FwdChain (B nClasses : Nat) (epsStr : String) (convBias : Bool) :
+def mnv2FwdChain (B nClasses : Nat) (epsStr : String) (convBias : Bool) :
     StateM Proofs.StableHLO.EmitS MNV2Fwd := do
     -- stem: 3x3/s2 conv (3->32, 224->112) -> BN -> relu6 (NO maxpool)
     let (cSt, nStr) ← mnv2EvalStemFwd B epsStr convBias
@@ -1191,7 +1197,7 @@ private def mnv2FwdChain (B nClasses : Nat) (epsStr : String) (convBias : Bool) 
 
 /-- The `@mobilenetv2_fwd_eval` argument signature. The 104 stat slots come off
     the SAME `bns` the traversal built — never a parallel 52-entry table. -/
-private def mnv2FwdSig (B nClasses : Nat) (epsStr : String) (convBias : Bool) : String :=
+def mnv2FwdSig (B nClasses : Nat) (epsStr : String) (convBias : Bool) : String :=
   let F : MNV2Fwd := (mnv2FwdChain B nClasses epsStr convBias).run' (0, [])
   let params := (paperSig nClasses convBias).map (fun (nm, t) => s!"{nm}: {t}")
   let stats := F.bns.flatMap (fun (sp, c, _) => [s!"%{sp}mu: {ty [c]}", s!"%{sp}var: {ty [c]}"])
