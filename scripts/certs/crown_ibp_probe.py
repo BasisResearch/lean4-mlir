@@ -20,7 +20,7 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parents[2]
 NETS = REPO / "LeanMlir/Proofs/Certificates/LipschitzCert/ScorecardFullNets.lean"
-DATA = REPO / "data"
+DATA = REPO / "data" / "mnist"
 sys.path.insert(0, str(REPO / "scripts" / "lib"))
 from _mnist_io import mnist  # noqa: E402
 from crown_ibp_scorecard import load_nets as scorecard_nets  # noqa: E402

@@ -37,7 +37,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data"
+DATA = ROOT / "data" / "mnist"
 sys.path.insert(0, str(ROOT / "scripts" / "lib"))
 from _mnist_io import mnist  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
