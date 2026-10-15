@@ -2284,6 +2284,25 @@ is that the theorems are over \(\mathbb{R}\) and the GPU runs a finite
 precision; \S~\ref{sec:precision} is the budget that sits between them,
 and Appendix~\ref{app:verification} carries the rest of the accounting.
 
+\prosesection{Recap}
+
+This chapter is the machinery, and every chapter after it is one layer
+dropped into it. The partial-derivative function \(\pdiv\) with its three
+rules, chain, sum and product, is the calculus; a \(\HasVJP\) record is a
+backward function bundled with the proof that it is the transpose of the
+Jacobian; and a trainer is four of those composed, forward, loss, backward,
+step, printed as one StableHLO function and run on the GPU as it was
+printed. For the one-layer classifier the whole chain closes:
+Theorem~\ref{thm:linear_fold} says the emitted step is the certified step,
+and Theorem~\ref{thm:linear_sgd_descends} says the step goes downhill.
+
+What it leaves open is stated once here and carried through the book: the
+theorems are over \(\mathbb{R}\), the card computes in a finite format, and
+\S\ref{sec:precision} is the budget between them. The other limit is the
+network's. A single dense layer is a linear map, and a linear map can only
+cut pixel space with flat boundaries, so the next chapter puts a
+non-linearity between two of them and applies the chain rule twice.
+
 \chapter{MNIST: 1D MLP}
 \label{chap:mlp}
 
@@ -2937,6 +2956,29 @@ theorem is precisely the claim that this text computes
     two measured constants rather than assumed outright. Appendix~\ref{sec:verified_codegen} has the
     full accounting.
 \end{itemize}
+
+\prosesection{Recap}
+
+One new operation, and one new habit. The operation is ReLU, whose
+derivative does not exist at zero; its \(\HasVJP\) is built directly from
+\(\pdiv\) under the convention every framework uses, zero at the kink, and
+its \texttt{correct} field holds by definition. The habit is applying the
+chain rule more than once: the whole MLP's backward is the dense backward
+and the ReLU backward strung together in reverse, and
+Theorem~\ref{thm:mlp_fold} says the six updates the trainer emits are
+exactly that, with Theorem~\ref{thm:mlp_sgd_descends} the descent on the
+first layer. Two witnesses, one hand-built and one at the trained weights,
+show the gradient is not the zero function.
+
+The price of the kink is a hypothesis. The bridge from the proof to the
+emitted \texttt{compare GT 0} holds where no pre-activation is exactly zero,
+a set of measure zero, and the whole-network statement names the input it
+holds at. That hypothesis rides along until Chapter~\ref{chap:se} discharges
+it. The limit of this chapter's network is what it throws away: the image
+was flattened to a vector, so two pixels that were neighbours on the page
+are unrelated coordinates to a dense layer. The next chapter keeps the
+structure, and pays for it with a second convention, one that is not
+measure-zero.
 
 \chapter{MNIST: 2D CNN}
 \label{chap:cnn}
@@ -3962,6 +4004,29 @@ whole CNN backward is covered, op by op.
   \item \textbf{Representative scale.} $1{\to}2$ channels at $4\times4$
     (production: $1{\to}32$ at $28\times28$).
 \end{itemize}
+
+\prosesection{Recap}
+
+Two operations, and the first whole-network theorem with a hypothesis in
+it. The convolution is a linear map, so its backward is unconditional: a
+convolution of the cotangent against the kernel with its channel axes
+swapped and its spatial axes flipped, which is what the emitted
+\texttt{transpose} and \texttt{reverse} compute. The max-pool is the
+second convention after ReLU's, argmax ties broken by the lowest index, and
+its bridge holds where every window has one maximum. An all-zero window
+after ReLU fails that, so the excluded set is not measure-zero, and
+Theorem~\ref{thm:mnistCnnNoBnHasVJPAt} carries it as a stated hypothesis
+rather than hiding it. Theorems~\ref{thm:cnn_fold}
+and~\ref{thm:cnn_loss_grad} tie the four convolution updates and every
+gradient node to the loss's derivative, ties included, and
+Theorem~\ref{thm:cnn_sgd_descends} is the descent through the convolutions.
+
+The network is two convolutions deep, and that is as deep as this recipe
+goes: the MNIST head holds nearly every parameter, and the width sweep shows
+the head barely matters once the features are good. Going deeper, on a
+harder dataset, is where two things start to bite that nothing so far has
+needed, a normalization inside the stack and a choice of optimizer. The next
+chapter adds the one operator whose gradient needs real analysis to bound.
 
 \chapter{CIFAR with BatchNorm}
 \label{chap:bn}
@@ -5374,11 +5439,31 @@ ConvNeXt blocks built on this foundation.
   \item \textbf{Representative scale} ($n = 4$).
 \end{itemize}
 
-The next chapter (Chapter~\ref{chap:residual}) adds residual connections
-and the same mechanical approach: prove that the VJP of a skip
-connection is additive fan-in, compose with BN and conv, and the
-rest of the ResNet family falls out without introducing any new
-math.
+
+\prosesection{Recap}
+
+BatchNorm is the hardest proof in the book and the cleanest statement. Its
+backward is a three-term formula, the direct term, a centering correction and
+a rank-one normalization correction, and the inverse-standard-deviation
+inside it is what needs Mathlib's analysis: given \(\varepsilon > 0\) the
+gradient is bounded and the bridge is unconditional, smooth everywhere, with
+none of the smooth-point exclusions ReLU and max-pool carry.
+Theorem~\ref{thm:bnHasVJP} is that formula; the per-channel and
+batch-statistics forms are its instantiations; and the eight-convolution
+step is tied with BatchNorm and without
+(Theorems~\ref{thm:cifar8_step_tie} and~\ref{thm:cifar8bn_step_tie}), with
+descent at the last convolution. The same emitted graph is LayerNorm's
+backward, since LayerNorm is BatchNorm along a different axis, which is
+why Chapters~\ref{chap:layernorm} and~\ref{chap:attention} add no
+normalization proof of their own.
+
+The experiment half says what the proofs do not: at eight convolutions,
+normalization and the optimizer are what govern training, and the number
+format is not measurable against seed noise. Eight is also about where a
+plain stack stops helping. The next chapter adds the skip connection, whose
+VJP is additive fan-in, the second of the three composition rules, and
+composes it with convolution and BatchNorm to go thirty-four layers deep,
+at ImageNet scale, with no new analysis at all.
 
 \chapter{ResNet-34}
 \label{chap:residual}
@@ -7277,6 +7362,29 @@ neither tier has run ---
 \texttt{r50-a2-bf16-4gpu} / \texttt{r50-a1-bf16-4gpu},
 \texttt{r50-a2accum-jax-4gpu} / \texttt{r50-a1-jax-4gpu}.]}
 
+\prosesection{Recap}
+
+The residual block's backward is a sum: the branch's VJP plus the identity,
+or the projection's where the shapes change. That is additive fan-in, and
+with the global average pool, the stride-2 convolution and the stem pool it
+is everything ResNet needs. Theorems~\ref{thm:resnet34FullHasVJP}
+and~\ref{thm:resnet50FullHasVJP} are the full-depth networks at batch
+statistics, the seals say their backward is not degenerate at the trained
+width, the steps are tied (Theorems~\ref{thm:resnet34_step_tie}
+and~\ref{thm:resnet50_step_tie}), and the data-parallel twins
+(Theorem~\ref{thm:resnet34_sync_tie}) say four cards computing a synchronised
+step compute one card's step at four times the batch. This is also the
+chapter that sets the ImageNet pattern every later chapter repeats: a
+reference trainer, the verified path, the two side by side at the end, and
+the recipe measured one ingredient at a time rather than inherited.
+
+What the chapter does not settle is the top of the recipe ladder: A3 ran
+on both paths and the verified render landed on the paper's number, while
+A2 and A1 are rendered and timed, not run. What the network costs is
+parameters: a standard convolution does spatial mixing and channel mixing
+in one kernel and pays for both. The next chapter factors them, and the
+network that results has a ninth of the parameters.
+
 \chapter{MobileNetV2}
 \label{chap:depthwise}
 
@@ -9117,6 +9225,28 @@ $\Delta$              & $+2.40$ & $+0.54$ & $0.00$ & $-0.52$ & $-0.23$ & $+0.16$
 epochs, \texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, dry-run and
 not run, ${\sim}112 + 78$\,h on the 4060~Ti box, this pair times five.]}
 
+\prosesection{Recap}
+
+Depthwise convolution is the standard convolution with the channel sum
+removed, one kernel per channel, and its backward is two convolutions of its
+own: an input VJP built from \(\pdiv\), and a weight gradient, each proved at
+stride one and two. ReLU6 is ReLU with a ceiling. With those two the whole
+MobileNetV2 is proved at all seventeen blocks and MobileNetV4 at full depth
+(Theorems~\ref{thm:mobilenetv2FullHasVJP}
+and~\ref{thm:mobilenetv4FullHasVJP}), both steps are tied and both have
+their data-parallel twins. On ImageNet the chapter runs two generations of
+the same block, and the recipe table between them is six years of training
+practice in one page: by 2024 the mobile line trains the way everything
+else does.
+
+What is open is the schedule: the paper tier ran at a hundred epochs on
+both paths and tied, and its five hundred are the one job in the chapter
+that has not. The next block keeps the depthwise convolution and adds a gate
+around it, a learned per-channel gain computed from the map itself, which
+is the third composition rule, multiplicative fan-in, and the first
+attention mechanism in the book. Its activation is smooth, and that changes
+what the theorems can say.
+
 \chapter{EfficientNet}
 \label{chap:se}
 
@@ -10442,6 +10572,27 @@ arithmetic and expensive in memory traffic, and at low resolution the
 traffic dominates. The fused block is already in
 the kit as \texttt{.fusedMbConvNB} --- it is MobileNetV4's stage 0
 (\S\ref{sec:mnv4_side_quest}) --- so V2 needs no new primitive, only a spec.
+
+\prosesection{Recap}
+
+Three operations and the end of a hypothesis. The squeeze-and-excitation
+gate multiplies a feature map by a gain computed from its own global
+average, so its backward is the product rule applied to a network, the
+multiplicative fan-in that completes the three composition rules. Swish and
+the sigmoid inside the gate are smooth, and that is what
+Theorem~\ref{thm:efficientnetFullHasVJP} buys: the full B0, sixteen MBConv
+blocks, with its backward proved at every input, where every network before
+it had to name a point and assume the activations stayed off their kinks.
+The step is tied (Theorem~\ref{thm:efficientnet_step_tie}) and the
+data-parallel twin holds.
+
+The chapter's other lesson is that a recipe is a specification, not a list
+of hyperparameters: RMSProp in TensorFlow's form, the EMA shadowing the
+BatchNorm buffers, the warmup-corrected decay, each a detail that moves
+the number. The two paths land close and not on top of each other, and the
+section says which rows are the suspects. The next chapter takes the recipe
+idea to its conclusion, a ResNet modernized one transformer-era choice at a
+time, and brings the two operations that era runs on, LayerNorm and GELU.
 
 \chapter{ConvNeXt}
 \label{chap:layernorm}
@@ -11773,6 +11924,27 @@ for S and $10.42$ for B.
 \noindent\textbf{[TODO: as T's; neither has run ---\\
 \texttt{cnxs-default-jax-4gpu} / \texttt{cnxs-default-emabf16-4gpu},\\
 \texttt{cnxb-default-jax-4gpu} / \texttt{cnxb-default-emabf16-4gpu}.]}
+
+\prosesection{Recap}
+
+GELU is a smooth scalar function, so its Jacobian is a diagonal like ReLU's
+with a derivative that exists everywhere; LayerNorm is BatchNorm along the
+channel axis, and its backward is the same emitted graph; layer scale is a
+per-channel multiply and the patchify stem is a strided convolution. Nothing
+here needed new analysis, which is the point: the full ConvNeXt-T, eighteen
+blocks, is proved from the kit as it stood, and the step is tied
+(Theorem~\ref{thm:convnext_step_tie}). What the chapter adds is the recipe
+as the thesis, the 2018 to 2022 jump laid out knob by knob, with the
+architecture modernized in step, and a reference run that scores its EMA
+weights against a verified path that scores its raw ones, which is why the
+two are compared only where the schedule has annealed.
+
+One thing is left in Part~1 that the kit has not replaced: the convolution
+itself. The next chapter removes it. Attention is matrix algebra, softmax
+over the rows of a product, and proving it needs the matrix-level VJP
+records the first chapter set aside, a Jacobian that is a rank-one
+correction to a diagonal, and a composition rule pushed higher than
+anywhere else in the book.
 
 \chapter{Vision Transformer}
 \label{chap:attention}
@@ -14028,13 +14200,27 @@ $13.83$\,GiB, so its job raises the allocator fraction to $0.97$
 \texttt{vits-accum-jax-4gpu} / \texttt{vits-default-emabf16-4gpu},\\
 \texttt{vitb-accum-jax-4gpu} / \texttt{vitb-default-emabf16-4gpu}.]}
 
-\subsection*{What Part 1 has established}
+\prosesection{Recap}
+
+Attention is \(QK^T\), a softmax over its rows, and a product with \(V\).
+The softmax Jacobian is a diagonal minus a rank-one correction, the matrix
+multiply's backward is two multiplies by transposes, and multi-head
+attention is those stacked, split and joined. With a vector LayerNorm and
+the block, the whole ViT-Tiny is proved at every depth
+(Theorem~\ref{thm:vitTinyHasVJP_correct}): the hand-written input-gradient
+chain through the patch embedding, twelve blocks, the final LayerNorm and the
+head equals the network's Jacobian transpose at every input, assuming only
+\(\varepsilon > 0\) at the LayerNorms, and the step is tied
+(Theorem~\ref{thm:vit_step_tie}). None of the pieces is new. The height of
+the composition is.
+
 
 Every layer primitive shipped in Part 1's trainers (MLP,
 CNN, ResNet, MobileNet, EfficientNet, ConvNeXt, ViT) has a
-machine-checked backward pass. The same \texttt{VerifiedNetSpec} /
-\texttt{VerifiedConfig} / \texttt{trainAdamSched} pipeline trains all
-of them with at most config-level changes. The MLIR each emits is
+machine-checked backward pass. The same pipeline, a
+\texttt{VerifiedNetSpec}, a \texttt{VerifiedConfig} and
+\texttt{trainAdamSched}, trains all of them with at most config-level
+changes. The MLIR each emits is
 between 7\,KB (MLP) and 1{,}317\,KB (EfficientNet-B0), and the
 lowerer compiles all of them the same way.
 
