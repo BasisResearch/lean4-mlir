@@ -8782,7 +8782,7 @@ Weight decay  & $4\times10^{-5}$       & $0.1$, skip norm/bias         & $2500\t
 Augmentation  & RRC + hflip            & + RandAugment (N2, m15, p0.7) & heavy learned augmentation, and still no Mixup/CutMix for Conv-M \\
 Label smoothing & none                 & $0.1$                         & standard by 2024 \\
 Stochastic depth & none                & drop-path $0.075$             & linear ramp over the 21 UIB blocks, applied at the 18 that carry a skip \\
-EMA           & none                   & none in the paper; $0.9999$ here, warmup-corrected & weight averaging on both paths below (with the BN buffers shadowed, per Ch~\ref{chap:se}'s lesson), an addition to the paper's recipe that the \texttt{full} tier drops \\
+EMA           & none                   & none                          & the \texttt{default} tier adds a warmup-corrected $0.9999$ shadow, BN buffers included per Ch~\ref{chap:se}'s lesson; the paper tier scores the live weights \\
 \hline
 \end{tabular}
 \end{table}
@@ -8794,59 +8794,65 @@ recipe as everything else (AdamW at large effective batch,
 cosine, heavy selective decay, RandAugment, EMA) while the block
 template generalized enough to absorb its rivals.
 
-\textbf{One trap in that EMA row.} Seeding the shadow at the
-initialization and decaying it away leaves $d^{\,t}$ of that
-initialization behind. A random network and a trained one are not
-joined by a low-loss path, so even a few percent of it puts the
-average at chance rather than merely behind. Conv-M trips this
-where longer runs do not, because gradient accumulation leaves it only
-$312$ steps per epoch, so $31{,}200$ total against a time constant of
-$10{,}000$. The fix is TensorFlow's, which this family's reference
-implementations assume: ramp the decay,
-$d_t = \min\!\big(d,\ (1+t)/(10+t)\big)$.
-
-\texttt{mobilenet-v4-imagenet} ships the paper recipe as
-\texttt{full}, 500 epochs, and a \textbf{100-epoch} tier as
-\texttt{default}: wd $0.05$ against the paper's $0.1$, dropout $0.1$
-against $0.2$, RandAugment $m9$ at $p\,0.5$ against $m15$ at $p\,0.7$, no
-drop-path, and $224$ throughout, because the paper's full regularization pack
-underfits a short schedule. The 100-epoch tier is the one run here, on
-both paths, and the $79.9\%$ headline is a 500-epoch number.
+\texttt{mobilenet-v4-imagenet} ships the paper recipe as \texttt{full}, and a
+detuned 100-epoch tier as \texttt{default} ($224$, the regularization turned
+down, an EMA shadow) for a short run; the paper tier is what this section
+reports. The paper's recipe is a training
+config in \texttt{tensorflow/models}
+(\texttt{imagenet\_mobilenetv4\_conv\_medium\_tpu.yaml}), and \texttt{full}
+is that file: $256^2$ input, weight decay $0.1$ off the norms and biases,
+classifier dropout $0.2$, RandAugment $N2$ $m15$ at $p\,0.7$ under
+TensorFlow's own mappings (nearest resampling, fill $128$, the identity op
+in the draw), drop-path $0.075$ ramped as $(i+3)/25$ over the block list and
+applied at the 18 UIBs that carry a skip, BatchNorm at decay $0.997$ and
+$\varepsilon = 10^{-3}$, AdamW at Keras' $\varepsilon = 10^{-7}$, the cosine
+from step $0$ with the five-epoch warmup on top, tf-models' crop sampler and
+its bilinear resize without antialiasing, and no EMA, so the live weights are
+what gets scored, at the paper's $256$ with a $0.875$ centre crop. The yaml
+says $500$ epochs, and the $79.9\%$ headline is that number. The pair this
+section is built on is that recipe with only the length cut, to $100$, on
+both paths. Everything the recipe asks of the code is exercised by it; the
+500-epoch run is the same two jobs with a longer cosine, and it is the one
+thing here that has not run.
 
 \prosesection{The reference (JAX)}
 
 The reference trainer is \texttt{jax/MainMobilenetV4Imagenet.lean},
 built as \texttt{lake build mobilenet-v4-imagenet}, with
 \texttt{.imagenet} streamed through tfds; its job config is
-\texttt{scripts/jobs/mnv4-default-jax-4gpu.conf}. AdamW at peak
-$0.004$ for an effective batch of $4096$, reached as a $512$-image
-micro-batch accumulated eight times, so $312$ optimizer steps an epoch;
-bf16 convolutions against fp32 master weights, the classifier head in
-fp32; the EMA
-shadow is what gets scored, every five epochs and at the end.
+\texttt{scripts/jobs/mnv4-full100-jax-4gpu.conf}, recipe \texttt{full100},
+which is the \texttt{full} config with \texttt{epochs := 100}: the generated
+trainer differs from \texttt{full}'s in one constant and the shim is
+byte-identical. AdamW at peak $0.004$ for an effective batch of $4096$,
+reached as a $512$-image micro-batch accumulated eight times, so $312$
+optimizer steps an epoch; bf16 convolutions against fp32 master weights; the
+live weights scored every fifth epoch and the last, through an fp32 forward.
 Table~\ref{tab:mnv4_jax} is the run.
 
 \begin{table}[H]
 \centering
-\caption{MobileNetV4-Conv-M on ImageNet-1k, reference trainer (JAX): micro-batch $512$ as $4 \times 128$ replicas, accumulated $8\times$ to the effective $4096$; EMA weights scored over all $50{,}000$ validation images.}
+\caption{MobileNetV4-Conv-M on ImageNet-1k, reference trainer (JAX): the paper tier at $256^2$ cut to 100 epochs, micro-batch $512$ as $4 \times 128$ replicas accumulated $8\times$ to the effective $4096$; the live weights scored over all $50{,}000$ validation images through an fp32 forward.}
 \label{tab:mnv4_jax}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
-4$\times$ 3060 (CUDA) & bf16 & $\sim$9.7 min & 100 & $\sim$16.2 hr & $\mathbf{76.57\%}$ & $\mathbf{92.98\%}$ \\
+4$\times$ 4060 Ti (CUDA) & bf16 & $\sim$13.3 min & 100 & $\sim$22.2 hr & $\mathbf{77.39\%}$ & $\mathbf{93.46\%}$ \\
 \hline
 \end{tabular}
 \end{table}
 
-\noindent Set against this chapter's other half
-that is the whole six-year argument in two rows: $\mathbf{+4.94}$
-points over MobileNetV2's paper-faithful $71.63\%$, from $2.8\times$
-the parameters and under a third of the epochs, $100$ against $350$
-and $16.2$ wall-clock hours against $38.8$ on the same four cards.
-By 2024 the mobile line is not trading accuracy for size so
-much as reaching the same accuracy with a block that happens to be
-cheap. Figure~\ref{fig:mnv4_jax_curve} is the run, scored every five epochs.
+\noindent The trainer is feed-bound at this shape, $2.55$\,s an optimizer
+step with the four cards waiting on the input pipeline. It restarted once: a
+corrected PCIe error on the chipset's upstream bridge, not a GPU, at epoch
+48, which the supervisor's AER policy treats as a kill; it resumed from the
+epoch-47 checkpoint twenty seconds later and lost about ten minutes. Set
+against this chapter's other half, that is the six-year argument in two
+rows: $\mathbf{+5.76}$ points over MobileNetV2's paper-faithful $71.63\%$,
+from $2.8\times$ the parameters and under a third of the epochs, $100$
+against $350$. By 2024 the mobile line is not trading accuracy for size so
+much as reaching the same accuracy with a block that happens to be cheap.
+Figure~\ref{fig:mnv4_jax_curve} is the run, scored every five epochs.
 
 \begin{figure}[H]
 \centering
@@ -8861,26 +8867,26 @@ cheap. Figure~\ref{fig:mnv4_jax_curve} is the run, scored every five epochs.
     tick label style={font=\small}, label style={font=\small},
     every axis plot/.append style={line width=1pt, mark size=1pt},
     title style={font=\small},
-    title={MobileNetV4-Conv-M, 100 epochs --- reference},
+    title={MobileNetV4-Conv-M, the paper tier at 100 epochs --- reference},
 ]
 \addplot[blue, mark=*, mark options={fill=blue}] coordinates {
-(5,36.96) (10,57.33) (15,64.66) (20,67.93) (25,69.71) (30,71.10) (35,72.25) (40,72.99) (45,73.62) (50,74.17) (55,74.65) (60,75.03) (65,75.47) (70,75.72) (75,75.99) (80,76.23) (85,76.37) (90,76.49) (95,76.51) (100,76.57)
+(5,5.48) (10,33.65) (15,51.97) (20,58.09) (25,60.29) (30,61.44) (35,63.27) (40,64.69) (45,66.53) (50,68.14) (55,68.27) (60,69.51) (65,71.56) (70,72.65) (75,74.12) (80,75.22) (85,75.94) (90,76.90) (95,77.33) (100,77.39)
 };
 \addlegendentry{top-1}
 \addplot[orange, mark=*, mark options={fill=orange}] coordinates {
-(5,62.23) (10,80.58) (15,85.62) (20,87.86) (25,89.04) (30,89.91) (35,90.58) (40,90.98) (45,91.31) (50,91.74) (55,91.97) (60,92.23) (65,92.42) (70,92.56) (75,92.73) (80,92.80) (85,92.84) (90,92.92) (95,92.96) (100,92.98)
+(5,15.53) (10,58.95) (15,76.94) (20,81.66) (25,83.35) (30,83.89) (35,85.36) (40,86.43) (45,87.45) (50,88.68) (55,88.81) (60,89.52) (65,90.49) (70,91.10) (75,91.92) (80,92.49) (85,92.92) (90,93.20) (95,93.49) (100,93.46)
 };
 \addlegendentry{top-5}
 \end{axis}
 \end{tikzpicture}
-\caption{Validation accuracy of the MobileNetV4-Conv-M reference run, every five epochs.}
+\caption{Validation accuracy of the MobileNetV4-Conv-M reference run, every five epochs: the paper tier at $256^2$, 100 epochs, the live weights scored over all $50{,}000$ validation images.}
 \label{fig:mnv4_jax_curve}
 \end{figure}
 
-\noindent The last ten epochs move
-top-1 by $0.09$ ($76.49 \to 76.51 \to 76.57$): the schedule is
-exhausted, and the points between this and $79.9\%$ live in the
-regularization and the length the \texttt{full} tier restores.
+\noindent The last ten epochs move top-1 by $0.49$ ($76.90 \to 77.33 \to
+77.39$), so at a hundred epochs this schedule is not exhausted: the pack wants
+the length, which is what the yaml's $500$ is for, and the $2.5$ points to
+$79.9\%$ are the schedule's to close.
 
 \prosesection{The verified path (PJRT)}
 \label{sec:mnv4_pjrt}
@@ -8930,38 +8936,71 @@ block text is \texttt{pretty} of the typed graph at both sizes
 (\texttt{FwdGraphTextTies}); the classifier-dropout forward is stated at
 every mask and at either precision (\texttt{mnv4FwdGraphBFullDo\_faithful}).
 
-\textbf{The variant carries the recipe.}
-\texttt{emaaccdp8x128wxdowd005bf16} is the artifact the run below used:
-AdamW at $0.004$, accumulation $k = 8$ over four replicas of $128$ to
-the reference's effective $4096$, weight decay $0.05$ with BN
-$\gamma/\beta$ and biases excluded, classifier dropout $0.1$, the EMA
-shadow at $0.9999$ with the warmup correction above, bf16 convolution
-under an fp32 classifier head. Each of the 77 BatchNorms all-reduces its mean and
-variance across the four replicas, so the statistic group is the
-$512$-image micro-batch, which is the group the reference's
-accumulation gives it. Theorem~\ref{thm:mobilenetv4_sync_tie} ties the
-data-parallel render's bf16 gradient nodes to one device's step at the
-global batch; this render's EMA, gradient accumulation and classifier dropout
-sit outside that statement. It runs with:
+
+\noindent The paper tier is that spec with three host-side fields moved and,
+at the paper's $256$, a slug of its own:
 
 \begin{verbatim}
-lake run mnv4-default-4gpu
+def mnv4Imagenet256FullVerified : VerifiedNetSpec :=
+  { mnv4ImagenetFullVerified with      -- the full shim (m15), dropout 0.2, the 18 drop sites
+      name          := "MobileNetV4-Conv-M (ImageNet-1k, paper tier, 256²)",
+      slug          := "mnv4in256",
+      imageH        := 256,
+      imageW        := 256,
+      dropDenom     := 25,              -- tf-models' ramp: UIB i keeps 1 - 0.075 (i+3)/25
+      dropIdxOffset := 3 }
+
+#guard mnv4Imagenet256FullVerified.toSpecs == mnv4ImagenetVerified.toSpecs
 \end{verbatim}
 
-\noindent Table~\ref{tab:mnv4_pjrt} is the run.
+\noindent That is \texttt{LeanMlir/Verified/NetsCore.lean}: the same layers
+and the same parameter shapes, with the shim swapped for the \texttt{full}
+recipe's, the classifier dropout at the paper's $0.2$, and stochastic depth
+reaching the 18 skip UIBs at tf-models' ramp over its 25-entry block list.
+The \texttt{mnv4in256} renders come off the same chain and the same block
+table as \texttt{mnv4in}'s, at final side $8$ instead of $7$.
+
+\textbf{The variant carries the recipe.}
+\texttt{mnv4in256\_accdp8x128wxdropdowd01bf16} is the artifact the run used:
+AdamW at $0.004$, four replicas of $128$ accumulated eight times to the
+reference's effective $4096$, drop-path and classifier dropout in the graph,
+weight decay $0.1$ with the norms and biases excluded, bf16 convolution under
+an fp32 classifier head, BatchNorm $\varepsilon\,10^{-3}$ and AdamW
+$\varepsilon\,10^{-7}$ baked. Each of the 77 BatchNorms all-reduces its mean
+and variance across the four replicas, so the statistic group is the
+$512$-image micro-batch, which is the group the reference's accumulation
+gives it. Theorem~\ref{thm:mobilenetv4_sync_tie} ties the data-parallel
+render's bf16 gradient nodes to one device's step at the global batch, and is
+stated at $224^2$: the $256^2$ render has not had it restated, so on this pair
+the data-parallel step is the render's and not a theorem's, and accumulation
+and the two dropouts sit outside the statement as before. Disclosed, on both
+paths: the initialization and the head order are \texttt{timm}'s, and the
+decay reaches the classifier bias. It runs with:
+
+\begin{verbatim}
+lake run mnv4-full-e100-4gpu
+\end{verbatim}
+
+\noindent \texttt{LEAN\_MLIR\_EPOCHS=100} sets the cosine as well as the loop
+bound, under the run's own checkpoint tag. Table~\ref{tab:mnv4_pjrt} is the
+run.
 
 \begin{table}[H]
 \centering
-\caption{MobileNetV4-Conv-M on ImageNet-1k, verified path (PJRT): micro-batch $512$ as $4 \times 128$ replicas, accumulated $8\times$ as on the reference; EMA weights scored over the same $50{,}000$ images.}
+\caption{MobileNetV4-Conv-M on ImageNet-1k, verified path (PJRT): the paper tier at $256^2$ cut to 100 epochs, micro-batch $512$ as $4 \times 128$ replicas accumulated $8\times$ as on the reference; the live weights scored over the same $50{,}000$ images through an fp32 forward.}
 \label{tab:mnv4_pjrt}
 \begin{tabular}{l l r r r r r}
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
-4$\times$ 3060 (CUDA) & bf16 & $\sim$11.1 min & 100 & $\sim$18.5 hr & $\mathbf{76.68\%}$ & $\mathbf{93.14\%}$ \\
+4$\times$ 4060 Ti (CUDA) & bf16 & $\sim$9.4 min & 100 & $\sim$15.6 hr & $\mathbf{77.35\%}$ & $\mathbf{93.53\%}$ \\
 \hline
 \end{tabular}
 \end{table}
+
+\noindent Compute-bound at $214$\,ms a micro-step, which is why the proven
+graph finishes six and a half hours ahead of the Python trainer on the same
+four cards; no restart and no thermal rest.
 
 \prosesection{The two paths, side by side}
 
@@ -8969,7 +9008,7 @@ Table~\ref{tab:mnv4_paths} is the two paths, row by row.
 
 \begin{table}[H]
 \centering
-\caption{MobileNetV4-Conv-M on ImageNet-1k: the reference and the verified path, row by row. Both are the 100-epoch tier, scored over the same $50{,}000$ validation images under the same protocol; rows above the first rule differ, rows between the rules are held equal by construction.}
+\caption{MobileNetV4-Conv-M on ImageNet-1k: the reference and the verified path, row by row. Both are the paper tier at $256^2$ cut to 100 epochs, on the same four RTX 4060~Ti cards, scored over the same $50{,}000$ validation images under the same protocol; rows above the first rule differ, rows between the rules are held equal by construction.}
 \label{tab:mnv4_paths}
 \begin{tabular}{@{}l l l@{}}
 \hline
@@ -8977,66 +9016,57 @@ Table~\ref{tab:mnv4_paths} is the two paths, row by row.
 \hline
 lowering            & JAX $\to$ XLA            & \texttt{pretty(provenGraph)} $\to$ XLA \\
 Python in the step  & yes                      & none \\
-evaluation forward  & bf16                     & fp32 \\
 classifier head     & bf16                     & fp32 \\
 depthwise init, variance & $2/k^2$             & $2/(C k^2)$ \\
 \hline
+input               & $256^2$                  & $256^2$ \\
 precision           & bf16 convolutions        & bf16 convolutions \\
+evaluation forward  & fp32                     & fp32 \\
 effective batch     & 4096                     & 4096 \\
 accumulation        & $8 \times 512$           & $8 \times 512$ \\
 BN statistic group  & 512 (Ghost-BN)           & 512 (Ghost-BN) \\
+BN decay, $\varepsilon$ & $0.997$, $10^{-3}$   & $0.997$, $10^{-3}$ \\
 steps/epoch         & 312                      & 312 \\
 optimizer           & AdamW $\beta(0.9, 0.999)$ & AdamW $\beta(0.9, 0.999)$ \\
-schedule            & cosine, 5-epoch warmup   & cosine, 5-epoch warmup \\
-weights scored      & EMA shadow               & EMA shadow \\
+AdamW $\varepsilon$ & $10^{-7}$                & $10^{-7}$ \\
+schedule            & cosine from step 0, 5-ep warmup & cosine from step 0, 5-ep warmup \\
+epochs              & 100                      & 100 \\
+weight decay        & $0.1$, not norms or biases & $0.1$, not norms or biases \\
+RandAugment         & $m15$ at $p\,0.7$         & $m15$ at $p\,0.7$ \\
+dropout, drop-path  & $0.2$, $0.075$           & $0.2$, $0.075$ \\
+weights scored      & live                     & live \\
 \hline
-\textbf{val top-1}  & $\mathbf{76.57\%}$       & $\mathbf{76.68\%}$ \\
-\textbf{val top-5}  & $\mathbf{92.98\%}$       & $\mathbf{93.14\%}$ \\
+\textbf{val top-1}  & $\mathbf{77.39\%}$       & $\mathbf{77.35\%}$ \\
+\textbf{val top-5}  & $\mathbf{93.46\%}$       & $\mathbf{93.53\%}$ \\
 \hline
 \end{tabular}
 \end{table}
 
-\noindent The BatchNorm group is held equal too: the reference normalizes over the $512$-image shard its accumulation hands each step,
-and the verified render all-reduces to the same $512$. \textbf{[TODO: the
-paper's tier --- its own training config (\texttt{tensorflow/models},
-\texttt{imagenet\_mobilenetv4\_conv\_medium\_tpu.yaml}: $500$ epochs at
-$256^2$, wd $0.1$, dropout $0.2$, RandAugment $m15$ at $p\,0.7$ under
-TensorFlow's mappings, drop-path $0.075$ over its $25$-entry block list, BN
-$0.997$ / $\varepsilon\,10^{-3}$, AdamW $\varepsilon\,10^{-7}$, the cosine
-from step 0, its crop and resize) --- exists on both paths and has not run:
-\texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, the \texttt{mnv4in256}
-renders. Disclosed: the init and the head order are \texttt{timm}'s, the decay
-reaches the classifier bias. Scored at the paper's $256$ / $0.875$ and at
-\texttt{timm}'s $320$ / $1.0$ for its \texttt{e500\_r256} weights; the
-$224$ tier above at \texttt{timm}'s $256$ / $1.0$.]}
+\noindent Above the rule, beside the lowering, sit the precision of the
+classifier head and the depthwise initialization, which starts every
+depthwise kernel $\sqrt{C}$ narrower on the verified path.
 
-\medskip\noindent\textbf{The two paths agree to $0.11$ points on top-1
-and $0.16$ on top-5}, inside the 95\% Wilson interval ($\pm0.37$ at $77\%$ on $50{,}000$ images), at one seed each. The
-BatchNorm group is held equal. Above the rule, beside the lowering, sit
-the precision of the classifier head and of the evaluation forward, and
-the depthwise initialization, which starts every depthwise kernel
-$\sqrt{C}$ narrower on the verified path.
-
-\medskip\noindent\textbf{The curves converge; they do not merely end
-together.} The verified path trails at epoch~5 and leads from epoch~10,
-by $4.40$ at the widest, and the lead narrows through the anneal ---
-not monotonically, it widens again at epochs $25$, $60$ and $70$ ---
-to $0.11$. Over the last three scored epochs the two average within
-$0.15$ of each other on top-1 and $0.18$ on top-5.
-Table~\ref{tab:mnv4_paths_epochs} is the selected epochs and
-Figure~\ref{fig:mnv4_paths_curve} every five.
+\medskip\noindent\textbf{The pair ties.} $-0.04$ on top-1 and $+0.07$ on
+top-5 are a tenth of one run's $\pm0.37$ Wilson half-width at $n = 50{,}000$,
+and the curves cross back and forth the whole way: at epoch 60 the two score
+$34{,}753$ and $34{,}750$ images correct, and the means of the last five
+scored epochs are $76.56$ and $76.60$. Table~\ref{tab:mnv4_paths_epochs} is
+the selected epochs and Figure~\ref{fig:mnv4_paths_curve} every five. The
+McNemar pairing of \S\ref{sec:r34_pjrt} is owed: only the verified trainer
+writes the per-image bitmap, and the reference's checkpoint is kept for the
+rescore that produces its half.
 
 \begin{table}[H]
 \centering
 \caption{MobileNetV4-Conv-M validation top-1 on both paths at selected epochs.}
 \label{tab:mnv4_paths_epochs}
-\begin{tabular}{@{}l r r r r r r r@{}}
+\begin{tabular}{@{}l r r r r r r r r@{}}
 \hline
-epoch & 5 & 10 & 25 & 50 & 75 & 90 & 100 \\
+epoch & 5 & 10 & 25 & 50 & 75 & 90 & 95 & 100 \\
 \hline
-reference (JAX)       & 36.96 & 57.33 & 69.71 & 74.17 & 75.99 & 76.49 & 76.57 \\
-verified path (PJRT)  & 34.77 & 61.73 & 70.95 & 74.66 & 76.36 & 76.69 & 76.68 \\
-$\Delta$              & $-2.19$ & $+4.40$ & $+1.24$ & $+0.48$ & $+0.37$ & $+0.20$ & $+0.11$ \\
+reference (JAX)       & 5.48 & 33.65 & 60.29 & 68.14 & 74.12 & 76.90 & 77.33 & 77.39 \\
+verified path (PJRT)  & 7.88 & 34.19 & 60.29 & 67.62 & 73.89 & 77.06 & 77.29 & 77.35 \\
+$\Delta$              & $+2.40$ & $+0.54$ & $0.00$ & $-0.52$ & $-0.23$ & $+0.16$ & $-0.04$ & $-0.04$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -9058,29 +9088,22 @@ $\Delta$              & $-2.19$ & $+4.40$ & $+1.24$ & $+0.48$ & $+0.37$ & $+0.20
     every axis plot/.append style={line width=1pt, mark size=0.8pt},
 ]
 \addplot[blue, mark=*, mark options={fill=blue}] coordinates {
-(5,36.96) (10,57.33) (15,64.66) (20,67.93) (25,69.71) (30,71.10) (35,72.25) (40,72.99) (45,73.62) (50,74.17) (55,74.65) (60,75.03) (65,75.47) (70,75.72) (75,75.99) (80,76.23) (85,76.37) (90,76.49) (95,76.51) (100,76.57)
+(5,5.48) (10,33.65) (15,51.97) (20,58.09) (25,60.29) (30,61.44) (35,63.27) (40,64.69) (45,66.53) (50,68.14) (55,68.27) (60,69.51) (65,71.56) (70,72.65) (75,74.12) (80,75.22) (85,75.94) (90,76.90) (95,77.33) (100,77.39)
 };
 \addlegendentry{reference (JAX)}
 \addplot[red, dashed, mark=o] coordinates {
-(5,34.77) (10,61.73) (15,66.91) (20,69.06) (25,70.95) (30,72.09) (35,72.91) (40,73.54) (45,74.14) (50,74.66) (55,74.88) (60,75.45) (65,75.77) (70,76.18) (75,76.36) (80,76.55) (85,76.67) (90,76.69) (95,76.65) (100,76.68)
+(5,7.88) (10,34.19) (15,55.49) (20,57.85) (25,60.29) (30,61.62) (35,63.87) (40,64.78) (45,64.87) (50,67.62) (55,69.23) (60,69.50) (65,70.53) (70,72.60) (75,73.89) (80,75.08) (85,76.24) (90,77.06) (95,77.29) (100,77.35)
 };
 \addlegendentry{verified path (PJRT)}
 \end{axis}
 \end{tikzpicture}
-\caption{MobileNetV4-Conv-M validation top-1 on both paths, every five epochs: one recipe, two paths to XLA, scored over all $50{,}000$ validation images.}
+\caption{MobileNetV4-Conv-M validation top-1 on both paths, every five epochs: one recipe, two paths to XLA, the live weights scored over all $50{,}000$ validation images.}
 \label{fig:mnv4_paths_curve}
 \end{figure}
 
-\medskip\noindent The tier above is detuned by construction, at wd $0.05$
-against the paper's $0.1$, dropout $0.1$ against $0.2$, RandAugment $m9$
-at $p\,0.5$ against $m15$ at $p\,0.7$, no drop-path against $0.075$, $224$
-against $256$ and $100$ epochs against $500$, so its $76.57\%$ and
-$76.68\%$ are not a reproduction of $79.9\%$. Both curves are flat over
-their last ten epochs; the remaining points live in the regularization and
-the length, and the paper's tier is the marker above. Both paths above
-score the EMA shadow, which the paper's Conv-M recipe does not carry; the
-tie stands, since both columns carry it, and the \texttt{full} pair drops
-it, scoring the live weights as the paper does.
+\medskip\noindent \textbf{[TODO: the schedule. The same two jobs at $500$
+epochs, \texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, dry-run and
+not run, ${\sim}112 + 78$\,h on the 4060~Ti box, this pair times five.]}
 
 \chapter{EfficientNet}
 \label{chap:se}
@@ -19430,7 +19453,7 @@ and the section heading says which of three kinds it is: a second recipe, a
 wider or deeper size, or an architecture the book reaches for once. They are
 collected here rather than in Table~\ref{tab:track4_runners} because they are
 side quests,
-not because they cannot start. All seven have job configs, launch like
+not because they cannot start. All eight have job configs, launch like
 any Track-4 row and ride in \texttt{lake run imagenet} right after their
 chapter's row. Each row's section says where it stands.
 
@@ -19444,7 +19467,8 @@ chapter's row. Each row's section says where it stands.
 \hline \\[-6pt]
 \texttt{resnet50-imagenet-verified}    & \texttt{a2} & \texttt{r50-a2-bf16-4gpu} & \S\ref{sec:r50_a2_a1_cost} \\
 \texttt{resnet50-imagenet-verified}    & \texttt{a1} & \texttt{r50-a1-bf16-4gpu} & \S\ref{sec:r50_a2_a1_cost} \\
-\texttt{mobilenetv4-imagenet-verified} & \texttt{full} & \texttt{mnv4-full-4gpu} & \S\ref{sec:mnv4_side_quest} \\
+\texttt{mobilenetv4-imagenet-verified} & \texttt{full}, 100 ep & \texttt{mnv4-full-e100-4gpu} & \S\ref{sec:mnv4_side_quest} \\
+\texttt{mobilenetv4-imagenet-verified} & \texttt{full}, 500 ep & \texttt{mnv4-full-4gpu} & \S\ref{sec:mnv4_side_quest} \\
 \texttt{convnext-s-imagenet-verified}  & --- & \texttt{cnxs-default-emabf16-4gpu} & \S\ref{sec:convnext_sb} \\
 \texttt{convnext-b-imagenet-verified}  & --- & \texttt{cnxb-default-emabf16-4gpu} & \S\ref{sec:convnext_sb} \\
 \texttt{vit-s-imagenet-verified}       & --- & \texttt{vits-default-emabf16-4gpu} & \S\ref{sec:vit_sb} \\
