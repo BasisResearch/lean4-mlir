@@ -15175,7 +15175,8 @@ against VisDrone's uncapped validation ground truth --- all $38{,}759$
 boxes, not the 56-box-truncated training record, which drops $34.9\%$ of them
 and is not the benchmark's protocol. The catalog entry below keeps the
 paper-exact YOLOv1 shape for the historical record; Table~\ref{tab:visdrone_results}
-is the trained detector beside it.
+is the trained detector beside it, and Figure~\ref{fig:visdrone_fpn} is its top row on
+four validation frames.
 
 \begin{table}[H]
 \centering
@@ -15210,8 +15211,7 @@ the per-class spread below predicts.}
 \label{fig:visdrone_fpn}
 \end{figure}
 
-\noindent Figure~\ref{fig:visdrone_fpn} is the top row on four validation
-frames. \textbf{Augmentation and schedule length are one decision, not two,
+\noindent \textbf{Augmentation and schedule length are one decision, not two,
 and the top five rows only mean something together.} Quadrupling the schedule
 with augmentation off costs $19\%$ --- ordinary overfitting on $6{,}471$
 images. Photometric augmentation recovers it, but at that strength 12 epochs
@@ -16041,7 +16041,7 @@ core --- and reads two seeds a side:
 
 \begin{table}[H]
 \centering
-\caption{Per-patient Dice after the size post-process, two seeds each: the slice UNet against the 3D UNet.}
+\caption{Per-patient Dice after the size post-process, two seeds each: the slice UNet against the 3D UNet. The worst tenth is the seven lowest-scoring of the 73 patients; a false alarm is a slice with no enhancing tumour in the ground truth on which the model paints some, out of 8{,}060 such slices.}
 \label{tab:brats_3d}
 \begin{tabular}{lcccc}
 \hline
@@ -16055,9 +16055,7 @@ ResNet-34 UNet, seed 1 & 0.891 $\cdot$ 0.699 & 0.818 $\cdot$ 0.453 & 0.801 $\cdo
 \end{tabular}
 \end{table}
 
-\noindent The worst tenth is the seven lowest-scoring of the 73 patients, and
-a false alarm is a slice with no enhancing tumour in the ground truth on which
-the model paints some, out of 8{,}060 such slices. Paired over patients the
+\noindent Paired over patients the
 3D means are ahead by $0.009$ on WT and TC and $0.004$ on ET, and the
 bootstrap interval excludes zero on WT alone. The tail is where the two
 part. On tumour core the 3D net's worst tenth is above both 2D seeds' on
@@ -17895,6 +17893,9 @@ same loops at the scale that made them famous.
 \subsection{Blackjack --- DQN against value iteration}
 \label{sec:bestiary_rl}
 
+Figure~\ref{fig:blackjack_chart} is the ceiling: the exact policy, by value
+iteration.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{demos/blackjack_chart.png}
@@ -18143,7 +18144,7 @@ the bluff, the raise frequency opening round 2 with a jack under a queen.
 
 \begin{table}[H]
 \centering
-\caption{The Leduc poker arms: exploitability, head-to-head against CFR+, and bluff frequency.}
+\caption{The Leduc poker arms: exploitability, head-to-head against CFR+, and bluff frequency; six minutes a seed on one card.}
 \label{tab:leduc_arms}
 \small
 \begin{tabular}{@{}l l l l@{}}
@@ -18161,7 +18162,7 @@ CFR+, a thousand iterations & 0.00024 & 0 & 19.5\% \\
 \end{tabular}
 \end{table}
 
-\noindent Six minutes a seed on one card. Deep CFR's exploitability falls from 1.4 at
+\noindent Deep CFR's exploitability falls from 1.4 at
 iteration 5 to 0.11--0.15 at a hundred and ends under the honest arm and under the
 equilibrium with its bluffs removed; at a hundred iterations it is where the Single
 Deep CFR paper's Leduc curves are (150--200 milli-antes per game read from its Figure
@@ -18174,7 +18175,8 @@ the table's lead is $3.1\times$, $2.0\times$, $1.0\times$, and at $r = 13$ the n
 the better head-to-head ($-0.028$ against $-0.035$ a hand). The table visits all but a
 set or two at these budgets, so the mechanism is not what it never saw; its estimate of each set
 is noisier as the sets multiply at a fixed budget, and the network's error does not grow
-with them. The bluff column is the finding a reader can check on the figure: the
+with them. The bluff column is the finding a reader can check on
+Figure~\ref{fig:deep_cfr_leduc}: the
 trained profile that is 0.13 exploitable raises the losing jack under a queen 0\% of
 the time where the equilibrium raises it 19.5\% (18.6--19.5\% over two solvers and
 three initialisations --- the frequency is pinned at $r = 3$, and is not at $r = 13$,
@@ -18268,7 +18270,7 @@ independent evaluations of the saved network, 256 games each, pooled.
 
 \begin{table}[H]
 \centering
-\caption{The tic-tac-toe arms against the solved game at $3 \times 3$, $4 \times 4$ and $5 \times 5$.}
+\caption{The tic-tac-toe arms against the solved game at $3 \times 3$, $4 \times 4$ and $5 \times 5$: twenty iterations and 2.5 minutes on one card at $3 \times 3$, forty iterations and 10.0 minutes at $4 \times 4$, the same binary with \texttt{n=4}.}
 \label{tab:ttt_arms}
 \small
 \begin{tabular}{@{}l r l r l r l@{}}
@@ -18285,16 +18287,14 @@ perfect          & 100\%  & 0/1000/0 $\cdot$ 0/1000/0    & 100\%  & 0/1000/0 $\c
 \end{tabular}
 \end{table}
 
-\noindent Twenty iterations and 2.5 minutes on one card at $3 \times 3$; forty
-iterations and 10.0 minutes at $4 \times 4$, the same binary with \texttt{n=4} ---
-the Python implementation this loop follows (Nair,
-\href{https://github.com/suragnair/alpha-zero-general}{alpha-zero-general}) was expected to take a day on that
-board. The untrained network's sweep is the random player's. Self-play visits 1.2\%
+\noindent The Python implementation this loop follows (Nair,
+\href{https://github.com/suragnair/alpha-zero-general}{alpha-zero-general}) was
+expected to take a day on the $4 \times 4$ board. The untrained network's sweep is the random player's. Self-play visits 1.2\%
 of the $4 \times 4$ decision positions and the sweep scores all of them; the misses
 are mostly forced wins not taken, late in games a competent opponent never produces,
 and the search closes them --- with 25 or 100 simulations the network is unbeaten
 from iteration 5 and 4, before the network alone is. The value head estimates
-self-play rather than the theorem (the figure's right panel): the root ends
+self-play rather than the theorem (the right panel of Figure~\ref{fig:alphazero_ttt}): the root ends
 X-favoured at $3 \times 3$ because self-play under root noise is. At $5 \times 5$
 the same binary with \texttt{n=5 k=4} runs a hundred iterations at 400 simulations
 in 64 minutes. As X the network never loses, alone or with search; as O it still
@@ -18525,7 +18525,7 @@ datasets span the book's whole range:
 
 \begin{table}[H]
 \centering
-\caption{The datasets behind the chapters.}
+\caption{The datasets behind the chapters: name, abbreviation, standard reference, homepage, and the repository script (with the on-disk path under \texttt{data/}) that fetches it.}
 \label{tab:datasets_core}
 \footnotesize\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}l l l p{4.3cm} p{4.0cm}@{}}
@@ -18548,11 +18548,9 @@ ImageNet-1k & IN1K & Deng et al., 2009 &
 \end{tabular}
 \end{table}
 
-\noindent\small Dataset information: name, abbreviation, standard
-reference, homepage, and the repository script (with the on-disk path
-under \texttt{data/}) that fetches it. MNIST is pulled from the CVDF
-mirror (\nolinkurl{storage.googleapis.com/cvdf-datasets/mnist}), and the
-homepage above is the canonical reference.
+\noindent\small MNIST is pulled from the CVDF mirror
+(\nolinkurl{storage.googleapis.com/cvdf-datasets/mnist}), and the homepage
+column is the canonical reference.
 \textsuperscript{*}ImageNet-1k is license-gated and not redistributable,
 so the repository ships no fetch script. See the build notes below.
 \normalsize
@@ -18761,7 +18759,7 @@ at all.
 
 \begin{table}[H]
 \centering
-\caption{The datasets behind the bestiary demos.}
+\caption{The datasets behind the bestiary demos, in the columns of Table~\ref{tab:datasets_core}.}
 \label{tab:datasets_demo}
 \footnotesize\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}l l p{3.2cm} p{4.0cm} p{3.7cm}@{}}
@@ -18817,9 +18815,7 @@ PDB, pre-CASP16 chains & PDB & Berman et al., 2000 &
 \end{tabular}
 \end{table}
 
-\noindent\small The demo datasets, in the same columns as
-Table~\ref{tab:datasets_core}. Each
-also has a \texttt{preprocess\_*.py} step (e.g.\
+\noindent\small Each also has a \texttt{preprocess\_*.py} step (e.g.\
 \texttt{preprocess\_shakespeare.py} builds
 \texttt{train.bin}/\texttt{val.bin}/\texttt{vocab.txt}) between download
 and training. \texttt{preprocess\_visdrone.py} writes three

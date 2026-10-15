@@ -30,10 +30,10 @@ floats are cited by `Figure~\ref` / `Table~\ref` before they appear, and
 `python3 scripts/book/book_floats.py --refs` is the census: one line per float, with the lines
 that `\ref` it, or `NONE`.
 
-**Still open: the note fold outside Chapters 1–4.** The `\noindent` notes after the Chapter 1–4
-result floats were split (setup into the caption, argument stays in prose) as the sample. The
-~80 notes in Chapters 5–10 and the appendices are untouched; decide from the sample whether to
-continue, caption by caption, with the rules below.
+**The note fold is done too (2026-10-15).** Every `\noindent` note after a float was split:
+setup (the net, the recipe, batch shape, what was scored over what, what a column or whisker
+is, the `runs/` directory) into the caption, argument left in the prose, and a note that was
+wholly caption deleted. The rules below are what was applied.
 
 | where | figures | tables | uncited |
 |---|---|---|---|
