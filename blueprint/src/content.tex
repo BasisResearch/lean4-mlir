@@ -582,6 +582,18 @@ result. It's a paper trail that says we know exactly which choice we made
 at each non-smooth point, and the typechecker has verified the algebra
 around it.
 
+These conventions are
+invoked by ReLU, by maxPool and by ReLU6, which is to say by
+Chapters~1--6, and a whole-network theorem in those chapters names an input
+and assumes every activation stayed off its kink there. From EfficientNet
+on, every activation in Part~1 is smooth --- swish, the sigmoid of a
+squeeze-and-excitation gate, GELU, softmax --- and there is no max-pool, so
+that smooth-point hypothesis is discharged outright: the statements
+quantify over every input, as Chapter~\ref{chap:se}'s fold is the first to
+do. \(\pdiv\) stays on as the notation the Jacobian lemmas are written in,
+and from there on it agrees with \(\fderiv\) everywhere; the convention at
+the kink is never consulted again.
+
 \section*{Why VJPs, not Jacobians?}
 
 If you've taken multivariable calculus, the natural object to track
@@ -9597,8 +9609,8 @@ its inset shows one MBConv block, an inverted residual with an SE gate
   skip/.style={->, thick, magenta!70!black, shorten >=1pt},
 ]
   \node[term] (x){$x$};
-  \node[box, right=0.45cm of x]   (e){$1\times1$ expand\\$C\!\to\!tC$, BN, ReLU6};
-  \node[box, right=0.4cm of e]    (dw){$k\times k$ DW\\BN, ReLU6};
+  \node[box, right=0.45cm of x]   (e){$1\times1$ expand\\$C\!\to\!tC$, BN, swish};
+  \node[box, right=0.4cm of e]    (dw){$k\times k$ DW\\BN, swish};
   \node[se, right=0.4cm of dw]    (s){SE gate\\$\times g$};
   \node[box, right=0.4cm of s]    (p){$1\times1$ project\\BN (linear)};
   \node[dot, right=0.45cm of p]   (sum){$+$};
