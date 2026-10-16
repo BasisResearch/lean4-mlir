@@ -95,6 +95,36 @@ only the EMA, so the early epochs aren't comparable; train loss is.
 * `attempt.log` / `full.log` / `master.log`, `epoch_clock.tsv`, `edac.tsv`, the two watcher scripts
 * `vit_jax_curve.csv`, written by `summarize.sh`
 
+## Rescore and pairing (2026-10-16, atlas CPU)
+
+`rescore.sh`: the final `vit_tiny_imagenet.state.npz` through `score_arms.py` (copied from the 10-01
+run; the generated trainer is this run's, DeiT init and the f32 eval hook), JAX on CPU
+(`~/.venv-score`), writing `bitmaps/jax_e300_{ema,live}_{bf16,f32}.bin` + the labels. Local only
+(`runs/**/*.bin`).
+
+| arm | top-1 | top-5 |
+|---|---|---|
+| EMA, f32 | 35,826 / 50,000 = **71.652** | 45,494 = 90.988 |
+| EMA, bf16 | 35,826 = 71.652 | 45,493 = 90.986 |
+| live, f32 | 35,937 / 50,000 = **71.874** | 45,561 = 91.122 |
+| live, bf16 | 35,948 = 71.896 | 45,560 = 91.120 |
+
+* The EMA f32 arm is 7 images over the run's own e300 line (35,819): the CPU compile against the
+  four-card one, the class `sharded_eval_gate.sh` documents.
+* **Live beats the shadow**, +0.22, McNemar p = 0.0009 (489 / 600 discordant). The constant 0.99996
+  averages the last ~25k steps (20 epochs) of a schedule still rising at the end.
+
+McNemar against the verified run (`runs/2026-10-14-vit-deit-verified-smx-bf16-300ep/bitmaps/`),
+`scripts/demos/mcnemar.py`, f32 arms:
+
+| pairing | only JAX right | only verified right | agree | exact p |
+|---|---|---|---|---|
+| EMA vs EMA (the verified run's own e300 bitmap) | 2,347 | 2,327 | 90.7 % | **0.78** |
+| live vs live (`ver_e300_live.bin`) | 2,434 | 2,361 | 90.4 % | **0.30** |
+
+A tie both ways. Ch 9's marker is written out.
+
 ## Reproduce
 
     bash runs/2026-10-11-vit-deit-jax-bf16-300ep/summarize.sh
+    bash runs/2026-10-11-vit-deit-jax-bf16-300ep/rescore.sh      # the four bitmaps, CPU ~15 min

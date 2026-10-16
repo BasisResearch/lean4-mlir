@@ -1,0 +1,12 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792181643.684590  282776 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792181645.076299  282776 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+E0000 00:00:1792181645.521475  282776 cuda_platform.cc:52] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (303)
+backend=cpu devices=1 gen=/home/skoonce/lean/lean4-mlir-worker/jax/generated/generated_vit_tiny_imagenet.py
+loaded /home/skoonce/vit_tiny_jax_2611/vit_tiny_imagenet.state.npz step=375300 (801 arrays ✓)
+val: 50000 images, crop_pct 0.8750, 224px
+ema  bf16  top-1 35826/50000 = 71.652%   top-5 45493/50000 = 90.986%
+live bf16  top-1 35948/50000 = 71.896%   top-5 45560/50000 = 91.120%
+ema  f32   top-1 35826/50000 = 71.652%   top-5 45494/50000 = 90.988%
+live f32   top-1 35937/50000 = 71.874%   top-5 45561/50000 = 91.122%

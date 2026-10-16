@@ -58,9 +58,16 @@ top-1 on the JAX run's scored epochs, train loss on every epoch):
   epochs are the EMA shadow at a constant 0.99996 (no ramp), which still carries much of the random
   init before e60, so the early Δ says little.
 * Train loss is within ±0.02 in every window and within ±0.01 from e126 on.
-* No per-image McNemar yet: the JAX run wrote no per-image bitmap. This run's
-  `bitmaps/vit_emadp256x4wxdropeps0000001smxerfbf16_e300.bin` (local only) can be paired with a
-  re-score of the JAX run's final `.state.npz` (template `runs/2026-10-01-vit-jax-bf16-300ep/score_arms.py`).
+* **Paired (2026-10-16).** The JAX run's final `.state.npz` rescored per image on atlas's CPU
+  (`runs/2026-10-11-vit-deit-jax-bf16-300ep/rescore.sh`, f32 arms) against this run's own e300
+  bitmap: only JAX right 2,347, only verified right 2,327, agree on 90.7 %, McNemar exact
+  **p = 0.78**. Live vs live (`bitmaps/ver_e300_live.bin`, `score-checkpoint vit-in` on mars at
+  `LEAN_MLIR_REGION=live`, 4 replicas): 2,434 / 2,361, **p = 0.30**. A tie both ways.
+* **Live weights 71.728 / 91.084** (35,864 / 45,542; `rescore_live.log`), +0.12 over the shadow,
+  McNemar p = 0.08 (506 / 564). The EMA rescore (`rescore_ema.log`, `bitmaps/ver_e300_ema_rescore.bin`)
+  gives 35,808 / 45,475 against the run's 35,806 / 45,474: 2 images, the per-process compile class.
+  JAX's live weights are 71.874 / 91.122, +0.22 over its shadow (p = 0.0009): on both paths the
+  constant-0.99996 shadow trails a schedule still rising at the end.
 
 ## Against the 10-01 pair (batch 512, clip 1.0, step-wise schedule, ramped EMA)
 
