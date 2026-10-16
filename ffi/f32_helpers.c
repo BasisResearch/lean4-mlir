@@ -4215,6 +4215,481 @@ LEAN_EXPORT lean_obj_res lean_mcts_root_visits(b_lean_obj_arg arena, b_lean_obj_
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// MuZero on tic-tac-toe: the latent search and the host-side pieces of the unroll
+// (planning/muzero_ttt_demo.md §3–§5). Schrittwieser et al. 2020, MuZero,
+// https://doi.org/10.1038/s41586-020-03051-4.
+//
+// The search is `lean_mcts_*`'s with the position replaced by a learned latent. A node is
+// a path, not a position (no hash, no transpositions): its children are node indices, it
+// keeps its latent [C, n, n] for the next batched dynamics call, its own legal mask (the
+// real rules at the root, every cell inside the tree) and a host key (the true position,
+// used only by the oracle gate). Same arena discipline as `lean_mcts_*` — one Lean-owned
+// ByteArray, flat per-game blocks — and the same lockstep: select on every live game →
+// one batched g, then f and r, over the pending leaves → expand + back up. An edge's value
+// is the move's reward minus the value below it from the next mover's view; at reward 0
+// that is `lean_mcts_*`'s sign flip float for float, which is what the oracle gate
+// (`lake exe muzero-ttt mode=oracle`) checks against the position-keyed search.
+// ═══════════════════════════════════════════════════════════════════════
+
+typedef struct { uint32_t G, nc, C, D, cap, stride, pad0, pad1; } muz_hdr;
+typedef struct {
+    uint64_t* key; float* P; int32_t* N; float* W; float* R; int32_t* child; float* lat;
+    uint8_t* mask; int32_t* nsum; uint8_t* term; int32_t* pnode; int32_t* pact;
+    int32_t* count; int32_t* plen; int32_t* leaf_kind; float* qmin; float* qmax;
+} muz_game;
+
+static size_t muz_game_stride(uint32_t nc, uint32_t D, uint32_t cap) {
+    size_t e = (size_t)cap * nc;
+    size_t b = (size_t)cap * 8;
+    b += 5 * mcts_align8(e * 4) + mcts_align8((size_t)cap * D * 4) + mcts_align8(e);
+    b += mcts_align8((size_t)cap * 4) + mcts_align8(cap) + 2 * mcts_align8((size_t)cap * 4);
+    return b + 32;
+}
+
+static void muz_game_ptrs(const muz_hdr* h, uint8_t* base, uint32_t g, muz_game* p) {
+    size_t e = (size_t)h->cap * h->nc;
+    uint8_t* q = base + sizeof(muz_hdr) + (size_t)g * h->stride;
+    p->key = (uint64_t*)q;   q += (size_t)h->cap * 8;
+    p->P = (float*)q;        q += mcts_align8(e * 4);
+    p->N = (int32_t*)q;      q += mcts_align8(e * 4);
+    p->W = (float*)q;        q += mcts_align8(e * 4);
+    p->R = (float*)q;        q += mcts_align8(e * 4);
+    p->child = (int32_t*)q;  q += mcts_align8(e * 4);
+    p->lat = (float*)q;      q += mcts_align8((size_t)h->cap * h->D * 4);
+    p->mask = q;             q += mcts_align8(e);
+    p->nsum = (int32_t*)q;   q += mcts_align8((size_t)h->cap * 4);
+    p->term = q;             q += mcts_align8(h->cap);
+    p->pnode = (int32_t*)q;  q += mcts_align8((size_t)h->cap * 4);
+    p->pact = (int32_t*)q;   q += mcts_align8((size_t)h->cap * 4);
+    p->count = (int32_t*)q; p->plen = p->count + 1; p->leaf_kind = p->count + 2;
+    p->qmin = (float*)(p->count + 3); p->qmax = (float*)(p->count + 4);
+}
+
+static const muz_hdr* muz_header(b_lean_obj_arg arena) { return (const muz_hdr*)lean_sarray_cptr(arena); }
+
+static lean_obj_res muz_err(const char* msg) {
+    return lean_io_result_mk_error(lean_mk_io_user_error(lean_mk_string(msg)));
+}
+
+// `lean_mcts_expand_backup`'s prior, op for op: softmax of the logits over the masked cells.
+static void muz_priors(const float* row, const uint8_t* mask, int nc, float* P) {
+    float mx = -1e30f;
+    for (int c = 0; c < nc; c++) if (mask[c] && row[c] > mx) mx = row[c];
+    float se = 0;
+    for (int c = 0; c < nc; c++) { P[c] = mask[c] ? expf(row[c] - mx) : 0.0f; se += P[c]; }
+    for (int c = 0; c < nc; c++) P[c] /= se;
+}
+
+// A fresh node: priors from `row` over `mask` (none for a terminal), latent `lat`.
+static int32_t muz_new_node(const muz_hdr* h, muz_game* p, const float* lat, const float* row,
+                            const uint8_t* mask, uint8_t term, uint64_t key) {
+    if (*p->count >= (int32_t)h->cap) return -1;
+    const int nc = (int)h->nc;
+    int32_t nd = (*p->count)++;
+    size_t o = (size_t)nd * nc;
+    if (mask) memcpy(p->mask + o, mask, nc); else memset(p->mask + o, 1, nc);
+    if (term || !row) memset(p->P + o, 0, nc * sizeof(float));
+    else muz_priors(row, p->mask + o, nc, p->P + o);
+    memset(p->N + o, 0, nc * sizeof(int32_t));
+    memset(p->W + o, 0, nc * sizeof(float));
+    memset(p->R + o, 0, nc * sizeof(float));
+    for (int c = 0; c < nc; c++) p->child[o + c] = -1;
+    if (lat) memcpy(p->lat + (size_t)nd * h->D, lat, (size_t)h->D * sizeof(float));
+    else memset(p->lat + (size_t)nd * h->D, 0, (size_t)h->D * sizeof(float));
+    p->nsum[nd] = 0; p->term[nd] = term; p->key[nd] = key;
+    return nd;
+}
+
+// ---- The arena: G games, board n, latent C channels, `cap` nodes a search ----
+LEAN_EXPORT lean_obj_res lean_muz_alloc(size_t G, size_t n, size_t C, size_t cap) {
+    if (n < 1 || n > TTT_SMAXN || C < 1 || cap < 1 || G < 1) return muz_err("muz_alloc: bad arguments");
+    muz_hdr h = { (uint32_t)G, (uint32_t)(n * n), (uint32_t)C, (uint32_t)(C * n * n), (uint32_t)cap, 0, 0, 0 };
+    h.stride = (uint32_t)muz_game_stride(h.nc, h.D, h.cap);
+    size_t nbytes = sizeof(muz_hdr) + (size_t)G * h.stride;
+    lean_object* ba = lean_alloc_sarray(1, nbytes, nbytes);
+    uint8_t* base = lean_sarray_cptr(ba);
+    memcpy(base, &h, sizeof h);
+    for (uint32_t g = 0; g < h.G; g++) {
+        muz_game p; muz_game_ptrs(&h, base, g, &p);
+        *p.count = 0; *p.plen = 0; *p.leaf_kind = 0;
+    }
+    return lean_io_result_mk_ok(ba);
+}
+
+// ---- A fresh tree per live game, its root from row r of each block (r = the r-th live
+// game): latent [D], prediction logits [nOutF] (policy, then the value pre-tanh), legal
+// mask [n²] u8, key u64 (an empty block means 0). Dirichlet noise on the root's priors
+// when `noise`. The root's evaluation is the search's first simulation, as in
+// `lean_mcts_*`, where the first descent expands the root. ----
+LEAN_EXPORT lean_obj_res lean_muz_roots(b_lean_obj_arg arena, b_lean_obj_arg live_ba, b_lean_obj_arg lat_ba,
+                                        b_lean_obj_arg logits_ba, size_t n_out, b_lean_obj_arg masks_ba,
+                                        b_lean_obj_arg keys_ba, uint8_t noise, double alpha, double eps,
+                                        uint64_t seed) {
+    const muz_hdr* h = muz_header(arena);
+    uint8_t* base = lean_sarray_cptr(arena);
+    const uint8_t* live = lean_sarray_cptr(live_ba);
+    const int nc = (int)h->nc;
+    size_t nLive = 0;
+    for (uint32_t g = 0; g < h->G; g++) if (g < lean_sarray_size(live_ba) && live[g]) nLive++;
+    if (lean_sarray_size(live_ba) < h->G) return muz_err("muz_roots: live mask too short");
+    if (lean_sarray_size(lat_ba) < nLive * h->D * 4 || lean_sarray_size(logits_ba) < nLive * n_out * 4 ||
+        lean_sarray_size(masks_ba) < nLive * nc || n_out < (size_t)nc + 1)
+        return muz_err("muz_roots: a block is too short");
+    const int has_keys = lean_sarray_size(keys_ba) >= nLive * 8;
+    const float* lat = (const float*)lean_sarray_cptr(lat_ba);
+    const float* logits = (const float*)lean_sarray_cptr(logits_ba);
+    const uint8_t* masks = lean_sarray_cptr(masks_ba);
+    uint64_t s = seed ? seed : 0x9E3779B97F4A7C15ULL;
+    uint8_t cells[TTT_SCELLS];
+    size_t r = 0;
+    for (uint32_t g = 0; g < h->G; g++) {
+        muz_game p; muz_game_ptrs(h, base, g, &p);
+        *p.count = 0; *p.plen = 0; *p.leaf_kind = 0;
+        *p.qmin = 1e30f; *p.qmax = -1e30f;
+        if (!live[g]) continue;
+        uint64_t key = 0;
+        if (has_keys) memcpy(&key, lean_sarray_cptr(keys_ba) + r * 8, 8);
+        muz_new_node(h, &p, lat + r * h->D, logits + r * n_out, masks + r * nc, 0, key);
+        if (noise) {
+            for (int c = 0; c < nc; c++) cells[c] = !masks[r * nc + c];
+            mcts_dirichlet(p.P, cells, nc, alpha, eps, &s);
+        }
+        r++;
+    }
+    return lean_io_result_mk_ok(lean_box(0));
+}
+
+// ---- One PUCT descent per live game from its root to an unexpanded edge or a terminal
+// node. `minmax`: Q over the tree's min–max range (the paper's), else the raw mean
+// (`lean_mcts_*`'s, for the oracle gate). Returns G records of 24 bytes: u32 kind (0 not
+// live, 1 an edge to expand, 2 a terminal node reached), i32 node and i32 action (the
+// edge), u32 depth, u64 the node's key. ----
+LEAN_EXPORT lean_obj_res lean_muz_select(b_lean_obj_arg arena, b_lean_obj_arg live_ba, double cpuct, uint8_t minmax) {
+    const muz_hdr* h = muz_header(arena);
+    uint8_t* base = lean_sarray_cptr(arena);
+    const uint8_t* live = lean_sarray_cptr(live_ba);
+    if (lean_sarray_size(live_ba) < h->G) return muz_err("muz_select: live mask too short");
+    const int nc = (int)h->nc;
+    lean_object* out = lean_alloc_sarray(1, (size_t)h->G * 24, (size_t)h->G * 24);
+    uint8_t* rec = lean_sarray_cptr(out);
+    memset(rec, 0, (size_t)h->G * 24);
+    for (uint32_t g = 0; g < h->G; g++) {
+        muz_game p; muz_game_ptrs(h, base, g, &p);
+        uint32_t kind = 0; int32_t nd = 0, best = -1;
+        *p.plen = 0;
+        if (live[g] && *p.count > 0) {
+            const float lo = *p.qmin, span = *p.qmax - *p.qmin;
+            for (;;) {
+                const size_t o = (size_t)nd * nc;
+                const float* P = p.P + o; const int32_t* N = p.N + o; const float* W = p.W + o;
+                const uint8_t* mask = p.mask + o;
+                float sq = sqrtf((float)p.nsum[nd] + 1e-8f);
+                best = -1; float bestU = -1e30f;
+                for (int c = 0; c < nc; c++) {
+                    if (!mask[c]) continue;
+                    float q = N[c] > 0 ? W[c] / (float)N[c] : 0.0f;
+                    if (minmax && N[c] > 0 && span > 0) q = (q - lo) / span;
+                    float u = q + (float)cpuct * P[c] * sq / (1.0f + (float)N[c]);
+                    if (u > bestU) { bestU = u; best = c; }
+                }
+                if (best < 0 || *p.plen >= (int32_t)h->cap) return muz_err("muz_select: no move or path overflow");
+                p.pnode[*p.plen] = nd; p.pact[*p.plen] = best; (*p.plen)++;
+                int32_t ch = p.child[o + best];
+                if (ch < 0) { kind = 1; break; }
+                if (p.term[ch]) { kind = 2; nd = ch; break; }
+                nd = ch;
+            }
+        }
+        *p.leaf_kind = (int32_t)kind;
+        uint32_t depth = (uint32_t)*p.plen;
+        int32_t enode = kind ? p.pnode[*p.plen - 1] : 0, eact = kind ? p.pact[*p.plen - 1] : 0;
+        uint64_t key = kind ? p.key[enode] : 0;
+        uint8_t* q = rec + (size_t)g * 24;
+        memcpy(q, &kind, 4); memcpy(q + 4, &enode, 4); memcpy(q + 8, &eact, 4);
+        memcpy(q + 12, &depth, 4); memcpy(q + 16, &key, 8);
+    }
+    return lean_io_result_mk_ok(out);
+}
+
+// ---- The dynamics input for every edge to expand, in game order: f32 [rows, C+1, n, n],
+// the parent's latent and the move as a one-hot plane (the paper's board-game action
+// encoding). ----
+LEAN_EXPORT lean_obj_res lean_muz_gather(b_lean_obj_arg arena) {
+    const muz_hdr* h = muz_header(arena);
+    uint8_t* base = lean_sarray_cptr(arena);
+    const size_t nc = h->nc, row = (size_t)(h->C + 1) * nc;
+    size_t rows = 0;
+    for (uint32_t g = 0; g < h->G; g++) {
+        muz_game p; muz_game_ptrs(h, base, g, &p);
+        if (*p.leaf_kind == 1) rows++;
+    }
+    lean_object* out = lean_alloc_sarray(1, rows * row * 4, rows * row * 4);
+    float* o = (float*)lean_sarray_cptr(out);
+    memset(o, 0, rows * row * 4);
+    size_t r = 0;
+    for (uint32_t g = 0; g < h->G; g++) {
+        muz_game p; muz_game_ptrs(h, base, g, &p);
+        if (*p.leaf_kind != 1) continue;
+        int32_t nd = p.pnode[*p.plen - 1], a = p.pact[*p.plen - 1];
+        memcpy(o + r * row, p.lat + (size_t)nd * h->D, (size_t)h->D * sizeof(float));
+        o[r * row + h->D + a] = 1.0f;
+        r++;
+    }
+    return lean_io_result_mk_ok(out);
+}
+
+// ---- Expand every pending edge from row r of each block (r = the r-th game whose kind
+// was 1): the child's latent [D], its prediction logits [nOutF], the edge's reward (one
+// f32; through tanh when `rtanh`), the child's mask [n²] u8, terminal flag u8 and key u64
+// (empty mask / terminal / key blocks mean all cells, not terminal, 0). A terminal child
+// is worth 0 from its own mover's view. Then back every value up its path:
+// G ← R(edge) − G, the node's statistics and the tree's min–max range updated. ----
+LEAN_EXPORT lean_obj_res lean_muz_expand_backup(b_lean_obj_arg arena, b_lean_obj_arg lat_ba, b_lean_obj_arg logits_ba,
+                                                size_t n_out, b_lean_obj_arg reward_ba, uint8_t rtanh,
+                                                b_lean_obj_arg masks_ba, b_lean_obj_arg term_ba,
+                                                b_lean_obj_arg keys_ba) {
+    const muz_hdr* h = muz_header(arena);
+    uint8_t* base = lean_sarray_cptr(arena);
+    const int nc = (int)h->nc;
+    size_t rows = 0;
+    for (uint32_t g = 0; g < h->G; g++) {
+        muz_game p; muz_game_ptrs(h, base, g, &p);
+        if (*p.leaf_kind == 1) rows++;
+    }
+    if (lean_sarray_size(lat_ba) < rows * h->D * 4 || lean_sarray_size(logits_ba) < rows * n_out * 4 ||
+        lean_sarray_size(reward_ba) < rows * 4 || n_out < (size_t)nc + 1)
+        return muz_err("muz_expand: a block is too short");
+    const int has_mask = lean_sarray_size(masks_ba) >= rows * nc && rows > 0;
+    const int has_term = lean_sarray_size(term_ba) >= rows && rows > 0;
+    const int has_keys = lean_sarray_size(keys_ba) >= rows * 8 && rows > 0;
+    const float* lat = (const float*)lean_sarray_cptr(lat_ba);
+    const float* logits = (const float*)lean_sarray_cptr(logits_ba);
+    const float* reward = (const float*)lean_sarray_cptr(reward_ba);
+    size_t r = 0;
+    for (uint32_t g = 0; g < h->G; g++) {
+        muz_game p; muz_game_ptrs(h, base, g, &p);
+        int32_t kind = *p.leaf_kind;
+        if (kind == 0) continue;
+        float v = 0.0f;
+        if (kind == 1) {
+            int32_t nd = p.pnode[*p.plen - 1], a = p.pact[*p.plen - 1];
+            uint8_t term = has_term ? lean_sarray_cptr(term_ba)[r] : 0;
+            uint64_t key = 0;
+            if (has_keys) memcpy(&key, lean_sarray_cptr(keys_ba) + r * 8, 8);
+            const float* row = logits + r * n_out;
+            int32_t ch = muz_new_node(h, &p, lat + r * h->D, row,
+                                      has_mask ? lean_sarray_cptr(masks_ba) + r * nc : NULL, term, key);
+            if (ch < 0) return muz_err("muz_expand: a game's tree is full");
+            p.child[(size_t)nd * nc + a] = ch;
+            p.R[(size_t)nd * nc + a] = rtanh ? tanhf(reward[r]) : reward[r];
+            v = term ? 0.0f : tanhf(row[nc]);
+            r++;
+        }
+        float G = v;
+        for (int i = *p.plen - 1; i >= 0; i--) {
+            int32_t nd = p.pnode[i], a = p.pact[i];
+            size_t e = (size_t)nd * nc + a;
+            G = p.R[e] - G;
+            p.N[e] += 1;
+            p.W[e] += G;
+            p.nsum[nd] += 1;
+            if (G < *p.qmin) *p.qmin = G;
+            if (G > *p.qmax) *p.qmax = G;
+        }
+        *p.leaf_kind = 0; *p.plen = 0;
+    }
+    return lean_io_result_mk_ok(lean_box(0));
+}
+
+// ---- The roots' visit distributions, f32 [G, n²], zeros where a game has no tree. ----
+LEAN_EXPORT lean_obj_res lean_muz_root_visits(b_lean_obj_arg arena) {
+    const muz_hdr* h = muz_header(arena);
+    uint8_t* base = lean_sarray_cptr(arena);
+    const int nc = (int)h->nc;
+    lean_object* out = lean_alloc_sarray(1, (size_t)h->G * nc * 4, (size_t)h->G * nc * 4);
+    float* o = (float*)lean_sarray_cptr(out);
+    memset(o, 0, (size_t)h->G * nc * 4);
+    for (uint32_t g = 0; g < h->G; g++) {
+        muz_game p; muz_game_ptrs(h, base, g, &p);
+        if (*p.count == 0 || p.nsum[0] == 0) continue;
+        for (int c = 0; c < nc; c++) o[(size_t)g * nc + c] = (float)p.N[c] / (float)p.nsum[0];
+    }
+    return lean_io_result_mk_ok(out);
+}
+
+// ---- Per game, the principal line from the root (the most-visited edge at each node,
+// down to an unexpanded or terminal node), at most `maxLen` moves: u8 [G, maxLen + 1],
+// the line's length then its moves. §6 M4b reads it against the real board. ----
+LEAN_EXPORT lean_obj_res lean_muz_principal(b_lean_obj_arg arena, size_t max_len) {
+    const muz_hdr* h = muz_header(arena);
+    uint8_t* base = lean_sarray_cptr(arena);
+    const int nc = (int)h->nc;
+    const size_t w = max_len + 1;
+    lean_object* out = lean_alloc_sarray(1, (size_t)h->G * w, (size_t)h->G * w);
+    uint8_t* o = lean_sarray_cptr(out);
+    memset(o, 0, (size_t)h->G * w);
+    for (uint32_t g = 0; g < h->G; g++) {
+        muz_game p; muz_game_ptrs(h, base, g, &p);
+        if (*p.count == 0) continue;
+        int32_t nd = 0; size_t len = 0;
+        while (len < max_len && !p.term[nd]) {
+            int best = -1; int32_t bestN = 0;
+            for (int c = 0; c < nc; c++)
+                if (p.N[(size_t)nd * nc + c] > bestN) { bestN = p.N[(size_t)nd * nc + c]; best = c; }
+            if (best < 0) break;
+            o[(size_t)g * w + 1 + len++] = (uint8_t)best;
+            nd = p.child[(size_t)nd * nc + best];
+            if (nd < 0) break;
+        }
+        o[(size_t)g * w] = (uint8_t)len;
+    }
+    return lean_io_result_mk_ok(out);
+}
+
+// ---- The unroll's host pieces ----
+
+// Per example, the min and max over D values (first occurrence) and the clamped range.
+static void muz_range(const float* x, size_t D, size_t* a, size_t* b, float* s, int* clamped) {
+    size_t ia = 0, ib = 0;
+    for (size_t j = 1; j < D; j++) { if (x[j] < x[ia]) ia = j; if (x[j] > x[ib]) ib = j; }
+    float r = x[ib] - x[ia];
+    *a = ia; *b = ib; *clamped = r < 1e-6f; *s = *clamped ? 1e-6f : r;
+}
+
+// Min–max to [0, 1] per example, the paper's latent normalisation: y = (x − min) / range,
+// the range clamped to 1e-6 (a collapsed latent; `lean_muz_minmax_clamped` counts them).
+LEAN_EXPORT lean_obj_res lean_muz_minmax(b_lean_obj_arg x_ba, size_t B, size_t D) {
+    if (lean_sarray_size(x_ba) < B * D * 4) return muz_err("muz_minmax: input too short");
+    const float* x = (const float*)lean_sarray_cptr(x_ba);
+    lean_object* out = lean_alloc_sarray(1, B * D * 4, B * D * 4);
+    float* y = (float*)lean_sarray_cptr(out);
+    for (size_t i = 0; i < B; i++) {
+        size_t a, b; float s; int cl;
+        muz_range(x + i * D, D, &a, &b, &s, &cl);
+        const float lo = x[i * D + a];
+        for (size_t j = 0; j < D; j++) y[i * D + j] = (x[i * D + j] - lo) / s;
+    }
+    return lean_io_result_mk_ok(out);
+}
+
+LEAN_EXPORT lean_obj_res lean_muz_minmax_clamped(b_lean_obj_arg x_ba, size_t B, size_t D) {
+    if (lean_sarray_size(x_ba) < B * D * 4) return muz_err("muz_minmax_clamped: input too short");
+    const float* x = (const float*)lean_sarray_cptr(x_ba);
+    size_t n = 0;
+    for (size_t i = 0; i < B; i++) {
+        size_t a, b; float s; int cl;
+        muz_range(x + i * D, D, &a, &b, &s, &cl);
+        n += cl;
+    }
+    return lean_io_result_mk_ok(lean_box_usize(n));
+}
+
+// Its VJP: with y = (x − x_a) / (x_b − x_a), ∂x_j = ḡ_j / s, then the min's and the max's
+// terms on their own elements: ∂x_a −= Σḡ / s − T, ∂x_b −= T, T = Σ ḡ_i y_i / s. A clamped
+// example passes no gradient: its latent is (near) constant — at init, the empty board's,
+// zero planes through zero biases — and 1/s at the clamp would hand h a gradient 10⁶ times
+// the cotangent, split among the tied minima by convention alone.
+LEAN_EXPORT lean_obj_res lean_muz_minmax_back(b_lean_obj_arg x_ba, b_lean_obj_arg g_ba, size_t B, size_t D) {
+    if (lean_sarray_size(x_ba) < B * D * 4 || lean_sarray_size(g_ba) < B * D * 4)
+        return muz_err("muz_minmax_back: input too short");
+    const float* x = (const float*)lean_sarray_cptr(x_ba);
+    const float* gy = (const float*)lean_sarray_cptr(g_ba);
+    lean_object* out = lean_alloc_sarray(1, B * D * 4, B * D * 4);
+    float* gx = (float*)lean_sarray_cptr(out);
+    for (size_t i = 0; i < B; i++) {
+        const float* xi = x + i * D; const float* gi = gy + i * D; float* oi = gx + i * D;
+        size_t a, b; float s; int cl;
+        muz_range(xi, D, &a, &b, &s, &cl);
+        if (cl) { memset(oi, 0, D * sizeof(float)); continue; }
+        double sg = 0, sgy = 0;
+        for (size_t j = 0; j < D; j++) {
+            oi[j] = gi[j] / s;
+            sg += gi[j];
+            sgy += (double)gi[j] * ((xi[j] - xi[a]) / s);
+        }
+        float T = (float)(sgy / s);
+        oi[a] += T - (float)(sg / s);
+        oi[b] -= T;
+    }
+    return lean_io_result_mk_ok(out);
+}
+
+// The output cotangent of one prediction head for w · [(z − tanh v)² − πᵀ log softmax(p)]:
+// out [B, nOut] with the policy logits in slots 0..nc−1 (none for the reward head, nc = 0)
+// and the value pre-tanh in slot nc; π [B, nc] (sums to 1), z [B], w [B]. Returns (ḡ, loss)
+// with loss f32 [Σ w·value term, Σ w·policy term].
+LEAN_EXPORT lean_obj_res lean_muz_heads_grad(b_lean_obj_arg out_ba, b_lean_obj_arg pi_ba, b_lean_obj_arg z_ba,
+                                             b_lean_obj_arg w_ba, size_t B, size_t n_out, size_t nc) {
+    if (n_out < nc + 1 || lean_sarray_size(out_ba) < B * n_out * 4 || lean_sarray_size(pi_ba) < B * nc * 4 ||
+        lean_sarray_size(z_ba) < B * 4 || lean_sarray_size(w_ba) < B * 4)
+        return muz_err("muz_heads_grad: a block is too short");
+    const float* out = (const float*)lean_sarray_cptr(out_ba);
+    const float* pi = (const float*)lean_sarray_cptr(pi_ba);
+    const float* z = (const float*)lean_sarray_cptr(z_ba);
+    const float* w = (const float*)lean_sarray_cptr(w_ba);
+    lean_object* gba = lean_alloc_sarray(1, B * n_out * 4, B * n_out * 4);
+    float* g = (float*)lean_sarray_cptr(gba);
+    memset(g, 0, B * n_out * 4);
+    double lv = 0, lp = 0;
+    for (size_t i = 0; i < B; i++) {
+        const float* o = out + i * n_out; float* gi = g + i * n_out;
+        const double wi = w[i];
+        if (nc > 0) {
+            double mx = -1e300, se = 0, spi = 0;
+            for (size_t c = 0; c < nc; c++) if (o[c] > mx) mx = o[c];
+            for (size_t c = 0; c < nc; c++) { se += exp(o[c] - mx); spi += pi[i * nc + c]; }
+            const double lse = mx + log(se);
+            for (size_t c = 0; c < nc; c++) {
+                double p = exp(o[c] - lse), t = pi[i * nc + c];
+                gi[c] = (float)(wi * (p * spi - t));
+                if (t > 0) lp += wi * (-t * (o[c] - lse));
+            }
+        }
+        double v = tanh((double)o[nc]), d = z[i] - v;
+        gi[nc] = (float)(wi * (-2.0 * d * (1.0 - v * v)));
+        lv += wi * d * d;
+    }
+    lean_object* lba = lean_alloc_sarray(1, 8, 8);
+    ((float*)lean_sarray_cptr(lba))[0] = (float)lv;
+    ((float*)lean_sarray_cptr(lba))[1] = (float)lp;
+    lean_object* pr = lean_alloc_ctor(0, 2, 0);
+    lean_ctor_set(pr, 0, gba);
+    lean_ctor_set(pr, 1, lba);
+    return lean_io_result_mk_ok(pr);
+}
+
+// The dynamics input for a batch: s [B, C, n²] and moves a (u32 [B]) → [B, C+1, n²], the
+// move as a one-hot plane after the latent's channels (`lean_muz_gather`'s layout).
+LEAN_EXPORT lean_obj_res lean_muz_with_action(b_lean_obj_arg s_ba, b_lean_obj_arg a_ba, size_t B, size_t C, size_t nc) {
+    const size_t D = C * nc, row = D + nc;
+    if (lean_sarray_size(s_ba) < B * D * 4 || lean_sarray_size(a_ba) < B * 4) return muz_err("muz_with_action: input too short");
+    const float* s = (const float*)lean_sarray_cptr(s_ba);
+    const uint32_t* a = (const uint32_t*)lean_sarray_cptr(a_ba);
+    lean_object* out = lean_alloc_sarray(1, B * row * 4, B * row * 4);
+    float* o = (float*)lean_sarray_cptr(out);
+    memset(o, 0, B * row * 4);
+    for (size_t i = 0; i < B; i++) {
+        memcpy(o + i * row, s + i * D, D * sizeof(float));
+        if (a[i] >= nc) return muz_err("muz_with_action: move out of range");
+        o[i * row + D + a[i]] = 1.0f;
+    }
+    return lean_io_result_mk_ok(out);
+}
+
+// Its VJP onto the latent: the first C channels of ∂(dynamics input) [B, C+1, n²], times
+// `scale` (the paper's ½ on the gradient entering each dynamics step).
+LEAN_EXPORT lean_obj_res lean_muz_latent_grad(b_lean_obj_arg d_ba, size_t B, size_t C, size_t nc, double scale) {
+    const size_t D = C * nc, row = D + nc;
+    if (lean_sarray_size(d_ba) < B * row * 4) return muz_err("muz_latent_grad: input too short");
+    const float* d = (const float*)lean_sarray_cptr(d_ba);
+    lean_object* out = lean_alloc_sarray(1, B * D * 4, B * D * 4);
+    float* o = (float*)lean_sarray_cptr(out);
+    for (size_t i = 0; i < B; i++)
+        for (size_t j = 0; j < D; j++) o[i * D + j] = (float)(scale * d[i * row + j]);
+    return lean_io_result_mk_ok(out);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // The on-demand exact solver: the instrument for boards too big for the table.
 //
 // Alpha-beta negamax to the end of the game over the values {0 loss, 1 draw, 2 win}

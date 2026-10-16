@@ -274,4 +274,14 @@ opaque readParams
 opaque readParamsPrefix
   (sess : @& LowererSession) (packed : @& ByteArray) (nBytes : USize) : IO ByteArray
 
+/-- Call `fnName` with any number of f32 inputs and outputs: `data` is the inputs' floats back to
+    back in argument order, `shapes` int32 LE `[nInputs, rank₀, dims₀…, rank₁, dims₁…]` (rank 0 a
+    scalar), `outCounts` int32 LE `[nOutputs, count₀, …]` in floats; the result is the outputs back
+    to back. The copying path on both backends. MuZero's VJP and Adam-apply modules
+    (`MlirCodegen.generateVjp`, `generateApplyAdam`) are its callers. -/
+@[extern "lean_iree_invoke_f32"]
+opaque invokeF32
+  (sess : @& LowererSession) (fnName : @& String)
+  (data shapes outCounts : @& ByteArray) : IO ByteArray
+
 end LowererSession
