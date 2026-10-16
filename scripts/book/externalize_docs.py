@@ -110,10 +110,15 @@ def main() -> int:
     # Every module page doc-gen4 rendered, by docs-relative path. The index's `url` is
     # `./Foo/Bar.html`.
     page_of = {m: info["url"].removeprefix("./") for m, info in local["modules"].items()}
-    external = {page_of[m] for m in page_of if not is_ours(m)}
-    for p in list(external):
-        if not (docs / p).is_file():
-            external.discard(p)   # listed but never rendered: nothing to delete
+    # External by PATH, not by the index: the doc/ tree rides a cache, so it can hold pages of
+    # modules the index no longer lists (the 10-16 re-insert run left 701 such Mathlib/core
+    # pages, all shipped). A page is a library's if it sits under a top-level directory other
+    # than ours and doc-gen4's own (find/, declarations/), or is the top-level page of one.
+    roots = {m.split(".")[0] for m in page_of} | {d.name for d in docs.iterdir() if d.is_dir()}
+    roots -= set(KEEP) | {"find", "declarations", "src"}
+    external = {p.relative_to(docs).as_posix() for p in docs.rglob("*.html")
+                if p.relative_to(docs).parts[0] in roots
+                or (len(p.relative_to(docs).parts) == 1 and p.stem in roots)}
 
     ext_stats = {"decl": 0, "module": 0, "kept": 0}
 
@@ -194,7 +199,7 @@ def main() -> int:
             d.rmdir()
 
     # Cut the search index to what is still shipped.
-    live_mods = {m for m, p in page_of.items() if p not in removed}
+    live_mods = {m for m, p in page_of.items() if p not in removed and (docs / p).is_file()}
     decls = {n: d for n, d in local["declarations"].items()
              if d["docLink"].removeprefix("./").split("#")[0] not in removed}
     local["declarations"] = decls
