@@ -1138,6 +1138,12 @@ lean_exe «seg-loss-probe» where
   root := `demos.probes.MainSegLossProbe
   moreLinkArgs := lowererLink
 
+-- generateVjp / generateApplyAdam modules for the MuZero demo's CPU gates
+-- (scripts/probes/vjp_gate.py; planning/muzero_ttt_demo.md §2).
+lean_exe «vjp-probe» where
+  root := `demos.probes.MainVjpProbe
+  moreLinkArgs := lowererLink
+
 -- DIoU box-loss forward probe (detection infra); FD-checked by
 -- scripts/probes/diou_probe_check.py against scripts/probes/diou_grad_check.py.
 lean_exe «diou-loss-probe» where

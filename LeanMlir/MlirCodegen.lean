@@ -6934,9 +6934,10 @@ def emitTrainForward (spec : NetSpec) (B : Nat)
 
 /-- The train step's backward walk: the `FwdRec`s in reverse, each layer's VJP from the cotangent
     `gradSSA₀ : gradShape₀` the loss seeds, writing `%d_W{p}` / `%d_b{p}` (and the other parameter
-    gradients) that `emitOptimizerUpdates` reads. -/
-def emitTrainBackward (B : Nat) (records : Array FwdRec) (gradSSA₀ : String)
-    (gradShape₀ : List Nat) : String := Id.run do
+    gradients) that `emitOptimizerUpdates` reads. Returns the text and the cotangent the walk
+    ends on: the input's, `[B, ic, H, W]` after a first conv, `[B, fanIn]` after a first dense. -/
+def emitTrainBackwardTo (B : Nat) (records : Array FwdRec) (gradSSA₀ : String)
+    (gradShape₀ : List Nat) : String × String × List Nat := Id.run do
   let mut code : String := ""
   let mut gradSSA := gradSSA₀
   let mut gradShape := gradShape₀
@@ -8138,7 +8139,12 @@ def emitTrainBackward (B : Nat) (records : Array FwdRec) (gradSSA₀ : String)
       gradShape := [B, c5, g5, g5]
 
     | _ => pure ()
-  return code
+  return (code, gradSSA, gradShape)
+
+/-- `emitTrainBackwardTo`'s text alone: the train step discards the cotangent the walk ends on. -/
+def emitTrainBackward (B : Nat) (records : Array FwdRec) (gradSSA₀ : String)
+    (gradShape₀ : List Nat) : String :=
+  (emitTrainBackwardTo B records gradSSA₀ gradShape₀).1
 
 /-- Emit the full train step: constants, `emitTrainForward`, `emitTrainLoss`, `emitTrainBackward`,
     `emitOptimizerUpdates`. -/
@@ -8297,6 +8303,112 @@ def generateTrainStep (spec : NetSpec) (batchSize : Nat) (moduleName : String :=
     useYolov1 yoloGridH yoloGridW yoloNumBoxes yoloNumClasses gradClipNorm headLrMult segLoss useDiouBox yoloAnchors fpnScales yoloClsWeights yoloClsFocalGamma ++
   "  }\n" ++
   "}\n"
+
+/-- The layers `generateVjp` takes: the plain conv / dense stacks whose backward walk ends on the
+    input's cotangent (each `.conv2d` emits its `%d_x`, each `.dense` its `%d_in`, `.flatten` the
+    inverse reshape), with ReLU or identity activations (the walk's conv / dense backward masks for
+    ReLU and passes any other activation's cotangent through untouched). A block (BN, residual,
+    attention, …) can end its walk on a skip or token gradient instead, so it is refused rather
+    than trusted. -/
+def vjpUnsupported (spec : NetSpec) : Option String := Id.run do
+  if let some e := unsupported spec then return some e
+  if spec.layers.isEmpty then return some "no layers"
+  for l in spec.layers do
+    match l with
+    | .conv2d _ _ _ _ a | .dense _ _ a =>
+      -- the walk's conv / dense backward masks for ReLU and passes everything else through
+      unless a == .relu || a == .identity do
+        return some s!"generateVjp takes ReLU / identity activations, not {repr a}"
+    | .flatten => pure ()
+    | _ => return some "generateVjp takes conv2d / dense / flatten stacks only"
+  return none
+
+/-- The trained tensors in `trainSigArgs` order, each with its index-suffixed name (`W0`, `b0`, …):
+    the names `emitTrainBackward` writes as `%d_<name>`. -/
+def paramSlotsIndexed (spec : NetSpec) : Array (String × ParamSlot) := Id.run do
+  let mut out : Array (String × ParamSlot) := #[]
+  let mut p : Nat := 0
+  for l in spec.layers do
+    match l with
+    | .layerNorm _ | .convNextStem .. => pure ()
+    | _ =>
+      for grp in slotGroups (l.paramSlots.getD []) do
+        for sl in grp do
+          out := out.push (s!"{sl.nm}{p}", sl)
+        p := p + 1
+  return out
+
+/-- The vector–Jacobian product of the network, as its own module:
+
+    `@main(θ…, %x_flat : [B, inDim], %gbar : [B, …out]) -> (∂θ…, %d_x_flat : [B, inDim])`
+
+    with `∂θ = (∂net/∂θ)ᵀ ḡ` and `∂x = (∂net/∂x)ᵀ ḡ`, summed over the batch (no 1/B, no loss). It
+    is the train step's own forward and backward walk (`emitTrainForward`, `emitTrainBackwardTo`)
+    seeded with the caller's cotangent instead of a loss's, with no optimizer tail: a network
+    composed with others — MuZero's representation, dynamics, prediction and reward nets — takes
+    its cotangent from the next one and hands `∂x` back. Gated by `scripts/probes/vjp_gate.py`:
+    `∂θ` against the SGD train step at lr 1, `∂x` against central finite differences and
+    `jax.vjp`. Plain conv / dense stacks only (`vjpUnsupported`). -/
+def generateVjp (spec : NetSpec) (batchSize : Nat) (moduleName : String := "jit_vjp") : String :=
+  match vjpUnsupported spec with
+  | some e => s!"// MlirCodegen cannot emit {spec.name}: {e}\n#unsupported_spec\n"
+  | none => Id.run do
+    let B := batchSize
+    let inTy := tensorTy [B, inputFlatDim spec]
+    let (fwd, _, outShape, records) := emitTrainForward spec B
+    let (bwd, dxSSA, dxShape) := emitTrainBackwardTo B records "%gbar" outShape
+    let (thetaArgs, _) := trainSigArgs "" spec
+    let slots := paramSlotsIndexed spec
+    let retTys := (slots.map (tensorTy ·.2.shape)).toList ++ [inTy]
+    let mut s := s!"// {spec.name} vjp — Generated by Lean 4 → MLIR (StableHLO + VJPs)\n"
+    s := s ++ s!"// Batch size: {B}; (θ, x, ḡ) ↦ (∂θ, ∂x), batch-summed\n\n"
+    s := s ++ s!"module @{moduleName} " ++ "{\n"
+    s := s ++ s!"  func.func @main(\n{thetaArgs}      %x_flat: {inTy}, %gbar: {tensorTy outShape}\n"
+    s := s ++ s!"    ) -> ({", ".intercalate retTys}) " ++ "{\n"
+    s := s ++ "    %zf = stablehlo.constant dense<0.0> : tensor<f32>\n"
+    s := s ++ "    %neginf = stablehlo.constant dense<0xFF800000> : tensor<f32>\n"
+    s := s ++ fwd ++ bwd
+    s := s ++ s!"    %d_x_flat = stablehlo.reshape {dxSSA} : ({tensorTy dxShape}) -> {inTy}\n"
+    s := s ++ s!"    return {", ".intercalate ((slots.map (s!"%d_" ++ ·.1)).toList ++ ["%d_x_flat"])}\n"
+    s := s ++ s!"      : {", ".intercalate retTys}\n"
+    s := s ++ "  }\n}\n"
+    return s
+
+/-- One Adam step on a given gradient, as its own module:
+
+    `@main(θ…, m…, v…, ∂θ…, %lr, %t) -> (θ'…, m'…, v'…)`
+
+    the train step's own `emitAdamUpdate` per tensor (β = 0.9 / 0.999, ε = 1e-8, bias-corrected
+    at step `t`, decoupled weight decay on the `ParamSlot.decay` tensors when `weightDecay > 0`).
+    For a gradient the caller assembled: a net applied K times in one unroll takes the sum of its
+    K `generateVjp` gradients. -/
+def generateApplyAdam (spec : NetSpec) (weightDecay : Float := 0.0)
+    (moduleName : String := "jit_apply_adam") : String :=
+  match vjpUnsupported spec with
+  | some e => s!"// MlirCodegen cannot emit {spec.name}: {e}\n#unsupported_spec\n"
+  | none => Id.run do
+    let slots := paramSlotsIndexed spec
+    let args (pfx : String) := String.join (slots.toList.map fun (nm, sl) =>
+      s!"      %{pfx}{nm}: {tensorTy sl.shape},\n")
+    let tys := (slots.map (tensorTy ·.2.shape)).toList
+    let mut s := s!"// {spec.name} apply_adam — Generated by Lean 4 → MLIR (StableHLO)\n"
+    s := s ++ s!"// (θ, m, v, ∂θ, lr, t) ↦ (θ', m', v'); weight_decay: {weightDecay}\n\n"
+    s := s ++ s!"module @{moduleName} " ++ "{\n"
+    s := s ++ s!"  func.func @main(\n{args ""}{args "m_"}{args "v_"}{args "d_"}      %lr: tensor<f32>, %t: tensor<f32>\n"
+    s := s ++ s!"    ) -> ({", ".intercalate (tys ++ tys ++ tys)}) " ++ "{\n"
+    s := s ++ emitTrainConstants true weightDecay
+    let mut pN : Array String := #[]
+    let mut mN : Array String := #[]
+    let mut vN : Array String := #[]
+    for (nm, sl) in slots do
+      let (code, p', m', v') := emitAdamUpdate s!"%{nm}" s!"%d_{nm}" s!"%m_{nm}" s!"%v_{nm}" sl.shape nm
+        (applyWeightDecay := weightDecay > 0.0 && sl.decay)
+      s := s ++ code
+      pN := pN.push p'; mN := mN.push m'; vN := vN.push v'
+    s := s ++ s!"    return {", ".intercalate (pN ++ mN ++ vN).toList}\n"
+    s := s ++ s!"      : {", ".intercalate (tys ++ tys ++ tys)}\n"
+    s := s ++ "  }\n}\n"
+    return s
 
 /-- Standalone segmentation-loss module — exercises `emitSegLossBlock` in
     isolation so the loss and its gradient can be checked against finite
