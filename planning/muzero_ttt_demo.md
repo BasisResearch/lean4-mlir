@@ -157,6 +157,51 @@ latent MCTS must reproduce `lean_mcts_*`'s root visit counts **exactly** on the 
 seeds — the same tree up to transpositions, so the check runs at depth ≤ 2 where no
 transpositions occur, and on visit distributions at full depth within a stated tolerance.
 
+**Built 2026-10-16 (Phase 2, no GPU).** `demos/MainMuZeroTtt.lean` (`lake exe muzero-ttt`)
+and `lean_muz_*` in `ffi/f32_helpers.c`; the trainer calls the VJP and Adam modules through
+a new generic invoke (`LowererSession.invokeF32`, `lean_iree_invoke_f32`: any number of f32
+inputs and outputs, the copying path on both shims), so it runs on XLA or on IREE —
+`LEAN_MLIR_LOWERER=iree IREE_BACKEND=llvm-cpu` with CI's runtime-only CPU build of
+`libiree_ffi.so` (`.github/workflows/iree.yml`'s recipe, ~3 min on the 88-core box).
+
+- The search: a node is a path (children are node indices, no hash), each node keeps its
+  latent, its own mask (the rules at the root, every cell inside) and a host key; an
+  edge's value is reward − (value below), which at reward 0 is `lean_mcts_*`'s sign flip
+  float for float. `minmax=1` is the paper's normalised Q, `0` the raw mean.
+- The oracle gate is `mode=oracle`: an AlphaZero net cut after its trunk (`azH` / `azF`;
+  the trunk's parameters are a prefix of the net's), both searches reading it through
+  the same two graphs. Rather than "depth ≤ 2": `lean_mcts_*`'s first transposition
+  needs seven simulations (root, a, ab, abc, then c, cb — the seventh reaches cba), so
+  every `sims ≤ 6` search must agree exactly whatever its depth. Result at init
+  (He-init AlphaZero net, IREE CPU): **4,520 / 4,520 root visit distributions equal at
+  sims 2, 3, 4, 5, 6**; at 25, 4,373 / 4,520 (max L1 0.75, the transpositions). A
+  planted bug — the backup dropping the edge reward — passes sims 2 (no win can be
+  backed up yet) and fails 3–6 on 898–2,168 positions. ~4 min. Still to run: the same
+  gate on a TRAINED AlphaZero net (`azParams=<AlphaZero's _params.bin>`; the trainer is
+  XLA-only, so on the GPU box).
+- The min–max clamp: a range under 1e-6 passes **no gradient**. The empty board is the
+  case: zero planes through zero biases give an exactly constant latent at init, and 1/s
+  at the clamp handed h a gradient of 5e4 (the unroll gate's first run), its direction
+  set by how a tied minimum's gradient is split (first index here, ½-split in JAX) —
+  convention, not the loss. The clamped count is printed every iteration; more than half
+  the batch's latents clamped stops the run (§11).
+- The unroll gate is `mode=dump` + `scripts/probes/muz_unroll_gate.py`: one self-play
+  batch, its targets, θ and the trainer's four composed gradients against `jax.grad` of
+  the same loss written as one JAX function (min–max as `jnp.min`/`jnp.max`, the ½ as
+  `scale_gradient`, ReLU as `jax.nn.relu` — `jnp.maximum` splits the gradient at 0, the
+  codegen's mask does not, and the empty board's latent puts f's first ReLU exactly at
+  0). Losses equal to 1e-6; ∂θ max |Δ| / max |ref| 7.4e-7 (h), 2.9e-7 (g), 2.2e-7 (f),
+  2.3e-7 (r), tolerance 1e-5; the unhalved gradient misses h's and g's by 1.3e-1 and
+  7.5e-2, so the gate sees the scaling.
+- The 3×3 smoke (`iters=1 tag=smoke`, defaults, IREE CPU): 5.8 min — play 35 s, 304
+  train steps 226 s (0.75 s a step: 17 forwards, 17 VJPs, 4 Adam applies, nearly
+  single-threaded), score 36 s. Loss value 1.16 / policy 3.89 / reward 0.10, 9 clamped
+  latents over the iteration; f ∘ h sweep 61.66% → 62.48%, sign 23.5% → 45.2% (the
+  untrained net is the random player's ~58%). Twenty iterations is ~2 h here; the GPU
+  box's per-call cost decides whether Phase 3 runs there.
+- Not built yet: dihedral augmentation (the moves and π must turn with the board over
+  the whole unroll), M3–M5 and the board probe (Phase 3's scorer, on the saved net).
+
 ## 6. The instrument
 
 Each measurement is exact per position. At 3×3 every set is exhaustive; at 4×4 the
@@ -252,3 +297,5 @@ Stochastic MuZero, Sampled MuZero, Gumbel MuZero's root selection, reanalyse, Co
   de Vries et al. 2021, arXiv:2411.04580, muzero-general; nothing found that scores a
   learned MuZero model against a solved game.
 - 2026-10-16: Phase 1 built and gated on CPU (§2). `muzero-ttt` branch.
+- 2026-10-16: Phase 2 built on CPU (§5): the trainer, the latent search, the oracle and
+  unroll gates (both pass), the one-iteration 3×3 smoke.

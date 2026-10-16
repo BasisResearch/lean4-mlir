@@ -1171,3 +1171,67 @@ LEAN_EXPORT lean_obj_res lean_iree_read_params_prefix(
   memcpy(dst, lean_sarray_cptr(packed_ba), n_bytes);
   return lean_io_result_mk_ok(result);
 }
+
+// ---- Generic invoke: any number of f32 inputs and outputs, through the loaded shim ----
+// `data` is every input's floats back to back, in argument order; `shapes` is int32 LE
+// `[n_inputs, rank₀, dims₀…, rank₁, dims₁…]` (rank 0 a scalar); `out_counts` is int32 LE
+// `[n_outputs, count₀, count₁, …]` in floats. Returns the outputs back to back. The
+// copying path on both backends: no residency. MuZero's VJP and Adam-apply modules
+// (`MlirCodegen.generateVjp` / `generateApplyAdam`) are its callers.
+LEAN_EXPORT lean_obj_res lean_iree_invoke_f32(
+    b_lean_obj_arg sess_obj, b_lean_obj_arg fn_name_obj,
+    b_lean_obj_arg data_ba, b_lean_obj_arg shapes_ba, b_lean_obj_arg out_counts_ba) {
+  iree_ffi_session_t* sess = (iree_ffi_session_t*)lean_get_external_data(sess_obj);
+  const char* fn_name = lean_string_cstr(fn_name_obj);
+  const int32_t* sp = (const int32_t*)lean_sarray_cptr(shapes_ba);
+  const size_t sp_len = lean_sarray_size(shapes_ba) / 4;
+  const int32_t* oc = (const int32_t*)lean_sarray_cptr(out_counts_ba);
+  const size_t oc_len = lean_sarray_size(out_counts_ba) / 4;
+  if (sp_len < 1 || oc_len < 1 || (size_t)oc[0] + 1 > oc_len)
+    return lean_io_result_mk_error(lean_mk_io_user_error(lean_mk_string("invokeF32: bad shapes / out_counts")));
+  const int n_in = sp[0], n_out = oc[0];
+  int32_t* ranks = (int32_t*)malloc((n_in + 1) * sizeof(int32_t));
+  int64_t* dims = (int64_t*)malloc((sp_len + 1) * sizeof(int64_t));
+  const float** in = (const float**)malloc((n_in + 1) * sizeof(float*));
+  const float* data = (const float*)lean_sarray_cptr(data_ba);
+  const size_t n_data = lean_sarray_size(data_ba) / 4;
+  size_t si = 1, di = 0, off = 0;
+  int bad = 0;
+  for (int i = 0; i < n_in && !bad; i++) {
+    if (si >= sp_len) { bad = 1; break; }
+    int r = sp[si++];
+    ranks[i] = r;
+    size_t cnt = 1;
+    for (int d = 0; d < r; d++) {
+      if (si >= sp_len) { bad = 1; break; }
+      dims[di++] = sp[si++];
+      cnt *= (size_t)dims[di - 1];
+    }
+    in[i] = data + off;
+    off += cnt;
+  }
+  if (bad || off != n_data) {
+    free(ranks); free(dims); free(in);
+    char msg[160];
+    snprintf(msg, sizeof msg, "invokeF32: %s (shapes cover %zu floats, data has %zu)",
+             bad ? "shapes truncated" : "data size mismatch", off, n_data);
+    return lean_io_result_mk_error(lean_mk_io_user_error(lean_mk_string(msg)));
+  }
+  int64_t* totals = (int64_t*)malloc((n_out + 1) * sizeof(int64_t));
+  float** outs = (float**)malloc((n_out + 1) * sizeof(float*));
+  size_t tot = 0;
+  for (int i = 0; i < n_out; i++) { totals[i] = oc[1 + i]; tot += (size_t)oc[1 + i]; }
+  lean_object* result = lean_alloc_sarray(1, tot * 4, tot * 4);
+  float* o = (float*)lean_sarray_cptr(result);
+  size_t oo = 0;
+  for (int i = 0; i < n_out; i++) { outs[i] = o + oo; oo += (size_t)totals[i]; }
+  int rc = iree_ffi_invoke_f32(sess, fn_name, n_in, ranks, dims, in, n_out, totals, outs);
+  free(ranks); free(dims); free(in); free(totals); free(outs);
+  if (rc != 0) {
+    lean_dec_ref(result);
+    char msg[256];
+    snprintf(msg, sizeof msg, "invokeF32: %s failed (rc %d)", fn_name, rc);
+    return lean_io_result_mk_error(lean_mk_io_user_error(lean_mk_string(msg)));
+  }
+  return lean_io_result_mk_ok(result);
+}

@@ -782,6 +782,13 @@ lean_exe «alphazero-ttt» where
   root := `demos.MainAlphaZeroTtt
   moreLinkArgs := lowererLink
 
+-- MuZero on the Lean tic-tac-toe: the same instrument, the rules replaced by a learned model
+-- (h / g / f / r through `MlirCodegen.generateVjp`), PUCT in the latent (`lean_muz_*`).
+-- `mode=oracle` and `mode=dump` are its gates (planning/muzero_ttt_demo.md §5, §4).
+lean_exe «muzero-ttt» where
+  root := `demos.MainMuZeroTtt
+  moreLinkArgs := lowererLink
+
 -- Leduc hold'em: the game, the exact instrument (best response, exploitability, CFR+ / DCFR,
 -- ES-MCCFR, all in C) and the scripted arms, with Gate 0. No stack, no GPU.
 lean_exe «leduc-env» where
