@@ -73,6 +73,22 @@ Gates (Phase 1, before any game code):
 - Demo modules only: no `verified_mlir/` artifact, so no render-guard row. If it later
   wants a tie, the backward is the same walk the step ties already cover.
 
+**Built 2026-10-16** (no GPU): `MlirCodegen.generateVjp` and `generateApplyAdam`, with
+`emitTrainBackwardTo` (the walk, returning the cotangent it ends on; `emitTrainBackward` is
+its text) and `vjpUnsupported` (conv2d / dense / flatten, ReLU or identity — the walk's
+backward masks only ReLU). The gates are `lake exe vjp-probe` + `scripts/probes/vjp_gate.py`,
+IREE on llvm-cpu in-process, seven specs: three toy shapes and §3's four nets at 3×3, C = 32.
+Per spec: the eval forward against a JAX re-implementation (≤ 7e-7); f32(θ − ∂θ_vjp) equal
+to the SGD step's θ' **bit for bit** on every element (136,787 of them for the four nets;
+comparing θ − θ' against ∂θ instead would bury a small gradient under θ's rounding); ∂x
+against central differences of ⟨ḡ, net(x)⟩ on the emitted eval module (step 1e-3: at 1e-2
+the probe crossed ReLU kinks, at 3e-4 f32 rounding dominated; error on the scale of ‖∂x‖,
+≤ 5e-4) and against `jax.vjp` (≤ 1e-6); the Adam apply against the Adam train step (exact)
+and numpy (≤ 1e-4 over two steps). A planted bug — the first dense layer's ReLU mask
+skipped — fails five of the seven checks. CPU environment:
+`uv venv --python 3.12 <dir> && uv pip install jax==0.11.0 jaxlib==0.11.0 numpy==2.4.4
+iree-base-compiler==3.11.0 iree-base-runtime==3.11.0` (CI's IREE pin), ~50 s for the gate.
+
 ## 3. The networks — the AlphaZero trunk, split four ways
 
 All plain conv, no BN, `imageH := imageW := n`, latent `[C, n, n]` with C = 32 (a knob).
@@ -235,3 +251,4 @@ Stochastic MuZero, Sampled MuZero, Gumbel MuZero's root selection, reanalyse, Co
 - 2026-10-09: doc opened. Prior-art pass (three standard searches): He et al. 2023,
   de Vries et al. 2021, arXiv:2411.04580, muzero-general; nothing found that scores a
   learned MuZero model against a solved game.
+- 2026-10-16: Phase 1 built and gated on CPU (§2). `muzero-ttt` branch.
