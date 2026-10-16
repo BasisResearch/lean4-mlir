@@ -57,14 +57,34 @@ found through the <a href="/docs/search.html">API docs search</a>.</p>
 (function () {
   var m = location.pathname.match(/^\/docs\/(.+)\.html$/);
   if (!m) return;
-  // docs/ ships only our own modules; Mathlib, core and the other libraries link to their
-  // hosted docs (scripts/book/externalize_docs.py), so an old docs/Mathlib/… URL goes there.
-  if (!/^LeanMlir[\/.]/.test(m[1]) && m[1] !== "404" && m[1] !== "index") {
-    location.replace("https://leanprover-community.github.io/mathlib4_docs/" + m[1] + ".html" + location.hash);
-    return;
-  }
   var box = document.getElementById("moved");
   var say = function (html) { box.innerHTML = html; box.hidden = false; };
+  // docs/ ships only our own modules; Mathlib, core and the other libraries link to their
+  // hosted docs (scripts/book/externalize_docs.py), so an old docs/Mathlib/… URL goes there.
+  // Crawlers also invent paths by resolving a relative link against the wrong directory
+  // (docs/Init/Data/UInt/Lean/Elab/Quotation/Precheck.html), so every library root in the
+  // path starts a candidate, outermost first, and the first the hosted site serves wins (it
+  // sends `access-control-allow-origin: *`, so a HEAD from here can ask).
+  var HOSTED = "https://leanprover-community.github.io/mathlib4_docs/";
+  var LIBS = /^(Init|Std|Lean|Lake|Mathlib|Batteries|Aesop|Qq|ProofWidgets|Plausible|LeanSearchClient|ImportGraph)$/;
+  var parts = m[1].split("/"), cands = [];
+  parts.forEach(function (p, i) { if (LIBS.test(p)) cands.push(parts.slice(i).join("/") + ".html"); });
+  if (cands.length) {
+    say("<p class=\"meta\">Looking for this page in the Mathlib docs&hellip;</p>");
+    (function next(k) {
+      if (k === cands.length) {
+        var q = encodeURIComponent(parts[parts.length - 1]);
+        say("<p class=\"meta\">This is not a page of the Mathlib, Lean core or library docs either. " +
+          "<a href=\"" + HOSTED + "search.html?q=" + q + "\">Search the Mathlib docs</a> for <code>" +
+          parts[parts.length - 1] + "</code>.</p>");
+        return;
+      }
+      fetch(HOSTED + cands[k], { method: "HEAD" })
+        .then(function (r) { if (r.ok) location.replace(HOSTED + cands[k] + location.hash); else next(k + 1); })
+        .catch(function () { next(k + 1); });
+    })(0);
+    return;
+  }
   var link = function (u) { return "/docs/" + u.replace(/^\.\//, ""); };
   var decl = decodeURIComponent(location.hash.slice(1));
   var old = m[1].split("/");
