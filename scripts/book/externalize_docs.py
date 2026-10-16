@@ -132,6 +132,14 @@ def main() -> int:
         ext_stats["kept"] += 1
         return None
 
+    # doc-gen4 links a Mathlib name only when the name is in its db; a db that lost Mathlib
+    # renders every `ℝ` as plain text and this pass finds nothing to rewrite (the 10-16
+    # deploy). A green run would ship that; a red one keeps the last good site up.
+    if external and not any("mathlib4_docs" in t or re.search(r'href="[^"]*Mathlib/[^"]*#', t)
+                            for t in (f.read_text(encoding="utf-8") for f in (docs / "LeanMlir").rglob("*.html"))):
+        print("::error::no LeanMlir page links a Mathlib declaration: doc-gen4's db is missing Mathlib")
+        return 1
+
     # The navbar first, so the pass below neither rewrites nor keeps what it listed.
     nav = docs / "navbar.html"
     if nav.is_file():

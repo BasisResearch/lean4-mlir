@@ -115,10 +115,18 @@ jobs:
           # four `lake-certs-` generations sat side by side and the budget was back at the cap.
           # The restore side falls back to the bare prefix anyway, so the newest generation is
           # the only one a job can ever want.
+          #
+          # ⚠ AND by ref (2026-10-16). A cache is readable only from its own branch and the default
+          # branch, so a branch run's entry is no substitute for main's. Grouped by key alone, a
+          # workflow_dispatch of blueprint.yml on a PR branch made main's `lake-blueprint-` entry
+          # the older one and this deleted it; main's next run fell back to `lake-certs-`, which
+          # has no doc-gen4 db, and deployed docs with every Mathlib name unlinked.
           groups = collections.defaultdict(list)
           for c in caches:
               g = re.sub(r"-[0-9a-f]{64}", "", c["key"])
-              groups[re.sub(r"-\d{6,}$", "", g)].append(c)
+              g = re.sub(r"-\d{6,}$", "", g)
+              ref = c.get("ref", "")
+              groups[g if ref == "refs/heads/main" else f"{g} @ {ref.removeprefix('refs/heads/')}"].append(c)
 
           freed = 0
           rows = []          # (group, deleted, kept, GB freed) for the step summary

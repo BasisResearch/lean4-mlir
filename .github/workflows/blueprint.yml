@@ -326,6 +326,22 @@ jobs:
             exit 1
           fi
           grep -n 'readDir' "$ub"
+          # ⚠ The db and its markers live in DIFFERENT caches (2026-10-16): the doc-data markers
+          # ride the stable `lake-v3-` entry, api-docs.db the rolling `lake-blueprint-` one. When
+          # the rolling entry is lost (cache-prune deleted main's on 10-15 — it ignored refs) the
+          # restore falls back to `lake-certs-`, which has no doc db; every Mathlib marker still
+          # says up to date, nothing re-inserts, and doc-gen4 renders every Mathlib name UNLINKED
+          # (the 10-16 deploy: 0 declaration links). That db is then saved as the new rolling
+          # entry, so it never heals. A db without Mathlib loses its markers here and the next
+          # build re-inserts the corpus (~55 min, once).
+          n=$(python3 -I -c "import sqlite3,sys
+          try: print(sqlite3.connect('file:.lake/build/api-docs.db?mode=ro',uri=True).execute(\"select count(*) from name_info where module_name like 'Mathlib.%'\").fetchone()[0])
+          except Exception: print(0)")
+          echo "doc db: $n Mathlib declarations"
+          if [ "$n" -eq 0 ]; then
+            echo "::warning::api-docs.db has no Mathlib declarations; dropping it and every doc-data marker to re-insert the corpus"
+            rm -rf .lake/build/doc-data .lake/build/api-docs.db .lake/build/api-docs.db-*
+          fi
           rm -rf .lake/build/doc/LeanMlir/ .lake/build/doc/LeanMlir.html
           echo "dropping $(ls .lake/build/doc-data/declaration-data-LeanMlir*.bmp 2>/dev/null | wc -l) cached LeanMlir search-data files"
           rm -f .lake/build/doc-data/declaration-data-LeanMlir*.bmp .lake/build/doc-data/backrefs-LeanMlir*.json
