@@ -1,0 +1,7 @@
+[sup] 2026-10-14 02:59:04 START job=vit-default-emabf16-4gpu devs=0,1,2,3 epochs=300 rest_after=[none] temp_max=78 stall=3600s logs=runs/2026-10-14-vit-deit-verified-smx-bf16-300ep
+[sup] 2026-10-14 02:59:04 cmd: .lake/build/bin/vit-imagenet-verified data
+[sup] 2026-10-14 02:59:04 eta: bf16 ~70 h on ares at 4 x 256 (2026-10-11 smoke, runs/2026-10-11-vit-default-emabf16-4gpu/: med 638 / min 330 / p90 803 ms per 1024-row step at w4, w8 766; 1,251 steps + the streamed eval an epoch, 300 ep); the 3060 box measured ~70 h at 1024 on 2026-10-13 (610–620 ms/step steady, 843 s/epoch incl. eval, epochs 1–2 before the NaN; the smx shift adds 72 row reductions, not yet timed)
+[sup] 2026-10-14 02:59:04 attempt 1: resuming at epoch 0/300 (next rest: 999)
+[sup] 2026-10-14 02:59:04   launched PID=1045969 PGID=1045969
+[sup]   last line:     per-example top-1 bitmap -> runs/2026-10-14-vit-deit-verified-smx-bf16-300ep/bitmaps/vit_emadp256x4wxdropeps0000001smxerfbf16_e300.bin (50000 bytes)
+[sup] 2026-10-16 17:32:21 ✅ COMPLETE — 300/300 epochs
