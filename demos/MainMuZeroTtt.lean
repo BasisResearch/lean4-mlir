@@ -818,6 +818,62 @@ def scoreLines (M : Model) (P : Params) (W : ByteArray) (seen : Std.HashSet Nat)
     off := off + m
   return acc
 
+/-- The probe's targets as ridge outputs: per row, per cell, one-hot over the three states. -/
+def oneHotCells (truth : ByteArray) (rows nc : Nat) : ByteArray := Id.run do
+  let mut y := ByteArray.empty
+  for i in [0:rows * nc] do
+    for st in [0:3] do y := pushF32LE y (if truth.get! i == st.toUInt8 then 1.0 else 0.0)
+  return y
+
+/-- M4d with the probe fit on `g`'s own latents rather than `h`'s: at each depth k, the
+    imagined latents along `lines` and the true boards they stand for, split by the true
+    board's index parity (so a board reached from two starts stays on one side), fit on the
+    even boards, scored on the odd. Per k ≥ 1: [held-out rows, correct cells, whole boards]. -/
+def scoreGProbe (M : Model) (P : Params) (starts : Array Pos) (lines : Array (Array Nat)) (L : Nat)
+    (lam : Float) : IO (Array (Nat × Nat × Nat)) := do
+  let nc := M.nc
+  let mut lats : Array ByteArray := Array.replicate (L + 1) .empty
+  let mut truths : Array ByteArray := Array.replicate (L + 1) .empty
+  let mut odd : Array (Array Bool) := Array.replicate (L + 1) #[]
+  let mut off := 0
+  while off < starts.size do
+    let m := min M.bf (starts.size - off)
+    let rows := (Array.range m).map (· + off)
+    let mut pos := rows.map (starts[·]!)
+    let mut lat ← represent M P (idxBA pos) m
+    for k in [0:L] do
+      let acts := (Array.range m).map fun i => (lines[rows[i]!]!)[k]?.getD 0
+      let (lat', _) ← imagine M P lat acts m
+      lat := lat'
+      for i in [0:m] do
+        if lines[rows[i]!]!.size > k then pos := pos.set! i (pos[i]!.play acts[i]!)
+      for i in [0:m] do
+        if lines[rows[i]!]!.size > k && !pos[i]!.terminal then
+          lats := lats.modify (k + 1) (· ++ lat.extract (4 * M.D * i) (4 * M.D * (i + 1)))
+          truths := truths.modify (k + 1) (· ++ moverCells pos[i]!)
+          odd := odd.modify (k + 1) (·.push (pos[i]!.index % 2 == 1))
+    off := off + m
+  let mut out := #[]
+  for k in [1:L + 1] do
+    let fitR := (Array.range odd[k]!.size).filter (!odd[k]![·]!)
+    let heldR := (Array.range odd[k]!.size).filter (odd[k]![·]!)
+    if fitR.size < 2 * M.D || heldR.isEmpty then
+      out := out.push (0, 0, 0)
+      continue
+    let tr := truths[k]!
+    let pick (rs : Array Nat) := rs.foldl (fun a i => a ++ tr.extract (nc * i) (nc * (i + 1))) .empty
+    let W ← ridge (rowsOf lats[k]! M.D fitR) (oneHotCells (pick fitR) fitR.size nc) fitR.size.toUSize
+      M.D.toUSize (3 * nc).toUSize lam
+    let sc ← probeScore W (rowsOf lats[k]! M.D heldR) (pick heldR) heldR.size.toUSize M.D.toUSize nc.toUSize
+    let mut c := 0
+    let mut b := 0
+    for j in [0:heldR.size] do
+      let ok := readU32LE sc (4 * j)
+      c := c + ok
+      if ok == nc then b := b + 1
+    out := out.push (heldR.size, c, b)
+  return out
+
 /-- `count` decision positions' true dynamics against the model on every legal move from
     each (M4a at one move, exhaustive): r's recall on the winning moves and its false calls on
     the rest, split by the start's visited flag. -/
@@ -1185,6 +1241,16 @@ whole boards {fmt (100.0 * hb.toFloat / heldRows.size.toFloat) 2}%"
 {if wn > 0 then fmt (100.0 * wh / wn) 1 else "–"}% / {if rn > 0 then fmt (100.0 * rh / rn) 2 else "–"}%"
           else cells := cells ++ s!"   {split} {cnt}: {fmt (100.0 * F32.read r 0 / c) 1}% / {fmt (100.0 * F32.read r 2 / c) 1}%"
         unless cells.isEmpty do IO.eprintln s!"    k {kk}{cells}"
+      -- the probe refit on g's latents at each depth (held out by board)
+      let gp ← scoreGProbe M P starts lines L (floatArg "probeLambda" 1.0)
+      let mut gs := ""
+      for j in [0:gp.size] do
+        let (gn, gc, gb) := gp[j]!
+        if gn == 0 then continue
+        gs := gs ++ s!"  k {j + 1} ({gn}): {fmt (100.0 * gc.toFloat / (gn * nc).toFloat) 1}% / {fmt (100.0 * gb.toFloat / gn.toFloat) 1}%"
+        csv := csv ++ row "m4d_gprobe_cells_heldout" src (j + 1) "all" gn (gc.toFloat / (gn * nc).toFloat) ++
+          row "m4d_gprobe_boards_heldout" src (j + 1) "all" gn (gb.toFloat / gn.toFloat)
+      IO.eprintln s!"    probe refit on g, held out by board, cells / whole boards:{gs}"
     -- M4a exhaustive at one move
     let rw ← scoreRewards M P seen starts
     for (split, b) in [("unseen", 0), ("seen", 4)] do
