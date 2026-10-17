@@ -89,9 +89,20 @@ So, at 3×3: **g keeps the board, in its own encoding, and loses it with depth.*
 imagined move the board is linearly decodable almost exactly; the h-fit probe's drop is
 mostly g's latent sitting in a different place from h's (M4c says the same: a transposed
 line lands 3.4 from h of its board). By two moves whole boards fall to 69–86%, faster off
-the agent's own lines. The fit set shrinks with k (≈ 1100 boards at k = 1, ≈ 650 at k = 2,
-D = 288), so part of the fall with depth may be the fit, not the latent; the value-equivalent
-prediction ("values, not the board") does not hold at one move.
+the agent's own lines. The fit set shrinks with k (≈ 1100 boards at k = 1, ≈ 650 at k = 2; D = 288), so the same
+probe refit on exactly 600 boards at every depth (`gprobe_fit600_lambda1.log`, `gprobe_fit600_lambda10.log`, whole boards, λ = 1):
+
+| lines | k = 1 | k = 2 | k = 3 |
+|---|---|---|---|
+| own | 93.0% | 85.0% | |
+| perfect | 88.8% | 73.4% | |
+| random | 64.3% | 63.6% | 47.7% |
+
+At equal fit the fall from k = 1 to k = 2 holds on own and perfect lines; on random lines
+most of the full-fit k = 1 figure was the larger fit (92.8% → 64.3%), and the fall comes at
+k = 3. λ = 10 is worse everywhere, so the probe is short of data, not overfit: every figure
+here is a lower bound on what g holds. The value-equivalent prediction ("values, not the
+board") does not hold at one move; on the agent's own lines the board is nearly all there.
 
 ## Why more search can lose — the blunder diagnostic (`blunders/`)
 
