@@ -830,7 +830,7 @@ def oneHotCells (truth : ByteArray) (rows nc : Nat) : ByteArray := Id.run do
     board's index parity (so a board reached from two starts stays on one side), fit on the
     even boards, scored on the odd. Per k ≥ 1: [held-out rows, correct cells, whole boards]. -/
 def scoreGProbe (M : Model) (P : Params) (starts : Array Pos) (lines : Array (Array Nat)) (L : Nat)
-    (lam : Float) : IO (Array (Nat × Nat × Nat)) := do
+    (lam : Float) (fitCap : Nat := 0) : IO (Array (Nat × Nat × Nat)) := do
   let nc := M.nc
   let mut lats : Array ByteArray := Array.replicate (L + 1) .empty
   let mut truths : Array ByteArray := Array.replicate (L + 1) .empty
@@ -855,9 +855,11 @@ def scoreGProbe (M : Model) (P : Params) (starts : Array Pos) (lines : Array (Ar
     off := off + m
   let mut out := #[]
   for k in [1:L + 1] do
-    let fitR := (Array.range odd[k]!.size).filter (!odd[k]![·]!)
+    let fitAll := (Array.range odd[k]!.size).filter (!odd[k]![·]!)
+    -- `fitCap` > 0 fits every depth on the same number of boards, so depths compare
+    let fitR := if fitCap > 0 then fitAll.extract 0 fitCap else fitAll
     let heldR := (Array.range odd[k]!.size).filter (odd[k]![·]!)
-    if fitR.size < 2 * M.D || heldR.isEmpty then
+    if fitR.size < 2 * M.D || (fitCap > 0 && fitR.size < fitCap) || heldR.isEmpty then
       out := out.push (0, 0, 0)
       continue
     let tr := truths[k]!
@@ -1242,7 +1244,7 @@ whole boards {fmt (100.0 * hb.toFloat / heldRows.size.toFloat) 2}%"
           else cells := cells ++ s!"   {split} {cnt}: {fmt (100.0 * F32.read r 0 / c) 1}% / {fmt (100.0 * F32.read r 2 / c) 1}%"
         unless cells.isEmpty do IO.eprintln s!"    k {kk}{cells}"
       -- the probe refit on g's latents at each depth (held out by board)
-      let gp ← scoreGProbe M P starts lines L (floatArg "probeLambda" 1.0)
+      let gp ← scoreGProbe M P starts lines L (floatArg "probeLambda" 1.0) (natArg "gprobeFit" 0)
       let mut gs := ""
       for j in [0:gp.size] do
         let (gn, gc, gb) := gp[j]!
