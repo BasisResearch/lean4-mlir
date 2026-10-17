@@ -33,8 +33,8 @@ the 4520 decision positions) and M1 (256 games each side vs perfect, net alone a
 | `n3_run3_q0_s2` | raw Q, seed 2 | 60 | 11.6 h | 0 / 61 | 0/180/76 |
 | `n3_run3_q1_s2` | normalized Q, seed 2 | 60 | 11.2 h | 0 / 61 | 0/191/65 |
 | `n3_run1_s1` | normalized Q, AlphaZero's schedule | running (20) | ~15 h | 0 so far | |
-| `n3_run4_q0_sims50_steps300_s2` | raw Q, 50 sims, seed 2 | running | | | |
-| `n3_run4_q0_sims50_steps300_s3` | raw Q, 50 sims, seed 3 | running | | | |
+| `n3_run4_q0_sims50_steps300_s2` | raw Q, 50 sims, seed 2 | 60 | 5.9 h | 12 / 61 | **0/256/0** |
+| `n3_run4_q0_sims50_steps300_s3` | raw Q, 50 sims, seed 3 | 60 | 6.5 h | 11 / 61 | 0/247/9 |
 | `n3_run4_q0_sims50_steps600_s2` | raw Q, 50 sims, 600 steps, seed 2 | running | | | |
 
 As X every arm is unbeaten with search from about iteration 10. O is the whole story.
@@ -61,8 +61,26 @@ sims (2 seeds), but **0/246/10 as O at 100 sims**.
 
 Not robust yet: the arm's own per-iteration check still drops O games at 3 of iterations
 35–50, the other seed-1 arms pass at a few iterations at most, and both seed-2 arms (at the
-default 25 sims, 300 steps) end at 65–76 O losses. Seeds 2 and 3 of the sims-50 arm are the
-next runs.
+default 25 sims, 300 steps) end at 65–76 O losses. At 50 sims, seeds 2 and 3 pass at 12
+and 11 iterations; seed 2's final net passes the gate and seed 3's does not (below).
+
+## The 50-sim arm on seeds 2 and 3 (`gate_a_seeds/`)
+
+The final nets of `n3_run4_q0_sims50_steps300_s{2,3}`, scored as above (as O vs perfect;
+every net is 0/256/0 as X at every setting):
+
+| seed | net alone | 25 sims (seeds 11, 12) | 100 sims | M2 agree / sign | r false calls | search-only errors with a false win for the mover (25 sims) |
+|---|---|---|---|---|---|---|
+| 1 | 0/256/0 | 0/256/0, 0/256/0 | 0/256/0 | 96.26% / 84.76% | 1.88% | 36% of 28 |
+| 2 | 0/256/0 | 0/256/0, 0/256/0 | 0/256/0 | 96.33% / 82.90% | 1.64% | 29% of 42 |
+| 3 | 0/256/0 | 0/247/9, 0/245/11 | 0/247/9 | 95.66% / 78.67% | 4.31% | 42% of 45 |
+
+The net alone is unbeaten both sides on all three seeds; with search, two of three. Seed 3's
+search losses come with the highest reward false-call rate of the three (4.31%), and at 100
+sims 54% of its search-only errors have a false win for the mover on the line against 4.2%
+elsewhere. At 25 sims in self-play (seed 2, both Q variants) no iteration passes at all, so
+the 50-sim self-play is what carries the gate. The g probe repeats on both seeds (own lines,
+whole boards at k = 1: 95.9% seed 2, 92.5% seed 3).
 
 ## M2–M5 on the Gate-A net (`gate_a_final/final_*_sims25_seed11.log`)
 
