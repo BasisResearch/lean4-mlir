@@ -1,0 +1,44 @@
+muzero ttt 3x3 (iree): h 56608 + g 74464 + f 3150 + r 2565 = 136787 params, C 32, K 5, 20 iterations of 256 games at 25 sims, batch 64 × 10 epochs over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000, Dir(1.000000) at 0.250000, seed 1 (graphs 79 ms)
+  shape checks passed
+score: 4520 decision positions, 2001 visited by self-play (.lake/build/muzero_ttt_3x3_run3_q1_s1_seen.bin), lines of up to 10 moves
+  M1 vs perfect, net alone: as X 0/256/0, as O 0/108/148 (W/D/L)
+  M1 vs perfect, search 25: as X 0/256/0, as O 0/104/152 (W/D/L)
+  M1 vs random, net alone: as X 252/4/0, as O 203/24/29 (W/D/L)
+  M1 vs random, search 25: as X 252/4/0, as O 203/29/24 (W/D/L)
+  M2 f∘h, all (4520): agree 83.89%  value mse 0.3553  sign 67.59%
+  M2 f∘h, seen (2001): agree 88.91%  value mse 0.2812  sign 70.81%
+  M2 f∘h, unseen (2519): agree 79.91%  value mse 0.4142  sign 65.03%
+  M4d probe on h, held out (2260): cells 100.00%  whole boards 100.00%
+  lines: own — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 2001: 88.9% / 70.8%   unseen 2519: 79.9% / 65.0%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 1228: 80.7% / 61.5%   unseen 1299: 72.8% / 46.9%   1.5%   64.5% / 3.7%   72.5% / 4.68%
+    k 2   seen 827: 80.7% / 68.2%   unseen 681: 76.4% / 52.0%   15.9%   60.8% / 2.1%   44.9% / 4.75%
+    k 3   seen 498: 86.9% / 75.3%   unseen 273: 77.3% / 50.2%   24.3%   56.2% / 1.2%   42.0% / 3.72%
+    k 4   seen 267: 89.9% / 86.1%   unseen 90: 78.9% / 63.3%   28.3%   56.1% / 1.4%   26.1% / 2.10%
+    k 5   seen 115: 95.7% / 93.9%   unseen 27: 85.2% / 66.7%   31.0%   55.2% / 1.4%   32.0% / 1.77%
+    k 6   seen 41: 100.0% / 95.1%   unseen 7: 42.9% / 57.1%   33.3%   53.7% / 0.0%   7.7% / 0.78%
+    k 7   seen 4: 100.0% / 100.0%   unseen 2: 100.0% / 0.0%   50.0%   51.9% / 0.0%   0.0% / 0.00%
+    k 8   seen 1: 100.0% / 100.0%   0.0%   55.6% / 0.0%   0.0% / 0.00%
+  lines: perfect — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 2001: 88.9% / 70.8%   unseen 2519: 79.9% / 65.0%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 1129: 90.6% / 64.8%   unseen 1346: 86.1% / 44.7%   1.3%   64.9% / 3.3%   65.0% / 2.97%
+    k 2   seen 870: 85.5% / 71.3%   unseen 894: 77.6% / 46.4%   20.4%   59.3% / 2.0%   56.2% / 4.07%
+    k 3   seen 472: 90.3% / 78.2%   unseen 359: 88.9% / 56.8%   34.5%   55.3% / 0.8%   39.3% / 2.13%
+    k 4   seen 279: 89.6% / 76.0%   unseen 172: 77.9% / 59.9%   44.1%   52.3% / 1.1%   36.2% / 2.10%
+    k 5   seen 127: 96.9% / 94.5%   unseen 57: 94.7% / 87.7%   56.0%   50.7% / 1.1%   19.8% / 1.88%
+    k 6   seen 24: 91.7% / 83.3%   unseen 17: 76.5% / 76.5%   63.4%   46.6% / 0.0%   40.0% / 0.56%
+    k 7   seen 7: 100.0% / 100.0%   unseen 3: 100.0% / 100.0%   60.0%   47.8% / 0.0%   0.0% / 2.94%
+    k 8   seen 1: 100.0% / 100.0%   0.0%   55.6% / 0.0%   –% / 0.00%
+  lines: random — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 2001: 88.9% / 70.8%   unseen 2519: 79.9% / 65.0%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 1488: 83.9% / 57.8%   unseen 1935: 76.1% / 38.2%   2.4%   64.5% / 2.8%   68.6% / 5.31%
+    k 2   seen 999: 84.4% / 55.0%   unseen 1203: 75.2% / 35.0%   23.7%   57.8% / 1.5%   45.5% / 5.52%
+    k 3   seen 563: 86.1% / 49.6%   unseen 595: 78.0% / 28.1%   44.5%   50.2% / 0.6%   32.9% / 5.75%
+    k 4   seen 231: 90.5% / 48.1%   unseen 233: 80.7% / 29.6%   58.6%   45.3% / 0.4%   19.3% / 2.66%
+    k 5   seen 75: 82.7% / 44.0%   unseen 63: 87.3% / 23.8%   65.2%   42.9% / 0.0%   14.3% / 1.29%
+    k 6   seen 20: 100.0% / 50.0%   unseen 13: 76.9% / 46.2%   63.6%   36.4% / 0.0%   11.4% / 3.39%
+    k 7   seen 3: 100.0% / 66.7%   unseen 1: 100.0% / 0.0%   75.0%   38.9% / 0.0%   12.5% / 0.00%
+  M4a every legal move from every decision position: winning moves called 67.22% (2782), others called wins 4.12% (13385); visited starts 74.75% / 3.23%, unvisited 61.64% / 4.91%
+  M4b search principal lines (25 sims): through a taken cell 18.56%, past the true end 80.93%  (visited 14.49% / unvisited 21.79% taken)
+  M4c transpositions (1157 pairs a b c / c b a): ‖s₁ − s₂‖ 2.055, ‖s − h(board)‖ 4.634 / 4.671, two different boards 2.963; |v₁ − v₂| 0.166; value sign vs exact 79.6% / 79.3% (h of the board 88.5%)
+wrote .lake/build/muzero_ttt_3x3_run3_q1_s1_score.csv (284026 ms)

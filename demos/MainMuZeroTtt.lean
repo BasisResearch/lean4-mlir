@@ -935,6 +935,56 @@ def scorePrincipal (M : Model) (P : Params) (seen : Std.HashSet Nat) (starts : A
     off := off + m
   return (out, g)
 
+/-- The search's own mistakes, against the false-win account: from every start, the move the
+    search plays (`sims` simulations, the argmax of the root visits) and the net alone's move,
+    each judged on the exact table; then the search's principal line imagined from `h` of the
+    start, `r` read at every step. A phantom win is a step `r` calls a win (tanh r > ½) whose
+    move does NOT win on the true board (a losing or drawing move, a taken cell, or a move past
+    the true end). Returns, for [search blunders where the net alone was right, every other
+    start]: [starts, with a phantom win for the mover's side, with one for the opponent's]. -/
+def scoreBlunders (M : Model) (P : Params) (t : Table) (starts : Array Pos) (sims L : Nat)
+    (g0 : StdGen) : IO (Array Nat × StdGen) := do
+  let mut out := Array.replicate 6 0
+  let mut g := g0
+  let mut off := 0
+  let optimal := fun (p : Pos) (a : Nat) => -(t.value (p.play a)) == t.value p
+  while off < starts.size do
+    let m := min M.bf (starts.size - off)
+    let ch := starts.extract off (off + m)
+    let logits ← rootLogits M P (idxBA ch) m
+    g ← search M P ch sims false g
+    let pis ← visitDists M m
+    let pv ← muzPrincipal M.arena L.toUSize
+    -- phantom wins along each principal line, by parity (0 the mover's side)
+    let mut phantom : Array (Array Bool) := Array.replicate m #[false, false]
+    let mut lat ← represent M P (idxBA ch) m
+    let mut cur := ch
+    let mut gone : Array Bool := Array.replicate m false   -- the true replay has left the board
+    for j in [0:L] do
+      let acts := (Array.range m).map fun i =>
+        if j < (pv.get! (i * (L + 1))).toNat then (pv.get! (i * (L + 1) + 1 + j)).toNat else 0
+      let (s, r) ← imagine M P lat acts m
+      lat := s
+      for i in [0:m] do
+        if j ≥ (pv.get! (i * (L + 1))).toNat then continue
+        let a := acts[i]!
+        let p := cur[i]!
+        let trueWin := !gone[i]! && !p.terminal && p.cells[a]! == 0 && (p.play a).terminal &&
+          (p.play a).result != 0
+        if Float.tanh (F32.read r i.toUSize) > 0.5 && !trueWin then
+          phantom := phantom.modify i (·.set! (j % 2) true)
+        if gone[i]! || p.terminal || p.cells[a]! != 0 then gone := gone.set! i true
+        else cur := cur.set! i (p.play a)
+    for i in [0:m] do
+      let p := ch[i]!
+      let sMove := argmaxLegal (fun c => pis[i]![c]!) p
+      let nMove := argmaxLegal (fun c => F32.read logits (i * M.nOut + c).toUSize) p
+      let b := if !optimal p sMove && optimal p nMove then 0 else 3
+      out := ((out.modify b (· + 1)).modify (b + 1) (· + (if phantom[i]![0]! then 1 else 0))).modify (b + 2)
+        (· + (if phantom[i]![1]! then 1 else 0))
+    off := off + m
+  return (out, g)
+
 end MuZeroTtt
 
 open MuZeroTtt in
@@ -1153,6 +1203,17 @@ past the true end {ratio (pv[2]! + pv[5]!) (pv[0]! + pv[3]!)}%  (visited {ratio 
       if pv[b]! > 0 then
         csv := csv ++ row "m4b_pv_taken" "search" sims split pv[b]! (pv[b + 1]!.toFloat / pv[b]!.toFloat) ++
           row "m4b_pv_past_end" "search" sims split pv[b]! (pv[b + 2]!.toFloat / pv[b]!.toFloat)
+    -- the false-win account of the search's mistakes
+    let (bl, g3) ← scoreBlunders M P table starts sims L g
+    g := g3
+    IO.eprintln s!"  blunders ({sims} sims): {bl[0]!} starts where the search errs and the net alone does not; \
+phantom win on the line for the mover {ratio bl[1]! bl[0]!}% / the opponent {ratio bl[2]! bl[0]!}%; \
+the other {bl[3]!} starts {ratio bl[4]! bl[3]!}% / {ratio bl[5]! bl[3]!}%"
+    csv := csv ++ row "blunders" "search" sims "all" bl[0]! bl[0]!.toFloat ++
+      row "blunder_phantom_mover" "search" sims "blunder" bl[0]! (bl[1]!.toFloat / (max 1 bl[0]!).toFloat) ++
+      row "blunder_phantom_opp" "search" sims "blunder" bl[0]! (bl[2]!.toFloat / (max 1 bl[0]!).toFloat) ++
+      row "blunder_phantom_mover" "search" sims "rest" bl[3]! (bl[4]!.toFloat / (max 1 bl[3]!).toFloat) ++
+      row "blunder_phantom_opp" "search" sims "rest" bl[3]! (bl[5]!.toFloat / (max 1 bl[3]!).toFloat)
     -- M4c
     let (tr, nT, _) ← scoreTranspositions M P table starts g
     IO.eprintln s!"  M4c transpositions ({nT} pairs a b c / c b a): ‖s₁ − s₂‖ {fmt tr[0]! 3}, ‖s − h(board)‖ {fmt tr[1]! 3} / {fmt tr[2]! 3}, \
