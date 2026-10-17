@@ -4658,6 +4658,98 @@ LEAN_EXPORT lean_obj_res lean_muz_heads_grad(b_lean_obj_arg out_ba, b_lean_obj_a
     return lean_io_result_mk_ok(pr);
 }
 
+// The board probe (§6 M4d): a linear readout from the latent to the cells, fit in closed
+// form. Ridge regression with a bias: W = (X̃ᵀX̃ + λI)⁻¹ X̃ᵀY, X̃ = [X | 1] (the bias
+// unpenalised), Cholesky in double. X f32 [N, D], Y f32 [N, M]; returns W f32 [D + 1, M].
+LEAN_EXPORT lean_obj_res lean_muz_ridge(b_lean_obj_arg x_ba, b_lean_obj_arg y_ba, size_t N, size_t D, size_t M,
+                                        double lam) {
+    if (lean_sarray_size(x_ba) < N * D * 4 || lean_sarray_size(y_ba) < N * M * 4) return muz_err("muz_ridge: input too short");
+    const float* X = (const float*)lean_sarray_cptr(x_ba);
+    const float* Y = (const float*)lean_sarray_cptr(y_ba);
+    const size_t E = D + 1;
+    double* A = (double*)calloc(E * E, sizeof(double));
+    double* R = (double*)calloc(E * M, sizeof(double));
+    if (!A || !R) { free(A); free(R); return muz_err("muz_ridge: out of memory"); }
+    double* xr = (double*)malloc(E * sizeof(double));
+    for (size_t i = 0; i < N; i++) {
+        for (size_t j = 0; j < D; j++) xr[j] = X[i * D + j];
+        xr[D] = 1.0;
+        for (size_t a = 0; a < E; a++) {
+            if (xr[a] == 0.0) continue;
+            for (size_t b = 0; b <= a; b++) A[a * E + b] += xr[a] * xr[b];
+            for (size_t m = 0; m < M; m++) R[a * M + m] += xr[a] * Y[i * M + m];
+        }
+    }
+    free(xr);
+    for (size_t a = 0; a < E; a++) {
+        for (size_t b = 0; b < a; b++) A[b * E + a] = A[a * E + b];
+        if (a < D) A[a * E + a] += lam;
+    }
+    // Cholesky A = LLᵀ in place (lower triangle), then two triangular solves per column
+    for (size_t j = 0; j < E; j++) {
+        double d = A[j * E + j];
+        for (size_t q = 0; q < j; q++) d -= A[j * E + q] * A[j * E + q];
+        if (d <= 0) { free(A); free(R); return muz_err("muz_ridge: not positive definite (raise lambda)"); }
+        d = sqrt(d);
+        A[j * E + j] = d;
+        for (size_t i = j + 1; i < E; i++) {
+            double v = A[i * E + j];
+            for (size_t q = 0; q < j; q++) v -= A[i * E + q] * A[j * E + q];
+            A[i * E + j] = v / d;
+        }
+    }
+    lean_object* out = lean_alloc_sarray(1, E * M * 4, E * M * 4);
+    float* W = (float*)lean_sarray_cptr(out);
+    double* z = (double*)malloc(E * sizeof(double));
+    for (size_t m = 0; m < M; m++) {
+        for (size_t i = 0; i < E; i++) {
+            double v = R[i * M + m];
+            for (size_t q = 0; q < i; q++) v -= A[i * E + q] * z[q];
+            z[i] = v / A[i * E + i];
+        }
+        for (size_t i = E; i-- > 0;) {
+            double v = z[i];
+            for (size_t q = i + 1; q < E; q++) v -= A[q * E + i] * z[q];
+            z[i] = v / A[i * E + i];
+        }
+        for (size_t i = 0; i < E; i++) W[i * M + m] = (float)z[i];
+    }
+    free(z); free(A); free(R);
+    return lean_io_result_mk_ok(out);
+}
+
+// The probe's readout scored: per row of latents [rows, D], the cells whose argmax over the
+// three states (empty, the mover's, the opponent's; W's columns 3c, 3c+1, 3c+2) equals the
+// true state (u8 [rows, nc], same codes). Returns u32 [rows], the correct cells per row.
+LEAN_EXPORT lean_obj_res lean_muz_probe_score(b_lean_obj_arg w_ba, b_lean_obj_arg lat_ba, b_lean_obj_arg truth_ba,
+                                              size_t rows, size_t D, size_t nc) {
+    const size_t M = 3 * nc;
+    if (lean_sarray_size(w_ba) < (D + 1) * M * 4 || lean_sarray_size(lat_ba) < rows * D * 4 ||
+        lean_sarray_size(truth_ba) < rows * nc)
+        return muz_err("muz_probe_score: input too short");
+    const float* W = (const float*)lean_sarray_cptr(w_ba);
+    const float* L = (const float*)lean_sarray_cptr(lat_ba);
+    const uint8_t* T = lean_sarray_cptr(truth_ba);
+    lean_object* out = lean_alloc_sarray(1, rows * 4, rows * 4);
+    uint32_t* o = (uint32_t*)lean_sarray_cptr(out);
+    double y[3 * TTT_SCELLS];
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t m = 0; m < M; m++) {
+            double v = W[D * M + m];
+            for (size_t j = 0; j < D; j++) v += (double)L[i * D + j] * W[j * M + m];
+            y[m] = v;
+        }
+        uint32_t ok = 0;
+        for (size_t c = 0; c < nc; c++) {
+            size_t best = 0;
+            for (size_t s = 1; s < 3; s++) if (y[3 * c + s] > y[3 * c + best]) best = s;
+            ok += best == T[i * nc + c];
+        }
+        o[i] = ok;
+    }
+    return lean_io_result_mk_ok(out);
+}
+
 // The dynamics input for a batch: s [B, C, n²] and moves a (u32 [B]) → [B, C+1, n²], the
 // move as a one-hot plane after the latent's channels (`lean_muz_gather`'s layout).
 LEAN_EXPORT lean_obj_res lean_muz_with_action(b_lean_obj_arg s_ba, b_lean_obj_arg a_ba, size_t B, size_t C, size_t nc) {

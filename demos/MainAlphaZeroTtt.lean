@@ -47,7 +47,8 @@ public import LeanMlir.CliArgs
      [tempPlies=n²] [sweep=0 (all; 20000 above 4×4)] [sweepMin=6] [opening=3 above 4×4]
      [cap=22] [probe=0,81] [seed=1] [tag=<name>] [params=<file>]`;
     writes `<prefix>_curve.csv`, `<prefix>_sweep.csv`, `<prefix>_policy.csv` and
-    `<prefix>_params.bin` under `.lake/build/`. XLA only.
+    `<prefix>_params.bin` under `.lake/build/`. Either backend (IREE: `LEAN_MLIR_LOWERER=iree
+    IREE_BACKEND=llvm-cpu` on a CPU).
 
     ## References
 
@@ -385,8 +386,6 @@ def main (args : List String) : IO Unit := do
   IO.eprintln s!"{spec.name}: {spec.totalParams} params, {k} in a row, {iters} iterations of \
 {bf} games at {sims} sims, batch {B} × {epochs} epochs over the last {window} iterations, \
 lr {lr}, cpuct {cpuct}, Dir({alpha}) at {eps}, seed {seed}"
-  unless (← LowererSession.backendName) == "xla" do
-    throw <| IO.userError "alphazero-ttt runs on the XLA backend only"
   let t0 ← IO.monoMsNow
   let cachePath := s!".lake/build/ttt_solver_{n}x{n}_k{k}.bin"
   let mut table ← Table.build n k (natArg "cap" 22)
@@ -429,10 +428,14 @@ lr {lr}, cpuct {cpuct}, Dir({alpha}) at {eps}, seed {seed}"
   -- ── graphs: the train step at B, one eval forward at bf ──
   IO.FS.createDirAll ".lake/build"
   let pfx := spec.buildPrefix ++ (match tag with | some t => "_" ++ t | none => "")
-  IO.FS.writeFile s!"{pfx}_train_step.mlir" (MlirCodegen.generateTrainStep spec B
-    ("jit_" ++ spec.sanitizedName ++ "_train_step")
-    (weightDecay := 0.0) (useAdam := true) (useDdpm := true) (ddpmOutShape := [B, nOut, 1, 1]))
-  IO.FS.writeFile s!"{pfx}_fwd_eval.mlir" (MlirCodegen.generateEval spec bf)
+  let trainMlir := MlirCodegen.generateTrainStep spec B ("jit_" ++ spec.sanitizedName ++ "_train_step")
+    (weightDecay := 0.0) (useAdam := true) (useDdpm := true) (ddpmOutShape := [B, nOut, 1, 1])
+  let evalMlir := MlirCodegen.generateEval spec bf
+  -- XLA compiles the .mlir in-process; IREE needs its .vmfb (cached on the text)
+  for (suffix, mlir) in [("train_step", trainMlir), ("fwd_eval", evalMlir)] do
+    IO.FS.writeFile s!"{pfx}_{suffix}.mlir" mlir
+    let (_, ok) ← NetSpec.runIreeCached s!"{pfx}_{suffix}.mlir" (← NetSpec.graphArtifact pfx suffix) mlir
+    unless ok do throw <| IO.userError s!"compile failed: {pfx}_{suffix}.mlir"
   let sess ← LowererSession.create (← NetSpec.graphArtifact pfx "train_step")
   -- two sessions on the one eval graph: the search's forwards hold the parameters on
   -- the device across an iteration (re-seeded once, when training ends); the train

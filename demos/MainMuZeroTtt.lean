@@ -44,11 +44,22 @@ public import LeanMlir.CliArgs
       written under `.lake/build/muz_unroll/`, for `scripts/probes/muz_unroll_gate.py` to
       check against `jax.grad` of the same unrolled loss.
 
-    `lake exe muzero-ttt [mode=train|oracle|dump] [n=3] [k=n] [C=32] [K=5] [iters=20]
-     [sims=25] [bf=256] [batch=64] [epochs=10] [lr=1e-3] [window=20] [cpuct=1.25]
-     [alpha=1.0] [noise=0.25] [tempPlies=n²] [seed=1] [tag=<name>] [params=<file>]
-     [azParams=<file>] [oracleSims=2,3,4,5,6,<sims>]`;
-    writes `<prefix>_curve.csv` and `<prefix>_params.bin` (h, g, f, r back to back) under
+    `mode=score params=<prefix>_params.bin` is §6's instrument on a saved model (the visited set
+    read from `<prefix>_seen.bin`): M1 matches against perfect and random play, net alone and
+    with search; M2 f ∘ h over every decision position; M3 f after k imagined moves along the
+    agent's own, perfect and random legal lines, against the true position each reaches; M4a
+    r against the true winning moves (every legal move from every position, and along the
+    lines); M4b how often the imagined policy's argmax and the search's principal line play a
+    taken cell; M4c the two move orders a b c / c b a to one board; M4d a ridge probe from the
+    latent to the cells, fit on h of half the decision positions. Every number split visited /
+    unvisited (M5), all of them written to `<prefix>_score.csv`.
+
+    `lake exe muzero-ttt [mode=train|oracle|dump|score] [n=3] [k=n] [C=32] [K=5] [iters=20]
+     [sims=25] [bf=256] [batch=64] [epochs=10] [steps=0] [lr=1e-3] [window=20] [cpuct=1.25]
+     [alpha=1.0] [noise=0.25] [tempPlies=n²] [aug=1] [qnorm=1] [seed=1] [tag=<name>] [params=<file>]
+     [azParams=<file>] [oracleSims=2,3,4,5,6,<sims>] [lines=2K] [probeLambda=1]`;
+    writes `<prefix>_curve.csv`, `<prefix>_params.bin` (h, g, f, r back to back) and
+    `<prefix>_seen.bin` (the decision positions self-play stood at, u64) under
     `.lake/build/`. Either backend: XLA, or IREE (`LEAN_MLIR_LOWERER=iree
     IREE_BACKEND=llvm-cpu` runs it on a CPU). n ≤ 4 (the dense table). -/
 
@@ -258,6 +269,9 @@ structure Model where
   alpha : Float
   eps : Float
   arena : ByteArray
+  /-- PUCT's Q over the tree's min–max range (the paper's; an unvisited child scores the
+      range's bottom), or the raw mean with an unvisited child at 0 (AlphaZero's). -/
+  qnorm : Bool := true
 
 def Model.nc (M : Model) : Nat := M.n * M.n
 def Model.nOut (M : Model) : Nat := M.n * M.n + 1
@@ -334,7 +348,7 @@ def search (M : Model) (P : Params) (roots : Array Pos) (sims : Nat) (noise : Bo
   let (sd, g) := seed64 g0
   muzRoots M.arena live lat logits M.nOut.toUSize masks .empty (if noise then 1 else 0) M.alpha M.eps sd
   for _ in [1:sims] do
-    let sel ← muzSelect M.arena live M.cpuct 1
+    let sel ← muzSelect M.arena live M.cpuct (if M.qnorm then 1 else 0)
     let mut nPend := 0
     for i in [0:G] do
       if readU32LE sel (24 * i) == 1 then nPend := nPend + 1
@@ -395,7 +409,8 @@ def selfPlay (M : Model) (P : Params) (root : Pos) (sims tempPlies : Nat) (g0 : 
 
 /-- One training batch: `B` positions from the window and the `K` moves after each, with
     §4's targets. Past the end of a game: a uniformly random move, a uniform policy target,
-    value and reward 0. -/
+    value and reward 0. With `aug`, each sample is seen in one of the board's eight dihedral
+    views, drawn per sample and held over its unroll. -/
 structure Batch where
   obs : ByteArray                -- u64 [B] position indices
   acts : Array ByteArray         -- k = 1..K: u32 [B]
@@ -405,7 +420,29 @@ structure Batch where
   wf : Array ByteArray           -- k = 0..K: f32 [B] per-sample weights
   wr : ByteArray                 -- f32 [B], the reward terms' weight
 
-def sampleBatch (games : Array Game) (B K nc : Nat) (g0 : StdGen) : Batch × StdGen := Id.run do
+/-- The cell map of dihedral view `d` (0–7) of the n×n board: `d % 4` quarter turns, then a
+    mirror when `d ≥ 4`. -/
+def dihedral (n d : Nat) : Array Nat := (Array.range (n * n)).map fun c => Id.run do
+  let mut r := c / n
+  let mut q := c % n
+  for _ in [0:d % 4] do
+    (r, q) := (q, n - 1 - r)
+  if d ≥ 4 then q := n - 1 - q
+  return r * n + q
+
+/-- A position index under a cell map. -/
+def permIndex (perm : Array Nat) (idx : Nat) : Nat := Id.run do
+  let mut out := 0
+  let mut i := idx
+  for c in [0:perm.size] do
+    out := out + (i % 3) * 3 ^ perm[c]!
+    i := i / 3
+  return out
+
+def sampleBatch (games : Array Game) (B K nc : Nat) (g0 : StdGen) (aug : Bool := true) :
+    Batch × StdGen := Id.run do
+  let n := nc.sqrt
+  let views := (Array.range 8).map (dihedral n)
   let total := games.foldl (· + ·.idx.size) 0
   let mut g := g0
   let mut obs := ByteArray.empty
@@ -426,11 +463,16 @@ def sampleBatch (games : Array Game) (B K nc : Nat) (g0 : StdGen) : Batch × Std
       gi := gi + 1
     let gm := games[gi]!
     let T := gm.idx.size
-    obs := pushU64LE obs gm.idx[j]!
+    -- one dihedral view for the whole unroll: the board, every move and every π turn alike
+    let (d, g') := if aug then randNat g 0 7 else (0, g)
+    g := g'
+    let perm := views[d]!
+    let inv := (Array.range nc).foldl (fun acc c => acc.set! perm[c]! c) (Array.replicate nc 0)
+    obs := pushU64LE obs (permIndex perm gm.idx[j]!)
     for k in [0:K + 1] do
       let t := j + k
       if t < T then
-        for c in [0:nc] do pis := pis.modify k (pushF32LE · gm.pis[t]![c]!)
+        for c in [0:nc] do pis := pis.modify k (pushF32LE · gm.pis[t]![inv[c]!]!)
         -- the mover at ply t is X on even plies of the game
         let z := if t % 2 == 0 then gm.result else -gm.result
         zs := zs.modify k (pushF32LE · (Float.ofInt z))
@@ -439,7 +481,7 @@ def sampleBatch (games : Array Game) (B K nc : Nat) (g0 : StdGen) : Batch × Std
         zs := zs.modify k (pushF32LE · 0.0)
       if k ≥ 1 then
         let t1 := t - 1
-        let (a, g') := if t1 < T then (gm.acts[t1]!, g) else randNat g 0 (nc - 1)
+        let (a, g') := if t1 < T then (perm[gm.acts[t1]!]!, g) else randNat g 0 (nc - 1)
         g := g'
         acts := acts.modify (k - 1) (pushU32LE · a)
         let u := if t1 + 1 == T && gm.result != 0 then 1.0 else 0.0
@@ -529,16 +571,16 @@ def sweep (M : Model) (P : Params) (t : Table) (idx : ByteArray) (count : Nat) :
   let c := count.toFloat
   return (F32.read r 0 / c, F32.read r 1 / c, F32.read r 2 / c)
 
-/-- `bf` games with the model on one side against the perfect player. `sims = 0` is the net
-    alone (argmax of f ∘ h over the legal cells). W/D/L from the model's view. -/
-def matchVsPerfect (M : Model) (P : Params) (t : Table) (root : Pos) (netIsX : Bool) (sims : Nat)
+/-- `bf` games with the model on one side against `opp` (the perfect player, the random
+    one). `sims = 0` is the net alone (argmax of f ∘ h over the legal cells). W/D/L from the
+    model's view. -/
+def matchVs (M : Model) (P : Params) (opp : Player) (root : Pos) (netIsX : Bool) (sims : Nat)
     (g0 : StdGen) : IO (WDL × StdGen) := do
   let G := M.bf
   let mut pos : Array Pos := Array.replicate G root
   let mut live : Array Bool := Array.replicate G true
   let mut res : WDL := {}
   let mut g := g0
-  let perfect := perfectPlayer t
   let mut ply := 0
   while live.any id do
     let liveIx := (Array.range G).filter (live[·]!)
@@ -556,7 +598,7 @@ def matchVsPerfect (M : Model) (P : Params) (t : Table) (root : Pos) (netIsX : B
           moves := moves.set! liveIx[j]! (argmaxLegal (fun c => pis[j]![c]!) ps[j]!)
     else
       for i in liveIx do
-        let (a, g') := perfect pos[i]! g
+        let (a, g') := opp pos[i]! g
         g := g'
         moves := moves.set! i a
     for i in liveIx do
@@ -640,6 +682,259 @@ def oracleGate (n k bf sims : Nat) (cpuct : Float) (hS fS : Net) (pH pF : ByteAr
     off := off + m
   return (count, equal, maxL1)
 
+-- ── The scorer (§6 M2–M5): the saved model against the solved game ──
+
+@[extern "lean_muz_ridge"]
+opaque ridge (x y : @& ByteArray) (N D M : USize) (lam : Float) : IO ByteArray
+
+/-- Per row, the cells the probe `W` reads correctly (u32). -/
+@[extern "lean_muz_probe_score"]
+opaque probeScore (w lat truth : @& ByteArray) (rows D nc : USize) : IO ByteArray
+
+/-- The cells from the mover's view, the probe's target: 0 empty, 1 the mover's, 2 the
+    opponent's. -/
+def moverCells (p : Pos) : ByteArray :=
+  ByteArray.mk (p.cells.map fun c => if c == 0 then 0 else if c == p.mover then 1 else 2)
+
+/-- f32 rows `rows` of a block of `w` floats a row. -/
+def rowsOf (x : ByteArray) (w : Nat) (rows : Array Nat) : ByteArray :=
+  rows.foldl (fun acc i => acc ++ x.extract (4 * w * i) (4 * w * (i + 1))) .empty
+
+/-- `h`'s latents for `count` positions, in chunks of `bf`. -/
+def representAll (M : Model) (P : Params) (idx : ByteArray) (count : Nat) : IO ByteArray := do
+  let mut out := ByteArray.empty
+  let mut off := 0
+  while off < count do
+    let m := min M.bf (count - off)
+    out := out ++ (← represent M P (idx.extract (8 * off) (8 * (off + m))) m)
+    off := off + m
+  return out
+
+/-- One more imagined move for `m` rows: `g` on the latent and the move, then min–max; and
+    `r` on the result (pre-tanh). -/
+def imagine (M : Model) (P : Params) (lat : ByteArray) (acts : Array Nat) (m : Nat) :
+    IO (ByteArray × ByteArray) := do
+  let a := acts.foldl pushU32LE .empty
+  let gin ← withAction lat a m.toUSize M.C.toUSize M.nc.toUSize
+  let s ← minmax (← M.g.fwd P.g gin m true) m.toUSize M.D.toUSize
+  return (s, ← M.r.fwd P.r s m true)
+
+/-- Legal lines of up to `L` moves from every start, ending early at a true terminal (the
+    terminal move included): the agent's own net-alone policy on the TRUE positions, the
+    perfect player, or uniform random legal moves. -/
+def genLines (M : Model) (P : Params) (t : Table) (starts : Array Pos) (L : Nat) (src : String)
+    (g0 : StdGen) : IO (Array (Array Nat) × StdGen) := do
+  let mut lines : Array (Array Nat) := Array.replicate starts.size #[]
+  let mut cur := starts
+  let mut g := g0
+  for _ in [0:L] do
+    let live := (Array.range starts.size).filter (!cur[·]!.terminal)
+    if live.isEmpty then break
+    let mut moves : Array Nat := #[]
+    if src == "own" then
+      let ps := live.map (cur[·]!)
+      let logits ← rootLogits M P (idxBA ps) ps.size
+      moves := (Array.range ps.size).map fun j =>
+        argmaxLegal (fun c => F32.read logits (j * M.nOut + c).toUSize) ps[j]!
+    else
+      for i in live do
+        let (a, g') := (if src == "perfect" then perfectPlayer t else randomPlayer) cur[i]! g
+        g := g'
+        moves := moves.push a
+    for j in [0:live.size] do
+      let i := live[j]!
+      lines := lines.modify i (·.push moves[j]!)
+      cur := cur.set! i (cur[i]!.play moves[j]!)
+  return (lines, g)
+
+/-- Per (k, split) accumulators; split 1 = the position self-play stood at. -/
+structure LineAcc where
+  idx : Array ByteArray
+  logits : Array ByteArray
+  n : Array Nat
+  occupied : Array Nat      -- the imagined policy's argmax over ALL cells on a taken cell
+  probeCells : Array Nat
+  probeBoards : Array Nat
+  winN : Array Nat          -- reward: winning moves, and those r called (tanh r > ½)
+  winHit : Array Nat
+  restN : Array Nat         -- non-winning moves, and those r called wins
+  restHit : Array Nat
+
+def LineAcc.empty (slots : Nat) : LineAcc :=
+  let z := Array.replicate slots 0
+  { idx := Array.replicate slots .empty, logits := Array.replicate slots .empty, n := z,
+    occupied := z, probeCells := z, probeBoards := z, winN := z, winHit := z, restN := z, restHit := z }
+
+/-- M3 / M4a / M4b / M4d along lines: from each start, the imagined state after k moves —
+    f's policy and value against the TRUE position the line reached, the probe's readout of
+    it, and r on each move against whether it won. -/
+def scoreLines (M : Model) (P : Params) (W : ByteArray) (seen : Std.HashSet Nat) (starts : Array Pos)
+    (lines : Array (Array Nat)) (L : Nat) : IO LineAcc := do
+  let nc := M.nc
+  let mut acc := LineAcc.empty (2 * (L + 1))
+  let mut off := 0
+  while off < starts.size do
+    let m := min M.bf (starts.size - off)
+    let rows := (Array.range m).map (· + off)
+    let mut pos := rows.map (starts[·]!)
+    let mut lat ← represent M P (idxBA pos) m
+    for k in [0:L + 1] do
+      let fo ← M.f.fwd P.f lat m true
+      let here := (Array.range m).filter fun i => lines[rows[i]!]!.size ≥ k && !pos[i]!.terminal
+      let truth := here.foldl (fun a i => a ++ moverCells pos[i]!) .empty
+      let pc ← probeScore W (rowsOf lat M.D here) truth here.size.toUSize M.D.toUSize nc.toUSize
+      for j in [0:here.size] do
+        let i := here[j]!
+        let p := pos[i]!
+        let sl := 2 * k + (if seen.contains p.index then 1 else 0)
+        let row := fo.extract (4 * M.nOut * i) (4 * M.nOut * (i + 1))
+        let mut best := 0
+        for c in [0:nc] do
+          if F32.read row c.toUSize > F32.read row best.toUSize then best := c
+        let ok := readU32LE pc (4 * j)
+        acc := { acc with
+          idx := acc.idx.modify sl (pushU64LE · p.index),
+          logits := acc.logits.modify sl (· ++ row),
+          n := acc.n.modify sl (· + 1),
+          occupied := acc.occupied.modify sl (· + (if p.cells[best]! != 0 then 1 else 0)),
+          probeCells := acc.probeCells.modify sl (· + ok),
+          probeBoards := acc.probeBoards.modify sl (· + (if ok == nc then 1 else 0)) }
+      if k == L then break
+      let acts := (Array.range m).map fun i => (lines[rows[i]!]!)[k]?.getD 0
+      let (lat', ro) ← imagine M P lat acts m
+      lat := lat'
+      for i in [0:m] do
+        if lines[rows[i]!]!.size > k then
+          let p := pos[i]!
+          let p' := p.play acts[i]!
+          let won := p'.terminal && p'.result != 0
+          let called := Float.tanh (F32.read ro i.toUSize) > 0.5
+          let sl := 2 * (k + 1) + (if seen.contains p.index then 1 else 0)
+          acc := if won then { acc with winN := acc.winN.modify sl (· + 1),
+                                        winHit := acc.winHit.modify sl (· + (if called then 1 else 0)) }
+                 else { acc with restN := acc.restN.modify sl (· + 1),
+                                 restHit := acc.restHit.modify sl (· + (if called then 1 else 0)) }
+          pos := pos.set! i p'
+    off := off + m
+  return acc
+
+/-- `count` decision positions' true dynamics against the model on every legal move from
+    each (M4a at one move, exhaustive): r's recall on the winning moves and its false calls on
+    the rest, split by the start's visited flag. -/
+def scoreRewards (M : Model) (P : Params) (seen : Std.HashSet Nat) (starts : Array Pos) :
+    IO (Array Nat) := do
+  let mut pairs : Array (Pos × Nat) := #[]
+  for p in starts do
+    for a in p.legal do pairs := pairs.push (p, a)
+  -- [winN, winHit, restN, restHit] × split
+  let mut out := Array.replicate 8 0
+  let mut off := 0
+  while off < pairs.size do
+    let m := min M.bf (pairs.size - off)
+    let chunk := pairs.extract off (off + m)
+    let lat ← represent M P (idxBA (chunk.map (·.1))) m
+    let (_, ro) ← imagine M P lat (chunk.map (·.2)) m
+    for i in [0:m] do
+      let (p, a) := chunk[i]!
+      let p' := p.play a
+      let won := p'.terminal && p'.result != 0
+      let called := Float.tanh (F32.read ro i.toUSize) > 0.5
+      let b := 4 * (if seen.contains p.index then 1 else 0)
+      out := if won then (out.modify b (· + 1)).modify (b + 1) (· + (if called then 1 else 0))
+             else (out.modify (b + 2) (· + 1)).modify (b + 3) (· + (if called then 1 else 0))
+    off := off + m
+  return out
+
+def l2Row (x : ByteArray) (i : Nat) (y : ByteArray) (j : Nat) (D : Nat) : Float := Id.run do
+  let mut s := 0.0
+  for d in [0:D] do
+    let e := F32.read x (i * D + d).toUSize - F32.read y (j * D + d).toUSize
+    s := s + e * e
+  return s.sqrt
+
+/-- M4c: from each start with three empty cells a, b, c (drawn per start), the two move
+    orders a b c and c b a reach one board. The two imagined latents' distance, against
+    each one's distance to h of the true board and two different boards' latents' distance;
+    the two imagined values' disagreement and their signs against the exact value. -/
+def scoreTranspositions (M : Model) (P : Params) (t : Table) (starts : Array Pos) (g0 : StdGen) :
+    IO (Array Float × Nat × StdGen) := do
+  let mut g := g0
+  let mut trip : Array (Pos × Nat × Nat × Nat) := #[]
+  for p in starts do
+    let e := p.legal
+    if e.size ≥ 4 then
+      let (i, g1) := randNat g 0 (e.size - 1)
+      let (j, g2) := randNat g1 0 (e.size - 2)
+      let (k, g3) := randNat g2 0 (e.size - 3)
+      g := g3
+      let e1 := e.eraseIdx! i
+      let e2 := e1.eraseIdx! j
+      let (a, b, c) := (e[i]!, e1[j]!, e2[k]!)
+      let ok (x y z : Nat) := let p1 := p.play x; let p2 := p1.play y
+        !p1.terminal && !p2.terminal && !(p2.play z).terminal
+      if ok a b c && ok c b a then trip := trip.push (p, a, b, c)
+  -- sums: ‖s₁ − s₂‖, ‖s₁ − h‖, ‖s₂ − h‖, ‖s₁ − s₁'‖ (another row), |v₁ − v₂|, sign v₁, sign v₂, sign v_h
+  let mut sum := Array.replicate 8 0.0
+  let mut off := 0
+  let D := M.D
+  while off < trip.size do
+    let m := min M.bf (trip.size - off)
+    let ch := trip.extract off (off + m)
+    let l0 ← represent M P (idxBA (ch.map (·.1))) m
+    let (x1, _) ← imagine M P l0 (ch.map (·.2.1)) m
+    let (x2, _) ← imagine M P x1 (ch.map (·.2.2.1)) m
+    let (s1, _) ← imagine M P x2 (ch.map (·.2.2.2)) m
+    let (y1, _) ← imagine M P l0 (ch.map (·.2.2.2)) m
+    let (y2, _) ← imagine M P y1 (ch.map (·.2.2.1)) m
+    let (s2, _) ← imagine M P y2 (ch.map (·.2.1)) m
+    let finals := ch.map fun (p, a, b, c) => (p.play a).play b |>.play c
+    let sh ← represent M P (idxBA finals) m
+    let v (s : ByteArray) : IO ByteArray := M.f.fwd P.f s m true
+    let (f1, f2, fh) := (← v s1, ← v s2, ← v sh)
+    for i in [0:m] do
+      let val (f : ByteArray) := Float.tanh (F32.read f (i * M.nOut + M.nc).toUSize)
+      let exF := Float.ofInt (t.value finals[i]!)
+      let sgn (x : Float) : Float := if (x > 0.0 && exF > 0.0) || (x < 0.0 && exF < 0.0) ||
+        (x.abs < 0.5 && exF == 0.0) then 1.0 else 0.0
+      sum := #[sum[0]! + l2Row s1 i s2 i D, sum[1]! + l2Row s1 i sh i D, sum[2]! + l2Row s2 i sh i D,
+               sum[3]! + l2Row s1 i s1 ((i + 1) % m) D, sum[4]! + (val f1 - val f2).abs,
+               sum[5]! + sgn (val f1), sum[6]! + sgn (val f2), sum[7]! + sgn (val fh)]
+    off := off + m
+  return (sum.map (· / (max 1 trip.size).toFloat), trip.size, g)
+
+/-- M4b in the search: the latent search's principal line from every start (`sims`
+    simulations), replayed on the true board. Returns per split [lines, through a taken cell,
+    past the true end]. -/
+def scorePrincipal (M : Model) (P : Params) (seen : Std.HashSet Nat) (starts : Array Pos) (sims L : Nat)
+    (g0 : StdGen) : IO (Array Nat × StdGen) := do
+  let mut out := Array.replicate 6 0
+  let mut g := g0
+  let mut off := 0
+  while off < starts.size do
+    let m := min M.bf (starts.size - off)
+    let ch := starts.extract off (off + m)
+    g ← search M P ch sims false g
+    let pv ← muzPrincipal M.arena L.toUSize
+    for i in [0:m] do
+      let len := pv.get! (i * (L + 1))
+      let mut p := ch[i]!
+      let mut taken := false
+      let mut past := false
+      for j in [0:len.toNat] do
+        let a := (pv.get! (i * (L + 1) + 1 + j)).toNat
+        if p.terminal then
+          past := true
+          break
+        if p.cells[a]! != 0 then
+          taken := true
+          break
+        p := p.play a
+      let b := 3 * (if seen.contains ch[i]!.index then 1 else 0)
+      out := ((out.modify b (· + 1)).modify (b + 1) (· + (if taken then 1 else 0))).modify (b + 2)
+        (· + (if past then 1 else 0))
+    off := off + m
+  return (out, g)
+
 end MuZeroTtt
 
 open MuZeroTtt in
@@ -657,6 +952,9 @@ def main (args : List String) : IO Unit := do
   let bf := natArg "bf" 256
   let B := natArg "batch" 64
   let epochs := natArg "epochs" 10
+  -- `steps=` fixes the train steps an iteration; 0 is AlphaZero's schedule, `epochs` passes
+  -- over the whole window (≈ 300 · i steps at iteration i at 3×3)
+  let stepsPer := natArg "steps" 0
   let lr := floatArg "lr" 1.0e-3
   let window := natArg "window" 20
   let cpuct := floatArg "cpuct" 1.25
@@ -664,6 +962,8 @@ def main (args : List String) : IO Unit := do
   let eps := floatArg "noise" 0.25
   let tempPlies := natArg "tempPlies" (n * n)
   let seed := natArg "seed" 1
+  let aug := natArg "aug" 1 == 1
+  let qnorm := natArg "qnorm" 1 == 1
   let tag := kv "tag"
   let nc := n * n
   let nOut := nc + 1
@@ -676,6 +976,15 @@ def main (args : List String) : IO Unit := do
   let root := Pos.empty n k
   let decIdx ← reachableIdx table.tbl n.toUSize 0
   let nDec := decIdx.size / 8
+  -- the eight views must be symmetries of the game: each decision position lands on one
+  -- with the same exact value (a view that broke a line would change some value)
+  for d in [0:8] do
+    let perm := dihedral n d
+    for i in [0:nDec] do
+      let p := Pos.ofIndex n k (readU64 decIdx i)
+      let q := Pos.ofIndex n k (permIndex perm (readU64 decIdx i))
+      unless table.reachable q && table.value q == table.value p do
+        throw <| IO.userError s!"dihedral view {d} is not a symmetry at position {readU64 decIdx i}"
 
   if mode == "oracle" then
     -- §5: the latent search with the true dynamics against the position-keyed search
@@ -711,8 +1020,8 @@ def main (args : List String) : IO Unit := do
   let nets := [hN, gN, fN, rN]
   let nP := nets.foldl (· + ·.nP) 0
   IO.eprintln s!"muzero ttt {n}x{n} ({backend}): h {hN.nP} + g {gN.nP} + f {fN.nP} + r {rN.nP} = {nP} params, \
-C {C}, K {K}, {iters} iterations of {bf} games at {sims} sims, batch {B} × {epochs} epochs over the last \
-{window} iterations, lr {lr}, cpuct {cpuct}, Dir({alpha}) at {eps}, seed {seed} \
+C {C}, K {K}, {iters} iterations of {bf} games at {sims} sims, batch {B} × {if stepsPer > 0 then s!"{stepsPer} steps an iteration" else s!"{epochs} epochs"} over the last \
+{window} iterations{if aug then ", dihedral views" else ""}, lr {lr}, cpuct {cpuct}{if qnorm then "" else " (raw Q)"}, Dir({alpha}) at {eps}, seed {seed} \
 (graphs {(← IO.monoMsNow) - t0} ms)"
   let mut P : Params ← match kv "params" with
     | some f => do
@@ -725,7 +1034,7 @@ C {C}, K {K}, {iters} iterations of {bf} games at {sims} sims, batch {B} × {epo
     | none => pure { h := ← hN.spec.heInitParams 11, g := ← gN.spec.heInitParams 12,
                      f := ← fN.spec.heInitParams 13, r := ← rN.spec.heInitParams 14 }
   let arena ← muzAlloc bf.toUSize n.toUSize C.toUSize (sims + 1).toUSize
-  let M : Model := { n, C, bf, h := hN, g := gN, f := fN, r := rN, cpuct, alpha, eps, arena }
+  let M : Model := { n, C, bf, h := hN, g := gN, f := fN, r := rN, cpuct, alpha, eps, arena, qnorm }
   -- shape checks before anything trains (§11): every graph's output size, the action plane
   let D := M.D
   let probe ← represent M P (pushU64LE .empty 0) 1
@@ -742,11 +1051,125 @@ C {C}, K {K}, {iters} iterations of {bf} games at {sims} sims, batch {B} × {epo
   unless g0.size == (D + nc) * 4 do throw <| IO.userError "the action-plane concat has the wrong size"
   IO.eprintln "  shape checks passed"
 
+  if mode == "score" then
+    -- §6 on the saved net: `params=<prefix>_params.bin`, the visited set beside it
+    let seenPath := (kv "seen").getD (((kv "params").getD "").replace "_params.bin" "_seen.bin")
+    let seenBA ← if ← System.FilePath.pathExists seenPath then IO.FS.readBinFile seenPath else pure .empty
+    let seen : Std.HashSet Nat := (List.range (seenBA.size / 8)).foldl (fun s i => s.insert (readU64 seenBA i)) {}
+    let L := natArg "lines" (2 * K)
+    let starts := (Array.range nDec).map fun i => Pos.ofIndex n k (readU64 decIdx i)
+    let nSeen := starts.foldl (fun a p => if seen.contains p.index then a + 1 else a) 0
+    IO.eprintln s!"score: {nDec} decision positions, {nSeen} visited by self-play ({seenPath}), lines of up to {L} moves"
+    let mut csv := "metric,source,k,split,count,value\n"
+    let row (metric src : String) (kk : Nat) (split : String) (cnt : Nat) (v : Float) : String :=
+      s!"{metric},{src},{kk},{split},{cnt},{fmt v 6}\n"
+    -- M1
+    let mut g := mkStdGen (seed + 1000)
+    for (oppName, opp) in [("perfect", perfectPlayer table), ("random", randomPlayer)] do
+      for s in [0, sims] do
+        let (x, g1) ← matchVs M P opp root true s g
+        let (o, g2) ← matchVs M P opp root false s g1
+        g := g2
+        IO.eprintln s!"  M1 vs {oppName}, {if s == 0 then "net alone" else s!"search {s}"}: as X {x.str}, as O {o.str} (W/D/L)"
+        for (side, r) in [("x", x), ("o", o)] do
+          csv := csv ++ row s!"m1_{oppName}_{side}_w" (if s == 0 then "alone" else "search") s "all" bf r.w.toFloat
+          csv := csv ++ row s!"m1_{oppName}_{side}_d" (if s == 0 then "alone" else "search") s "all" bf r.d.toFloat
+          csv := csv ++ row s!"m1_{oppName}_{side}_l" (if s == 0 then "alone" else "search") s "all" bf r.l.toFloat
+    -- M2 split by visit
+    for (split, keep) in [("all", fun (_ : Pos) => true), ("seen", fun p => seen.contains p.index),
+                          ("unseen", fun p => !seen.contains p.index)] do
+      let ps := starts.filter keep
+      if ps.isEmpty then continue
+      let (agree, mse, sign) ← sweep M P table (idxBA ps) ps.size
+      IO.eprintln s!"  M2 f∘h, {split} ({ps.size}): agree {fmt (100.0 * agree) 2}%  value mse {fmt mse 4}  sign {fmt (100.0 * sign) 2}%"
+      csv := csv ++ row "m2_agree" "root" 0 split ps.size agree ++ row "m2_value_mse" "root" 0 split ps.size mse ++
+        row "m2_sign" "root" 0 split ps.size sign
+    -- M4d: the probe, fit on h of half the decision positions, held out on the other half
+    let lat ← representAll M P decIdx nDec
+    let fitRows := (Array.range nDec).filter (· % 2 == 0)
+    let heldRows := (Array.range nDec).filter (· % 2 == 1)
+    let mut Y := ByteArray.empty
+    for i in fitRows do
+      let mc := moverCells starts[i]!
+      for c in [0:nc] do
+        for st in [0:3] do Y := pushF32LE Y (if mc.get! c == st.toUInt8 then 1.0 else 0.0)
+    let W ← ridge (rowsOf lat M.D fitRows) Y fitRows.size.toUSize M.D.toUSize (3 * nc).toUSize
+      (floatArg "probeLambda" 1.0)
+    let heldTruth := heldRows.foldl (fun a i => a ++ moverCells starts[i]!) .empty
+    let hs ← probeScore W (rowsOf lat M.D heldRows) heldTruth heldRows.size.toUSize M.D.toUSize nc.toUSize
+    let mut hc := 0
+    let mut hb := 0
+    for j in [0:heldRows.size] do
+      let ok := readU32LE hs (4 * j)
+      hc := hc + ok
+      if ok == nc then hb := hb + 1
+    IO.eprintln s!"  M4d probe on h, held out ({heldRows.size}): cells {fmt (100.0 * hc.toFloat / (heldRows.size * nc).toFloat) 2}%  \
+whole boards {fmt (100.0 * hb.toFloat / heldRows.size.toFloat) 2}%"
+    csv := csv ++ row "m4d_probe_cells_heldout" "root" 0 "all" heldRows.size (hc.toFloat / (heldRows.size * nc).toFloat) ++
+      row "m4d_probe_boards_heldout" "root" 0 "all" heldRows.size (hb.toFloat / heldRows.size.toFloat)
+    -- M3, M4a / b / d along imagined lines
+    for src in ["own", "perfect", "random"] do
+      let (lines, g1) ← genLines M P table starts L src g
+      g := g1
+      let acc ← scoreLines M P W seen starts lines L
+      IO.eprintln s!"  lines: {src} — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls"
+      for kk in [0:L + 1] do
+        let mut cells := ""
+        for (split, sls) in [("seen", [2 * kk + 1]), ("unseen", [2 * kk]), ("all", [2 * kk, 2 * kk + 1])] do
+          let cnt := sls.foldl (fun a sl => a + acc.n[sl]!) 0
+          if cnt == 0 then continue
+          let ix := sls.foldl (fun a sl => a ++ acc.idx[sl]!) .empty
+          let lg := sls.foldl (fun a sl => a ++ acc.logits[sl]!) .empty
+          let r ← table.score ix cnt lg nOut
+          let c := cnt.toFloat
+          let sum (f : LineAcc → Array Nat) := (sls.foldl (fun a sl => a + (f acc)[sl]!) 0).toFloat
+          let (wn, wh, rn, rh) := (sum (·.winN), sum (·.winHit), sum (·.restN), sum (·.restHit))
+          csv := csv ++ row "m3_agree" src kk split cnt (F32.read r 0 / c) ++ row "m3_value_mse" src kk split cnt (F32.read r 1 / c) ++
+            row "m3_sign" src kk split cnt (F32.read r 2 / c) ++ row "m4b_argmax_taken" src kk split cnt (sum (·.occupied) / c) ++
+            row "m4d_probe_cells" src kk split cnt (sum (·.probeCells) / (c * nc.toFloat)) ++
+            row "m4d_probe_boards" src kk split cnt (sum (·.probeBoards) / c)
+          if kk ≥ 1 && wn > 0 then csv := csv ++ row "m4a_reward_recall" src kk split wn.toUInt64.toNat (wh / wn)
+          if kk ≥ 1 && rn > 0 then csv := csv ++ row "m4a_reward_false" src kk split rn.toUInt64.toNat (rh / rn)
+          if split == "all" then
+            cells := cells ++ s!"   {fmt (100.0 * sum (·.occupied) / c) 1}%   {fmt (100.0 * sum (·.probeCells) / (c * nc.toFloat)) 1}% / {fmt (100.0 * sum (·.probeBoards) / c) 1}%   \
+{if wn > 0 then fmt (100.0 * wh / wn) 1 else "–"}% / {if rn > 0 then fmt (100.0 * rh / rn) 2 else "–"}%"
+          else cells := cells ++ s!"   {split} {cnt}: {fmt (100.0 * F32.read r 0 / c) 1}% / {fmt (100.0 * F32.read r 2 / c) 1}%"
+        unless cells.isEmpty do IO.eprintln s!"    k {kk}{cells}"
+    -- M4a exhaustive at one move
+    let rw ← scoreRewards M P seen starts
+    for (split, b) in [("unseen", 0), ("seen", 4)] do
+      if rw[b]! > 0 then csv := csv ++ row "m4a_reward_recall_every_move" "all" 1 split rw[b]! (rw[b + 1]!.toFloat / rw[b]!.toFloat)
+      if rw[b + 2]! > 0 then csv := csv ++ row "m4a_reward_false_every_move" "all" 1 split rw[b + 2]! (rw[b + 3]!.toFloat / rw[b + 2]!.toFloat)
+    let ratio (a b : Nat) : String := if b == 0 then "–" else fmt (100.0 * a.toFloat / b.toFloat) 2
+    IO.eprintln s!"  M4a every legal move from every decision position: winning moves called {ratio (rw[1]! + rw[5]!) (rw[0]! + rw[4]!)}% \
+({rw[0]! + rw[4]!}), others called wins {ratio (rw[3]! + rw[7]!) (rw[2]! + rw[6]!)}% ({rw[2]! + rw[6]!}); \
+visited starts {ratio rw[5]! rw[4]!}% / {ratio rw[7]! rw[6]!}%, unvisited {ratio rw[1]! rw[0]!}% / {ratio rw[3]! rw[2]!}%"
+    -- M4b in the search
+    let (pv, g2) ← scorePrincipal M P seen starts sims L g
+    g := g2
+    IO.eprintln s!"  M4b search principal lines ({sims} sims): through a taken cell {ratio (pv[1]! + pv[4]!) (pv[0]! + pv[3]!)}%, \
+past the true end {ratio (pv[2]! + pv[5]!) (pv[0]! + pv[3]!)}%  (visited {ratio pv[4]! pv[3]!}% / unvisited {ratio pv[1]! pv[0]!}% taken)"
+    for (split, b) in [("unseen", 0), ("seen", 3)] do
+      if pv[b]! > 0 then
+        csv := csv ++ row "m4b_pv_taken" "search" sims split pv[b]! (pv[b + 1]!.toFloat / pv[b]!.toFloat) ++
+          row "m4b_pv_past_end" "search" sims split pv[b]! (pv[b + 2]!.toFloat / pv[b]!.toFloat)
+    -- M4c
+    let (tr, nT, _) ← scoreTranspositions M P table starts g
+    IO.eprintln s!"  M4c transpositions ({nT} pairs a b c / c b a): ‖s₁ − s₂‖ {fmt tr[0]! 3}, ‖s − h(board)‖ {fmt tr[1]! 3} / {fmt tr[2]! 3}, \
+two different boards {fmt tr[3]! 3}; |v₁ − v₂| {fmt tr[4]! 3}; value sign vs exact {fmt (100.0 * tr[5]!) 1}% / {fmt (100.0 * tr[6]!) 1}% (h of the board {fmt (100.0 * tr[7]!) 1}%)"
+    for (nm, i) in [("m4c_dist_pair", 0), ("m4c_dist_to_h_1", 1), ("m4c_dist_to_h_2", 2), ("m4c_dist_other_board", 3),
+                    ("m4c_value_gap", 4), ("m4c_sign_1", 5), ("m4c_sign_2", 6), ("m4c_sign_h", 7)] do
+      csv := csv ++ row nm "random" 3 "all" nT tr[i]!
+    let out := ((kv "params").getD s!"{pfx}_params.bin").replace "_params.bin" "_score.csv"
+    IO.FS.writeFile out csv
+    IO.eprintln s!"wrote {out} ({(← IO.monoMsNow) - t0} ms)"
+    return
+
   let mut g := mkStdGen seed
   if mode == "dump" then
     -- one batch of self-play at the initial parameters, one batch's gradients, for the JAX gate
     let (games, g1) ← selfPlay M P root sims tempPlies g
-    let (b, _) := sampleBatch games B K nc g1
+    let (b, _) := sampleBatch games B K nc g1 aug
     let (dP, l, cl) ← unrollGrad M P b K B
     let dir := ".lake/build/muz_unroll"
     IO.FS.createDirAll dir
@@ -773,10 +1196,10 @@ C {C}, K {K}, {iters} iterations of {bf} games at {sims} sims, batch {B} × {epo
 
   let instrument (P : Params) (iter : Nat) (g : StdGen) : IO (String × StdGen) := do
     let (agree, mse, sign) ← sweep M P table decIdx nDec
-    let (aX, g) ← matchVsPerfect M P table root true 0 g
-    let (aO, g) ← matchVsPerfect M P table root false 0 g
-    let (mX, g) ← matchVsPerfect M P table root true sims g
-    let (mO, g) ← matchVsPerfect M P table root false sims g
+    let (aX, g) ← matchVs M P (perfectPlayer table) root true 0 g
+    let (aO, g) ← matchVs M P (perfectPlayer table) root false 0 g
+    let (mX, g) ← matchVs M P (perfectPlayer table) root true sims g
+    let (mO, g) ← matchVs M P (perfectPlayer table) root false sims g
     IO.eprintln s!"  iter {iter}: f∘h sweep agree {fmt (100.0 * agree) 2}% value mse {fmt mse 4} \
 sign {fmt (100.0 * sign) 2}%  net alone vs perfect X {aX.str} O {aO.str}  +search X {mX.str} O {mO.str}"
     return (s!"{fmt agree 4},{fmt mse 4},{fmt sign 4},{aX.w},{aX.d},{aX.l},{aO.w},{aO.d},{aO.l},\
@@ -812,11 +1235,11 @@ search_o_w,search_o_d,search_o_l,seen,ms\n"
     let tS ← IO.monoMsNow
     let all := pool.flatten
     let N := all.foldl (· + ·.idx.size) 0
-    let nSteps := epochs * N / B
+    let nSteps := if stepsPer > 0 then stepsPer else epochs * N / B
     let mut lAcc := #[0.0, 0.0, 0.0]
     let mut clAcc := 0
     for _ in [0:nSteps] do
-      let (b, g') := sampleBatch all B K nc g
+      let (b, g') := sampleBatch all B K nc g aug
       g := g'
       let (dP, l, cl) ← unrollGrad M P b K B
       steps := steps + 1
@@ -845,6 +1268,7 @@ policy {fmt (lAcc[1]! / ns) 4} reward {fmt (lAcc[2]! / ns) 4}, {clAcc} clamped l
 {fmt (lAcc[2]! / ns) 4},{clAcc},{row},{seen.size},{tF - t0}\n"
     IO.FS.writeFile s!"{pfx}_curve.csv" curve
     IO.FS.writeBinFile s!"{pfx}_params.bin" P.blob
+    IO.FS.writeBinFile s!"{pfx}_seen.bin" (seen.fold (fun acc ix => pushU64LE acc ix) .empty)
   IO.eprintln s!"trained: {iters} iterations, {steps} steps, {(← IO.monoMsNow) - t0} ms; \
 self-play stood at {seen.size} of the {nDec} decision positions"
-  IO.eprintln s!"wrote {pfx}_curve.csv, {pfx}_params.bin"
+  IO.eprintln s!"wrote {pfx}_curve.csv, {pfx}_params.bin, {pfx}_seen.bin"
