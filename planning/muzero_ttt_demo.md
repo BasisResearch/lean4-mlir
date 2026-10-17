@@ -208,10 +208,12 @@ inputs and outputs, the copying path on both shims), so it runs on XLA or on IRE
 - Gate A passes on one seed-1 arm (raw Q, 50 sims in self-play, 300 steps an iteration,
   60 iterations, 6.3 h): its final net is unbeaten vs perfect both sides, alone and at
   25 / 50 / 100 sims. The same arm's iteration-50 net drops 10 O games at 100 sims; the
-  600-step arm's final net is unbeaten at 25 sims, drops 7 / 2 O games at 50 / 100. Not
-  robust: both seed-2 arms lose 70–130 O games at iteration ~50.
-- The paper's normalized Q in the search trains worse than the raw mean on seed 1
-  (0/103/153 vs 0/236/20 as O at iteration 60); seed 2 leans the other way so far.
+  600-step arm's final net is unbeaten at 25 sims, drops 7 / 2 O games at 50 / 100. Across
+  seeds (50-sim self-play, play-and-sampling seeds 1–3, same init): net alone unbeaten on
+  3 / 3, with search on 2 / 3 (seed 3 drops 9–11 O games). At 25-sim self-play seed 2 never
+  passes an iteration.
+- The paper's normalized Q against the raw mean: 0/103/153 vs 0/236/20 as O on seed 1,
+  0/191/65 vs 0/180/76 on seed 2 — within seed spread.
 - On the Gate-A net: M2 96.26% / sign 84.76%. The board probe fit on h reads h exactly
   and g poorly (84% of cells, 25% of boards after one move); **refit on g's own latents it
   reads 99.5% of cells / 95.5% of boards at k = 1, 98.1% / 85.6% at k = 2** (own lines;
