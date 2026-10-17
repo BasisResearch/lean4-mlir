@@ -199,8 +199,26 @@ inputs and outputs, the copying path on both shims), so it runs on XLA or on IRE
   latents over the iteration; f ∘ h sweep 61.66% → 62.48%, sign 23.5% → 45.2% (the
   untrained net is the random player's ~58%). Twenty iterations is ~2 h here; the GPU
   box's per-call cost decides whether Phase 3 runs there.
-- Not built yet: dihedral augmentation (the moves and π must turn with the board over
-  the whole unroll), M3–M5 and the board probe (Phase 3's scorer, on the saved net).
+- Built since (Phase 3): dihedral augmentation (one view a sample, the moves and π turned
+  with the board over the whole unroll; the unroll gate passes with it on), the §6 scorer
+  (`mode=score params=<prefix>_params.bin`, M1–M5 and the board probe, a CSV beside the
+  params), `steps=` / `qnorm=` / `tempPlies=` knobs, and a search-blunder diagnostic.
+
+**Phase 3 results (2026-10-17, CPU; `runs/2026-10-16-muzero-ttt/README.md`).**
+- Gate A passes on one seed-1 arm (raw Q, 50 sims in self-play, 300 steps an iteration,
+  60 iterations, 6.3 h): its final net is unbeaten vs perfect both sides, alone and at
+  25 / 50 / 100 sims. The same arm's iteration-50 net drops 10 O games at 100 sims; the
+  600-step arm's final net is unbeaten at 25 sims, drops 7 / 2 O games at 50 / 100. Not
+  robust: both seed-2 arms lose 70–130 O games at iteration ~50.
+- The paper's normalized Q in the search trains worse than the raw mean on seed 1
+  (0/103/153 vs 0/236/20 as O at iteration 60); seed 2 leans the other way so far.
+- On the Gate-A net: M2 96.26% / sign 84.76%. The board probe reads h's latent exactly
+  (100% of held-out boards) and g's poorly from the first imagined move (84% of cells,
+  25% of boards; 67% / 7% on random lines at k = 5). Value sign along random lines falls
+  to 62%; policy agreement stays ≥ 89%. The model learned values and policy, not the board.
+- Extra search loses by exploiting the reward model: 36–53% of the positions where the
+  search errs and the net alone does not have a false win for the mover on the principal
+  line, against 1.4–3.2% elsewhere.
 
 ## 6. The instrument
 
@@ -299,3 +317,6 @@ Stochastic MuZero, Sampled MuZero, Gumbel MuZero's root selection, reanalyse, Co
 - 2026-10-16: Phase 1 built and gated on CPU (§2). `muzero-ttt` branch.
 - 2026-10-16: Phase 2 built on CPU (§5): the trainer, the latent search, the oracle and
   unroll gates (both pass), the one-iteration 3×3 smoke.
+- 2026-10-17: Phase 3 on CPU (eight arms, `runs/2026-10-16-muzero-ttt/`). Gate A passes on
+  the raw-Q, 50-sim arm, seed 1; M2–M5 scored; the board is not decodable from g. Seed 2
+  and the AlphaZero-schedule arm still running.

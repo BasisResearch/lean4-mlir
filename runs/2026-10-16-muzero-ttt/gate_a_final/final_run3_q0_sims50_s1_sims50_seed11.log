@@ -1,0 +1,45 @@
+muzero ttt 3x3 (iree): h 56608 + g 74464 + f 3150 + r 2565 = 136787 params, C 32, K 5, 20 iterations of 256 games at 50 sims, batch 64 × 10 epochs over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000 (raw Q), Dir(1.000000) at 0.250000, seed 11 (graphs 75 ms)
+  shape checks passed
+score: 4520 decision positions, 3037 visited by self-play (/tmp/claude-1000/-home-skoonce-lean-lean4-mlir/15797662-efa9-401b-8b1e-efaf109b4402/scratchpad/snap/final_run3_q0_sims50_s1_sims50_seed11_seen.bin), lines of up to 10 moves
+  M1 vs perfect, net alone: as X 0/256/0, as O 0/256/0 (W/D/L)
+  M1 vs perfect, search 50: as X 0/256/0, as O 0/256/0 (W/D/L)
+  M1 vs random, net alone: as X 251/5/0, as O 232/24/0 (W/D/L)
+  M1 vs random, search 50: as X 254/2/0, as O 239/17/0 (W/D/L)
+  M2 f∘h, all (4520): agree 96.26%  value mse 0.1528  sign 84.76%
+  M2 f∘h, seen (3037): agree 97.60%  value mse 0.1049  sign 88.21%
+  M2 f∘h, unseen (1483): agree 93.53%  value mse 0.2508  sign 77.68%
+  M4d probe on h, held out (2260): cells 100.00%  whole boards 100.00%
+  lines: own — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 3037: 97.6% / 88.2%   unseen 1483: 93.5% / 77.7%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 1673: 96.4% / 86.4%   unseen 459: 88.0% / 54.9%   0.0%   83.8% / 24.5%   93.8% / 0.41%
+    k 2   seen 1194: 97.4% / 90.8%   unseen 177: 88.1% / 72.3%   0.0%   83.8% / 24.7%   72.1% / 0.38%
+    k 3   seen 765: 99.3% / 94.8%   unseen 57: 93.0% / 66.7%   0.0%   84.5% / 25.9%   88.1% / 0.19%
+    k 4   seen 428: 99.3% / 96.7%   unseen 15: 73.3% / 73.3%   0.0%   84.5% / 27.1%   84.3% / 0.57%
+    k 5   seen 177: 100.0% / 99.4%   0.0%   88.6% / 31.6%   89.8% / 0.00%
+    k 6   seen 39: 100.0% / 100.0%   0.0%   85.5% / 28.2%   100.0% / 0.58%
+    k 7   seen 10: 100.0% / 100.0%   0.0%   90.0% / 40.0%   –% / 0.00%
+    k 8   seen 1: 100.0% / 100.0%   0.0%   77.8% / 0.0%   –% / 0.00%
+  lines: perfect — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 3037: 97.6% / 88.2%   unseen 1483: 93.5% / 77.7%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 1824: 98.3% / 83.2%   unseen 637: 96.2% / 50.1%   0.0%   82.1% / 21.4%   92.3% / 1.26%
+    k 2   seen 1366: 98.5% / 89.0%   unseen 381: 91.6% / 68.2%   0.5%   78.4% / 18.2%   78.6% / 0.92%
+    k 3   seen 711: 98.5% / 90.0%   unseen 93: 97.8% / 57.0%   0.6%   81.9% / 25.1%   80.6% / 0.20%
+    k 4   seen 397: 99.2% / 93.5%   unseen 29: 93.1% / 69.0%   1.4%   81.6% / 20.9%   71.9% / 1.01%
+    k 5   seen 175: 100.0% / 96.6%   unseen 4: 100.0% / 75.0%   0.0%   85.7% / 21.2%   64.0% / 0.63%
+    k 6   seen 35: 100.0% / 97.1%   unseen 2: 100.0% / 50.0%   0.0%   88.9% / 40.5%   75.0% / 1.14%
+    k 7   seen 10: 100.0% / 100.0%   0.0%   88.9% / 30.0%   0.0% / 0.00%
+    k 8   seen 1: 100.0% / 100.0%   0.0%   88.9% / 0.0%   –% / 0.00%
+  lines: random — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 3037: 97.6% / 88.2%   unseen 1483: 93.5% / 77.7%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 2287: 94.5% / 74.1%   unseen 1114: 90.8% / 59.3%   0.1%   78.0% / 15.2%   91.9% / 2.24%
+    k 2   seen 1543: 95.5% / 76.3%   unseen 667: 91.2% / 58.9%   0.6%   73.6% / 11.1%   68.5% / 1.98%
+    k 3   seen 835: 95.0% / 67.4%   unseen 303: 89.4% / 45.9%   3.5%   71.2% / 11.2%   67.9% / 4.26%
+    k 4   seen 354: 94.9% / 70.9%   unseen 120: 94.2% / 47.5%   4.9%   70.7% / 9.5%   53.3% / 1.93%
+    k 5   seen 105: 96.2% / 61.0%   unseen 31: 93.5% / 51.6%   2.9%   70.8% / 10.3%   55.2% / 2.58%
+    k 6   seen 26: 100.0% / 73.1%   unseen 7: 100.0% / 14.3%   3.0%   67.3% / 6.1%   45.1% / 1.54%
+    k 7   seen 4: 100.0% / 50.0%   0.0%   69.4% / 0.0%   55.6% / 6.67%
+  M4a every legal move from every decision position: winning moves called 93.31% (2782), others called wins 1.88% (13385); visited starts 97.00% / 1.30%, unvisited 86.87% / 3.22%
+  M4b search principal lines (50 sims): through a taken cell 2.41%, past the true end 96.64%  (visited 2.11% / unvisited 3.03% taken)
+  blunders (50 sims): 35 starts where the search errs and the net alone does not; phantom win on the line for the mover 45.71% / the opponent 0.00%; the other 4485 starts 1.43% / 1.16%
+  M4c transpositions (1124 pairs a b c / c b a): ‖s₁ − s₂‖ 1.839, ‖s − h(board)‖ 3.388 / 3.400, two different boards 3.776; |v₁ − v₂| 0.261; value sign vs exact 83.5% / 85.8% (h of the board 95.4%)
+wrote /tmp/claude-1000/-home-skoonce-lean-lean4-mlir/15797662-efa9-401b-8b1e-efaf109b4402/scratchpad/snap/final_run3_q0_sims50_s1_sims50_seed11_score.csv (580228 ms)
