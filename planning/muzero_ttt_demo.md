@@ -212,10 +212,12 @@ inputs and outputs, the copying path on both shims), so it runs on XLA or on IRE
   robust: both seed-2 arms lose 70–130 O games at iteration ~50.
 - The paper's normalized Q in the search trains worse than the raw mean on seed 1
   (0/103/153 vs 0/236/20 as O at iteration 60); seed 2 leans the other way so far.
-- On the Gate-A net: M2 96.26% / sign 84.76%. The board probe reads h's latent exactly
-  (100% of held-out boards) and g's poorly from the first imagined move (84% of cells,
-  25% of boards; 67% / 7% on random lines at k = 5). Value sign along random lines falls
-  to 62%; policy agreement stays ≥ 89%. The model learned values and policy, not the board.
+- On the Gate-A net: M2 96.26% / sign 84.76%. The board probe fit on h reads h exactly
+  and g poorly (84% of cells, 25% of boards after one move); **refit on g's own latents it
+  reads 99.5% of cells / 95.5% of boards at k = 1, 98.1% / 85.6% at k = 2** (own lines;
+  random lines 95.1% / 68.3% at k = 2, 91.7% / 50.8% at k = 3). g keeps the board in its
+  own encoding and loses it with depth — not "values, not the board". Value sign along
+  random lines falls to 62%; policy agreement stays ≥ 89%.
 - Extra search loses by exploiting the reward model: 36–53% of the positions where the
   search errs and the net alone does not have a false win for the mover on the principal
   line, against 1.4–3.2% elsewhere.
@@ -318,5 +320,6 @@ Stochastic MuZero, Sampled MuZero, Gumbel MuZero's root selection, reanalyse, Co
 - 2026-10-16: Phase 2 built on CPU (§5): the trainer, the latent search, the oracle and
   unroll gates (both pass), the one-iteration 3×3 smoke.
 - 2026-10-17: Phase 3 on CPU (eight arms, `runs/2026-10-16-muzero-ttt/`). Gate A passes on
-  the raw-Q, 50-sim arm, seed 1; M2–M5 scored; the board is not decodable from g. Seed 2
+  the raw-Q, 50-sim arm, seed 1; M2–M5 scored; the board decodes from g (refit probe) at one
+  move and fades with depth. Seed 2
   and the AlphaZero-schedule arm still running.

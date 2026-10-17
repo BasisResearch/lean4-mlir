@@ -73,14 +73,25 @@ behind (70–130 O losses at iteration 50).
 - **M4c.** Transposed move orders (a b c / c b a): latent distance 1.82, against 3.40 from
   h of the same board and 3.75 between two different boards; value sign 84% from the
   imagined states, 96% from h of the board.
-- **M4d, the board probe.** A ridge readout from h's latent recovers every cell of every
-  held-out position (100% / 100%). After ONE imagined move it recovers 84% of cells and
-  25% of whole boards, and stays there (own lines), or falls to 67% / 7% (random, k = 5).
+- **M4d, the board probe.** A ridge readout fit on h's latents recovers every cell of
+  every held-out position (100% / 100%). Applied unchanged to g's latents it recovers 84%
+  of cells and 25% of whole boards after one imagined move (67% / 7% on random lines at
+  k = 5). **Refit on g's own latents** at each depth, held out by board
+  (`gate_a_final/gprobe_*.log`), cells / whole boards:
 
-So, at 3×3: **the model learned the values and the policy, not the board.** h's latent
-holds the board exactly; g's does not, from the first imagined move, and a transposed line
-does not land on h of the same board. (The probe is fit on h, so part of the drop is h vs g
-distribution shift; a probe fit on g latents is the next check.)
+  | lines | k = 1 | k = 2 | k = 3 |
+  |---|---|---|---|
+  | own | 99.5% / 95.5% | 98.1% / 85.6% | (too few boards to fit) |
+  | perfect | 99.1% / 92.7% | 96.3% / 75.1% | |
+  | random | 99.1% / 92.8% | 95.1% / 68.3% | 91.7% / 50.8% |
+
+So, at 3×3: **g keeps the board, in its own encoding, and loses it with depth.** After one
+imagined move the board is linearly decodable almost exactly; the h-fit probe's drop is
+mostly g's latent sitting in a different place from h's (M4c says the same: a transposed
+line lands 3.4 from h of its board). By two moves whole boards fall to 69–86%, faster off
+the agent's own lines. The fit set shrinks with k (≈ 1100 boards at k = 1, ≈ 650 at k = 2,
+D = 288), so part of the fall with depth may be the fit, not the latent; the value-equivalent
+prediction ("values, not the board") does not hold at one move.
 
 ## Why more search can lose — the blunder diagnostic (`blunders/`)
 
