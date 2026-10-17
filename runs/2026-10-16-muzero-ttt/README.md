@@ -13,7 +13,8 @@ lake build muzero-ttt
 
 `seed=` drives self-play, the Dirichlet noise and batch sampling; the four nets' He init is
 fixed (seeds 11–14 in `main`) whatever `seed=` says, so "seed 2" is a different run of
-play and sampling from the same initial weights.
+play and sampling from the same initial weights. `initSeed=` (added after the run3 / run4
+arms, default 11 = their init) moves it; the run5 arms use it.
 
 `qnorm=1` is the paper's min–max-normalized Q in the search (unvisited children 0); `qnorm=0`
 is the raw mean, AlphaZero's. `steps=` fixes the train steps an iteration (0 is AlphaZero's
@@ -35,6 +36,7 @@ the 4520 decision positions) and M1 (256 games each side vs perfect, net alone a
 | `n3_run1_s1` | normalized Q, AlphaZero's schedule | running (20) | ~15 h | 0 so far | |
 | `n3_run4_q0_sims50_steps300_s2` | raw Q, 50 sims, seed 2 | 60 | 5.9 h | 12 / 61 | **0/256/0** |
 | `n3_run4_q0_sims50_steps300_s3` | raw Q, 50 sims, seed 3 | 60 | 6.5 h | 11 / 61 | 0/247/9 |
+| `n3_run5_q0_sims50_init{101,201,301}_s{1,2,3}` | raw Q, 50 sims, fresh inits (`initSeed=`) | running | | | |
 | `n3_run4_q0_sims50_steps600_s2` | raw Q, 50 sims, 600 steps, seed 2 | running | | | |
 
 As X every arm is unbeaten with search from about iteration 10. O is the whole story.

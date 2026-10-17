@@ -1139,8 +1139,12 @@ C {C}, K {K}, {iters} iterations of {bf} games at {sims} sims, batch {B} × {if 
       let o2 := o1 + gN.nP * 4
       let o3 := o2 + fN.nP * 4
       pure { h := b.extract 0 o1, g := b.extract o1 o2, f := b.extract o2 o3, r := b.extract o3 b.size }
-    | none => pure { h := ← hN.spec.heInitParams 11, g := ← gN.spec.heInitParams 12,
-                     f := ← fN.spec.heInitParams 13, r := ← rN.spec.heInitParams 14 }
+    -- `initSeed=` moves the four He inits together (default 11: h 11, g 12, f 13, r 14,
+    -- the Phase 3 runs'); `seed=` drives play and sampling only
+    | none =>
+      let i0 := natArg "initSeed" 11
+      pure { h := ← hN.spec.heInitParams i0.toUSize, g := ← gN.spec.heInitParams (i0 + 1).toUSize,
+             f := ← fN.spec.heInitParams (i0 + 2).toUSize, r := ← rN.spec.heInitParams (i0 + 3).toUSize }
   let arena ← muzAlloc bf.toUSize n.toUSize C.toUSize (sims + 1).toUSize
   let M : Model := { n, C, bf, h := hN, g := gN, f := fN, r := rN, cpuct, alpha, eps, arena, qnorm }
   -- shape checks before anything trains (§11): every graph's output size, the action plane
