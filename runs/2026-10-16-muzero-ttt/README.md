@@ -11,6 +11,10 @@ lake build muzero-ttt
 .lake/build/bin/muzero-ttt mode=score qnorm=0 sims=25 seed=11 params=<prefix>_params.bin
 ```
 
+`seed=` drives self-play, the Dirichlet noise and batch sampling; the four nets' He init is
+fixed (seeds 11–14 in `main`) whatever `seed=` says, so "seed 2" is a different run of
+play and sampling from the same initial weights.
+
 `qnorm=1` is the paper's min–max-normalized Q in the search (unvisited children 0); `qnorm=0`
 is the raw mean, AlphaZero's. `steps=` fixes the train steps an iteration (0 is AlphaZero's
 epochs-over-the-window schedule). Each training log prints, every iteration, M2 (f ∘ h over
@@ -26,9 +30,12 @@ the 4520 decision positions) and M1 (256 games each side vs perfect, net alone a
 | `n3_run3_q0_temp3_s1` | raw Q, tempPlies=3 | 60 | 5.2 h | 4 / 61 | 0/250/6 |
 | `n3_run3_q0_s1` | raw Q | 60 | 6.0 h | 1 / 61 | 0/236/20 |
 | `n3_run3_q1_s1` | normalized Q | 60 | 6.2 h | 0 / 61 | 0/103/153 |
-| `n3_run3_q0_s2` | raw Q, seed 2 | running | | 0 so far | |
-| `n3_run3_q1_s2` | normalized Q, seed 2 | running | | 0 so far | |
+| `n3_run3_q0_s2` | raw Q, seed 2 | 60 | 11.6 h | 0 / 61 | 0/180/76 |
+| `n3_run3_q1_s2` | normalized Q, seed 2 | 60 | 11.2 h | 0 / 61 | 0/191/65 |
 | `n3_run1_s1` | normalized Q, AlphaZero's schedule | running (20) | ~15 h | 0 so far | |
+| `n3_run4_q0_sims50_steps300_s2` | raw Q, 50 sims, seed 2 | running | | | |
+| `n3_run4_q0_sims50_steps300_s3` | raw Q, 50 sims, seed 3 | running | | | |
+| `n3_run4_q0_sims50_steps600_s2` | raw Q, 50 sims, 600 steps, seed 2 | running | | | |
 
 As X every arm is unbeaten with search from about iteration 10. O is the whole story.
 
@@ -53,8 +60,9 @@ the sims-50 net — the weaker value head leaves less margin for the search.
 sims (2 seeds), but **0/246/10 as O at 100 sims**.
 
 Not robust yet: the arm's own per-iteration check still drops O games at 3 of iterations
-35–50, the other seed-1 arms pass at a few iterations at most, and both seed-2 arms are far
-behind (70–130 O losses at iteration 50).
+35–50, the other seed-1 arms pass at a few iterations at most, and both seed-2 arms (at the
+default 25 sims, 300 steps) end at 65–76 O losses. Seeds 2 and 3 of the sims-50 arm are the
+next runs.
 
 ## M2–M5 on the Gate-A net (`gate_a_final/final_*_sims25_seed11.log`)
 
@@ -127,9 +135,10 @@ pairs farther apart than different boards).
 
 ## Findings so far
 
-- **Raw Q beats the paper's normalized Q on seed 1** (0/236/20 vs 0/103/153 as O at
-  iteration 60, same seed and steps). Seed 2 has normalized Q slightly ahead at iteration
-  ~50, so this is open.
+- **Raw Q vs the paper's normalized Q is a seed-1 result only**: 0/236/20 vs 0/103/153 as
+  O at iteration 60 on seed 1, 0/180/76 vs 0/191/65 on seed 2 (a tie). Seed 2's two arms
+  never pass an iteration; the seed-to-seed spread is larger than the Q-normalization
+  effect.
 - **More search in self-play (50 sims) and more steps an iteration (600) both help**; low
   exploration temperature (tempPlies=3) helps less.
 - **MuZero bootstraps much slower than AlphaZero here**: AlphaZero's net passed 93% root
