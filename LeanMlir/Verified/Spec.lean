@@ -319,7 +319,7 @@ structure VerifiedNetSpec where
   dropDenom : Nat := 1
   /-- Added to each site's index in the numerator: site `i` keeps with
       `1 − dropRate · (i + dropIdxOffset) / dropDenom`. `0` for every ramp that counts the sites'
-      own blocks from zero; MobileNetV4's paper tier counts its 25-entry block list from one with
+      own blocks from zero; MobileNetV4's paper tier counts its 26-entry block list from one with
       the stem and the fused stage ahead of the first UIB, so UIB `i` is entry `i + 3`. -/
   dropIdxOffset : Nat := 0
   /-- The drop-path rate at the deepest site. -/

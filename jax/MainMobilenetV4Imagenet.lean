@@ -113,9 +113,10 @@ def mobilenetV4ConvMImagenetConfigBench : TrainConfig :=
     imagenet_mobilenetv4_conv_medium_tpu.yaml` (its header names the paper's 500-epoch top-1), read 2026-10-12,
     with tf-models' `augment.py` / `classification_input.py` / `preprocess_ops.py` /
     `lr_schedule.py` / `nn_layers.py` where the yaml inherits a default. Every line below names its
-    source; the net stays timm's `mobilenetv4_conv_medium` (the parity gate's), which pools BEFORE
-    its 1280 head conv where tf-models' list runs that conv at 8×8 and pools after — disclosed, as
-    are the init (timm's, D4) and the decay reaching the classifier bias (the yaml excludes BN only).
+    source; the net stays timm's `mobilenetv4_conv_medium` (the parity gate's). Its head order is
+    tf-models' too: `_mnv4_conv_medium_block_specs` ends `convbn 960`, `gpooling`, `convbn 1280`,
+    so both pool before the 1280 conv (read 2026-10-17; the "8×8 then pool" reading was wrong).
+    Disclosed: the init (timm's, D4) and the decay reaching the classifier bias (the yaml excludes BN only).
     The verified peer is `mnv4Imagenet256FullVerified` (`mnv4in256`). -/
 def mobilenetV4ConvMImagenetConfigFull : TrainConfig :=
   { mobilenetV4ConvMImagenetConfig with
@@ -130,12 +131,12 @@ def mobilenetV4ConvMImagenetConfigFull : TrainConfig :=
       augNearest     := true       -- … at interpolation='nearest' (augment.py `transform`), fill 128 (wrap/unwrap)
       randAugmentFillMean := false -- the 128 fill, not timm's img_mean
       dropPath       := 0.075      -- yaml: stochastic_depth_drop_rate 0.075, flat_stochastic_depth_drop_rate false …
-      dropPathAllBlocks := true    -- … mobilenet.py: rate · (block_idx + 1) / 25 over the whole block list (UIB i at (i + 3) / 25), residual blocks only
+      dropPathAllBlocks := true    -- … mobilenet.py: rate · (block_idx + 1) / 26 over the whole block list, the gpooling entry included (UIB i at (i + 3) / 26), residual blocks only
       imgSize        := 256        -- yaml: input_size [256, 256, 3], train and eval
       testCropRatio  := 0.875      -- image_classification.py: center_crop_fraction 0.875 (the default at 256 would be 256/288)
       evalCropTf     := true       -- classification_input.py: centre crop of the SHORTER side, then resize bilinear
       cropTorchvision := false     -- preprocess_ops.random_crop_image_v2: TF's sample_distorted_bounding_box …
-      cropFallbackCenter := false  -- … with use_image_if_no_bounding_boxes (the whole image on exhaustion; no centre-crop fallback)
+      cropFallbackCenter := true   -- … and classification_input.py's Parser replaces a crop that came back whole with center_crop_image_v2 (0.875 of the shorter side) — tf-models' form, not EfficientNet's (2026-10-17)
       cropMinCovered := 0.08       -- … min_object_covered = area_range[0] = 0.08
       trainResize    := .bilinear  -- image_classification.py: tf_resize_method 'bilinear'
       resizeAntialias := false     -- tf.image.resize's default, which tf-models runs

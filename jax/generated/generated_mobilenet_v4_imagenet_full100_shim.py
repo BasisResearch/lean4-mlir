@@ -271,6 +271,15 @@ def _imagenet_decode_random_crop_flip(image_bytes):
     oy, ox, _ = tf.unstack(bbox_begin)
     th, tw, _ = tf.unstack(bbox_size)
     window = tf.stack([oy, ox, th, tw])
+    # tf-models classification_input: a crop the sampler returned whole becomes
+    # center_crop_image_v2's window — 0.875 of the shorter side, offsets int((shape - size) / 2)
+    # (cropFallbackCenter; CENTER_CROP_FRACTION's default, not the eval's _CROP_PCT).
+    _shf = tf.cast(shape, tf.float32)
+    _csf = 0.875 * tf.minimum(_shf[0], _shf[1])
+    _cs = tf.cast(_csf, tf.int32)
+    window = tf.cond((th == shape[0]) & (tw == shape[1]),
+                     lambda: tf.stack([tf.cast((_shf[0] - _csf) / 2.0, tf.int32), tf.cast((_shf[1] - _csf) / 2.0, tf.int32), _cs, _cs]),
+                     lambda: window)
     img = tf.io.decode_and_crop_jpeg(image_bytes, window, channels=3)
     img = tf.image.resize([img], [_IMG_SIZE, _IMG_SIZE],
                           method=tf.image.ResizeMethod.BILINEAR, antialias=False)[0]

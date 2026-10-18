@@ -34,7 +34,7 @@ The 500-epoch paper tier is `LEAN_MLIR_RECIPE=full` with `accdp8x128wxdropdowd01
 `mnv4in256` renders (`scripts/jobs/mnv4-full-4gpu.conf`; `mnv4Imagenet256FullVerified`): the
 paper's own training config — tensorflow/models' `imagenet_mobilenetv4_conv_medium_tpu.yaml` —
 at its 256², the `full` shim's RandAugment m15 at p 0.7 under TF's mappings, dropout 0.2, drop-path
-0.075 over tf-models' 25-entry ramp on the 18 skip blocks, wd 0.1, BN 0.997 / ε 1e-3, AdamW ε 1e-7,
+0.075 over tf-models' 26-entry ramp on the 18 skip blocks, wd 0.1, BN 0.997 / ε 1e-3, AdamW ε 1e-7,
 the cosine from step 0, no EMA.
 
 A single-card figure off this driver is not comparable to the book's other ImageNet rows, which
@@ -92,7 +92,7 @@ def runMnv4Imagenet (argv : List String) : IO Unit := do
   -- `LEAN_MLIR_RECIPE` picks the NET SPEC, hence the shim and the host-drawn masks: `default` (the
   -- 100-epoch pair, RandAugment m9, dropout 0.1, 224²) or `full` (the paper tier as the paper's own
   -- config has it: 256² — slug `mnv4in256`, its own renders — m15, dropout 0.2, drop-path 0.075
-  -- over tf-models' 25-entry ramp on the skip blocks, BN decay 0.997, the cosine from step 0).
+  -- over tf-models' 26-entry ramp on the skip blocks, BN decay 0.997, the cosine from step 0).
   -- A `drop` variant on `default` would draw no masks (`default` has no drop sites) and `full`
   -- without one would skip the drop-path, so the two must agree.
   let recipe := ((← IO.getEnv "LEAN_MLIR_RECIPE").getD "default").trimAscii.toString

@@ -618,7 +618,22 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
       "    oy, ox, _ = tf.unstack(bbox_begin)\n" ++
       "    th, tw, _ = tf.unstack(bbox_size)\n" ++
       "    window = tf.stack([oy, ox, th, tw])\n" ++
-      (if cfg.cropFallbackCenter then
+      (if cfg.cropFallbackCenter && !cfg.evalCropTfEfficientNet then
+        -- tf-models' `Parser._parse_train_image` (`classification_input.py`): a crop whose shape is
+        -- the original's is replaced by `center_crop_image_v2(image_bytes, image_shape)` at its
+        -- DEFAULT `CENTER_CROP_FRACTION` 0.875 of the shorter side — the size a float cast to int32,
+        -- the offsets `int((shape − size) / 2)` (no `+ 1`; `preprocess_ops.py`). The MobileNetV4
+        -- paper tier's pipeline (2026-10-17; the yaml's `center_crop_fraction` is the eval's, not this).
+        "    # tf-models classification_input: a crop the sampler returned whole becomes\n" ++
+        "    # center_crop_image_v2's window — 0.875 of the shorter side, offsets int((shape - size) / 2)\n" ++
+        "    # (cropFallbackCenter; CENTER_CROP_FRACTION's default, not the eval's _CROP_PCT).\n" ++
+        "    _shf = tf.cast(shape, tf.float32)\n" ++
+        "    _csf = 0.875 * tf.minimum(_shf[0], _shf[1])\n" ++
+        "    _cs = tf.cast(_csf, tf.int32)\n" ++
+        "    window = tf.cond((th == shape[0]) & (tw == shape[1]),\n" ++
+        "                     lambda: tf.stack([tf.cast((_shf[0] - _csf) / 2.0, tf.int32), tf.cast((_shf[1] - _csf) / 2.0, tf.int32), _cs, _cs]),\n" ++
+        "                     lambda: window)\n"
+       else if cfg.cropFallbackCenter then
         -- EfficientNet's `_decode_and_random_crop`: a crop with the original's shape is replaced
         -- by `_decode_and_center_crop`'s window, truncated size and `+ 1` offsets as there.
         "    # EfficientNet: a crop the sampler returned whole becomes the eval centre crop,\n" ++
@@ -2524,11 +2539,13 @@ private def emitForward (spec : NetSpec) (cfg : TrainConfig) : String := Id.run 
   let mut dbi : Nat := 0
   let mut pidx : Nat := 0
   -- tf-models' ramp (`dropPathAllBlocks`) counts every entry of ITS block list — which, against
-  -- this spec's layers, is everything but the pool and the classifier — from one. `li` is the
-  -- layer's position in `spec.layers`; `tfmBlocks` the list's length.
+  -- this spec's layers, is everything but the classifier: the pool is a `gpooling` BlockSpec there
+  -- and `num_blocks = len(self._decoded_specs)` keeps it (Conv-M: 26 entries, not 25 — read off
+  -- `_mnv4_conv_medium_block_specs` 2026-10-17) — from one. `li` is the layer's position in
+  -- `spec.layers`; `tfmBlocks` the list's length.
   let mut li : Nat := 0
   let tfmBlocks := (spec.layers.filter (fun l => match l with
-    | .globalAvgPool | .dense .. => false
+    | .dense .. => false
     | _ => true)).length
   -- A `.convBn` AFTER `.globalAvgPool` (MobileNetV4's timm head: GAP → conv_head → norm_head → act)
   -- runs on the pooled `[B, C]` lifted to `[B, C, 1, 1]`; its BN then reduces over the batch only.

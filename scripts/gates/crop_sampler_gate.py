@@ -16,6 +16,10 @@ Part 2, `cropFallbackCenter` (B0): the trainer's `_imagenet_decode_random_crop_f
 1600×120 JPEG where TF's sampler mostly returns the whole image. Every window must be a sampled
 crop or EfficientNet's centre window (side int(0.875·120) = 105, offsets (H − s + 1) // 2); none may
 be the whole image, and the centre window must occur.
+Part 2b, `cropFallbackCenter` without `evalCropTfEfficientNet` (MobileNetV4's paper tier): the same
+on a 40×1600 JPEG, where TF's sampler at area ≥ 0.08 cannot fit a crop and returns the whole image
+every time. Every window must be tf-models' `center_crop_image_v2` (side int(0.875·40) = 35, offsets
+int((H − 35.0) / 2) — not EfficientNet's `+ 1`, which differs here by a row and a column).
 
 Part 3, `trainResize`: TF's antialiased bilinear and bicubic resize against PIL's on four crop sizes
 down to 224² (what torchvision's and timm's resized_crop run). Pass: mean |Δ| ≤ 0.3 grey levels;
@@ -39,6 +43,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--n", type=int, default=200_000)
 ap.add_argument("--shim", default=os.path.join(GEN, "generated_vit_tiny_imagenet_shim.py"))
 ap.add_argument("--b0", default=os.path.join(GEN, "generated_efficientnet_b0_imagenet.py"))
+ap.add_argument("--mnv4", default=os.path.join(GEN, "generated_mobilenet_v4_imagenet_full.py"))
 args = ap.parse_args()
 
 
@@ -175,6 +180,32 @@ b0_ok = n_centre > 0 and n_whole == 0
 print(f"B0 fallback on {H}x{W}: {n_centre}/{len(seen)} centre windows {centre.tolist()}, "
       f"{n_whole} whole-image  {'✅' if b0_ok else '⛔'}")
 
+# ── Part 2b: MobileNetV4's tf-models fallback (cropFallbackCenter without evalCropTfEfficientNet) ──
+m4_src = block(args.mnv4, "def _imagenet_decode_random_crop_flip", "def _imagenet_decode_center_crop")
+if "_csf = 0.875 * " not in m4_src:
+    sys.exit(f"⛔ {args.mnv4}: no tf-models centre-crop fallback in the train crop (cropFallbackCenter)")
+g = {"tf": tf, "np": np, "os": os, "_IMG_SIZE": 256, "_CROP_PADDING": 32, "_CROP_PCT": 0.875, "_AUG_SEED": None,
+     "_randaugment": lambda x, *a: x}
+exec(m4_src, g)
+H, W = 40, 1600   # area >= 0.08 cannot fit at aspect <= 4/3: the sampler returns the whole image every draw
+jpeg = tf.io.encode_jpeg(tf.zeros([H, W, 3], tf.uint8))
+seen, real = [], tf.io.decode_and_crop_jpeg
+tf.io.decode_and_crop_jpeg = lambda b, w, channels: (seen.append(w.numpy()), real(b, w, channels=channels))[1]
+try:
+    for _ in range(300):
+        g["_imagenet_decode_random_crop_flip"](jpeg)
+finally:
+    tf.io.decode_and_crop_jpeg = real
+seen = np.array(seen)
+csf = 0.875 * min(H, W); s = int(csf)
+tfm_centre = np.array([int((H - csf) / 2), int((W - csf) / 2), s, s])
+enet_centre = np.array([(H - s + 1) // 2, (W - s + 1) // 2, s, s])
+n_tfm = int((seen == tfm_centre).all(1).sum()); n_enet = int((seen == enet_centre).all(1).sum())
+n_whole = int(((seen[:, 2] == H) & (seen[:, 3] == W)).sum())
+m4_ok = n_tfm == len(seen) and n_whole == 0 and (enet_centre != tfm_centre).any()
+print(f"MNv4 fallback on {H}x{W}: {n_tfm}/{len(seen)} tf-models centre windows {tfm_centre.tolist()}, "
+      f"{n_enet} EfficientNet-form {enet_centre.tolist()}, {n_whole} whole-image  {'✅' if m4_ok else '⛔'}")
+
 # ── Part 3: the resize kernels against PIL ──
 from PIL import Image
 rng = np.random.default_rng(0)
@@ -194,4 +225,4 @@ for h, w in ((480, 640), (300, 300), (150, 200), (80, 80)):
 print(f"emitted sampler: {'✅ matches torchvision' if ok else '⛔ differs from torchvision'}")
 for k, v in red.items():
     print(f"CONTROL {k}: {'✅ red, as it must be' if v else '⛔ GREEN on every shape — the gate is blind'}")
-sys.exit(0 if ok and b0_ok and rs_ok and all(red.values()) else 1)
+sys.exit(0 if ok and b0_ok and m4_ok and rs_ok and all(red.values()) else 1)

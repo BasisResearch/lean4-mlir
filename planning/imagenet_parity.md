@@ -493,7 +493,7 @@ did not move).
 | D7 | MNv4 `full` | RandAugment m15 | TF extrapolates; pinned timm clamps at 10 | extrapolates | ✅ 2026-10-12, settled by the paper's own config: tf-models' `augment.py` clamps only at `magnitude_std > 0`, the yaml sets none — m15 extrapolates, as emitted |
 | D8 | MNv4 `full` | RandAugment mapping | timm inc1, or TF's set | timm's inc1 op list with NON-increasing mappings (`_RA_INC` off): at m15 Solarize is a no-op, Posterize keeps 6 bits | ⛔ withdrawn 2026-10-12: the paper's code uses TF's mappings (what is emitted); inc1 at m15 would be Posterize −2 bits and Solarize at −128. The yaml's other RA items landed instead: an identity branch in the draw, `translate_const 100`, nearest resampling, `exclude_ops [Cutout]` |
 | D9 | MNv4 | BN running-stat decay | timm 0.9 | 0.99, both paths (C4 value never chosen) | ✅ 2026-10-12 on `full`: the yaml's `norm_momentum 0.997`, `norm_epsilon 1e-3` (not timm's 0.9 / 1e-5), both paths (`mnv4in256` bakes the ε) |
-| D10 | MNv4 | drop-path ramp | timm idx/23 over all blocks | 0.075·i/20 over 21 UIBs, both paths | ✅ 2026-10-12 on `full`: tf-models' `rate·(block_idx+1)/25` over its 25-entry block list, UIB `i` at `(i+3)/25` (`dropPathAllBlocks`; `dropIdxOffset 3` / `dropDenom 25`) — not timm's /23 either |
+| D10 | MNv4 | drop-path ramp | timm idx/23 over all blocks | 0.075·i/20 over 21 UIBs, both paths | ✅ 2026-10-12 on `full`: tf-models' `rate·(block_idx+1)/25` over its 25-entry block list, UIB `i` at `(i+3)/25` (`dropPathAllBlocks`; `dropIdxOffset 3` / `dropDenom 25`) — not timm's /23 either. **2026-10-17: /26** — the list has 26 entries, the `gpooling` row counts (§11 A1) |
 | D11 | MNv2 | depthwise weight decay | TF-slim skips it (`training_scope`: `l2_regularizer` on `slim.conv2d`, `weights_regularizer=None` on `separable_conv2d`, which `expanded_conv` builds the depthwise from) | decayed, both paths | ✅ 2026-10-12 (`recipe_prep.md` §6): JAX `wdExcludeDepthwise` (the `_wd_mask` leaf test `[C,1,k,k]`), verified `rankWdDecaysNoDw` — the `dw` marker, 122 `%wdz` bindings = 105 one-dimensional + 17 depthwise; `opt_step_tie.py`'s `rmstfwxdw` row measures it on the fixture's `p3 = [7,1,2,2]` |
 | D12 | MNv2 | slim inception colour distortion | `distort_color` in **fast mode** (what `train_image_classifier.py` ran: brightness ±32/255 then saturation ×U(0.5, 1.5), ONE order, clipped — hue, contrast and the four orderings are the non-fast mode) | none | ✅ 2026-10-12: `colorDistortSlim` in the shared `emitDataLoading`, so the trainer and the shim get it together; gate `scripts/gates/color_distort_gate.py` — a numpy twin of TF's `adjust_saturation` kernel (RGB→HSV, S clamped, HSV→RGB) tied first to `tf.image.adjust_saturation` (4.8e-7) and then to the EMITTED function run verbatim with its draws pinned (4.8e-7 at five (δ, f)); found on the way: brightness and saturation commute exactly except through the clamp, so the order control runs at f = 1.5 |
 | D13 | MNv2, B0 | RMSProp lr placement | TF1 `ApplyRMSProp`: `mom <- μ·mom + lr·g/√(ms+ε)`, `var <- var − mom` | outside, both paths | ✅ 2026-10-12 on MNv2: JAX `rmspropTf`; verified `OptRecipe.rmspropTf` (`rmstf` slug) = the new op `rmsBufNextTfF` + `sgdParamF` at a baked `%one`, `Proofs.rmsBufNextTf` / `rmsPropTfStep` with `rmsPropTf_triple_faithful` (rfl), `rmsBufNextTf_smul` (the TF buffer is the other scaled by lr), `rmsPropTfStep_theta_at_const` (the parameters agree at a constant rate) and `rmsPropTfStep_theta_lr_change` (they differ by exactly `μ·b·(lr₁ − lr₀)` when it moves); `opt_step_tie.py` rows `rmswx` (B0's trainer, the rate outside), `rmstfwxdw` / `emarmstfwxdw` (MNv2's) — counterfactuals 9.8e-1 / 5.4e+1. ✅ 2026-10-12 on B0 too (recipe_prep.md §7): `utils.build_optimizer` is `tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon)`; JAX `rmspropTf` on both B0 recipes, the render `efficientnetin_emarmstfdp64dropdowneps0001bf16` (`OptRecipe.rmspropTf` at `enetRmsHyper`), `opt_step_tie.py` row `emarmstfwn` 7.9e-8; the `rmswx` row retired (no reference; 5.19e+01 as the counterfactual) |
@@ -819,3 +819,57 @@ first (the five reruns above) as the template. Scores use timm's protocol (D18),
 * Phase 3 runs in parallel by net. Apart from `Train.lean` the files are mostly disjoint (shared-tree
   claims pattern). B0's D3 starts early because it is the long pole.
 * Phase 4 launches per net as soon as its manifest is green. No waiting for the whole fleet.
+
+## 11. Audit against the upstream sources, 2026-10-17
+
+Read-only, on atlas, with the reference code fetched fresh (raw GitHub, 2026-10-17): TF-slim's
+`nets/mobilenet/README.md` + `train_image_classifier.py`; tensorflow/tpu EfficientNet
+`{main,utils,preprocessing,autoaugment,efficientnet_model,efficientnet_builder}.py`; tf-models
+`imagenet_mobilenetv4_conv_medium_tpu.yaml`, `backbones/mobilenet.py`, `layers/nn_blocks.py`,
+`layers/nn_layers.py`, `ops/augment.py`, `ops/preprocess_ops.py`, `dataloaders/classification_input.py`,
+`configs/{image_classification,backbones}.py`, `modeling/classification_model.py`; facebookresearch/ConvNeXt
+`{main,utils,engine,datasets,optim_factory}.py`, `models/convnext.py`, `TRAINING.md`; DeiT `main.py`. Each
+emitted `full` trainer (`jax/generated/*_imagenet_full.py`) was read against them line by line; the shims
+are emitted from the same config.
+
+**Clean, every row:** MNv2 (the README's command and flag defaults, `training_scope`, `distort_color` fast
+mode, `central_crop`, TF1 `ApplyRMSProp` with the mean-square from 1, EMA `num_updates` form, the decay
+set, the logits conv's init and decay). B0 (the v0 table is identical op for op — 25 sub-policies, 50
+entries, diffed programmatically; level mappings, `translate_const 250`, the sampler with its centre-crop
+fallback, `_decode_and_center_crop`, `MEAN_RGB` on 0..255, `weight_decay · l2_loss` over everything but
+`batch_normalization`, `exponential_decay(staircase=True)`, the warmup, `dense_kernel_initializer`,
+`survival_prob` ramp `1 − 0.2·idx/16`, BN 0.99 / 1e-3). ConvNeXt-T (TRAINING.md's command carries
+`--model_ema true --model_ema_eval true --drop_path 0.1`; no lr auto-scaling in `main.py`; `cosine_scheduler`
+per iteration from 0; `get_parameter_groups` 1-D + `.bias` exempt; timm `Mixup` batch mode with
+`correct_lam`; eval `Resize(int(224/0.875))` + `CenterCrop`). RSB A2/A1 (the `clip` in the LAMB renders is
+timm `Lamb.max_grad_norm = 1.0`, which the JAX trainers also apply — consistent, not a gap). ViT-Ti
+(every DeiT `main.py` default). Also settled: timm's `trunc_normal_(std=.02)` bounds `a = −2, b = 2` are
+ABSOLUTE, so at σ 0.02 it never truncates and `random.normal · 0.02` (ConvNeXt, ViT) is exact; TF's
+`truncated_normal_initializer(0.09)` does truncate at 2σ and MNv2's `truncated_normal(-2, 2) · 0.09` is exact.
+
+**MNv4 `full` (the paper tier), three corrections, none of which the landed 100-epoch pair breaks (both
+halves carry them alike). ✅ All three landed 2026-10-17, uncommitted: `Codegen.lean` counts the pool
+in `tfmBlocks` and emits tf-models' fallback window under `cropFallbackCenter` when
+`evalCropTfEfficientNet` is off (B0's branch unchanged, 64 artifacts byte-identical, the four MNv4
+`full` / `full100` files move); `dropDenom := 26` + guards; `cropFallbackCenter := true` on the `full`
+config; the four confs (`pc_crop … tf-centre`, `dpkeys[1], 0.988462`); book 8926 / 9070 / 9079 / 9097;
+`recipe_prep.md` §5 and R3 annotated; `crop_sampler_gate.py` Part 2b (the MNv4 trainer on a 40×1600 JPEG: 300/300
+windows are tf-models' `[2, 782, 35, 35]`, 0 EfficientNet-form `[3, 783, 35, 35]`, 0 whole-image — run eagerly on
+atlas's CPU TF; the full gate needs `.venv-timm`). Not rerun: the landed `full100` pair carries /25 and no fallback
+on both halves.**
+
+| # | item | tf-models | ours | fix |
+|---|---|---|---|---|
+| A1 | drop-path denominator | `num_blocks = len(self._decoded_specs)` = **26**: `block_spec_decoder` keeps every entry, and `_mnv4_conv_medium_block_specs` is stem, fused_ib, 21 UIBs, `convbn 960`, `gpooling`, `convbn 1280` | 25 — `Codegen.lean` ~2531 filters the pool out of `tfmBlocks`; `dropDenom := 25` (`NetsCore.lean:1618`); book 8926 / 9070 / 9079; four confs and two `dpkeys[1], 0.988000` greps | count the pool (UIB i keeps `1 − 0.075·(i+3)/26`; UIB 1 → 0.988462); host-side on both paths, no render |
+| A2 | train-crop fallback | `Parser._parse_train_image`: a crop that came back whole is replaced by `center_crop_image_v2(image_bytes, image_shape)` at the default 0.875 of the shorter side, offsets `int((shape − size)/2)` | `cropFallbackCenter := false` ("the whole image on exhaustion") and the shim/trainer have no fallback | a tf-models form of the fallback (the emitted `_imagenet_decode_center_crop` arithmetic; the existing branch is EfficientNet's `+1` offsets at `_IMG_SIZE/(_IMG_SIZE+32)`, which at 256 is 0.889, not 0.875), the flag on, `pc_crop` mode, four files re-emit |
+| A3 | head order (R3 of `recipe_prep.md` §10) | the spec list POOLS FIRST: `convbn(1,1,960)`, `gpooling`, `convbn(1,1,1280)` — the same order as timm | disclosed as "tf-models runs the 1280 conv at 8×8 and pools after" (book ~9097, `MainMobilenetV4Imagenet.lean:116`, recipe_prep §5 / §10 R3) | **R3 is void**: no proof work, strike the head-order clause from the disclosure; only the init stays |
+
+R2's read (tf-models' init), for when it is taken: every conv and depthwise kernel is Keras
+`VarianceScaling()` — scale 1, `fan_in`, truncated normal (the depthwise fan_in is k²·C, the NARROW
+fan D4 moved away from, since the net is timm's); the head `Dense` is `ImageClassificationModel.kernel_initializer
+= 'random_uniform'`, U(±0.05); biases 0. tf-models also runs per-core BN (`use_sync_bn` unset) and
+`num_classes 1001`; neither is a recipe row.
+
+Other upstream details read and found consistent with what is emitted: tf-models `RandAugment` draws one op
+per layer over `len(ops) + 1` (the identity branch) and gates the layer at `prob_to_apply`; the per-op
+`U(0.2, 0.8)` it also draws is dead for image ops (`PROB_FUNCS` is `TranslateY_Only_BBoxes` only).

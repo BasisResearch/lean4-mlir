@@ -765,8 +765,11 @@ structure TrainConfig where
       TF-slim and EfficientNet recipes (MobileNetV2, B0) train under TF's sampler and keep it.
       Gate: `scripts/gates/crop_sampler_gate.py`. -/
   cropTorchvision : Bool := false
-  /-- With TF's sampler: EfficientNet's fallback, the eval centre crop (224/256 of the shorter
-      side) where the sampler returned the whole image, in place of the whole image. -/
+  /-- With TF's sampler: the centre-crop fallback where the sampler returned the whole image, in
+      place of the whole image. Under `evalCropTfEfficientNet` it is TF EfficientNet's
+      `_decode_and_center_crop` window (224/256 of the shorter side, truncated, `+ 1` offsets);
+      otherwise tf-models' `center_crop_image_v2` at its default 0.875 (`classification_input.py`
+      replaces a whole-image crop with it — the MobileNetV4 paper tier's pipeline). -/
   cropFallbackCenter : Bool := false
   /-- With TF's sampler: `sample_distorted_bounding_box`'s `min_object_covered`. 0.1 is TF
       EfficientNet's and every existing recipe's; tf-models' `random_crop_image` passes its
@@ -1137,9 +1140,10 @@ structure TrainConfig where
   dropPathOverN : Bool := false
   /-- tf-models' stochastic-depth ramp (`MobileNet._mobilenet_base` with
       `flat_stochastic_depth_drop_rate: false`): `rate · (block_idx + 1) / num_blocks` over EVERY
-      entry of the block list — the stem, the fused stage, the UIBs, the head convs; not the pool,
-      not the classifier — so MobileNetV4-Conv-M's UIB `i` (entry `i + 2` of 25) drops at
-      `0.075 · (i + 3) / 25`, where timm's `linspace` gives `i / 20`. Applied only where the block
+      entry of the block list — the stem, the fused stage, the UIBs, the head convs AND the pool
+      (`gpooling` is a BlockSpec entry; `num_blocks = len(self._decoded_specs)`); not the classifier
+      — so MobileNetV4-Conv-M's UIB `i` (entry `i + 2` of 26) drops at `0.075 · (i + 3) / 26`,
+      where timm's `linspace` gives `i / 20`. Applied only where the block
       skips, as both do. On the UIB path only. Off keeps `i / (N − 1)`, byte for byte. -/
   dropPathAllBlocks : Bool := false
   /-- timm/DeiT ViT weight init, replacing the generic Xavier-uniform for
