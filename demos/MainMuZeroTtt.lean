@@ -1327,8 +1327,16 @@ two different boards {fmt tr[3]! 3}; |v₁ − v₂| {fmt tr[4]! 3}; value sign 
 {fmt l[2]! 5}, {cl} clamped latents"
     return
 
+  -- `sweepN`: the per-iteration sweep on every ⌈nDec / sweepN⌉-th decision position (0: all
+  -- of them; at 4×4 the full 9M is about two core-hours, so `mode=score` keeps the full one)
+  let sweepN := natArg "sweepN" 0
+  let (swIdx, swN) := if sweepN == 0 || sweepN ≥ nDec then (decIdx, nDec) else Id.run do
+    let stride := (nDec + sweepN - 1) / sweepN
+    let mut out := ByteArray.empty
+    for i in [0:nDec / stride] do out := pushU64LE out (readU64 decIdx (i * stride))
+    return (out, nDec / stride)
   let instrument (P : Params) (iter : Nat) (g : StdGen) : IO (String × StdGen) := do
-    let (agree, mse, sign) ← sweep M P table decIdx nDec
+    let (agree, mse, sign) ← sweep M P table swIdx swN
     let (aX, g) ← matchVs M P (perfectPlayer table) root true 0 g
     let (aO, g) ← matchVs M P (perfectPlayer table) root false 0 g
     let (mX, g) ← matchVs M P (perfectPlayer table) root true sims g
