@@ -95,12 +95,25 @@ case "$PLATFORM_BACKEND:$PLATFORM_KIND" in
       PLATFORM_GPU=$(rocm-smi --showproductname 2>/dev/null | sed -n 's/.*Card series:[[:space:]]*//p' | head -1 | _platform_slug) || true
     ;;
   xpu:*)
-    # Intel's OpenXLA PJRT plugin, when the Arc Pro B60 arrives (planning/platform_integration.md §6):
-    # the plugin lives in its own venv, never the pinned .venv, and PJRT_PLUGIN names it until the
-    # path is settled here.
+    # An Intel Arc: Intel's OpenXLA PJRT plugin (jax_oneapi_pjrt, platform `oneapi`) in .venv-xpu,
+    # which deploy/arc_setup.sh makes — never the pinned .venv. The plugin finds its oneAPI runtime
+    # (the jax_oneapi_plugin[with-oneapi] wheels: SYCL, oneDNN, MKL) only through .venv-xpu/lib on
+    # LD_LIBRARY_PATH, so that goes on here. deploy/ARC_B50.md is the runbook; the device index is
+    # ZE_AFFINITY_MASK (run.sh); the GPU slug comes from xpu-smi (arc-pro-b50), which keys the
+    # suite's baseline scripts/platform/expected/xpu-arc-pro-b50.txt.
     PLATFORM_HOST=$(hostname -s 2>/dev/null || echo xpu)
     PLATFORM_DEVVAR=ZE_AFFINITY_MASK
+    PLATFORM_RUNBOOK=deploy/ARC_B50.md
+    if [ -z "${PJRT_PLUGIN:-}" ]; then
+      for _p in .venv-xpu/lib/python3.*/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so; do
+        [ -f "$_p" ] && { PJRT_PLUGIN=$_p; export PJRT_PLUGIN; break; }
+      done
+    fi
     PLATFORM_PLUGIN=${PJRT_PLUGIN:-}
+    [ -x .venv-xpu/bin/python3 ] && PLATFORM_PY=.venv-xpu/bin/python3
+    [ -d .venv-xpu/lib ] && export LD_LIBRARY_PATH="$PWD/.venv-xpu/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    [ -z "$PLATFORM_GPU" ] && command -v xpu-smi > /dev/null 2>&1 && \
+      PLATFORM_GPU=$(xpu-smi discovery 2>/dev/null | sed -n 's/.*Device Name:[[:space:]]*//p' | head -1 | _platform_slug) || true
     ;;
   metal:*)
     # An Apple Silicon Mac: jax-graft's Metal PJRT plugin (the `metal-pjrt-core` wheel) in the

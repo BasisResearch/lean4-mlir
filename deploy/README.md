@@ -16,9 +16,10 @@ page here: it runs `lake run mnist | cifar | imagenette` as the README's tour ha
 | [`DETECTOR.md`](DETECTOR.md) | the VisDrone detector on the Orin | the TensorRT route (`export_onnx.py` → `trtexec`, 55.9 fps) and the IREE route (`build_orin.sh`, ~0.5 fps), the frame golden gate, the two contracts a port breaks silently |
 | [`ORIN_SMOKE_TEST.md`](ORIN_SMOKE_TEST.md) | the Orin | the device brief for the detector's first measurement |
 | [`MAC.md`](MAC.md) | Apple Silicon Mac, macOS 26 (Metal through jax-graft's PJRT plugin) | the MNIST tier on the GPU, rung by rung: the box, the venv, JAX on `mtl`, the shim's smoke test, the data, the Lean build, `lake run mnist`. Works on an M1 Air, MNIST matching CUDA; TODO: full runs |
+| [`ARC_B50.md`](ARC_B50.md) | Intel Arc Pro B50 16 GB (Battlemage, oneAPI through Intel's OpenXLA PJRT plugin, kernel 7.0) | the MNIST and CIFAR tiers on the GPU, rung by rung, and the bring-up in the order it cost time (§1: kernel 7.0, a full-VRAM BAR, Intel's runtime), the suite (§2), the SYCL upload race and the shim's serial-h2d workaround (§3), the open bus drop under load and its pass/fail test (§4). Works on minerva, MNIST and CIFAR matching CUDA, bf16 included; TODO: full Imagenette runs |
 
-ROCm and Intel Arc get a page here when they run; until then their rows in `PLATFORMS.md`
-point at `historical/ROCM.md` and `planning/platform_integration.md` §6.
+ROCm gets a page here when it runs again; until then its row in `PLATFORMS.md` points at
+`historical/ROCM.md`.
 
 ## Scripts
 
@@ -28,6 +29,7 @@ point at `historical/ROCM.md` and `planning/platform_integration.md` §6.
 | [`orin_setup.sh`](orin_setup.sh) | the board | stages that plugin and the Tegra cuDNN under `~/pjrt`, writes `~/pjrt/orin_env.sh` (ORIN.md §2) |
 | [`orin_imagenette.sh`](orin_imagenette.sh) | the board | one Imagenette net on the board's recipe, under a memory cap, relaunching from the checkpoint — the engine behind `lake run imagenette-orin` (ORIN.md §4) |
 | [`mac_setup.sh`](mac_setup.sh) | the Mac | MAC.md's rungs as one resumable script, logged to `runs/<date>-mac-setup/` |
+| [`arc_setup.sh`](arc_setup.sh) | the Arc box | ARC_B50.md's rungs as one resumable script (`check venv jax smoke suite data lean mnist cifar`), logged to `runs/<date>-arc-setup/` with the box's facts in `manifest.txt` |
 | [`export_onnx.py`](export_onnx.py) | the training box | the detector checkpoint → PyTorch replica → ONNX, with the frame-golden gate (DETECTOR.md) |
 | [`orin_detect.py`](orin_detect.py) | the board | the detector runner: TensorRT, ONNX Runtime or IREE backend, `--bench` (DETECTOR.md) |
 | [`build_orin.sh`](build_orin.sh) | the training box | the IREE route: batch-1 StableHLO → vmfb (DETECTOR.md) |

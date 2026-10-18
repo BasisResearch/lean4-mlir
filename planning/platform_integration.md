@@ -87,6 +87,16 @@ the other. The first failing tier narrows the layer further.
 
 ## 6. Intel Arc Pro B60
 
+**Status 2026-10-18: landed, as the Arc Pro B50.** `deploy/ARC_B50.md` is the runbook and
+`deploy/arc_setup.sh` its rungs; the B50 row in `PLATFORMS.md` carries the suite (21 pass, 3
+one-card skips), MNIST and CIFAR matching CUDA, and the seven Imagenette nets at 60 steps, with
+the full runs waiting on a bus drop under load (ARC_B50.md §4). Of the items below: 1 was not
+needed (the shim's unpinned path is what the plugin takes); 2 became the platform-name branch
+that turns on the shim's serial host-to-device uploads, the workaround for a race in Intel's
+SYCL runtime (ARC_B50.md §3); 3 held (PJRT API 0.115 against the header's 0.90, tier 0 reports
+it); 4 is `.venv-xpu`, which `scripts/platform/env.sh`'s `xpu` arm now resolves. The notes below
+are the pre-purchase reading, kept as written.
+
 The shim is plugin-agnostic: `$PJRT_PLUGIN` names any PJRT C API `.so` and the trainers only hand
 it StableHLO text. Places that assume CUDA or ROCm:
 
