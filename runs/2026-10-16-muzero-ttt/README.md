@@ -33,15 +33,17 @@ the 4520 decision positions) and M1 (256 games each side vs perfect, net alone a
 | `n3_run3_q1_s1` | normalized Q | 60 | 6.2 h | 0 / 61 | 0/103/153 |
 | `n3_run3_q0_s2` | raw Q, seed 2 | 60 | 11.6 h | 0 / 61 | 0/180/76 |
 | `n3_run3_q1_s2` | normalized Q, seed 2 | 60 | 11.2 h | 0 / 61 | 0/191/65 |
-| `n3_run1_s1` | normalized Q, AlphaZero's schedule | running (20) | ~15 h | 0 so far | |
+| `n3_run1_s1` | normalized Q, AlphaZero's schedule | 20 | 22.0 h | 0 / 21 | 0/56/200 |
 | `n3_run4_q0_sims50_steps300_s2` | raw Q, 50 sims, seed 2 | 60 | 5.9 h | 12 / 61 | **0/256/0** |
 | `n3_run4_q0_sims50_steps300_s3` | raw Q, 50 sims, seed 3 | 60 | 6.5 h | 11 / 61 | 0/247/9 |
-| `n3_run5_q0_sims50_init{101,201,301}_s{1,2,3}` | raw Q, 50 sims, fresh inits (`initSeed=`) | running | | | |
-| `n3_run4_q0_sims50_steps600_s2` | raw Q, 50 sims, 600 steps, seed 2 | running | | | |
+| `n3_run5_q0_sims50_init101_s1` | raw Q, 50 sims, init 101 | 60 | 6.3 h | 18 / 61 | **0/256/0** |
+| `n3_run5_q0_sims50_init201_s2` | raw Q, 50 sims, init 201 | 60 | 5.9 h | 25 / 61 | **0/256/0** |
+| `n3_run5_q0_sims50_init301_s3` | raw Q, 50 sims, init 301 | 60 | 6.3 h | 34 / 61 | **0/256/0** |
+| `n3_run4_q0_sims50_steps600_s2` | raw Q, 50 sims, 600 steps, seed 2 | 60 | 10.1 h | **27 / 61** | **0/256/0** |
 
 As X every arm is unbeaten with search from about iteration 10. O is the whole story.
 
-## Gate A — passes on two seed-1 arms at the training budget (25 sims)
+## Gate A — passes on two seed-1 arms at the training budget (25 sims); replication below
 
 `gate_a_final/`: the sims-50 arm's iteration-60 net (`*_params.bin`, not tracked) scored by
 `mode=score`. 256 games each side, the perfect player breaking ties at random:
@@ -77,7 +79,22 @@ every net is 0/256/0 as X at every setting):
 | 2 | 0/256/0 | 0/256/0, 0/256/0 | 0/256/0 | 96.33% / 82.90% | 1.64% | 29% of 42 |
 | 3 | 0/256/0 | 0/247/9, 0/245/11 | 0/247/9 | 95.66% / 78.67% | 4.31% | 42% of 45 |
 
-The net alone is unbeaten both sides on all three seeds; with search, two of three. Seed 3's
+The best net of the study is the 50-sim, **600-step** arm on seed 2
+(`gate_a_seeds/final_run4_q0_sims50_steps600_s2_*`): unbeaten alone and at 25 (two seeds)
+and 100 sims; M2 **97.79%** / sign 90.77% (visited 98.80% / 94.01%) — past AlphaZero's
+97.30% root agreement, short of its 99.42% sign; r recall 96.05%, false calls 1.20%; 13
+search-only errors at 25 sims. Its g probe (own lines, whole boards) is 98.2% at k = 1 and
+92.1% at k = 2 — across the nets scored, the better the net, the more of the board g keeps.
+
+**Fresh inits** (`initSeed=` 101 / 201 / 301, play seeds 1 / 2 / 3, `n3_run5_*`): all three
+final nets unbeaten both sides alone, at 25 sims (seeds 11, 12) and at 100 sims. M2 96.90 /
+96.88 / 96.79%, sign 81.3 / 85.3 / 84.2%; r false calls 5.06 / 3.62 / 3.39%; g probe (own
+lines, whole boards) 96.4 / 94.8 / 94.5% at k = 1 and 87.2 / 77.1 / 85.2% at k = 2.
+
+**Tally, 50-sim self-play, 300 steps, final net:** unbeaten alone 6 / 6, with search 5 / 6
+(the shared-init seed 3 drops 9–11 O games). The 600-step arm makes 7 / 7 alone, 6 / 7 with search.
+
+The shared-init seeds alone: with search, two of three. Seed 3's
 search losses come with the highest reward false-call rate of the three (4.31%), and at 100
 sims 54% of its search-only errors have a false win for the mover on the line against 4.2%
 elsewhere. At 25 sims in self-play (seed 2, both Q variants) no iteration passes at all, so

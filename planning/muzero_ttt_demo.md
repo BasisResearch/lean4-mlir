@@ -210,8 +210,10 @@ inputs and outputs, the copying path on both shims), so it runs on XLA or on IRE
   25 / 50 / 100 sims. The same arm's iteration-50 net drops 10 O games at 100 sims; the
   600-step arm's final net is unbeaten at 25 sims, drops 7 / 2 O games at 50 / 100. Across
   seeds (50-sim self-play, play-and-sampling seeds 1–3, same init): net alone unbeaten on
-  3 / 3, with search on 2 / 3 (seed 3 drops 9–11 O games). At 25-sim self-play seed 2 never
-  passes an iteration.
+  3 / 3, with search on 2 / 3 (seed 3 drops 9–11 O games); three fresh inits (`initSeed=`)
+  pass both, at 25 and 100 sims. Tally at 50-sim self-play: 6 / 6 alone, 5 / 6 with search.
+  At 25-sim self-play seed 2 never passes an iteration; the best net (50 sims, 600 steps)
+  reaches M2 97.79% / sign 90.77%, past AlphaZero's 97.30% agreement.
 - The paper's normalized Q against the raw mean: 0/103/153 vs 0/236/20 as O on seed 1,
   0/191/65 vs 0/180/76 on seed 2 — within seed spread.
 - On the Gate-A net: M2 96.26% / sign 84.76%. The board probe fit on h reads h exactly
@@ -325,3 +327,6 @@ Stochastic MuZero, Sampled MuZero, Gumbel MuZero's root selection, reanalyse, Co
   the raw-Q, 50-sim arm, seed 1; M2–M5 scored; the board decodes from g (refit probe) at one
   move and fades with depth. Seed 2
   and the AlphaZero-schedule arm still running.
+- 2026-10-18: Phase 3 replicated: three fresh inits at 50-sim self-play all pass Gate A
+  (25 and 100 sims); the AlphaZero-schedule arm (22 h) never passes. Phase 4 (4×4) waits on
+  the user (§9: ask first).
