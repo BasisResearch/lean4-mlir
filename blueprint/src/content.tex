@@ -2286,7 +2286,7 @@ is that the theorems are over \(\mathbb{R}\) and the GPU runs a finite
 precision; \S~\ref{sec:precision} is the budget that sits between them,
 and Appendix~\ref{app:verification} carries the rest of the accounting.
 
-\prosesection{Recap}
+\section{Recap}
 
 This chapter is the machinery, and every chapter after it is one layer
 dropped into it. The partial-derivative function \(\pdiv\) with its three
@@ -2959,7 +2959,7 @@ theorem is precisely the claim that this text computes
     full accounting.
 \end{itemize}
 
-\prosesection{Recap}
+\section{Recap}
 
 One new operation, and one new habit. The operation is ReLU, whose
 derivative does not exist at zero; its \(\HasVJP\) is built directly from
@@ -4007,7 +4007,7 @@ whole CNN backward is covered, op by op.
     (production: $1{\to}32$ at $28\times28$).
 \end{itemize}
 
-\prosesection{Recap}
+\section{Recap}
 
 Two operations, and the first whole-network theorem with a hypothesis in
 it. The convolution is a linear map, so its backward is unconditional: a
@@ -5442,7 +5442,7 @@ ConvNeXt blocks built on this foundation.
 \end{itemize}
 
 
-\prosesection{Recap}
+\section{Recap}
 
 BatchNorm is the hardest proof in the book and the cleanest statement. Its
 backward is a three-term formula, the direct term, a centering correction and
@@ -7364,7 +7364,7 @@ neither tier has run ---
 \texttt{r50-a2-bf16-4gpu} / \texttt{r50-a1-bf16-4gpu},
 \texttt{r50-a2accum-jax-4gpu} / \texttt{r50-a1-jax-4gpu}.]}
 
-\prosesection{Recap}
+\section{Recap}
 
 The residual block's backward is a sum: the branch's VJP plus the identity,
 or the projection's where the shapes change. That is additive fan-in, and
@@ -9243,7 +9243,7 @@ What the pair does \emph{not} owe: the head order, which the 2026-10-12 reading
 had down as a difference, is tf-models' too (its block list pools before the
 $1280$ convolution).]}
 
-\prosesection{Recap}
+\section{Recap}
 
 Depthwise convolution is the standard convolution with the channel sum
 removed, one kernel per channel, and its backward is two convolutions of its
@@ -10591,7 +10591,7 @@ traffic dominates. The fused block is already in
 the kit as \texttt{.fusedMbConvNB} --- it is MobileNetV4's stage 0
 (\S\ref{sec:mnv4_side_quest}) --- so V2 needs no new primitive, only a spec.
 
-\prosesection{Recap}
+\section{Recap}
 
 Three operations and the end of a hypothesis. The squeeze-and-excitation
 gate multiplies a feature map by a gain computed from its own global
@@ -12069,7 +12069,7 @@ for S and $10.42$ for B.
 \texttt{cnxs-default-jax-4gpu} / \texttt{cnxs-default-emabf16-4gpu},\\
 \texttt{cnxb-default-jax-4gpu} / \texttt{cnxb-default-emabf16-4gpu}.]}
 
-\prosesection{Recap}
+\section{Recap}
 
 GELU is a smooth scalar function, in its tanh approximation and in the exact
 \(x \cdot \Phi(x)\) alike, so its Jacobian is a diagonal like ReLU's
@@ -14326,7 +14326,7 @@ $13.83$\,GiB, so its job raises the allocator fraction to $0.97$
 \texttt{vits-accum-jax-4gpu} / \texttt{vits-default-emabf16-4gpu},\\
 \texttt{vitb-accum-jax-4gpu} / \texttt{vitb-default-emabf16-4gpu}.]}
 
-\prosesection{Recap}
+\section{Recap}
 
 Attention is \(QK^T\), a softmax over its rows, and a product with \(V\).
 The softmax Jacobian is a diagonal minus a rank-one correction, the matrix
