@@ -8902,7 +8902,7 @@ Weight decay  & $4\times10^{-5}$       & $0.1$, skip norm/bias         & $2500\t
 Augmentation  & RRC + hflip            & + RandAugment (N2, m15, p0.7) & heavy learned augmentation, and still no Mixup/CutMix for Conv-M \\
 Label smoothing & none                 & $0.1$                         & standard by 2024 \\
 Stochastic depth & none                & drop-path $0.075$             & linear ramp over the 21 UIB blocks, applied at the 18 that carry a skip \\
-EMA           & none                   & none                          & the \texttt{default} tier adds a warmup-corrected $0.9999$ shadow, BN buffers included per Ch~\ref{chap:se}'s lesson; the paper tier scores the live weights \\
+EMA           & none                   & none                          & the \texttt{default} tier adds a warmup-corrected $0.9999$ shadow, BN buffers included (see the EfficientNet notes); the paper tier scores the live weights \\
 \hline
 \end{tabular}
 \end{table}
@@ -8923,11 +8923,12 @@ config in \texttt{tensorflow/models}
 is that file: $256^2$ input, weight decay $0.1$ off the norms and biases,
 classifier dropout $0.2$, RandAugment $N2$ $m15$ at $p\,0.7$ under
 TensorFlow's own mappings (nearest resampling, fill $128$, the identity op
-in the draw), drop-path $0.075$ ramped as $(i+3)/25$ over the block list and
+in the draw), drop-path $0.075$ ramped as $(i+3)/26$ over the block list and
 applied at the 18 UIBs that carry a skip, BatchNorm at decay $0.997$ and
 $\varepsilon = 10^{-3}$, AdamW at Keras' $\varepsilon = 10^{-7}$, the cosine
-from step $0$ with the five-epoch warmup on top, tf-models' crop sampler and
-its bilinear resize without antialiasing, and no EMA, so the live weights are
+from step $0$ with the five-epoch warmup on top, tf-models' crop sampler with
+its centre-crop fallback and its bilinear resize without antialiasing, and no
+EMA, so the live weights are
 what gets scored, at the paper's $256$ with a $0.875$ centre crop. The yaml
 says $500$ epochs, and the $79.9\%$ headline is that number. The pair this
 section is built on is that recipe with only the length cut, to $100$, on
@@ -9067,7 +9068,7 @@ def mnv4Imagenet256FullVerified : VerifiedNetSpec :=
       slug          := "mnv4in256",
       imageH        := 256,
       imageW        := 256,
-      dropDenom     := 25,              -- tf-models' ramp: UIB i keeps 1 - 0.075 (i+3)/25
+      dropDenom     := 26,              -- tf-models' ramp: UIB i keeps 1 - 0.075 (i+3)/26
       dropIdxOffset := 3 }
 
 #guard mnv4Imagenet256FullVerified.toSpecs == mnv4ImagenetVerified.toSpecs
@@ -9076,7 +9077,7 @@ def mnv4Imagenet256FullVerified : VerifiedNetSpec :=
 \noindent That is \texttt{LeanMlir/Verified/NetsCore.lean}: the same layers
 and the same parameter shapes, with the shim swapped for the \texttt{full}
 recipe's, the classifier dropout at the paper's $0.2$, and stochastic depth
-reaching the 18 skip UIBs at tf-models' ramp over its 25-entry block list.
+reaching the 18 skip UIBs at tf-models' ramp over its 26-entry block list.
 The \texttt{mnv4in256} renders come off the same chain and the same block
 table as \texttt{mnv4in}'s, at final side $8$ instead of $7$.
 
@@ -9094,8 +9095,8 @@ render's bf16 gradient nodes to one device's step at the global batch, and is
 stated at $224^2$: the $256^2$ render has not had it restated, so on this pair
 the data-parallel step is the render's and not a theorem's, and accumulation
 and the two dropouts sit outside the statement as before. Disclosed, on both
-paths: the initialization and the head order are \texttt{timm}'s, and the
-decay reaches the classifier bias. It runs with:
+paths: the initialization is \texttt{timm}'s, and the decay reaches the
+classifier bias. It runs with:
 
 \begin{verbatim}
 lake run mnv4-full-e100-4gpu
@@ -9221,9 +9222,23 @@ $\Delta$              & $+2.40$ & $+0.54$ & $0.00$ & $-0.52$ & $-0.23$ & $+0.16$
 \label{fig:mnv4_paths_curve}
 \end{figure}
 
-\medskip\noindent \textbf{[TODO: the schedule. The same two jobs at $500$
-epochs, \texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, dry-run and
-not run, ${\sim}112 + 78$\,h on the 4060~Ti box, this pair times five.]}
+\medskip\noindent \textbf{[TODO: the schedule, and what the pair above
+still owes the paper's own code. The same two jobs at $500$ epochs,
+\texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, dry-run and not run,
+${\sim}112 + 78$\,h on the 4060~Ti box, this pair times five. In code since
+2026-10-17 and not yet run, so the $100$-epoch pair above predates them on
+both paths: the stochastic-depth ramp over tf-models' $26$-entry block list
+(the \texttt{gpooling} row counts; the pair ran $/25$), and tf-models' centre-crop
+fallback where the crop sampler returns the whole image (the pair fell back to
+the whole image). Still out, disclosed on both paths: the initialization
+(tf-models draws every convolution and depthwise kernel from Keras'
+\texttt{VarianceScaling}, fan-in, truncated normal, and the classifier
+$U(\pm 0.05)$; ours is \texttt{timm}'s), weight decay reaching the classifier
+bias (the yaml exempts BatchNorm alone; ours exempts every bias), and the
+BatchNorm group (per TPU core there, the $512$-image micro-batch here).
+What the pair does \emph{not} owe: the head order, which the 2026-10-12 reading
+had down as a difference, is tf-models' too (its block list pools before the
+$1280$ convolution).]}
 
 \prosesection{Recap}
 
