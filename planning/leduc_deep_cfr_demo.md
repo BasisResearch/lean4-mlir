@@ -229,6 +229,8 @@ ask before any run over ~30 min.
 
 ## 8. Removing blackjack (Phase 5, after the poker section is in)
 
+**Done 2026-10-18**, as listed; the plan moved to `planning/archive/blackjack_dqn_demo.md`.
+
 Delete, not archive (`prune_rule_toc_canonical`): `demos/MainBlackjackDqn.lean`,
 `demos/MainBlackjackEnv.lean`, `LeanMlir/Blackjack.lean`, the `blackjack-env` and
 `blackjack-dqn` targets (`lakefile.lean` ~:717–730), `scripts/demos/blackjack_figure.py`,

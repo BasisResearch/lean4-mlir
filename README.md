@@ -74,10 +74,9 @@ each.
 | signal processing | `lake exe gw-detect` | LIGO O3a strain: the chapter-4 CNN reaches half detection at network SNR 6.91 (false-alarm rate 10⁻²), where the matched filter needs 10.32 | [10.3.5](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:bestiary_signal) |
 | beyond vision | `lake exe nqs-ising gpt` | the transverse-field Ising ground state at N = 12: a GPT wavefunction within 3.3 × 10⁻⁶ of the exact energy | [10.3.6](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:bestiary_beyond) |
 | structure | `lake exe distogram-casp train …`, then `predict` and `scripts/demos/casp16_fold.py` | CASP16: a 5.4M-parameter distogram ResNet on frozen ESM-2 3B folds 78 evaluation units to TM-score 0.646, against ESMFold's 0.778 on the same language model and the field's median model at 0.892 | [10.3.7](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:bestiary_structure) |
-| blackjack | `lake exe blackjack-dqn` (`blackjack-env` is the environment and its exact instrument) | Double DQN agrees with the exact blackjack policy on 188 of 200 decision states | [10.4.1](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:bestiary_rl) |
-| Pong | `lake exe pong-dqn mode=pixels k=4` (`pong-env` for the baselines) | DQN from four frames on a Pong written in Lean: +15.5 points a game over three seeds, above its own six-number state twin's +13.5 and the scripted tracker's +11.2 | [10.4.2](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:game_pong) |
-| poker | `lake exe deep-cfr-leduc` (`leduc-env` for the exact instrument) | Deep CFR on Leduc hold'em, scored by the exact best response: exploitability 0.11–0.23 chips a hand over three seeds and two readouts, against 2.37 for the uniform policy, 1.05 for an honest script and 0.0002 for CFR+ | [10.4.3](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:game_leduc) |
-| tic-tac-toe | `lake exe alphazero-ttt n=3` (`ttt-env` for the solved game) | AlphaZero's network alone agrees with the solved game on 97.3 % of 3×3 and 99.4 % of 4×4 positions and never loses to a perfect player at either; at 5×5, four in a row, 87.4 % and unbeaten as X | [10.4.4](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:game_ttt) |
+| Pong | `lake exe pong-dqn mode=pixels k=4` (`pong-env` for the baselines) | DQN from four frames on a Pong written in Lean: +15.5 points a game over three seeds, above its own six-number state twin's +13.5 and the scripted tracker's +11.2 | [10.4.1](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:game_pong) |
+| poker | `lake exe deep-cfr-leduc` (`leduc-env` for the exact instrument) | Deep CFR on Leduc hold'em, scored by the exact best response: exploitability 0.11–0.23 chips a hand over three seeds and two readouts, against 2.37 for the uniform policy, 1.05 for an honest script and 0.0002 for CFR+ | [10.4.2](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:game_leduc) |
+| tic-tac-toe | `lake exe alphazero-ttt n=3` (`ttt-env` for the solved game) | AlphaZero's network alone agrees with the solved game on 97.3 % of 3×3 and 99.4 % of 4×4 positions and never loses to a perfect player at either; at 5×5, four in a row, 87.4 % and unbeaten as X | [10.4.3](https://lean.brettkoonce.com/blueprint/chap-bestiary.html#sec:game_ttt) |
 
 Everything else in the repository is the lab — the ablation and robustness
 exes, the tests, the Bestiary — the evidence behind these numbers, one level down. `lakefile.lean`
@@ -123,7 +122,7 @@ Each directory has a README that says what is in it and where to start.
 
 - [`LeanMlir/`](LeanMlir/) — the library; [`LeanMlir/Proofs/`](LeanMlir/Proofs/) — the proofs,
   chapter by chapter; [`verified_mlir/`](verified_mlir/) — the committed renders the tiers train on
-- [`apps/`](apps/) — one `Main` per exe, by tier; [`demos/`](demos/) — Chapter 10's sixteen demos,
+- [`apps/`](apps/) — one `Main` per exe, by tier; [`demos/`](demos/) — Chapter 10's fifteen demos,
   in its order; [`Bestiary/`](Bestiary/) — 46 read-only `NetSpec` catalogue entries, Part 2 of
   the book
 - [`jax/`](jax/) — the JAX reference implementations the ImageNet path is ported from, and the

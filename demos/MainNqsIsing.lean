@@ -24,8 +24,8 @@ public import LeanMlir.CliArgs
     **The gradient is one host weight per configuration.**
     ∂E/∂θ = 2 Σ_s p_s (E_loc(s) - E) ∂_θ log ψ(s). The train step is the rank-2
     DDPM MSE block, whose gradient on the output is 2(out - y)/(M·nOut); setting
-    y = out - M·w/2 makes the block's output cotangent exactly w. The blackjack
-    DQN did the same trick with a Bellman target; here the "target" is the
+    y = out - M·w/2 makes the block's output cotangent exactly w. The Pong
+    DQN does the same trick with a Bellman target; here the "target" is the
     model's own local energies.
 
     Three ansätze, one exe:

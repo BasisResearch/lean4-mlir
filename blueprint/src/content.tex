@@ -328,8 +328,8 @@ AlphaZero, one for Mamba, never more than three. The entries are grouped
 by what they are for --- vision classifiers, detection, segmentation,
 language, generation, physics, signal processing --- and eleven of the
 groups carry a demo trained on a dataset from that field; a closing section on
-game theory trains three games --- blackjack, Pong, tic-tac-toe --- against their
-exact solutions, with the AlphaGo family as its catalogue.
+game theory trains three games --- Pong, Leduc poker, tic-tac-toe --- against their
+exact solutions, with the AlphaGo family and Deep CFR as its catalogue.
 
 \textbf{Appendices.} Data availability (A), toolchain setup (B), and
 the complete proof framework as a reference (C).
@@ -17526,8 +17526,8 @@ each panel is the arm trained on the noise that panel tests it in.}
 \end{figure}
 
 \paragraph{A CNN against the matched filter on LIGO strain.} This demo
-has a theorem for a ceiling the way blackjack has value
-iteration and the Boltzmann generator has quadrature. Advanced LIGO's strain
+has a theorem for a ceiling the way Leduc poker has its best response
+(\S\ref{sec:game_leduc}) and the Boltzmann generator has quadrature. Advanced LIGO's strain
 is a time series at audio rates, and a binary-black-hole merger is a chirp
 that sweeps from 25 to a few hundred Hz in under a second. The Gravitational
 Wave Open Science Center publishes every observing run under CC BY 4.0
@@ -17748,7 +17748,7 @@ change relative to the TinyGPT demo:
     squared-error block of the diffusion demo
     (\S~\ref{sec:bestiary_diffusion}) with the target set to
     $\mathrm{out} - M w / 2$, so the block's output cotangent is exactly
-    $w$: the blackjack DQN's trick (\S~\ref{sec:bestiary_rl}) with a
+    $w$: the Pong DQN's trick (\S~\ref{sec:game_pong}) with a
     physical target, and zero new codegen. At $N = 12$ the sum runs over all
     $4{,}096$ configurations and the gradient is exact; at $N = 64$ the MLP
     and ViT sample by Metropolis on $1{,}024$ chains and the GPT draws
@@ -18227,144 +18227,39 @@ and \S~\ref{layer:structureModule} document the bundling explicitly.
 \section{Bestiary entries: game theory}
 \label{sec:bestiary_game_theory}
 
-Four games written in Lean, each with its own exact instrument, on one loop: the
+Three games written in Lean, each with its own exact instrument, on one loop: the
 reward is the game's, the data is manufactured by playing it, the target is the model's
-own later estimate, and the ceiling is exact where the game allows it --- blackjack's
-by value iteration over its 200 states, poker's by the best response to the trained
-strategy, tic-tac-toe's by the solved game --- and, for Pong, a twin fed the six
-numbers the renderer draws from. The ladder runs tabular Q, then a DQN on a table's
-worth of states, then the same DQN from pixels, then regret minimisation under hidden
-information, then self-play and tree search; every trained rung goes through the
-squared-error block of the diffusion demo with a host-built target, and none of it is
-new codegen. The catalogue beside the demos is the AlphaGo family and Deep CFR, the
-same loops at the scale that made them famous.
-
-\subsection{Blackjack --- DQN against value iteration}
-\label{sec:bestiary_rl}
-
-Figure~\ref{fig:blackjack_chart} is the ceiling: the exact policy, by value
-iteration.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{demos/blackjack_chart.png}
-\caption{The exact hit/stick policy for blackjack under the Sutton \& Barto
-rules, player total against the dealer's showing card, hard hands and soft.
-Rings mark the twelve cells where the trained DQN disagrees with the theorem,
-dots the eight where tabular Q does. Both learners miss on the knife edges:
-hard 12 against a 4, where hitting and sticking differ by a quarter of a cent
-a hand, and the soft-18 row, where the casino card is wrong too.}
-\label{fig:blackjack_chart}
-\end{figure}
-
-\paragraph{DQN on blackjack.} The \texttt{demos/MainBlackjackDqn.lean} trainer
-is Mnih et al.'s DQN (2015,
-\href{https://www.nature.com/articles/nature14236}{Nature}) on the blackjack of
-Sutton \& Barto's Example~5.1, the game written in Lean
-(\texttt{LeanMlir/Blackjack.lean}) with its RNG threaded through so every hand
-replays from a seed. The Q-function is a three-layer \texttt{.dense} net on a
-29-float one-hot of the observation (player total, dealer's card, usable ace),
-$6{,}210$ parameters. Three things change relative to everything trained so far:
-
-\begin{itemize}
-  \item \textbf{There is no dataset.} Transitions come from playing the game
-    $\varepsilon$-greedily against the current network and are kept in a
-    replay ring of 20k; each gradient step samples 128 of them. The book's
-    other demos read their data from disk; this one manufactures it.
-  \item \textbf{The target is the model's own prediction, one step later.}
-    $y_a = r + \gamma \max_{a'} Q_{\text{target}}(s', a')$, with the target
-    network a copy of the online parameters refreshed every 500 updates. The
-    loss is the squared-error block the DDPM demo trains with
-    (\S~\ref{sec:bestiary_diffusion}): the host runs the eval graph on the
-    batch, writes $y = Q(s,\cdot)$, overwrites the taken action's slot with the
-    Bellman target, and hands $y$ in. The gradient is then zero on the untaken
-    slot and a per-sample TD error on the taken one. Zero new codegen.
-  \item \textbf{The instrument is a solved game.} Blackjack under these rules is
-    a 200-state, two-action MDP with known odds, so value iteration gives the
-    optimal policy and the exact mean reward of any policy, in
-    milliseconds. Every thousand updates the greedy policy is read off the
-    network over all 280 observations in one batched forward and scored
-    exactly. The ceiling of the training curve is a theorem about the rules,
-    not a number somebody measured.
-\end{itemize}
-
-\paragraph{Every arm scored against the theorem.} Mean reward per hand; exact
-by value iteration, Monte Carlo over $10^6$ hands with its standard error,
-and agreement with the optimum over the 200 decision states. The two value
-columns of Table~\ref{tab:blackjack_policies} agree within two standard errors
-on every row, which is the check that the simulator and the DP describe the
-same game.
-
-\begin{table}[H]
-\centering
-\caption{Blackjack policies against value iteration, scored exactly and by Monte Carlo.}
-\label{tab:blackjack_policies}
-\begin{tabular}{@{}l r r r@{}}
-\hline
-policy & exact & Monte Carlo, $10^6$ hands & agrees / 200 \\
-\hline
-random                                   & $-0.3942$ & $-0.3956 \pm 0.0009$ & 110 \\
-threshold heuristic (hit below 18, $p=0.8$) & $-0.2403$ & $-0.2395 \pm 0.0009$ & 164 \\
-published casino table                   & $-0.0967$ & $-0.0962 \pm 0.0010$ & 162 \\
-tabular Q, $10^6$ hands                  & $-0.0440$ & $-0.0425 \pm 0.0010$ & 192 \\
-DQN, Double, 200k updates                & $-0.0476$ & $-0.0471 \pm 0.0010$ & 188 \\
-exact optimum                            & $-0.0431$ & $-0.0419 \pm 0.0010$ & 200 \\
-\hline
-\end{tabular}
-\end{table}
-
-\noindent The published table is the strategy card the first book shipped as
-its ceiling. It sits four cents a hand below the optimum
-because it is for a different game --- doubling, splitting and a dealer who
-plays differently --- and it ignores the usable ace entirely. Tabular Q needs
-a visit-count step size to get past $177/200$; a constant one chases the
-moving bootstrap target forever. Figure~\ref{fig:blackjack_chart} is the
-policy itself, cell by cell.
-
-
-\paragraph{The DQN's own table.} Table~\ref{tab:blackjack_dqn} is one seed per
-arm, exact value at the end of training; the gate is the DQN within $0.01$ of
-tabular Q's exact value, which every 200k-update arm passes.
-
-\begin{table}[H]
-\centering
-\caption{The DQN arms at the end of training: exact value and agreement with the optimal policy.}
-\label{tab:blackjack_dqn}
-\begin{tabular}{@{}l r r r r@{}}
-\hline
-arm & updates & hands & exact & agrees / 200 \\
-\hline
-plain                          &  50k &  34k & $-0.0578$ & 175 \\
-plain                          & 200k & 133k & $-0.0503$ & 185 \\
-Double DQN                     & 200k & 132k & $-0.0476$ & 188 \\
-plain, lr $10^{-3} \to 10^{-4}$ & 200k & 132k & $-0.0530$ & 178 \\
-Double, lr $10^{-3} \to 10^{-4}$ & 200k & 132k & $-0.0503$ & 187 \\
-\hline
-\end{tabular}
-\end{table}
-
-\noindent Double DQN (van Hasselt et al.\ 2016,
-\href{https://arxiv.org/abs/1509.06461}{arXiv:1509.06461}: argmax from the
-online net, value from the target) is the best of the four, and the
-learning-rate decay does nothing, because the late-training jitter is not in
-the step size: it is the greedy readout flipping knife-edge cells whose two
-actions are worth the same to three decimals. The 1000-update readouts move by
-$\pm 0.005$ late in every arm, so the gap between the first two 200k rows is
-inside that. Ten minutes on one card at 6\% utilisation, each.
+own later estimate, and the ceiling is exact where the game allows it --- poker's by
+the best response to the trained strategy, tic-tac-toe's by the solved game --- and,
+for Pong, a twin fed the six numbers the renderer draws from. The ladder runs a DQN
+from pixels, then regret minimisation under hidden information, then self-play and
+tree search; every rung goes through the squared-error block of the diffusion demo
+with a host-built target, and none of it is new codegen. The catalogue beside the
+demos is the AlphaGo family and Deep CFR, the same loops at the scale that made them
+famous.
 
 \subsection{Pong --- DQN from pixels against the six-number state}
 \label{sec:game_pong}
 
-\texttt{demos/MainPongDqn.lean} is the same loop on a Pong written in Lean
+\texttt{demos/MainPongDqn.lean} is Mnih et al.'s DQN (2015,
+\href{https://www.nature.com/articles/nature14236}{Nature}) on a Pong written in Lean
 (\texttt{LeanMlir/Pong.lean}: an $84 \times 84$ field, two-pixel paddles, frame skip 4,
 a scripted opponent that tracks the ball at 1.5 pixels a frame after a four-frame
 delay, a game to 21, deterministic from a seed, five million raw frames a second with
-no emulator and no ROM), under Mnih et al.'s 2015 recipe: a replay of 100k
-transitions, $\varepsilon$ from 1 to 0.1 over the first 100k agent steps, a target
-network copied every 1,000 updates, one gradient step per four agent steps, batch 32,
-Adam at $10^{-4}$, $\gamma = 0.99$, 500k agent steps --- two million frames. The
-Bellman target goes into the taken action's slot of the squared-error block exactly as
-in blackjack. Two things change: the observation is an image, so the Q-function is
+no emulator and no ROM). Three things change relative to everything trained so far.
+There is no dataset: transitions come from playing the game $\varepsilon$-greedily
+against the current network, $\varepsilon$ from 1 to 0.1 over the first 100k agent
+steps, into a replay of 100k transitions from which each gradient step samples 32, one
+step per four agent steps, Adam at $10^{-4}$, 500k agent steps --- two million frames.
+The target is the model's own prediction one step later,
+$y_a = r + \gamma \max_{a'} Q_{\text{target}}(s', a')$ at $\gamma = 0.99$, with the
+target network a copy of the online parameters refreshed every 1,000 updates. And the
+loss is the squared-error block the DDPM demo trains with
+(\S~\ref{sec:bestiary_diffusion}): the host runs the eval graph on the batch, writes
+$y = Q(s,\cdot)$, overwrites the taken action's slot with the Bellman target and hands
+$y$ in, so the gradient is zero on the untaken slots and a per-sample TD error on the
+taken one. Zero new codegen. Two things are the pixels' own: the observation is an
+image, so the Q-function is
 Chapter~3's CNN kit at $84 \times 84$ (three convolutions with pooling standing in for
 the paper's strides, a dense 512, three outputs; 1.7M parameters), and one frame does
 not contain the ball's velocity, so the input is a stack of the last four. The bracket
@@ -18555,11 +18450,11 @@ distribution $\pi$ and the outcome $z$ are the targets, and the next iteration p
 with the new network. The network is AlphaGo's plain convolution + ReLU stack
 (\texttt{Bestiary/AlphaGo.lean}) at tic-tac-toe width, with the policy and value
 heads merged into one dense output of $n^2 + 1$ slots: 78k parameters at
-$3 \times 3$, 155k at $4 \times 4$. Three things change relative to the two DQNs:
+$3 \times 3$, 155k at $4 \times 4$. Three things change relative to Pong's DQN:
 
 \begin{itemize}
   \item \textbf{The loss has two heads and the codegen has one.} The paper's
-    $(z - v)^2 - \pi^{\top} \log p$ goes through the squared-error block blackjack's
+    $(z - v)^2 - \pi^{\top} \log p$ goes through the squared-error block Pong's
     Bellman target went through: the host runs the eval graph on the batch and writes
     $y = \mathrm{out} - \tfrac{n_{\mathrm{out}}}{2}\, g$, with
     $g = \mathrm{softmax}(p) - \pi$ on the $n^2$ policy slots and
@@ -18571,7 +18466,7 @@ $3 \times 3$, 155k at $4 \times 4$. Three things change relative to the two DQNs
     \texttt{Bestiary/AlphaZero.lean}'s convolution--BatchNorm--residual body and
     diverged at iteration 11. BatchNorm's batch statistics over nine binary cells
     are a liability, and with BatchNorm the eval forward the loss reads and the
-    train step's forward are different functions. Blackjack and Pong made the same
+    train step's forward are different functions. Pong made the same
     choice for the same reason.
   \item \textbf{The instrument is the solved game.} A position is a base-3 number
     over the cells, so a memoised minimax fills one byte per index with the exact

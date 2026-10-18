@@ -10,7 +10,7 @@ public import LeanMlir.CliArgs
 
     Mnih et al. 2015's loop on the game in `LeanMlir/Pong.lean`: frame skip 4,
     replay, a target network, ε-greedy, one gradient step per four agent steps.
-    The loss is blackjack's: the rank-2 DDPM MSE block with the Bellman target
+    The loss is the rank-2 DDPM MSE block with the Bellman target
     built on the host, the net's own prediction kept in the two untaken slots.
 
     The replay stores one observation per agent step and rebuilds the input by

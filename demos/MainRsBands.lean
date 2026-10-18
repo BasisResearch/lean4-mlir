@@ -17,7 +17,7 @@ public import LeanMlir.SmallClassifier
     `ms10` (the ten 10 m / 20 m bands), `all` (13), `ir` (red edge, NIR and SWIR — no
     visible light). Every arm gathers its planes out of the same 13-plane records by
     `ByteArray.extract`, so one file per part serves all five; the ordinary
-    cross-entropy train step with int32 labels, the blackjack/2-D host loop, no
+    cross-entropy train step with int32 labels, the 2-D demo's host loop, no
     `DatasetKind`, no new codegen. The Brazil parts (`scripts/datasets/preprocess_rs_brazil.py`) are
     scored with the same weights and written as logits for `scripts/demos/rs_score.py`, which
     collapses the ten European classes into the seven the two continents share.

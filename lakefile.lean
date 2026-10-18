@@ -748,23 +748,14 @@ lean_exe «diffusion-2d» where
   root := `demos.MainDiffusion2d
   moreLinkArgs := lowererLink
 
--- The two RL environments of the DQN sidequests: pure Lean, no FFI, no GPU. Each
--- runs its own gates — the exact DP instrument and the four arms for blackjack, the
--- scripted baselines and a rendered frame strip for Pong.
-lean_exe «blackjack-env» where
-  root := `demos.MainBlackjackEnv
-
+-- The RL environment of the DQN sidequest: pure Lean, no FFI, no GPU. It runs its
+-- own gates — the scripted baselines and a rendered frame strip.
 lean_exe «pong-env» where
   root := `demos.MainPongEnv
 
--- Blackjack: the DQN on the XLA path, zero new codegen (the
--- rank-2 DDPM MSE block is the loss). Scores its greedy policy exactly.
-lean_exe «blackjack-dqn» where
-  root := `demos.MainBlackjackDqn
-  moreLinkArgs := lowererLink
-
--- Pong: the same loop on the Lean Pong, the six-number state
--- (the ceiling row) and 84 × 84 frames through Chapter 3's CNN. Zero new codegen.
+-- Pong: Mnih et al.'s DQN on the Lean Pong, zero new codegen (the rank-2 DDPM MSE
+-- block is the loss, the Bellman target written in by the host): the six-number state
+-- (the ceiling row) and 84 × 84 frames through Chapter 3's CNN.
 lean_exe «pong-dqn» where
   root := `demos.MainPongDqn
   moreLinkArgs := lowererLink

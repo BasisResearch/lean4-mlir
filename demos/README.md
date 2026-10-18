@@ -6,7 +6,7 @@ extend the same codegen path into the domains Chapter 10 of the book walks — r
 (detection, industrial inspection, people, agriculture, segmentation), then beyond it
 (language, diffusion, physics, signal processing, a quantum ground state, a protein's
 shape), and last the games
-(blackjack, Pong, tic-tac-toe, the book's closing section) — in the chapter's order, each under
+(Pong, Leduc poker, tic-tac-toe, the book's closing section) — in the chapter's order, each under
 the chapter's figure. Nothing here changes the codegen: every
 demo is the ordinary train step on a new input, loss or host loop.
 
@@ -685,15 +685,15 @@ coupling: 233×). Numbers, gates and every artifact in
 A chapter-4 CNN against the detector its field already has. Advanced LIGO's strain is a time
 series at audio rates; a binary-black-hole merger is a chirp sweeping from 25 Hz to a few hundred
 in under a second; and the detector to beat is the matched filter, whose detection probability in
-stationary Gaussian noise is a closed form (a Marcum Q-function). So, like blackjack's value
-iteration and the Boltzmann generator's quadrature, this demo has a theorem for a ceiling.
+stationary Gaussian noise is a closed form (a Marcum Q-function). So, like Leduc poker's best
+response and the Boltzmann generator's quadrature, this demo has a theorem for a ceiling.
 
 `MainGwDetect.lean` (`gw-detect`). The net is `CIFAR-CNN8-wide-BN` from chapter 4 with a
 two-channel stem and a two-way head, 0.83M parameters, on a 2 × 64 × 128 input: one constant-Q
 spectrogram per detector (64 log-spaced bands over 20–500 Hz, 128 frames) of a whitened 2 s
 window. Adam at 10⁻³ with one warm-up epoch and cosine decay, batch 64, six epochs — under two
-minutes on one card. Zero new codegen: the ordinary train step with integer labels, the
-blackjack/2-D pattern of a host loop around it. See `planning/gw_detection_demo.md`.
+minutes on one card. Zero new codegen: the ordinary train step with integer labels under a
+host loop, as the 2-D diffusion demo. See `planning/gw_detection_demo.md`.
 
 ```bash
 python3 scripts/datasets/preprocess_gw.py --pairs=26 --val-pairs=6 --out=data/gw    # O3a H1+L1 from GWOSC, whitened; IMRPhenomD chirps injected at SNR 4–20
@@ -763,7 +763,7 @@ at N = 12, the Jordan-Wigner free-fermion solution at N = 64.
 `planning/transformer_wavefunction_demo.md`. Zero new codegen: the energy
 gradient ∂E/∂θ = 2 Σ_s p_s (E_loc(s) − E) ∂_θ log ψ(s) is one host weight per
 configuration, handed to the rank-2 DDPM MSE block as the target y = out − M·w/2
-(the blackjack DQN's trick with a physical target).
+(the Pong DQN's trick with a physical target).
 
 ```bash
 python3 scripts/demos/nqs_metrics.py gate                              # enumeration vs Jordan-Wigner, 7e-15
@@ -936,21 +936,19 @@ moment and checks eval ≡ train. Queue scripts and every arm's logs:
 
 ---
 
-## Reinforcement learning — blackjack from tabular Q to DQN, the Pong environment, Deep CFR on Leduc poker, and AlphaZero on tic-tac-toe
+## Reinforcement learning — DQN from pixels on Pong, Deep CFR on Leduc poker, and AlphaZero on tic-tac-toe
 
-Four games written in Lean, each with its own exact instrument — the book's closing
+Three games written in Lean, each with its own exact instrument — the book's closing
 section, Bestiary entries: game theory. They are the reinforcement-learning
-ladder of `planning/blackjack_dqn_demo.md`,
-`planning/pong_dqn_demo.md`, `planning/leduc_deep_cfr_demo.md` and
-`planning/alphazero_ttt_demo.md`: rung 1 tabular Q on blackjack, rung 2 the blackjack
-DQN, rung 3 DQN from pixels on Pong, rung 4 regret minimisation under hidden information
-on Leduc hold'em, rung 5 self-play and tree search on tic-tac-toe — every trained rung
-through the stack on the rank-2 DDPM MSE block, zero new codegen.
+ladder of `planning/pong_dqn_demo.md`, `planning/leduc_deep_cfr_demo.md` and
+`planning/alphazero_ttt_demo.md`: rung 1 DQN from pixels on Pong, rung 2 regret
+minimisation under hidden information on Leduc hold'em, rung 3 self-play and tree search
+on tic-tac-toe — every rung through the stack on the rank-2 DDPM MSE block, zero new
+codegen. (A blackjack rung, tabular Q and a DQN against value iteration, opened the
+ladder until 2026-10-18; `runs/2026-09-11-blackjack-dqn/` is its record and
+`planning/archive/blackjack_dqn_demo.md` its plan.)
 
 ```bash
-lake exe blackjack-env 1000000 10000000   # Monte Carlo hands, tabular-Q hands
-lake exe blackjack-env play 7 hs          # replay a hand from a seed with the DP's exact Q-values
-lake exe blackjack-dqn 200000 1 double    # updates, seed; flags: double, lrdecay, tag=<name>
 lake exe pong-env 100                     # games per baseline arm
 lake exe pong-dqn mode=pixels k=4         # DQN from frames; mode=state is the ceiling row
 lake exe ttt-env n=4                      # the solved game: counts, scripted pairings, the solver's gates
@@ -961,44 +959,6 @@ lake exe leduc-env r=13                   # the same instrument on a 26-card dec
 lake exe deep-cfr-leduc                   # Deep CFR, scored by exact exploitability; r=, T=, K=, seed=, tag=
 ```
 
-The environment, the DP instrument and tabular Q live in
-`LeanMlir/Blackjack.lean`, shared by both blackjack exes. It follows
-Gymnasium's Blackjack-v1 with `sab=True` (the Sutton & Barto rules). A value iteration over the 200 decision states gives the
-exact optimum, **−0.0431 per hand**, and the exact value of any policy, so
-every arm is scored without sampling error; the Monte Carlo column is the
-cross-check that the environment and the DP describe the same game.
-
-| arm | exact value / hand | agrees with optimum |
-|---|---|---|
-| random | −0.394 | 110 / 200 |
-| threshold heuristic | −0.240 | 164 / 200 |
-| the old demo's published table | −0.097 | 162 / 200 |
-| tabular Q, 10⁷ hands, step max(0.001, 1/(1+N)) | −0.044 | 195 / 200 |
-| DQN, Double, 200k updates (`blackjack-dqn`) | −0.048 | 188 / 200 |
-| exact optimum | −0.043 | 200 / 200 |
-
-`MainBlackjackDqn.lean` is the 6,210-parameter dense net on a 29-float one-hot,
-XLA backend, one GPU, about ten minutes for 200k updates. The host writes the
-Bellman target into the taken action's slot of the net's own prediction and
-hands that to the DDPM MSE train step, so the untaken slot's gradient is zero;
-the greedy policy is read off the net every 50 updates for acting and scored
-exactly every 1000. Run logs, curves and the figure script's inputs are in
-`runs/2026-09-11-blackjack-dqn/`; `scripts/demos/blackjack_figure.py` draws the
-book's chart.
-
-![The exact hit/stick policy for blackjack, and where the learners disagree](figures/blackjack_chart.png)
-
-The exact hit/stick policy under the Sutton & Barto rules, player total against the dealer's
-showing card, hard hands and soft. Rings mark the twelve cells where the trained DQN disagrees
-with the theorem, dots the eight where tabular Q does. Both learners miss on the knife edges:
-hard 12 against a 4, where hitting and sticking differ by a quarter of a cent a hand, and the
-soft-18 row, where the casino card is wrong too.
-
-The DP's hit/stick chart is Sutton & Barto's Figure 5.2. The published table
-from the old Swift demo is a casino-rules chart whose rows for 10 and 11 are a
-doubling table transcribed as "stand"; the instrument found that on its first
-run.
-
 `MainPongEnv.lean` is Pong in ~150 lines: 84×84 render, frame skip 4, a scripted
 opponent with a speed and a reaction-delay knob, deterministic from a seed, five
 million raw frames per second single-threaded. Random scores −17.9 per game, a
@@ -1007,8 +967,8 @@ network will see is written to `.lake/build/pong_stack.pgm`.
 
 `MainPongDqn.lean` is Mnih et al.'s loop on that Pong: replay 100k, ε 1 → 0.1 over 100k
 agent steps, target copy every 1,000 updates, one update per four agent steps, batch 32,
-Adam 1e-4, 500k agent steps (2M frames); `mode=state` is the six-number twin (the
-blackjack MLP with six inputs), `mode=pixels k=4` chapter 3's CNN kit at 84×84 on a stack
+Adam 1e-4, 500k agent steps (2M frames); `mode=state` is the six-number twin (a
+6→64→64→3 MLP), `mode=pixels k=4` chapter 3's CNN kit at 84×84 on a stack
 of four frames, `k=1` the ablation. Runs in `runs/2026-09-25-pong-dqn/`.
 
 ![Pong: one four-frame input as the net saw it, and the learning curves](figures/pong_dqn.png)
@@ -1136,7 +1096,7 @@ ones (`n3_run2.log`, `n4_run1.log`: 97.9% / 99.2%, unbeaten alone from 14 / 38).
 (loss 1.26 → 10.8 in three iterations, `n3_convbn_collapse.txt`). BatchNorm's batch
 statistics over nine binary cells are a liability — a channel whose batch variance
 vanishes is divided by √1e-5 — and with BN the eval forward the loss trick reads and the
-train step's forward are different functions. Blackjack and Pong made the same call.
+train step's forward are different functions. Pong made the same call.
 
 ### Deep CFR on Leduc hold'em, scored by exact exploitability
 
@@ -1144,7 +1104,7 @@ train step's forward are different functions. Blackjack and Pong made the same c
 Leduc hold'em written in Lean (`LeanMlir/Leduc.lean`): a two-player, fixed-limit, one-card
 poker — r ranks × 2 suits (3 is the classic J Q K deck), ante 1, two betting rounds with bets
 of 2 then 4 and at most two raises each, one public card between the rounds, a pair beats a
-higher rank — the smallest game with the thing blackjack and tic-tac-toe lack, *hidden
+higher rank — the smallest game with the thing Pong and tic-tac-toe lack, *hidden
 information*, and so the first game here where the answer is not a move but a mixed
 strategy: an equilibrium raises a jack it knows is losing about a fifth of the time, because
 never bluffing is exploitable. Each iteration and player, one batched forward of the
@@ -1233,14 +1193,12 @@ demos/
 ├── MainDistogramCasp.lean                 # distogram ResNet on frozen ESM-2 features, scored against the CASP16 field (structure)
 ├── MainTinyGptShakespeare.lean            # char-level transformer
 ├── MainBigramShakespeare.lean             # bigram baseline (validates the data pipeline)
-├── MainBlackjackEnv.lean                  # blackjack tables, play/dump/curve modes (RL rung 1; env in LeanMlir/Blackjack.lean)
-├── MainBlackjackDqn.lean                  # DQN on blackjack through the DDPM MSE block, scored exactly (RL rung 2)
-├── MainPongEnv.lean                       # Pong in Lean, 84×84 frames, scripted opponent (RL rung 3, Phase 0)
-├── MainPongDqn.lean                       # DQN from the six-number state or 84×84 frames on that Pong (RL rung 3)
-├── MainTttEnv.lean                        # tic-tac-toe n×n: the solved game, scripted players, the solver's gates (RL rung 5, no GPU)
-├── MainAlphaZeroTtt.lean                  # AlphaZero self-play + PUCT on that game, scored against the solved game (RL rung 5)
-├── MainLeducEnv.lean                      # Leduc hold'em: the exact instrument (best response, CFR+ / DCFR, ES-MCCFR), the scripted arms, Gate 0 (RL rung 4; env in LeanMlir/Leduc.lean, no GPU)
-├── MainDeepCfrLeduc.lean                  # Deep CFR on that game through the DDPM MSE block, every arm scored by exact exploitability (RL rung 4)
+├── MainPongEnv.lean                       # Pong in Lean, 84×84 frames, scripted opponent (RL rung 1, Phase 0)
+├── MainPongDqn.lean                       # DQN from the six-number state or 84×84 frames on that Pong (RL rung 1)
+├── MainTttEnv.lean                        # tic-tac-toe n×n: the solved game, scripted players, the solver's gates (RL rung 3, no GPU)
+├── MainAlphaZeroTtt.lean                  # AlphaZero self-play + PUCT on that game, scored against the solved game (RL rung 3)
+├── MainLeducEnv.lean                      # Leduc hold'em: the exact instrument (best response, CFR+ / DCFR, ES-MCCFR), the scripted arms, Gate 0 (RL rung 2; env in LeanMlir/Leduc.lean, no GPU)
+├── MainDeepCfrLeduc.lean                  # Deep CFR on that game through the DDPM MSE block, every arm scored by exact exploitability (RL rung 2)
 │
 ├── probes/                                # gates and tools, not demos — these RUN IN CI
 │   ├── MainFpnLossProbe.lean              #   finite-difference gate on the detector loss

@@ -10,7 +10,7 @@ demo that gets built gets its own plan.
 | slot | today | proposed | state |
 |---|---|---|---|
 | Beyond vision | NQS on the Ising chain, then CASP16 as §10.3.7 (landed 2026-10-08) | — | `casp16_distogram_demo.md`; the Evoformer entry moved under §10.3.7; whether NQS stays here or moves to Physics is the open row below |
-| Player of games | blackjack, Pong, tic-tac-toe | Pong, **Leduc poker**, tic-tac-toe | `leduc_deep_cfr_demo.md`; blackjack is deleted once poker lands (its §8) |
+| Player of games | blackjack, Pong, tic-tac-toe | Pong, **Leduc poker**, tic-tac-toe | `leduc_deep_cfr_demo.md`; blackjack deleted 2026-10-18 (its §8) |
 | Image generation | no demo (VAE/DCGAN/Pix2Pix/CycleGAN entries only) | LIDC-IDRI low-dose CT denoising | idea, §3 |
 | Quantum computing (new subsection) | — | surface-code decoder: a CNN against matching and the exact optimum | idea, §4 |
 | Physics | Boltzmann generator | Boltzmann, and NQS if it is kept | open: NQS moves here or lives only in the repo |

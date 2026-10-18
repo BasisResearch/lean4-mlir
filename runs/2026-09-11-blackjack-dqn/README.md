@@ -35,3 +35,6 @@ Files: `dqn_200k_<arm>.{out,log}` (chart + scores, training log), `dqn_200k_<arm
 Figures: `python scripts/blackjack_figure.py runs/2026-09-11-blackjack-dqn blackjack_dqn.png`
 (curve + charts, here only) and `… blackjack_chart.png chart` (the two charts, the book's copy at
 `blueprint/src/figures/demos/blackjack_chart.png`). Needs matplotlib; ~/loiter-venv has it.
+
+
+**2026-10-18: the demo was removed from the repository** (the exes `blackjack-env` / `blackjack-dqn`, `LeanMlir/Blackjack.lean`, `scripts/demos/blackjack_figure.py`, the book's subsection; `planning/leduc_deep_cfr_demo.md` §8), the Leduc poker rung having taken its place. This directory stays as the record; the code is in git history before that date.
