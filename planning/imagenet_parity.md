@@ -591,7 +591,7 @@ closed a row the table is followed by a `[TODO: …]` marker, not prose. Listing
 * Fixed outside the list: ch 7's two comparisons to "MobileNetV2's pair", which described the
   retired per-replica MNv2 pair; ch 7's crop range (the ch 5 sentence, same code).
 * Left open: `apps/imagenette/MainResnet34Imagenet.lean`'s docstring still says "He et al.'s own
-  schedule"; Appendix A says every top-1 follows timm's protocol, which ConvNeXt-T's 224 / 0.875
+  schedule"; Appendix C says every top-1 follows timm's protocol, which ConvNeXt-T's 224 / 0.875
   does not (D18).
 
 ### 9.6 Run status (for the book's run-status sentences)
@@ -810,7 +810,7 @@ shim hash reproducible at seed 0 and distinct at seed 1 (`SHIM_DETERMINISM=1`; `
 ### 10.5 Phase 5: book
 
 Each chapter's pair table is generated from the manifest and reads "paper recipe, except: …". Ch 5 goes
-first (the five reruns above) as the template. Scores use timm's protocol (D18), and Appendix A follows.
+first (the five reruns above) as the template. Scores use timm's protocol (D18), and Appendix C follows.
 
 ### 10.6 Splitting the work
 

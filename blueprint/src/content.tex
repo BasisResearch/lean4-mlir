@@ -331,8 +331,8 @@ groups carry a demo trained on a dataset from that field; a closing section on
 game theory trains three games --- Pong, Leduc poker, tic-tac-toe --- against their
 exact solutions, with the AlphaGo family and Deep CFR as its catalogue.
 
-\textbf{Appendices.} Data availability (A), toolchain setup (B), and
-the complete proof framework as a reference (C).
+\textbf{Appendices.} Toolchain setup (A), the complete proof framework as
+a reference (B), and data availability (C).
 
 \subsection*{Theorem and definition budget per chapter}
 
@@ -18745,638 +18745,6 @@ def muZeroGoPredictionValue : NetSpec where
 \hypersetup{bookmarksdepth=1}
 \appendix
 
-\chapter{Data availability}
-\label{app:data}
-
-Every dataset in this book is public, and every one except ImageNet is
-fetched or built by a script in the repository root that drops it under
-\texttt{data/} where the trainers expect it. Table~\ref{tab:datasets_core}
-lists each
-with its standard reference, homepage, and that fetch path. Four image
-datasets span the book's whole range:
-
-\begin{itemize}
-  \item \textbf{MNIST} and \textbf{CIFAR-10} drive the verified-codegen
-    chapters of Part~1 (Chapters~\ref{chap:tensor}--\ref{chap:cnn}
-    and~\ref{chap:bn}).
-  \item \textbf{Imagenette}, a ten-class subset of ImageNet at
-    $224\times224$, is the recipe of Chapters~\ref{chap:residual}--\ref{chap:attention},
-    first met in \S\ref{sec:residual_r34_example}.
-  \item Full \textbf{ImageNet-1k} backs those chapters' ImageNet sections
-    (ResNet-34 and ResNet-50, MobileNetV2, EfficientNet-B0, ConvNeXt-T,
-    ViT-Tiny), on the reference and the verified path alike.
-\end{itemize}
-
-\begin{table}[H]
-\centering
-\caption{The datasets behind the chapters: name, abbreviation, standard reference, homepage, and the repository script (with the on-disk path under \texttt{data/}) that fetches it.}
-\label{tab:datasets_core}
-\footnotesize\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}l l l p{4.3cm} p{4.0cm}@{}}
-\hline
-Dataset & Abbrev. & Reference & Homepage & Script (in \texttt{scripts/datasets/}) $\to$ path \\
-\hline
-MNIST & MN & LeCun et al., 1998 &
-  \href{http://yann.lecun.com/exdb/mnist/}{\nolinkurl{yann.lecun.com/exdb/mnist}} &
-  \texttt{download\_mnist.sh} $\to$ \texttt{data/} \\[2pt]
-CIFAR-10 & CF10 & Krizhevsky, 2009 &
-  \href{https://www.cs.toronto.edu/~kriz/cifar.html}{\nolinkurl{cs.toronto.edu/~kriz/cifar.html}} &
-  \texttt{download\_cifar.sh}\newline $\to$ \texttt{data/cifar-10/} \\[2pt]
-Imagenette & IN10 & Howard, 2019 &
-  \href{https://github.com/fastai/imagenette}{\nolinkurl{github.com/fastai/imagenette}} &
-  \texttt{download\_imagenette.sh}\newline $\to$ \texttt{data/imagenette/} \\[2pt]
-ImageNet-1k & IN1K & Deng et al., 2009 &
-  \href{https://www.image-net.org/}{\nolinkurl{image-net.org}} &
-  \textit{TFDS build}\,\textsuperscript{*} \\
-\hline
-\end{tabular}
-\end{table}
-
-\noindent\small MNIST is pulled from the CVDF mirror
-(\nolinkurl{storage.googleapis.com/cvdf-datasets/mnist}), and the homepage
-column is the canonical reference.
-\textsuperscript{*}ImageNet-1k is license-gated and not redistributable,
-so the repository ships no fetch script. See the build notes below.
-\normalsize
-
-\medskip\noindent\textbf{Building the ImageNet-1k TFDS dataset.} The
-\nolinkurl{image-net.org} download is account-gated and slow, so in
-practice the two LSVRC-2012 tarballs are most easily fetched from Academic
-Torrents
-(\href{https://academictorrents.com/collection/imagenet}{academictorrents.com/collection/imagenet}):
-the
-\href{https://academictorrents.com/details/a306397ccf9c2ead27155983c254227c0fd938e2}{training-set
-torrent} ($\sim$138\,GB) and the
-\href{https://academictorrents.com/details/5d6d0df7ed81efd49ca99ea4737e0ae5e3a5f2e5}{validation-set
-torrent} ($\sim$6.3\,GB), both Russakovsky et al.\ (2015). Each torrent is
-a single \texttt{.tar}: \texttt{ILSVRC2012\_img\_train.tar} is itself a
-tar of 1000 per-class tars (\texttt{n01440764.tar}, \ldots) and
-\texttt{ILSVRC2012\_img\_val.tar} holds the 50{,}000 validation JPEGs.
-You never unpack them. TFDS reads the nested tars directly.
-Drop both files, as-is, into TFDS's manual-download directory and let the
-standard builder do the rest:
-
-\begin{verbatim}
-# place the two tarballs (no extraction):
-#   ~/tensorflow_datasets/downloads/manual/ILSVRC2012_img_train.tar
-#   ~/tensorflow_datasets/downloads/manual/ILSVRC2012_img_val.tar
-python -c "import tensorflow_datasets as tfds; \
-           tfds.builder('imagenet2012').download_and_prepare()"
-\end{verbatim}
-
-\noindent That validates, shuffles, and reshards into version
-\textbf{5.1.0} under
-\texttt{\textasciitilde/tensorflow\_datasets/imagenet2012/5.1.0/}:
-1{,}281{,}167 training images across 1024 tfrecord shards (147.90\,GB)
-and 50{,}000 validation images across 64 shards (6.74\,GB), which is the
-exact layout every ImageNet trainer in this book consumes. Budget disk
-accordingly: the raw tarballs ($\sim$144\,GB) plus the 5.1.0 output
-($\sim$155\,GB) plus TFDS's intermediate extraction mean you want roughly
-\textbf{500\,GB of free space} to prepare it in one pass. Budget host
-memory too. Neither trainer holds the dataset in process, but a run reads
-every shard every epoch, and the kernel's page cache keeps as much of the
-$155$\,GB resident as the box has to spare; below that, part of every
-epoch comes back off disk. On top sit the producer processes that feed
-the verified trainer (\texttt{SHIM\_WORKERS}, four for most nets, eight
-for the RandAugment recipes), each a \texttt{tf.data} pipeline that
-settles at roughly $5$--$8$\,GB once its buffers fill, and the trainer
-itself at about $2.5$\,GB. A four-producer run therefore wants
-\textbf{${\sim}190$\,GB of RAM} to keep the whole dataset in memory, and
-runs in $168$ with the difference streaming from disk. From there
-neither path loads images itself: the reference trainer and the verified
-path's generated shim both call
-\texttt{tfds.load('imagenet2012', split=\ldots, data\_dir=\ldots)} and
-stream through \texttt{tfds.as\_numpy}, so TFDS's \texttt{tf.data}
-pipeline carries the loading (parallel shard reads, JPEG decode,
-prefetch, all engineered to scale), and we inherit that performance work
-for free.
-
-\medskip\noindent\textbf{How the ImageNet numbers are validated.} Every
-top-1 and top-5 in this book faithfully follows the validation protocol of
-\texttt{timm}'s ``ResNet Strikes Back''
-(\href{https://arxiv.org/abs/2110.00476}{arXiv:2110.00476}), so that a
-number here and a number there are answers to the same question.
-Concretely, five things are matched, and each uses \texttt{timm} as a
-reference:
-
-\begin{itemize}
-  \item \textbf{The centre-crop ratio is read from \texttt{timm}'s own
-    model configuration}, not from a global default.
-    \texttt{resnet50.a1\_in1k}, \texttt{a2\_in1k} and \texttt{a3\_in1k}
-    all resolve \texttt{crop\_pct} $= 0.95$; the $2018$ torchvision
-    weights (\texttt{tv\_in1k}) resolve $0.875$. Both values appear in
-    this book, attached to the recipe each belongs to.
-  \item \textbf{The field of view is identical.} We decode a centred
-    square of side $\mathrm{crop\_pct} \cdot \min(h,w)$ and resize it to
-    the evaluation resolution; \texttt{timm} resizes the whole image so
-    its shorter side is $\mathrm{img\_size}/\mathrm{crop\_pct}$ and then
-    centre-crops. The two orders end on the same pixels, and the
-    ordering itself is measured at $0.02$--$0.04$ points.
-  \item \textbf{Top-5 is the true label's rank}, matching the
-    reference's own $\sum \mathbb{1}[\ell_i > \ell_y] < 5$, and the
-    train/test resolution split is the recipe's (RSB-A3 trains at $160$
-    and evaluates at $224$).
-  \item \textbf{The resampler is \texttt{timm}'s.} Validation resizes
-    the whole image so its shorter side is
-    $\mathrm{img\_size}/\mathrm{crop\_pct}$ and only then centre-crops,
-    which is \texttt{timm}'s order rather than the Google/TPU
-    ``Inception'' crop-then-resize; and both that resize and the
-    training \texttt{RandomResizedCrop} run antialiased, because
-    PIL antialiases when downscaling and \texttt{tf.image.resize} does
-    not by default. The two have to move together: a network partly
-    fits the aliasing of the resampler it trained under, so matching
-    only the evaluation side would be worse than matching neither.
-    Antialiased \texttt{tf.image.resize} agrees with PIL to a mean
-    $|\Delta|$ of $0.30$ of $255$, flat across the whole range of
-    downscale ratios ImageNet's validation set spans.
-  \item \textbf{Each net can also be scored at \texttt{timm}'s test
-    resolution.} \texttt{timm} validates many of its pretrained weights
-    at a size other than the one they trained at --- $288 / 1.0$ for
-    RSB-A1/A2 and ConvNeXt, $256 / 1.0$ for MNv4-Conv-M --- and the
-    resize-then-crop above takes that size and crop as parameters, read
-    from the pinned \texttt{timm} into
-    \texttt{jax/timm\_eval\_protocols.json}. The reference forward
-    accepts any size; the verified number comes from a verified graph
-    rendered at the test size, never from the JAX forward on converted
-    weights. The ImageNet chapters report each run's own evaluation at
-    the recipe's training size; the test-resolution scorer is for
-    comparing a checkpoint against \texttt{timm}'s.
-\end{itemize}
-
-\section*{Demo datasets}
-
-The \texttt{demos/} trainers step
-past image classification into the five other task families in the book,
-which are detection, segmentation, language, signal processing and
-physics, and each has a dataset of its own:
-
-\begin{itemize}
-  \item \textbf{VisDrone-DET2019} is drone-altitude imagery where the
-    objects are the problem: a median box is $20 \times 25$\,px in the source frame, some 70
-    of them per image, so a single $7\times7$ grid collapses outright and
-    the multi-scale FPN head of Definition~\ref{layer:fpnModule} becomes
-    necessary rather than decorative.
-  \item \textbf{NEU-DET} is the industrial-inspection dataset, and the
-    VisDrone detector's opposite regime: $1{,}800$ grayscale $200\times200$
-    crops of hot-rolled steel strip, $300$ per class over six defect types,
-    with one or two large Pascal-VOC boxes per crop where a drone frame has
-    seventy tiny ones. The same R34+FPN detector (\texttt{yolov1-neudet-fpn})
-    and the single-grid head beside it (\texttt{yolov1-neudet448}) train on
-    it unchanged.
-  \item \textbf{ArASL} is the people-watching dataset: $54{,}049$ grey
-    $64\times64$ crops of hands spelling the 32 letters of the Arabic
-    sign-language alphabet, captured as video bursts of consecutive frames.
-    The chapter-4 CNN (\texttt{arasl-signs}) trains on it twice, under the
-    random split the literature reports on and under a split that keeps each
-    class's capture order together, and the pair of numbers is the demo of
-    \S\ref{sec:bestiary_people}.
-  \item \textbf{PlantVillage and PlantDoc} are the agriculture pair: $54{,}305$
-    laboratory photographs of single picked leaves on a grey background, 38
-    classes over 14 crops, and $2{,}578$ field photographs of 13 of the same
-    crops in 28 classes that all map into PlantVillage's 38. Chapter~\ref{chap:residual}'s
-    ResNet-34 (\texttt{plant-leaf}) trains on the first and is scored on the
-    second, and the demo of \S\ref{sec:bestiary_agriculture} is what the
-    second number does to the first.
-  \item \textbf{EuroSAT and the Brazil chips} are the remote-sensing pair:
-    $27{,}000$ Sentinel-2 chips over 34 European countries, $64\times64$ at
-    10~m in all 13 bands and ten land-cover classes, and $3{,}826$ chips over
-    Rond\^onia plus $3{,}620$ over western Bahia in each of two seasons, cut
-    from Sentinel-2 scenes of 2023 and labelled from MapBiomas. Chapter~\ref{chap:bn}'s
-    CNN (\texttt{rs-bands}) trains on the first under five band subsets and is
-    scored on the second, and the demo of \S\ref{sec:bestiary_remote_sensing}
-    is what each subset does abroad.
-  \item \textbf{MSD Task01 (BraTS)} is the segmentation dataset. It is
-    four-modality brain-tumour MRI, and the thin-class collapse is the
-    whole problem rather than a nuisance
-    (enhancing tumour is $\sim$0.5\,\% of voxels). Two trainers read it:
-    \texttt{unet-brats-train} (a from-scratch UNet at native
-    $240 \times 240$) and \texttt{unet-brats-r34} (the ResNet-34 encoder of
-    \S\ref{sec:bestiary_segmentation}, which needs the $224$ centre-cropped
-    build since its stride-32 backbone does not divide 240).
-  \item \textbf{tiny Shakespeare}, a single 1\,MB character stream, is what
-    the TinyGPT char-level transformer (\texttt{tinygpt-shakespeare})
-    trains on.
-  \item \textbf{The M\"uller--Brown density} is the physics dataset, and
-    nothing is downloaded: the target is the Boltzmann density
-    $\exp(-U/kT)$ on the M\"uller--Brown surface, so
-    \texttt{preprocess\_boltzmann.py} writes what an overdamped Langevin
-    integrator produces in a fixed budget as the training set, an
-    independent draw from the exact density by quadrature as the
-    reference, and the grid the scorer integrates over. The flow-matching
-    generator of \S\ref{sec:bestiary_boltzmann} trains on it.
-  \item \textbf{GWOSC O3a strain} is the signal-processing dataset: the
-    Hanford and Livingston interferometers' strain from the first half of
-    the third observing run, published by the Gravitational Wave Open
-    Science Center under CC BY 4.0. Twenty-six 4096-second file pairs are
-    cut into two-second windows, half of them given an injected
-    binary-black-hole chirp, and the CNN of \S\ref{sec:bestiary_signal}
-    (\texttt{gw-detect}) trains on their spectrograms against the matched
-    filter's closed form.
-  \item \textbf{The transverse-field Ising chain} is the science demo's
-    target and needs no data at all: the neural quantum state of
-    \S\ref{sec:bestiary_beyond} (\texttt{nqs-ising}) trains on its own
-    local energies, and the closed forms it is scored against ---
-    enumeration at $N = 12$, Jordan--Wigner at $N = 64$, Lanczos for the
-    $J_1$--$J_2$ chain --- come from \texttt{scripts/demos/\allowbreak nqs\_metrics.py}.
-  \item \textbf{CASP16 and the PDB} are the structure demo's pair. The
-    targets are CASP16's Phase-1 sequences, the 159 domain-trimmed
-    experimental structures and the $50{,}157$-row table of every group's
-    scores from \nolinkurl{predictioncenter.org}, with every group's
-    models for the three targets the scorer is validated on; the training set is every protein
-    entity the PDB released before CASP16 opened on 2024-05-01, X-ray or
-    EM at 3\,Å or better, 40--512 residues, one representative per
-    RCSB 40\,\% sequence cluster --- $26{,}310$ chains, their backbones
-    from the RCSB CDN. ESM-2's per-residue representations and contact
-    maps are computed from the sequences by \texttt{casp16\_embed.py}, and
-    the scorers, US-align and OpenStructure, come with the CASP16 fetch. The
-    distogram network of \S\ref{sec:bestiary_structure}
-    (\texttt{distogram-casp}) trains on the chains and is scored on the
-    targets.
-\end{itemize}
-
-\noindent Table~\ref{tab:datasets_demo} is the same fetch-and-unpack story as
-Table~\ref{tab:datasets_core}, with one extra step: each is tokenized or tiled into the trainer's input format by the
-matching \texttt{preprocess\_*.py} script before the first \texttt{lake exe}
-run; the strain and the M\"uller--Brown density skip the fetch, because
-that script is where they come from, and the Ising chain has no data step
-at all.
-
-\begin{table}[H]
-\centering
-\caption{The datasets behind the bestiary demos, in the columns of Table~\ref{tab:datasets_core}.}
-\label{tab:datasets_demo}
-\footnotesize\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}l l p{3.2cm} p{4.0cm} p{3.7cm}@{}}
-\hline
-Dataset & Abbrev. & Reference & Homepage & Script (in \texttt{scripts/datasets/}) $\to$ path \\
-\hline
-VisDrone-DET2019 & VisD & Zhu et al., 2021 &
-  \href{https://github.com/VisDrone/VisDrone-Dataset}{\nolinkurl{github.com/VisDrone/VisDrone-Dataset}} &
-  \texttt{download\_visdrone.sh}\newline $\to$ \texttt{data/visdrone/}  \\[2pt]
-NEU-DET & NEU & Song \& Yan, 2013;\newline He et al., 2020 &
-  \href{http://faculty.neu.edu.cn/songkc/en/zdylm/263265/list/index.htm}{\nolinkurl{faculty.neu.edu.cn/songkc}} &
-  \texttt{download\_neu.sh}\newline $\to$ \texttt{data/neu\_det/}  \\[2pt]
-ArASL & ArASL & Latif et al., 2019 &
-  \href{https://data.mendeley.com/datasets/y7pckrw6z2/1}{\nolinkurl{data.mendeley.com/datasets/y7pckrw6z2}} &
-  \texttt{download\_arasl.sh}\newline $\to$ \texttt{data/arasl/}  \\[2pt]
-PlantVillage & PV & Hughes \& Salath\'e, 2015;\newline Mohanty et al., 2016 &
-  \href{https://github.com/spMohanty/PlantVillage-Dataset}{\nolinkurl{github.com/spMohanty/PlantVillage-Dataset}} &
-  \texttt{download\_plant.sh}\newline $\to$ \texttt{data/plant/}  \\[2pt]
-PlantDoc & PD & Singh et al., 2020 &
-  \href{https://github.com/pratikkayal/PlantDoc-Dataset}{\nolinkurl{github.com/pratikkayal/PlantDoc-Dataset}} &
-  \texttt{download\_plant.sh}\newline $\to$ \texttt{data/plant/}  \\[2pt]
-EuroSAT & ES & Helber et al., 2019 &
-  \href{https://zenodo.org/records/7711810}{\nolinkurl{zenodo.org/records/7711810}} &
-  \texttt{download\_rs.sh}\newline $\to$ \texttt{data/rs/}  \\[2pt]
-Sentinel-2 L1C, 2023 & S2 & ESA / Copernicus &
-  \href{https://dataspace.copernicus.eu/}{\nolinkurl{dataspace.copernicus.eu}} &
-  \texttt{preprocess\_rs\_brazil.py}\newline $\to$ \texttt{data/rs/s2/}  \\[2pt]
-MapBiomas Collection 4 & MB & Souza et al., 2020 &
-  \href{https://brasil.mapbiomas.org/}{\nolinkurl{brasil.mapbiomas.org}} &
-  \texttt{preprocess\_rs\_brazil.py}\newline $\to$ \texttt{data/rs/mapbiomas/}  \\[2pt]
-MSD Task01 (BraTS) & BraTS & Antonelli et al., 2022 &
-  \href{http://medicaldecathlon.com/}{\nolinkurl{medicaldecathlon.com}} &
-  \texttt{download\_brats.sh}\newline $\to$ \texttt{data/brats/}  \\[2pt]
-tiny Shakespeare & TShk & Karpathy, 2015 &
-  \href{https://github.com/karpathy/char-rnn}{\nolinkurl{github.com/karpathy/char-rnn}} &
-  \texttt{download\_shakespeare.sh}\newline $\to$ \texttt{data/shakespeare/}  \\[2pt]
-M\"uller-Brown density & MB & M\"uller \& Brown, 1979 &
-  \texttt{preprocess\_boltzmann.py}\newline (generated, no download) &
-  \texttt{data/boltzmann/}  \\[2pt]
-GWOSC O3a strain & GWOSC & Abbott et al., 2023 &
-  \href{https://gwosc.org/}{\nolinkurl{gwosc.org}} &
-  \texttt{preprocess\_gw.py} $\to$ \texttt{data/gw/}  \\[2pt]
-Ising chain & TFIM & Pfeuty, 1970 &
-  \texttt{scripts/demos/\allowbreak nqs\_metrics.py}\newline (closed forms, no download) &
-  ---  \\[2pt]
-CASP16, Phase 1 & CASP16 & Kryshtafovych et al., 2025 &
-  \href{https://predictioncenter.org/casp16/}{\nolinkurl{predictioncenter.org/casp16}} &
-  \texttt{download\_casp16.sh}\newline $\to$ \texttt{data/casp16/raw/}  \\[2pt]
-PDB, pre-CASP16 chains & PDB & Berman et al., 2000 &
-  \href{https://www.rcsb.org/}{\nolinkurl{rcsb.org}} &
-  \texttt{casp16\_chain\_list.py},\newline \texttt{casp16\_fetch\_chains.py}\newline $\to$ \texttt{data/casp16/}  \\
-\hline
-\end{tabular}
-\end{table}
-
-\noindent\small Each also has a \texttt{preprocess\_*.py} step (e.g.\
-\texttt{preprocess\_shakespeare.py} builds
-\texttt{train.bin}/\texttt{val.bin}/\texttt{vocab.txt}) between download
-and training. \texttt{preprocess\_visdrone.py} writes three
-record formats (single-grid, single-scale anchor, and multi-scale FPN), so
-one set of Lean loaders and one codegen serve every detector head.
-VisDrone's official Google-Drive/Baidu links are large-file-flaky, so
-\texttt{download\_visdrone.sh} pulls the byte-identical Ultralytics
-release-asset mirror over plain HTTPS (\emph{reference:} Zhu et al.,
-\emph{Detection and Tracking Meet Drones Challenge}, IEEE TPAMI~43, 2021).
-The strain has no download script: which files to fetch is part of the
-preprocessing, so \texttt{preprocess\_gw.py} picks them off the GWOSC
-timeline, fetches them and builds the sets in one run.
-\normalsize
-
-\medskip\noindent\textbf{Building the NEU-DET dataset.} NEU-DET is
-Kechen Song's group's hot-rolled steel strip surface-defect set at
-Northeastern University: $1{,}800$ grayscale $200\times200$ crops, $300$
-for each of crazing, inclusion, patches, pitted surface, rolled-in scale
-and scratches, with $4{,}189$ Pascal-VOC boxes (\emph{references:} Song \&
-Yan, \emph{A noise robust method based on completed local binary patterns
-for hot-rolled steel strip surface defects}, Appl.\ Surf.\ Sci.~285, 2013,
-the images; He, Song, Meng \& Yan, \emph{An End-to-end Steel Surface Defect
-Detection Approach via Fusing Multiple Hierarchical Features}, IEEE
-TIM~69(4), 2020, the boxes). No licence is stated; the maintainer's page
-asks for a citation. \texttt{download\_neu.sh} therefore fetches the
-maintainer's own Google-Drive copy (26\,MB) and the repository
-redistributes nothing --- the same posture as BraTS below. The download
-checks the census before anything else: $1{,}800$ images with $1{,}800$
-matching XMLs and exactly the six class names, because mirrors of this set
-differ in file extension and in whether the names carry underscores.
-
-The set ships no split. \texttt{preprocess\_neu\_det.py} draws
-$1{,}080/360/360$ --- train, validation, test --- stratified $180/60/60$
-per class from a fixed seed, so every split is balanced and the draw is
-the same on every machine; the anchor priors are then fitted on the
-training $1{,}080$ alone (\texttt{scripts/probes/\allowbreak neu\_anchors.py}). It writes the
-two record formats the VisDrone preprocessor writes --- the multi-scale
-FPN target to \texttt{data/neu\_det\_fpn/} and the single-grid target
-with the uncapped ground-truth sidecar to \texttt{data/neu\_det448/} ---
-so the detector's loaders, its code generation and its scorer run
-unchanged. The $200$-px crop is upsampled to the detector's $448$
-(the grey JPEGs are already three-channel), which keeps the ImageNet
-ResNet-34 stem a byte prefix of the initialisation and lets the same
-bootstrap self-check pass as on VisDrone. Epochs are chosen on the
-validation $360$ and reported on the test $360$.
-
-\medskip\noindent\textbf{Building the ArASL dataset.} ArASL is Latif,
-Mohammad, Alghazo, AlKhalaf \& AlKhalaf's Arabic sign-language alphabet set
-(\emph{ArASL: Arabic Alphabets Sign Language Dataset}, Data in Brief~23,
-2019; Mendeley Data \texttt{y7pckrw6z2} v1, CC~BY~4.0): $54{,}049$
-grayscale $64\times64$ crops of static hand signs for the 32 letters,
-$1{,}293$ (\emph{yaa}) to $2{,}114$ (\emph{ain}) per class, performed by
-``more than 40 people''. The licence permits redistribution, so
-\texttt{download\_arasl.sh} fetches the zip and the label CSV from Mendeley
-directly; the download URLs carry a per-file uuid, which the script resolves
-from Mendeley's public API at run time and checks against the sha256 the API
-reports. The census runs before anything trains: exactly $54{,}049$ files
-under exactly the 32 folder names, numbered $1$ to $n$ without a gap in every
-class, and the $658$ files that are not $64\times64$ grey --- $638$ at
-$256\times256$ in \emph{kaaf} and \emph{meem}, ten at $768\times1024$ in
-\emph{haa}, ten RGB --- listed, then resized and converted with one
-resampler.
-
-The file numbers are capture order and the images are video bursts.
-\texttt{preprocess\_arasl.py} measures it: sorted by number within a
-class, consecutive frames differ by a median $3.3$ grey levels per pixel
-where a random pair of the same class differs by $33$; $73.5\%$ of
-consecutive pairs are under $6$, and cutting where the gap exceeds $6$
-leaves $14{,}336$ chains of $3.8$ frames on average, the longest $58$, with
-the weakest class (\emph{al}) still at $64\%$. No signer, session or date
-is recorded anywhere in the release. The preprocessor therefore writes the
-same images under two protocols, $80/10/10$ per class from one seed: a
-stratified permutation (\texttt{random}, the protocol every published
-number uses), and each class's capture order cut at the $80\%$ and $90\%$
-marks with each cut moved to the nearest chain boundary so no burst
-straddles two parts (\texttt{blocked}). It then audits both: for every
-test image, the nearest training image of any class at $16\times16$. Under
-\texttt{random}, $92.3\%$ of test images have a training image within $6$
-grey levels (median nearest $1.2$) and $95.7\%$ of nearest neighbours carry
-the test image's own label; under \texttt{blocked}, $6.4\%$ and $28.6\%$.
-The residual $6\%$ is not a straddled burst --- the audit checks that none
-does --- but the same hand returning a median $306$ files later, which a
-release without signer ids cannot separate; the section reports it as the
-protocol's floor. Images are written as f32 in $[0,1]$, the range the
-chapter's CIFAR loader feeds, and epochs are chosen on the validation tenth
-and reported on the test tenth.
-
-\medskip\noindent\textbf{Building the PlantVillage and PlantDoc datasets.}
-PlantVillage is the Hughes--Salath\'e leaf-disease set (\emph{An open access
-repository of images on plant health}, arXiv:1511.08060, 2015; Mohanty,
-Hughes \& Salath\'e, \emph{Using deep learning for image-based plant disease
-detection}, Front.\ Plant Sci.~7:1419, 2016): $54{,}305$ colour photographs
-of single picked leaves on a grey or paper background, $256\times256$, 38
-classes over 14 crops, $152$ to $5{,}507$ per class, with a
-\texttt{segmented} twin of every image (the leaf on black) and, in the
-current release, a grouping of the photographs by leaf ($7{,}946$ leaves,
-four photographs of most of them) together with a leaf-grouped $80/20$ split
-that the maintainers publish beside the data. The repository's dataset card
-gives CC~BY-SA~3.0. PlantDoc is Singh, Jain, Jain, Kayal, Kumawat \&
-Batra's field set (\emph{PlantDoc: a dataset for visual plant disease
-detection}, CoDS-COMAD 2020): $2{,}578$ web photographs of leaves on plants,
-13 of the same crops in 28 classes --- 18 diseases and 10 healthy, one of
-them with two images --- under CC~BY~4.0. \texttt{download\_plant.sh}
-clones both from their GitHub repositories, fetches the maintainers' split
-lists, and checks the census before anything runs: exactly $54{,}305$ colour
-files under exactly the 38 folder names, a segmented twin for each (matched
-on the suffix after the uuid, because one class's colour files carry no
-uuid), $2{,}578$ PlantDoc files, and a $10{,}709$-line test list. The
-Kaggle ``New Plant Diseases Dataset'' is PlantVillage with augmented copies on
-both sides of its own split and is not used.
-
-\texttt{preprocess\_plant.py} writes the Imagenette record format at $256$
-for training parts and $224$ centre-cropped for evaluation parts. PlantVillage
-is split twice, $80/10/10$ per class: \texttt{random}, a stratified
-permutation, and \texttt{grouped}, whose test set is the maintainers'
-$10{,}709$ exactly and whose validation tenth is carved from their training
-list by leaf id, so no leaf straddles a line. The audit of the ArASL build
-runs on it and finds $0.1\%$ of consecutive photographs within six grey
-levels and $1.3\%$ of random-split test images with a near-twin in training:
-the four photographs of a leaf are different poses. Beside the test tenth it
-writes the same images from \texttt{segmented}, the leaf on its image's median
-background colour, the background with the leaf filled by that colour, and
-the flat colour alone --- the four counterfactuals of the section's two-player
-Shapley value, sharing one fill --- and the leaf mask at $224$ and on the
-$7\times7$ grid of the class-activation map. Every training leaf is also
-composited onto a random crop of a random Imagenette training image (the mask
-feathered by two pixels; Imagenette has no agriculture in it) and given one
-photometric-and-geometric variant, as two further training parts. PlantDoc's
-28 classes are mapped to PlantVillage ids by a table the preprocessor prints
-(ten PlantVillage classes have no field twin); its images are resized to a
-$256$ shorter side and centre-cropped; and it is written whole, under its
-official split, and as five stratified folds, so a net fine-tuned on field
-images scores every field image once, held out.
-
-\medskip\noindent\textbf{Building the EuroSAT and Brazil chip sets.}
-EuroSAT is Helber, Bischke, Dengel \& Borth's land-cover benchmark
-(\emph{EuroSAT: a novel dataset and deep learning benchmark for land use and
-land cover classification}, IEEE JSTARS 12(7), 2019; Zenodo 10.5281/zenodo.7711810,
-MIT, plus the Copernicus Sentinel data terms): $27{,}000$ GeoTIFFs of
-$64\times64\times13$ unsigned 16-bit values, Sentinel-2A Level-1C
-top-of-atmosphere reflectance $\times 10{,}000$ at 10~m with the 20 and
-60~m bands cubic-spline upsampled, $2{,}000$ to $3{,}000$ chips in each of
-ten class folders, the planes in the order B01--B12 then B8A.
-\texttt{download\_rs.sh} fetches the archive and torchgeo's split lists
-(Neumann et al.\ 2019; $16{,}200$ / $5{,}400$ / $5{,}400$) and
-\texttt{preprocess\_rs\_eurosat.py} checks the census, derives the plane
-order from the chips rather than the documentation (over forest B08 and B8A
-agree and both dwarf B04; B10 is near zero; B08's most correlated plane is
-the thirteenth), asserts the lists partition the $27{,}000$, and writes
-each chip as 13 planes of standardised reflectance --- the per-band mean and
-standard deviation of the training split, which every Brazilian chip is
-standardised with unchanged.
-
-The Brazil chips are cut by \texttt{preprocess\_rs\_brazil.py} from
-Sentinel-2 Level-1C scenes of 2023 found through the Copernicus Data Space
-catalogue and read per band from its object store (a free account; the keys
-live in the environment): six tiles over Rond\^onia's arc of deforestation
-in June, and six over western Bahia in September and again, the same tiles
-and the same windows, in the wet season (January to April), each scene the
-least cloudy of its season with ties going to the earliest date in the
-Amazon --- the later the dry season, the thicker the fire smoke, which the
-agency's cloud figure does not count --- and the latest in the Cerrado's
-dry part. Every scene carries the 2022 radiometric offset ($-1{,}000$ in
-every band, the archive having been reprocessed under it); it is read from
-each scene's metadata and removed before anything else, and the 20 and
-60~m bands are upsampled as EuroSAT's were. $1{,}500$ chip origins per tile
-are drawn on the 60~m grid inside the swath from a seed derived from the
-tile id, so a Bahia tile's two seasons share their windows; a chip is kept
-if s2cloudless finds no pixel over probability 0.2 (in both seasons, for
-Bahia), and labelled from MapBiomas Collection 4 (Souza et al.\ 2020;
-CC~BY~4.0), Brazil's annual land-cover map at 10~m, by the majority class
-over the chip's footprint at purity 0.8 or better --- forest formation,
-pasture, grassland, temporary and perennial crops, urban, river; savanna
-formation and forest plantation kept as diagnostic classes, every other
-code dropping the chip --- capped at $2{,}000$ chips per class. The census,
-the scenes with their dates and offsets, the class map and the dropped
-codes are in \texttt{runs/2026-09-29-rs-phase2/README.md}.
-
-\medskip\noindent\textbf{Building the BraTS dataset.}
-BraTS~2021 proper (1{,}251 cases) is
-gated behind a free Synapse account and a signed research-use
-agreement, so no script can fetch it. The \textbf{Medical
-Segmentation Decathlon}'s \textbf{Task01\_BrainTumour} is the same task
-from open storage: 484 labelled 4D volumes built from the BraTS
-2016/2017 cases, the same four co-registered MRI modalities
-(FLAIR / T1w / T1gd / T2w) and the same glioma sub-regions, as a single
-7.6\,GB tarball over S3. Thus we have fewer volumes and numbers that are
-not comparable to a BraTS~2021 leaderboard, and we also have a
-real segmentation result on real medical data that a reader can
-reproduce.
-
-\smallskip\noindent Preprocessing details:
-\texttt{preprocess\_brats.py} ships a \textbf{dependency-free NIfTI-1
-reader} (numpy only) and two decisions that would silently ruin the
-numbers if done the obvious way. Intensities are z-scored over
-brain voxels only, because BraTS volumes are skull-stripped, so
-$\sim$83\,\% of each is exact zero and whole-volume statistics would
-crush the tissue contrast. And the train/val split is by patient,
-not by slice, because adjacent axial slices of one brain are
-near-duplicates, so a slice-level split leaks memorized neighbours across
-the boundary.
-Volumes are quantized to uint8 over a $\pm5\sigma$ window and the C
-loader inverts it, matching the on-disk convention of every other dataset
-here.
-
-\smallskip\noindent The default build is $240 \times 240$, BraTS's native
-in-plane size, which suits a depth-4 UNet ($240 = 16 \cdot 15$). A stride-32
-backbone needs a size divisible by 32, so \texttt{unet-brats-r34} reads a
-second build made by \texttt{preprocess\_brats.py \dots{} --size 224 --seed 0}
-into \texttt{data/brats224/}. The same seed reproduces the same patient split
-and the same 14{,}415 / 2{,}569 slices. Note that \texttt{--size} crops
-rather than resizes: interpolating a label mask would invent classes that were
-never annotated, whereas a centre crop leaves intensities exact and the mask
-values untouched. It is also lossless here, because the 8-pixel border it
-removes contains no brain voxels, these volumes being skull-stripped and
-centred.
-\emph{Reference:} Antonelli et al., \emph{The Medical Segmentation
-Decathlon}, Nature Communications~13, 4128 (2022), atop the underlying
-BraTS work (Menze et al.\ 2015, Bakas et al.\ 2017).
-
-\medskip\noindent\textbf{Building the GWOSC dataset.} The strain comes from
-GWOSC's own hosting (plain HTTPS, no account) as 4096-second HDF5 files at
-4\,kHz, 134\,MB each: 26 file pairs from H1 and L1, 6.6\,GB, about 25 minutes
-to fetch. \texttt{preprocess\_gw.py} chooses the pairs from the GWOSC
-timeline, one 4096-second slot a day across O3a that lies wholly inside
-science-mode data at category \texttt{CBC\_CAT3} for both detectors with no
-transient hardware injection; the continuous-wave injections ran for all of
-O3 and are narrow lines the whitening removes, so their flag is deliberately
-not required, and requiring it yields zero clean seconds. Per file and
-detector it estimates a median-Welch PSD, colours a Gaussian twin by it,
-whitens both by one filter, injects the PyCBC chirps in the whitened domain,
-computes the matched-filter statistics of \S\ref{sec:bestiary_signal}, and
-writes the two spectrogram sets as flat f32 \texttt{[N, 2, 64, 128]} with
-int32 labels and a sidecar of every injection's parameters: 7\,GB, eleven
-minutes on eight cores at 1.7\,GB each. The stack (PyCBC, LALSuite, GWpy,
-gwosc) lives in its own \texttt{.venv-gw} from
-\texttt{requirements-gw-lock.txt}; installed into the main environment it
-would replace the pinned numpy and cuDNN the JAX reference needs. Two things
-the GWOSC documentation does not say: the 32-second event snippets stopped
-with GWTC-4, so an event's file is the 4096-second bulk file and can hold NaN
-gaps away from the event, and the \texttt{gwosc} client names the run
-\texttt{O3a}, not the \texttt{O3a\_4KHZ\_R1} the file names carry.
-\emph{Reference:} Abbott et al., \emph{Open Data from the Third Observing Run
-of LIGO, Virgo, KAGRA, and GEO}, ApJS~267, 29 (2023).
-
-\medskip\noindent\textbf{Building the CASP16 dataset.} Two sources, both
-public and neither gated. The targets come from the Protein Structure
-Prediction Center's download area (\nolinkurl{predictioncenter.org}, plain
-HTTPS): the 62 Phase-1 target sequences, the 159 domain-trimmed experimental
-structures the assessors released after the predictions were in, the domain
-table that cuts each target into evaluation units and labels them easy,
-medium or hard, the group list, and the $50{,}157$-row score table of every
-group's five models per unit. \texttt{download\_casp16.sh} fetches all of
-it, about 60\,MB, with every group's models for the three targets the scorer
-is validated on, builds US-align from source and pulls the OpenStructure
-docker image the official lDDT is computed with. The training set comes from
-the PDB through RCSB's APIs: \texttt{casp16\_chain\_list.py} searches for
-every protein entity released before CASP16 opened on 2024-05-01, X-ray or
-EM at 3\,Å or better, 40--512 residues --- $230{,}942$ of them, 18 minutes of
-paging the data API for sequence, chains, resolution and release date ---
-and keeps one representative per RCSB 40\,\% sequence cluster (the
-precomputed \texttt{clusters-by-entity-40.txt}, best resolution wins, entities
-with over 5\,\% unknown residues dropped): $27{,}690$ chains, median length
-214, $6.4$\,M residues, 90\,\% X-ray at a median $1.9$\,Å. MMseqs2 then
-searches the 85 unit sequences against them at 30\,\% identity over half the
-chain and finds 84 hits on 15 targets --- templates the field was allowed to
-use, 3BVF at 100\,\% over a third of T1295 --- so the date cut alone is the
-headline list ($26{,}310$ chains, the information the field had) and the
-purged list ($26{,}228$) the ``no templates'' ablation; 5\,\% of the clusters
-are validation ($1{,}380$ chains). None of the 21 PDB entries behind the unit
-table was released before the cutoff, so the date cut alone excludes every
-target structure. \texttt{casp16\_fetch\_chains.py} reads each entry's mmCIF
-from the RCSB CDN with gemmi and keeps the entity's first chain's backbone
-and $\mathrm{C}_\beta$ keyed by \texttt{label\_seq\_id}, which agrees with
-the canonical sequence on all but 12 of $37{,}672$ residues checked, every
-one a modified residue, so the labels need no alignment: four chains a
-second per core, $3.6$\,GB.
-
-\texttt{casp16\_labels.py} writes the 66-class pair plane per chain --- 64
-bins over 2--22\,Å on the $\mathrm{C}_\beta$ distance ($\mathrm{C}_\alpha$
-for glycine), a ``beyond 22\,Å'' class and an ``unobserved'' class for any
-pair with a missing residue, 8.5\,\% of residues --- and, with
-\texttt{--orient}, the three orientation planes, with a virtual
-$\mathrm{C}_\beta$ built from N, $\mathrm{C}_\alpha$ and C where none is
-deposited. \texttt{casp16\_embed.py} runs the frozen language model over
-every chain, ESM-2 at 35M, 150M, 650M or 3B parameters, and writes the
-final-layer representation per residue in fp16 with the contact head's logit
-per pair as a byte; the 3B model runs in fp16 on a 16\,GB card, checked
-against fp32 on the CPU (embedding cosine $1.0000$, contact map within
-$0.024$), the $27{,}690$ chains in seven minutes across four cards, and its
-contact-head pass caps a batch at $400$k pairs because the published head
-keeps about five copies of its attention maps. \texttt{casp16\_pack.py} lays
-features, labels, planes and an index into flat pool files the trainer's C
-gather reads --- 33\,GB for the 3B features --- after checking 300 random
-chains and every target against their per-chain files, the gate under the
-64-chain memorization probe of \S\ref{sec:bestiary_structure}.
-\texttt{casp16\_targets.py} does the same for the units from the
-domain-trimmed structures, the language model run on the full target
-sequence and sliced by the unit's segments: 85 units in the table, 84 with a
-structure (T1249v2-D1 has none), 83 with Phase-1 rows in the score table, and
-the v2 units are a v1 sequence in a second conformation. The scorer,
-\texttt{casp16\_score.py}, reproduces the official table before anything of
-ours is scored: CASP's model files carry a \texttt{PFRMAT} header and blank
-chain identifiers that OpenStructure refuses, so they are rewritten ATOM-only
-as chain A trimmed to the unit's ranges; \texttt{ost compare-structures
---lddt} then returns the LDDT column to the printed digit, \texttt{USalign
--TMscore 1} the TMscore column (residue-index superposition --- TM-align
-reads $0.03$ high on poor models), and OST's rigid GDT\_TS within a point of
-LGA's. Everything Python lives in \texttt{.venv-casp} (numpy, pandas, gemmi,
-torch, fair-esm, and \texttt{transformers} for the ESMFold row); 67\,GB on
-disk with all four language models' pools. \emph{References:} Kryshtafovych
-et al., \emph{Critical assessment of methods of protein structure prediction
-(CASP) --- Round XVI}, Proteins (2025); Berman et al., \emph{The Protein Data
-Bank}, Nucleic Acids Res.~28, 235 (2000); Lin et al., \emph{Evolutionary-scale
-prediction of atomic-level protein structure with a language model},
-Science~379, 1123 (2023).
-
 \chapter{Getting started}
 \label{app:getting_started}
 
@@ -20485,6 +19853,638 @@ compounds magnitude bounds the way no real activation pattern does. And the
 flip count is zero across 29.5 million measured pre-activations. The
 margin hypotheses are not a technicality the proofs hide behind. They
 are what training actually looks like.
+
+\chapter{Data availability}
+\label{app:data}
+
+Every dataset in this book is public, and every one except ImageNet is
+fetched or built by a script in the repository root that drops it under
+\texttt{data/} where the trainers expect it. Table~\ref{tab:datasets_core}
+lists each
+with its standard reference, homepage, and that fetch path. Four image
+datasets span the book's whole range:
+
+\begin{itemize}
+  \item \textbf{MNIST} and \textbf{CIFAR-10} drive the verified-codegen
+    chapters of Part~1 (Chapters~\ref{chap:tensor}--\ref{chap:cnn}
+    and~\ref{chap:bn}).
+  \item \textbf{Imagenette}, a ten-class subset of ImageNet at
+    $224\times224$, is the recipe of Chapters~\ref{chap:residual}--\ref{chap:attention},
+    first met in \S\ref{sec:residual_r34_example}.
+  \item Full \textbf{ImageNet-1k} backs those chapters' ImageNet sections
+    (ResNet-34 and ResNet-50, MobileNetV2, EfficientNet-B0, ConvNeXt-T,
+    ViT-Tiny), on the reference and the verified path alike.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{The datasets behind the chapters: name, abbreviation, standard reference, homepage, and the repository script (with the on-disk path under \texttt{data/}) that fetches it.}
+\label{tab:datasets_core}
+\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l l l p{4.3cm} p{4.0cm}@{}}
+\hline
+Dataset & Abbrev. & Reference & Homepage & Script (in \texttt{scripts/datasets/}) $\to$ path \\
+\hline
+MNIST & MN & LeCun et al., 1998 &
+  \href{http://yann.lecun.com/exdb/mnist/}{\nolinkurl{yann.lecun.com/exdb/mnist}} &
+  \texttt{download\_mnist.sh} $\to$ \texttt{data/} \\[2pt]
+CIFAR-10 & CF10 & Krizhevsky, 2009 &
+  \href{https://www.cs.toronto.edu/~kriz/cifar.html}{\nolinkurl{cs.toronto.edu/~kriz/cifar.html}} &
+  \texttt{download\_cifar.sh}\newline $\to$ \texttt{data/cifar-10/} \\[2pt]
+Imagenette & IN10 & Howard, 2019 &
+  \href{https://github.com/fastai/imagenette}{\nolinkurl{github.com/fastai/imagenette}} &
+  \texttt{download\_imagenette.sh}\newline $\to$ \texttt{data/imagenette/} \\[2pt]
+ImageNet-1k & IN1K & Deng et al., 2009 &
+  \href{https://www.image-net.org/}{\nolinkurl{image-net.org}} &
+  \textit{TFDS build}\,\textsuperscript{*} \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent\small MNIST is pulled from the CVDF mirror
+(\nolinkurl{storage.googleapis.com/cvdf-datasets/mnist}), and the homepage
+column is the canonical reference.
+\textsuperscript{*}ImageNet-1k is license-gated and not redistributable,
+so the repository ships no fetch script. See the build notes below.
+\normalsize
+
+\medskip\noindent\textbf{Building the ImageNet-1k TFDS dataset.} The
+\nolinkurl{image-net.org} download is account-gated and slow, so in
+practice the two LSVRC-2012 tarballs are most easily fetched from Academic
+Torrents
+(\href{https://academictorrents.com/collection/imagenet}{academictorrents.com/collection/imagenet}):
+the
+\href{https://academictorrents.com/details/a306397ccf9c2ead27155983c254227c0fd938e2}{training-set
+torrent} ($\sim$138\,GB) and the
+\href{https://academictorrents.com/details/5d6d0df7ed81efd49ca99ea4737e0ae5e3a5f2e5}{validation-set
+torrent} ($\sim$6.3\,GB), both Russakovsky et al.\ (2015). Each torrent is
+a single \texttt{.tar}: \texttt{ILSVRC2012\_img\_train.tar} is itself a
+tar of 1000 per-class tars (\texttt{n01440764.tar}, \ldots) and
+\texttt{ILSVRC2012\_img\_val.tar} holds the 50{,}000 validation JPEGs.
+You never unpack them. TFDS reads the nested tars directly.
+Drop both files, as-is, into TFDS's manual-download directory and let the
+standard builder do the rest:
+
+\begin{verbatim}
+# place the two tarballs (no extraction):
+#   ~/tensorflow_datasets/downloads/manual/ILSVRC2012_img_train.tar
+#   ~/tensorflow_datasets/downloads/manual/ILSVRC2012_img_val.tar
+python -c "import tensorflow_datasets as tfds; \
+           tfds.builder('imagenet2012').download_and_prepare()"
+\end{verbatim}
+
+\noindent That validates, shuffles, and reshards into version
+\textbf{5.1.0} under
+\texttt{\textasciitilde/tensorflow\_datasets/imagenet2012/5.1.0/}:
+1{,}281{,}167 training images across 1024 tfrecord shards (147.90\,GB)
+and 50{,}000 validation images across 64 shards (6.74\,GB), which is the
+exact layout every ImageNet trainer in this book consumes. Budget disk
+accordingly: the raw tarballs ($\sim$144\,GB) plus the 5.1.0 output
+($\sim$155\,GB) plus TFDS's intermediate extraction mean you want roughly
+\textbf{500\,GB of free space} to prepare it in one pass. Budget host
+memory too. Neither trainer holds the dataset in process, but a run reads
+every shard every epoch, and the kernel's page cache keeps as much of the
+$155$\,GB resident as the box has to spare; below that, part of every
+epoch comes back off disk. On top sit the producer processes that feed
+the verified trainer (\texttt{SHIM\_WORKERS}, four for most nets, eight
+for the RandAugment recipes), each a \texttt{tf.data} pipeline that
+settles at roughly $5$--$8$\,GB once its buffers fill, and the trainer
+itself at about $2.5$\,GB. A four-producer run therefore wants
+\textbf{${\sim}190$\,GB of RAM} to keep the whole dataset in memory, and
+runs in $168$ with the difference streaming from disk. From there
+neither path loads images itself: the reference trainer and the verified
+path's generated shim both call
+\texttt{tfds.load('imagenet2012', split=\ldots, data\_dir=\ldots)} and
+stream through \texttt{tfds.as\_numpy}, so TFDS's \texttt{tf.data}
+pipeline carries the loading (parallel shard reads, JPEG decode,
+prefetch, all engineered to scale), and we inherit that performance work
+for free.
+
+\medskip\noindent\textbf{How the ImageNet numbers are validated.} Every
+top-1 and top-5 in this book faithfully follows the validation protocol of
+\texttt{timm}'s ``ResNet Strikes Back''
+(\href{https://arxiv.org/abs/2110.00476}{arXiv:2110.00476}), so that a
+number here and a number there are answers to the same question.
+Concretely, five things are matched, and each uses \texttt{timm} as a
+reference:
+
+\begin{itemize}
+  \item \textbf{The centre-crop ratio is read from \texttt{timm}'s own
+    model configuration}, not from a global default.
+    \texttt{resnet50.a1\_in1k}, \texttt{a2\_in1k} and \texttt{a3\_in1k}
+    all resolve \texttt{crop\_pct} $= 0.95$; the $2018$ torchvision
+    weights (\texttt{tv\_in1k}) resolve $0.875$. Both values appear in
+    this book, attached to the recipe each belongs to.
+  \item \textbf{The field of view is identical.} We decode a centred
+    square of side $\mathrm{crop\_pct} \cdot \min(h,w)$ and resize it to
+    the evaluation resolution; \texttt{timm} resizes the whole image so
+    its shorter side is $\mathrm{img\_size}/\mathrm{crop\_pct}$ and then
+    centre-crops. The two orders end on the same pixels, and the
+    ordering itself is measured at $0.02$--$0.04$ points.
+  \item \textbf{Top-5 is the true label's rank}, matching the
+    reference's own $\sum \mathbb{1}[\ell_i > \ell_y] < 5$, and the
+    train/test resolution split is the recipe's (RSB-A3 trains at $160$
+    and evaluates at $224$).
+  \item \textbf{The resampler is \texttt{timm}'s.} Validation resizes
+    the whole image so its shorter side is
+    $\mathrm{img\_size}/\mathrm{crop\_pct}$ and only then centre-crops,
+    which is \texttt{timm}'s order rather than the Google/TPU
+    ``Inception'' crop-then-resize; and both that resize and the
+    training \texttt{RandomResizedCrop} run antialiased, because
+    PIL antialiases when downscaling and \texttt{tf.image.resize} does
+    not by default. The two have to move together: a network partly
+    fits the aliasing of the resampler it trained under, so matching
+    only the evaluation side would be worse than matching neither.
+    Antialiased \texttt{tf.image.resize} agrees with PIL to a mean
+    $|\Delta|$ of $0.30$ of $255$, flat across the whole range of
+    downscale ratios ImageNet's validation set spans.
+  \item \textbf{Each net can also be scored at \texttt{timm}'s test
+    resolution.} \texttt{timm} validates many of its pretrained weights
+    at a size other than the one they trained at --- $288 / 1.0$ for
+    RSB-A1/A2 and ConvNeXt, $256 / 1.0$ for MNv4-Conv-M --- and the
+    resize-then-crop above takes that size and crop as parameters, read
+    from the pinned \texttt{timm} into
+    \texttt{jax/timm\_eval\_protocols.json}. The reference forward
+    accepts any size; the verified number comes from a verified graph
+    rendered at the test size, never from the JAX forward on converted
+    weights. The ImageNet chapters report each run's own evaluation at
+    the recipe's training size; the test-resolution scorer is for
+    comparing a checkpoint against \texttt{timm}'s.
+\end{itemize}
+
+\section*{Demo datasets}
+
+The \texttt{demos/} trainers step
+past image classification into the five other task families in the book,
+which are detection, segmentation, language, signal processing and
+physics, and each has a dataset of its own:
+
+\begin{itemize}
+  \item \textbf{VisDrone-DET2019} is drone-altitude imagery where the
+    objects are the problem: a median box is $20 \times 25$\,px in the source frame, some 70
+    of them per image, so a single $7\times7$ grid collapses outright and
+    the multi-scale FPN head of Definition~\ref{layer:fpnModule} becomes
+    necessary rather than decorative.
+  \item \textbf{NEU-DET} is the industrial-inspection dataset, and the
+    VisDrone detector's opposite regime: $1{,}800$ grayscale $200\times200$
+    crops of hot-rolled steel strip, $300$ per class over six defect types,
+    with one or two large Pascal-VOC boxes per crop where a drone frame has
+    seventy tiny ones. The same R34+FPN detector (\texttt{yolov1-neudet-fpn})
+    and the single-grid head beside it (\texttt{yolov1-neudet448}) train on
+    it unchanged.
+  \item \textbf{ArASL} is the people-watching dataset: $54{,}049$ grey
+    $64\times64$ crops of hands spelling the 32 letters of the Arabic
+    sign-language alphabet, captured as video bursts of consecutive frames.
+    The chapter-4 CNN (\texttt{arasl-signs}) trains on it twice, under the
+    random split the literature reports on and under a split that keeps each
+    class's capture order together, and the pair of numbers is the demo of
+    \S\ref{sec:bestiary_people}.
+  \item \textbf{PlantVillage and PlantDoc} are the agriculture pair: $54{,}305$
+    laboratory photographs of single picked leaves on a grey background, 38
+    classes over 14 crops, and $2{,}578$ field photographs of 13 of the same
+    crops in 28 classes that all map into PlantVillage's 38. Chapter~\ref{chap:residual}'s
+    ResNet-34 (\texttt{plant-leaf}) trains on the first and is scored on the
+    second, and the demo of \S\ref{sec:bestiary_agriculture} is what the
+    second number does to the first.
+  \item \textbf{EuroSAT and the Brazil chips} are the remote-sensing pair:
+    $27{,}000$ Sentinel-2 chips over 34 European countries, $64\times64$ at
+    10~m in all 13 bands and ten land-cover classes, and $3{,}826$ chips over
+    Rond\^onia plus $3{,}620$ over western Bahia in each of two seasons, cut
+    from Sentinel-2 scenes of 2023 and labelled from MapBiomas. Chapter~\ref{chap:bn}'s
+    CNN (\texttt{rs-bands}) trains on the first under five band subsets and is
+    scored on the second, and the demo of \S\ref{sec:bestiary_remote_sensing}
+    is what each subset does abroad.
+  \item \textbf{MSD Task01 (BraTS)} is the segmentation dataset. It is
+    four-modality brain-tumour MRI, and the thin-class collapse is the
+    whole problem rather than a nuisance
+    (enhancing tumour is $\sim$0.5\,\% of voxels). Two trainers read it:
+    \texttt{unet-brats-train} (a from-scratch UNet at native
+    $240 \times 240$) and \texttt{unet-brats-r34} (the ResNet-34 encoder of
+    \S\ref{sec:bestiary_segmentation}, which needs the $224$ centre-cropped
+    build since its stride-32 backbone does not divide 240).
+  \item \textbf{tiny Shakespeare}, a single 1\,MB character stream, is what
+    the TinyGPT char-level transformer (\texttt{tinygpt-shakespeare})
+    trains on.
+  \item \textbf{The M\"uller--Brown density} is the physics dataset, and
+    nothing is downloaded: the target is the Boltzmann density
+    $\exp(-U/kT)$ on the M\"uller--Brown surface, so
+    \texttt{preprocess\_boltzmann.py} writes what an overdamped Langevin
+    integrator produces in a fixed budget as the training set, an
+    independent draw from the exact density by quadrature as the
+    reference, and the grid the scorer integrates over. The flow-matching
+    generator of \S\ref{sec:bestiary_boltzmann} trains on it.
+  \item \textbf{GWOSC O3a strain} is the signal-processing dataset: the
+    Hanford and Livingston interferometers' strain from the first half of
+    the third observing run, published by the Gravitational Wave Open
+    Science Center under CC BY 4.0. Twenty-six 4096-second file pairs are
+    cut into two-second windows, half of them given an injected
+    binary-black-hole chirp, and the CNN of \S\ref{sec:bestiary_signal}
+    (\texttt{gw-detect}) trains on their spectrograms against the matched
+    filter's closed form.
+  \item \textbf{The transverse-field Ising chain} is the science demo's
+    target and needs no data at all: the neural quantum state of
+    \S\ref{sec:bestiary_beyond} (\texttt{nqs-ising}) trains on its own
+    local energies, and the closed forms it is scored against ---
+    enumeration at $N = 12$, Jordan--Wigner at $N = 64$, Lanczos for the
+    $J_1$--$J_2$ chain --- come from \texttt{scripts/demos/\allowbreak nqs\_metrics.py}.
+  \item \textbf{CASP16 and the PDB} are the structure demo's pair. The
+    targets are CASP16's Phase-1 sequences, the 159 domain-trimmed
+    experimental structures and the $50{,}157$-row table of every group's
+    scores from \nolinkurl{predictioncenter.org}, with every group's
+    models for the three targets the scorer is validated on; the training set is every protein
+    entity the PDB released before CASP16 opened on 2024-05-01, X-ray or
+    EM at 3\,Å or better, 40--512 residues, one representative per
+    RCSB 40\,\% sequence cluster --- $26{,}310$ chains, their backbones
+    from the RCSB CDN. ESM-2's per-residue representations and contact
+    maps are computed from the sequences by \texttt{casp16\_embed.py}, and
+    the scorers, US-align and OpenStructure, come with the CASP16 fetch. The
+    distogram network of \S\ref{sec:bestiary_structure}
+    (\texttt{distogram-casp}) trains on the chains and is scored on the
+    targets.
+\end{itemize}
+
+\noindent Table~\ref{tab:datasets_demo} is the same fetch-and-unpack story as
+Table~\ref{tab:datasets_core}, with one extra step: each is tokenized or tiled into the trainer's input format by the
+matching \texttt{preprocess\_*.py} script before the first \texttt{lake exe}
+run; the strain and the M\"uller--Brown density skip the fetch, because
+that script is where they come from, and the Ising chain has no data step
+at all.
+
+\begin{table}[H]
+\centering
+\caption{The datasets behind the bestiary demos, in the columns of Table~\ref{tab:datasets_core}.}
+\label{tab:datasets_demo}
+\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l l p{3.2cm} p{4.0cm} p{3.7cm}@{}}
+\hline
+Dataset & Abbrev. & Reference & Homepage & Script (in \texttt{scripts/datasets/}) $\to$ path \\
+\hline
+VisDrone-DET2019 & VisD & Zhu et al., 2021 &
+  \href{https://github.com/VisDrone/VisDrone-Dataset}{\nolinkurl{github.com/VisDrone/VisDrone-Dataset}} &
+  \texttt{download\_visdrone.sh}\newline $\to$ \texttt{data/visdrone/}  \\[2pt]
+NEU-DET & NEU & Song \& Yan, 2013;\newline He et al., 2020 &
+  \href{http://faculty.neu.edu.cn/songkc/en/zdylm/263265/list/index.htm}{\nolinkurl{faculty.neu.edu.cn/songkc}} &
+  \texttt{download\_neu.sh}\newline $\to$ \texttt{data/neu\_det/}  \\[2pt]
+ArASL & ArASL & Latif et al., 2019 &
+  \href{https://data.mendeley.com/datasets/y7pckrw6z2/1}{\nolinkurl{data.mendeley.com/datasets/y7pckrw6z2}} &
+  \texttt{download\_arasl.sh}\newline $\to$ \texttt{data/arasl/}  \\[2pt]
+PlantVillage & PV & Hughes \& Salath\'e, 2015;\newline Mohanty et al., 2016 &
+  \href{https://github.com/spMohanty/PlantVillage-Dataset}{\nolinkurl{github.com/spMohanty/PlantVillage-Dataset}} &
+  \texttt{download\_plant.sh}\newline $\to$ \texttt{data/plant/}  \\[2pt]
+PlantDoc & PD & Singh et al., 2020 &
+  \href{https://github.com/pratikkayal/PlantDoc-Dataset}{\nolinkurl{github.com/pratikkayal/PlantDoc-Dataset}} &
+  \texttt{download\_plant.sh}\newline $\to$ \texttt{data/plant/}  \\[2pt]
+EuroSAT & ES & Helber et al., 2019 &
+  \href{https://zenodo.org/records/7711810}{\nolinkurl{zenodo.org/records/7711810}} &
+  \texttt{download\_rs.sh}\newline $\to$ \texttt{data/rs/}  \\[2pt]
+Sentinel-2 L1C, 2023 & S2 & ESA / Copernicus &
+  \href{https://dataspace.copernicus.eu/}{\nolinkurl{dataspace.copernicus.eu}} &
+  \texttt{preprocess\_rs\_brazil.py}\newline $\to$ \texttt{data/rs/s2/}  \\[2pt]
+MapBiomas Collection 4 & MB & Souza et al., 2020 &
+  \href{https://brasil.mapbiomas.org/}{\nolinkurl{brasil.mapbiomas.org}} &
+  \texttt{preprocess\_rs\_brazil.py}\newline $\to$ \texttt{data/rs/mapbiomas/}  \\[2pt]
+MSD Task01 (BraTS) & BraTS & Antonelli et al., 2022 &
+  \href{http://medicaldecathlon.com/}{\nolinkurl{medicaldecathlon.com}} &
+  \texttt{download\_brats.sh}\newline $\to$ \texttt{data/brats/}  \\[2pt]
+tiny Shakespeare & TShk & Karpathy, 2015 &
+  \href{https://github.com/karpathy/char-rnn}{\nolinkurl{github.com/karpathy/char-rnn}} &
+  \texttt{download\_shakespeare.sh}\newline $\to$ \texttt{data/shakespeare/}  \\[2pt]
+M\"uller-Brown density & MB & M\"uller \& Brown, 1979 &
+  \texttt{preprocess\_boltzmann.py}\newline (generated, no download) &
+  \texttt{data/boltzmann/}  \\[2pt]
+GWOSC O3a strain & GWOSC & Abbott et al., 2023 &
+  \href{https://gwosc.org/}{\nolinkurl{gwosc.org}} &
+  \texttt{preprocess\_gw.py} $\to$ \texttt{data/gw/}  \\[2pt]
+Ising chain & TFIM & Pfeuty, 1970 &
+  \texttt{scripts/demos/\allowbreak nqs\_metrics.py}\newline (closed forms, no download) &
+  ---  \\[2pt]
+CASP16, Phase 1 & CASP16 & Kryshtafovych et al., 2025 &
+  \href{https://predictioncenter.org/casp16/}{\nolinkurl{predictioncenter.org/casp16}} &
+  \texttt{download\_casp16.sh}\newline $\to$ \texttt{data/casp16/raw/}  \\[2pt]
+PDB, pre-CASP16 chains & PDB & Berman et al., 2000 &
+  \href{https://www.rcsb.org/}{\nolinkurl{rcsb.org}} &
+  \texttt{casp16\_chain\_list.py},\newline \texttt{casp16\_fetch\_chains.py}\newline $\to$ \texttt{data/casp16/}  \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent\small Each also has a \texttt{preprocess\_*.py} step (e.g.\
+\texttt{preprocess\_shakespeare.py} builds
+\texttt{train.bin}/\texttt{val.bin}/\texttt{vocab.txt}) between download
+and training. \texttt{preprocess\_visdrone.py} writes three
+record formats (single-grid, single-scale anchor, and multi-scale FPN), so
+one set of Lean loaders and one codegen serve every detector head.
+VisDrone's official Google-Drive/Baidu links are large-file-flaky, so
+\texttt{download\_visdrone.sh} pulls the byte-identical Ultralytics
+release-asset mirror over plain HTTPS (\emph{reference:} Zhu et al.,
+\emph{Detection and Tracking Meet Drones Challenge}, IEEE TPAMI~43, 2021).
+The strain has no download script: which files to fetch is part of the
+preprocessing, so \texttt{preprocess\_gw.py} picks them off the GWOSC
+timeline, fetches them and builds the sets in one run.
+\normalsize
+
+\medskip\noindent\textbf{Building the NEU-DET dataset.} NEU-DET is
+Kechen Song's group's hot-rolled steel strip surface-defect set at
+Northeastern University: $1{,}800$ grayscale $200\times200$ crops, $300$
+for each of crazing, inclusion, patches, pitted surface, rolled-in scale
+and scratches, with $4{,}189$ Pascal-VOC boxes (\emph{references:} Song \&
+Yan, \emph{A noise robust method based on completed local binary patterns
+for hot-rolled steel strip surface defects}, Appl.\ Surf.\ Sci.~285, 2013,
+the images; He, Song, Meng \& Yan, \emph{An End-to-end Steel Surface Defect
+Detection Approach via Fusing Multiple Hierarchical Features}, IEEE
+TIM~69(4), 2020, the boxes). No licence is stated; the maintainer's page
+asks for a citation. \texttt{download\_neu.sh} therefore fetches the
+maintainer's own Google-Drive copy (26\,MB) and the repository
+redistributes nothing --- the same posture as BraTS below. The download
+checks the census before anything else: $1{,}800$ images with $1{,}800$
+matching XMLs and exactly the six class names, because mirrors of this set
+differ in file extension and in whether the names carry underscores.
+
+The set ships no split. \texttt{preprocess\_neu\_det.py} draws
+$1{,}080/360/360$ --- train, validation, test --- stratified $180/60/60$
+per class from a fixed seed, so every split is balanced and the draw is
+the same on every machine; the anchor priors are then fitted on the
+training $1{,}080$ alone (\texttt{scripts/probes/\allowbreak neu\_anchors.py}). It writes the
+two record formats the VisDrone preprocessor writes --- the multi-scale
+FPN target to \texttt{data/neu\_det\_fpn/} and the single-grid target
+with the uncapped ground-truth sidecar to \texttt{data/neu\_det448/} ---
+so the detector's loaders, its code generation and its scorer run
+unchanged. The $200$-px crop is upsampled to the detector's $448$
+(the grey JPEGs are already three-channel), which keeps the ImageNet
+ResNet-34 stem a byte prefix of the initialisation and lets the same
+bootstrap self-check pass as on VisDrone. Epochs are chosen on the
+validation $360$ and reported on the test $360$.
+
+\medskip\noindent\textbf{Building the ArASL dataset.} ArASL is Latif,
+Mohammad, Alghazo, AlKhalaf \& AlKhalaf's Arabic sign-language alphabet set
+(\emph{ArASL: Arabic Alphabets Sign Language Dataset}, Data in Brief~23,
+2019; Mendeley Data \texttt{y7pckrw6z2} v1, CC~BY~4.0): $54{,}049$
+grayscale $64\times64$ crops of static hand signs for the 32 letters,
+$1{,}293$ (\emph{yaa}) to $2{,}114$ (\emph{ain}) per class, performed by
+``more than 40 people''. The licence permits redistribution, so
+\texttt{download\_arasl.sh} fetches the zip and the label CSV from Mendeley
+directly; the download URLs carry a per-file uuid, which the script resolves
+from Mendeley's public API at run time and checks against the sha256 the API
+reports. The census runs before anything trains: exactly $54{,}049$ files
+under exactly the 32 folder names, numbered $1$ to $n$ without a gap in every
+class, and the $658$ files that are not $64\times64$ grey --- $638$ at
+$256\times256$ in \emph{kaaf} and \emph{meem}, ten at $768\times1024$ in
+\emph{haa}, ten RGB --- listed, then resized and converted with one
+resampler.
+
+The file numbers are capture order and the images are video bursts.
+\texttt{preprocess\_arasl.py} measures it: sorted by number within a
+class, consecutive frames differ by a median $3.3$ grey levels per pixel
+where a random pair of the same class differs by $33$; $73.5\%$ of
+consecutive pairs are under $6$, and cutting where the gap exceeds $6$
+leaves $14{,}336$ chains of $3.8$ frames on average, the longest $58$, with
+the weakest class (\emph{al}) still at $64\%$. No signer, session or date
+is recorded anywhere in the release. The preprocessor therefore writes the
+same images under two protocols, $80/10/10$ per class from one seed: a
+stratified permutation (\texttt{random}, the protocol every published
+number uses), and each class's capture order cut at the $80\%$ and $90\%$
+marks with each cut moved to the nearest chain boundary so no burst
+straddles two parts (\texttt{blocked}). It then audits both: for every
+test image, the nearest training image of any class at $16\times16$. Under
+\texttt{random}, $92.3\%$ of test images have a training image within $6$
+grey levels (median nearest $1.2$) and $95.7\%$ of nearest neighbours carry
+the test image's own label; under \texttt{blocked}, $6.4\%$ and $28.6\%$.
+The residual $6\%$ is not a straddled burst --- the audit checks that none
+does --- but the same hand returning a median $306$ files later, which a
+release without signer ids cannot separate; the section reports it as the
+protocol's floor. Images are written as f32 in $[0,1]$, the range the
+chapter's CIFAR loader feeds, and epochs are chosen on the validation tenth
+and reported on the test tenth.
+
+\medskip\noindent\textbf{Building the PlantVillage and PlantDoc datasets.}
+PlantVillage is the Hughes--Salath\'e leaf-disease set (\emph{An open access
+repository of images on plant health}, arXiv:1511.08060, 2015; Mohanty,
+Hughes \& Salath\'e, \emph{Using deep learning for image-based plant disease
+detection}, Front.\ Plant Sci.~7:1419, 2016): $54{,}305$ colour photographs
+of single picked leaves on a grey or paper background, $256\times256$, 38
+classes over 14 crops, $152$ to $5{,}507$ per class, with a
+\texttt{segmented} twin of every image (the leaf on black) and, in the
+current release, a grouping of the photographs by leaf ($7{,}946$ leaves,
+four photographs of most of them) together with a leaf-grouped $80/20$ split
+that the maintainers publish beside the data. The repository's dataset card
+gives CC~BY-SA~3.0. PlantDoc is Singh, Jain, Jain, Kayal, Kumawat \&
+Batra's field set (\emph{PlantDoc: a dataset for visual plant disease
+detection}, CoDS-COMAD 2020): $2{,}578$ web photographs of leaves on plants,
+13 of the same crops in 28 classes --- 18 diseases and 10 healthy, one of
+them with two images --- under CC~BY~4.0. \texttt{download\_plant.sh}
+clones both from their GitHub repositories, fetches the maintainers' split
+lists, and checks the census before anything runs: exactly $54{,}305$ colour
+files under exactly the 38 folder names, a segmented twin for each (matched
+on the suffix after the uuid, because one class's colour files carry no
+uuid), $2{,}578$ PlantDoc files, and a $10{,}709$-line test list. The
+Kaggle ``New Plant Diseases Dataset'' is PlantVillage with augmented copies on
+both sides of its own split and is not used.
+
+\texttt{preprocess\_plant.py} writes the Imagenette record format at $256$
+for training parts and $224$ centre-cropped for evaluation parts. PlantVillage
+is split twice, $80/10/10$ per class: \texttt{random}, a stratified
+permutation, and \texttt{grouped}, whose test set is the maintainers'
+$10{,}709$ exactly and whose validation tenth is carved from their training
+list by leaf id, so no leaf straddles a line. The audit of the ArASL build
+runs on it and finds $0.1\%$ of consecutive photographs within six grey
+levels and $1.3\%$ of random-split test images with a near-twin in training:
+the four photographs of a leaf are different poses. Beside the test tenth it
+writes the same images from \texttt{segmented}, the leaf on its image's median
+background colour, the background with the leaf filled by that colour, and
+the flat colour alone --- the four counterfactuals of the section's two-player
+Shapley value, sharing one fill --- and the leaf mask at $224$ and on the
+$7\times7$ grid of the class-activation map. Every training leaf is also
+composited onto a random crop of a random Imagenette training image (the mask
+feathered by two pixels; Imagenette has no agriculture in it) and given one
+photometric-and-geometric variant, as two further training parts. PlantDoc's
+28 classes are mapped to PlantVillage ids by a table the preprocessor prints
+(ten PlantVillage classes have no field twin); its images are resized to a
+$256$ shorter side and centre-cropped; and it is written whole, under its
+official split, and as five stratified folds, so a net fine-tuned on field
+images scores every field image once, held out.
+
+\medskip\noindent\textbf{Building the EuroSAT and Brazil chip sets.}
+EuroSAT is Helber, Bischke, Dengel \& Borth's land-cover benchmark
+(\emph{EuroSAT: a novel dataset and deep learning benchmark for land use and
+land cover classification}, IEEE JSTARS 12(7), 2019; Zenodo 10.5281/zenodo.7711810,
+MIT, plus the Copernicus Sentinel data terms): $27{,}000$ GeoTIFFs of
+$64\times64\times13$ unsigned 16-bit values, Sentinel-2A Level-1C
+top-of-atmosphere reflectance $\times 10{,}000$ at 10~m with the 20 and
+60~m bands cubic-spline upsampled, $2{,}000$ to $3{,}000$ chips in each of
+ten class folders, the planes in the order B01--B12 then B8A.
+\texttt{download\_rs.sh} fetches the archive and torchgeo's split lists
+(Neumann et al.\ 2019; $16{,}200$ / $5{,}400$ / $5{,}400$) and
+\texttt{preprocess\_rs\_eurosat.py} checks the census, derives the plane
+order from the chips rather than the documentation (over forest B08 and B8A
+agree and both dwarf B04; B10 is near zero; B08's most correlated plane is
+the thirteenth), asserts the lists partition the $27{,}000$, and writes
+each chip as 13 planes of standardised reflectance --- the per-band mean and
+standard deviation of the training split, which every Brazilian chip is
+standardised with unchanged.
+
+The Brazil chips are cut by \texttt{preprocess\_rs\_brazil.py} from
+Sentinel-2 Level-1C scenes of 2023 found through the Copernicus Data Space
+catalogue and read per band from its object store (a free account; the keys
+live in the environment): six tiles over Rond\^onia's arc of deforestation
+in June, and six over western Bahia in September and again, the same tiles
+and the same windows, in the wet season (January to April), each scene the
+least cloudy of its season with ties going to the earliest date in the
+Amazon --- the later the dry season, the thicker the fire smoke, which the
+agency's cloud figure does not count --- and the latest in the Cerrado's
+dry part. Every scene carries the 2022 radiometric offset ($-1{,}000$ in
+every band, the archive having been reprocessed under it); it is read from
+each scene's metadata and removed before anything else, and the 20 and
+60~m bands are upsampled as EuroSAT's were. $1{,}500$ chip origins per tile
+are drawn on the 60~m grid inside the swath from a seed derived from the
+tile id, so a Bahia tile's two seasons share their windows; a chip is kept
+if s2cloudless finds no pixel over probability 0.2 (in both seasons, for
+Bahia), and labelled from MapBiomas Collection 4 (Souza et al.\ 2020;
+CC~BY~4.0), Brazil's annual land-cover map at 10~m, by the majority class
+over the chip's footprint at purity 0.8 or better --- forest formation,
+pasture, grassland, temporary and perennial crops, urban, river; savanna
+formation and forest plantation kept as diagnostic classes, every other
+code dropping the chip --- capped at $2{,}000$ chips per class. The census,
+the scenes with their dates and offsets, the class map and the dropped
+codes are in \texttt{runs/2026-09-29-rs-phase2/README.md}.
+
+\medskip\noindent\textbf{Building the BraTS dataset.}
+BraTS~2021 proper (1{,}251 cases) is
+gated behind a free Synapse account and a signed research-use
+agreement, so no script can fetch it. The \textbf{Medical
+Segmentation Decathlon}'s \textbf{Task01\_BrainTumour} is the same task
+from open storage: 484 labelled 4D volumes built from the BraTS
+2016/2017 cases, the same four co-registered MRI modalities
+(FLAIR / T1w / T1gd / T2w) and the same glioma sub-regions, as a single
+7.6\,GB tarball over S3. Thus we have fewer volumes and numbers that are
+not comparable to a BraTS~2021 leaderboard, and we also have a
+real segmentation result on real medical data that a reader can
+reproduce.
+
+\smallskip\noindent Preprocessing details:
+\texttt{preprocess\_brats.py} ships a \textbf{dependency-free NIfTI-1
+reader} (numpy only) and two decisions that would silently ruin the
+numbers if done the obvious way. Intensities are z-scored over
+brain voxels only, because BraTS volumes are skull-stripped, so
+$\sim$83\,\% of each is exact zero and whole-volume statistics would
+crush the tissue contrast. And the train/val split is by patient,
+not by slice, because adjacent axial slices of one brain are
+near-duplicates, so a slice-level split leaks memorized neighbours across
+the boundary.
+Volumes are quantized to uint8 over a $\pm5\sigma$ window and the C
+loader inverts it, matching the on-disk convention of every other dataset
+here.
+
+\smallskip\noindent The default build is $240 \times 240$, BraTS's native
+in-plane size, which suits a depth-4 UNet ($240 = 16 \cdot 15$). A stride-32
+backbone needs a size divisible by 32, so \texttt{unet-brats-r34} reads a
+second build made by \texttt{preprocess\_brats.py \dots{} --size 224 --seed 0}
+into \texttt{data/brats224/}. The same seed reproduces the same patient split
+and the same 14{,}415 / 2{,}569 slices. Note that \texttt{--size} crops
+rather than resizes: interpolating a label mask would invent classes that were
+never annotated, whereas a centre crop leaves intensities exact and the mask
+values untouched. It is also lossless here, because the 8-pixel border it
+removes contains no brain voxels, these volumes being skull-stripped and
+centred.
+\emph{Reference:} Antonelli et al., \emph{The Medical Segmentation
+Decathlon}, Nature Communications~13, 4128 (2022), atop the underlying
+BraTS work (Menze et al.\ 2015, Bakas et al.\ 2017).
+
+\medskip\noindent\textbf{Building the GWOSC dataset.} The strain comes from
+GWOSC's own hosting (plain HTTPS, no account) as 4096-second HDF5 files at
+4\,kHz, 134\,MB each: 26 file pairs from H1 and L1, 6.6\,GB, about 25 minutes
+to fetch. \texttt{preprocess\_gw.py} chooses the pairs from the GWOSC
+timeline, one 4096-second slot a day across O3a that lies wholly inside
+science-mode data at category \texttt{CBC\_CAT3} for both detectors with no
+transient hardware injection; the continuous-wave injections ran for all of
+O3 and are narrow lines the whitening removes, so their flag is deliberately
+not required, and requiring it yields zero clean seconds. Per file and
+detector it estimates a median-Welch PSD, colours a Gaussian twin by it,
+whitens both by one filter, injects the PyCBC chirps in the whitened domain,
+computes the matched-filter statistics of \S\ref{sec:bestiary_signal}, and
+writes the two spectrogram sets as flat f32 \texttt{[N, 2, 64, 128]} with
+int32 labels and a sidecar of every injection's parameters: 7\,GB, eleven
+minutes on eight cores at 1.7\,GB each. The stack (PyCBC, LALSuite, GWpy,
+gwosc) lives in its own \texttt{.venv-gw} from
+\texttt{requirements-gw-lock.txt}; installed into the main environment it
+would replace the pinned numpy and cuDNN the JAX reference needs. Two things
+the GWOSC documentation does not say: the 32-second event snippets stopped
+with GWTC-4, so an event's file is the 4096-second bulk file and can hold NaN
+gaps away from the event, and the \texttt{gwosc} client names the run
+\texttt{O3a}, not the \texttt{O3a\_4KHZ\_R1} the file names carry.
+\emph{Reference:} Abbott et al., \emph{Open Data from the Third Observing Run
+of LIGO, Virgo, KAGRA, and GEO}, ApJS~267, 29 (2023).
+
+\medskip\noindent\textbf{Building the CASP16 dataset.} Two sources, both
+public and neither gated. The targets come from the Protein Structure
+Prediction Center's download area (\nolinkurl{predictioncenter.org}, plain
+HTTPS): the 62 Phase-1 target sequences, the 159 domain-trimmed experimental
+structures the assessors released after the predictions were in, the domain
+table that cuts each target into evaluation units and labels them easy,
+medium or hard, the group list, and the $50{,}157$-row score table of every
+group's five models per unit. \texttt{download\_casp16.sh} fetches all of
+it, about 60\,MB, with every group's models for the three targets the scorer
+is validated on, builds US-align from source and pulls the OpenStructure
+docker image the official lDDT is computed with. The training set comes from
+the PDB through RCSB's APIs: \texttt{casp16\_chain\_list.py} searches for
+every protein entity released before CASP16 opened on 2024-05-01, X-ray or
+EM at 3\,Å or better, 40--512 residues --- $230{,}942$ of them, 18 minutes of
+paging the data API for sequence, chains, resolution and release date ---
+and keeps one representative per RCSB 40\,\% sequence cluster (the
+precomputed \texttt{clusters-by-entity-40.txt}, best resolution wins, entities
+with over 5\,\% unknown residues dropped): $27{,}690$ chains, median length
+214, $6.4$\,M residues, 90\,\% X-ray at a median $1.9$\,Å. MMseqs2 then
+searches the 85 unit sequences against them at 30\,\% identity over half the
+chain and finds 84 hits on 15 targets --- templates the field was allowed to
+use, 3BVF at 100\,\% over a third of T1295 --- so the date cut alone is the
+headline list ($26{,}310$ chains, the information the field had) and the
+purged list ($26{,}228$) the ``no templates'' ablation; 5\,\% of the clusters
+are validation ($1{,}380$ chains). None of the 21 PDB entries behind the unit
+table was released before the cutoff, so the date cut alone excludes every
+target structure. \texttt{casp16\_fetch\_chains.py} reads each entry's mmCIF
+from the RCSB CDN with gemmi and keeps the entity's first chain's backbone
+and $\mathrm{C}_\beta$ keyed by \texttt{label\_seq\_id}, which agrees with
+the canonical sequence on all but 12 of $37{,}672$ residues checked, every
+one a modified residue, so the labels need no alignment: four chains a
+second per core, $3.6$\,GB.
+
+\texttt{casp16\_labels.py} writes the 66-class pair plane per chain --- 64
+bins over 2--22\,Å on the $\mathrm{C}_\beta$ distance ($\mathrm{C}_\alpha$
+for glycine), a ``beyond 22\,Å'' class and an ``unobserved'' class for any
+pair with a missing residue, 8.5\,\% of residues --- and, with
+\texttt{--orient}, the three orientation planes, with a virtual
+$\mathrm{C}_\beta$ built from N, $\mathrm{C}_\alpha$ and C where none is
+deposited. \texttt{casp16\_embed.py} runs the frozen language model over
+every chain, ESM-2 at 35M, 150M, 650M or 3B parameters, and writes the
+final-layer representation per residue in fp16 with the contact head's logit
+per pair as a byte; the 3B model runs in fp16 on a 16\,GB card, checked
+against fp32 on the CPU (embedding cosine $1.0000$, contact map within
+$0.024$), the $27{,}690$ chains in seven minutes across four cards, and its
+contact-head pass caps a batch at $400$k pairs because the published head
+keeps about five copies of its attention maps. \texttt{casp16\_pack.py} lays
+features, labels, planes and an index into flat pool files the trainer's C
+gather reads --- 33\,GB for the 3B features --- after checking 300 random
+chains and every target against their per-chain files, the gate under the
+64-chain memorization probe of \S\ref{sec:bestiary_structure}.
+\texttt{casp16\_targets.py} does the same for the units from the
+domain-trimmed structures, the language model run on the full target
+sequence and sliced by the unit's segments: 85 units in the table, 84 with a
+structure (T1249v2-D1 has none), 83 with Phase-1 rows in the score table, and
+the v2 units are a v1 sequence in a second conformation. The scorer,
+\texttt{casp16\_score.py}, reproduces the official table before anything of
+ours is scored: CASP's model files carry a \texttt{PFRMAT} header and blank
+chain identifiers that OpenStructure refuses, so they are rewritten ATOM-only
+as chain A trimmed to the unit's ranges; \texttt{ost compare-structures
+--lddt} then returns the LDDT column to the printed digit, \texttt{USalign
+-TMscore 1} the TMscore column (residue-index superposition --- TM-align
+reads $0.03$ high on poor models), and OST's rigid GDT\_TS within a point of
+LGA's. Everything Python lives in \texttt{.venv-casp} (numpy, pandas, gemmi,
+torch, fair-esm, and \texttt{transformers} for the ESMFold row); 67\,GB on
+disk with all four language models' pools. \emph{References:} Kryshtafovych
+et al., \emph{Critical assessment of methods of protein structure prediction
+(CASP) --- Round XVI}, Proteins (2025); Berman et al., \emph{The Protein Data
+Bank}, Nucleic Acids Res.~28, 235 (2000); Lin et al., \emph{Evolutionary-scale
+prediction of atomic-level protein structure with a language model},
+Science~379, 1123 (2023).
 
 \chapter*{Acknowledgments}
 \addcontentsline{toc}{chapter}{Acknowledgments}
