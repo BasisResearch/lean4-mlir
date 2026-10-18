@@ -381,7 +381,7 @@ Chapter & Contracts & Witnesses & Steps & New primitive / result \\
 5 (ResNet-34)     & 9  & 3   & 7 & residual ($+$proj), GAP, stride-2 conv ($+$its weight grad), the $3 \times 3$/s2 stem pool, whole-net \texttt{cnn}; \textbf{full-depth ResNet-34 and ResNet-50} at batch statistics; witnesses: a hand-built BN CNN, and the full-width ResNet-34 and ResNet-50 at $224 \times 224$ (ResNet-50 also at 160) with a non-zero backward; both batched steps tied (ResNet-50 also at BCE), both sync-BN twins, the ResNet-50 backward chain is the VJP, both steps' gradient nodes are the loss's derivative \\
 6 (MobileNetV2)   & 6  & 2   & 8 & ReLU6, depthwise (stride 1$+$2); \texttt{mobilenetv2} at representative depth and at \textbf{all 17 blocks} at batch statistics; \textbf{\mbox{MobileNetV4}} at full depth; witnesses: full-width V2 and V4 at $224 \times 224$ with a non-zero backward; both steps tied, both sync-BN twins, both backward chains are the VJP, both steps' gradient nodes are the loss's derivative \\
 7 (EfficientNet)  & 5  & --- & 4 & swish, sigmoid, SE, whole-net at representative depth, \textbf{full B0} (16 \mbox{MBConv} blocks); step tied, sync-BN twin, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
-8 (ConvNeXt)      & 6  & --- & 3 & GELU, LayerNorm, layer-scale, the $4 \times 4$/s4 patchify conv, whole-net at representative depth, \textbf{full ConvNeXt-T} (18 blocks); step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
+8 (ConvNeXt)      & 6  & --- & 3 & GELU (tanh and exact, one record), LayerNorm, layer-scale, the $4 \times 4$/s4 patchify conv, whole-net at representative depth, \textbf{full ConvNeXt-T} (18 blocks); step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
 9 (ViT)           & 6  & --- & 4 & MHSA, block, vector LayerNorm and its block, \textbf{every depth $k$} (ViT-Tiny is $k = 12$), \texttt{vitFull}; the emitted graph denotes the tower, step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
 \hline
                   & \textbf{44} & \textbf{9} & \textbf{37} & total \textbf{90} \\
@@ -5709,8 +5709,8 @@ fixed weights.
   \label{thm:resnet34FullHasVJP}
   \lean{Proofs.resnet34ForwardBFullHasVJPAt_correct, Proofs.resnet34ForwardBFullHasVJPAt}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv, ax:pdiv_add,
-      ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
+      ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
       thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
@@ -5742,8 +5742,8 @@ activation; see \leandocref{Proofs.resnet34ForwardBFullHasVJPAt\_correct}.
   \label{thm:resnet50FullHasVJP}
   \lean{Proofs.resnet50ForwardBFullHasVJPAt_correct, Proofs.resnet50ForwardBFullHasVJPAt}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv, ax:pdiv_add,
-      ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
+      ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
       thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
@@ -5768,9 +5768,9 @@ As for ResNet-34, with the bottleneck in place of the basic block; see
   \lean{Proofs.r50InputGradB_eq_r34B_full_vjp, Proofs.r50InputGradB_correct,
         Proofs.resnet50ForwardBFull_eq_slots, Proofs.r34BFullHasVJPAt}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv, ax:pdiv_comp,
-      ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
+      ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
+      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon_s > 0\), the stem ReLU off its kink and the stem pool's
@@ -7789,10 +7789,10 @@ MobileNetV4-Conv-M take each of the six rungs in turn.
   \label{thm:mobilenetv2FullHasVJP}
   \lean{Proofs.mobilenetv2ForwardBFullHasVJPAt_correct, Proofs.mobilenetv2ForwardBFullHasVJPAt}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:depthwiseConv2d,
-      ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex,
-      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP,
-      thm:identityHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
+      ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
+      ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
+      thm:denseHasVJP, thm:identityHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{MNV2PosB}]
@@ -7821,10 +7821,11 @@ activation; see \leandocref{Proofs.mobilenetv2ForwardBFullHasVJPAt\_correct}.
         Proofs.StableHLO.mnv4FwdGraphBFullDrop_faithful,
         Proofs.StableHLO.mobilenetv4ForwardBFullHasVJPAt}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:depthwiseConv2d,
-      ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex,
-      ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:denseHasVJP, thm:identityHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
+      ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
+      ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
+      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:rowwiseHasVJPMat,
+      thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item at the activation its stage sees, every ReLU is off its kink; the
@@ -7998,11 +7999,11 @@ backwards (Theorem~\ref{thm:hasGradAt_comp}, once per stage); see
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
-      ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
-      ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad,
-      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
-      thm:identityHasVJP, thm:pdiv_finset_sum, thm:rowwiseHasVJPMat, thm:vjpComp}
+      ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const,
+      ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad, def:hasvjp,
+      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
+      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:identityHasVJP,
+      thm:pdiv_finset_sum, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} each of the 233 parameter gradients of the batched
   MobileNetV4-Conv-M step (\texttt{mnv4in\_adamdp64}) denotes the certified
   batch gradient at the chain cotangent of a loss cotangent left as a binder,
@@ -8094,9 +8095,9 @@ As for MobileNetV2; see \leandocref{Proofs.Mnv4FullBSeal.sealX\_backward\_nontri
   \label{thm:mobilenetv2_sync_tie}
   \lean{Proofs.MobileNetV2SyncTieB.mnv2_net_syncTiedB, Proofs.MobileNetV2SyncTieB.mnv2_net_syncTiedB_smoothedCE}
   \leanok
-  \uses{ax:conv2d, ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP,
-      ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:depthwiseWeightGradHasVJP3,
-      ax:pdiv, ax:pdiv_reindex, def:hasvjp, def:hasvjp3, thm:vjpComp}
+  \uses{ax:conv2d, ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d,
+      ax:depthwiseHasVJP3, ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_reindex,
+      def:hasvjp, def:hasvjp3, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(R \ge 1\) replicas of \(N \ge 1\) images each, every BatchNorm
@@ -9539,9 +9540,9 @@ gradient and the data-parallel tie; no seal.
         Proofs.StableHLO.efficientnetFwdGraphBFullDrop_faithful, Proofs.StableHLO.efficientnetFwdGraphBFullEvalDrop_faithful,
         Proofs.StableHLO.efficientnetFwdGraphBFullEval_faithful, Proofs.efficientnetForwardBFullHasVJP}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:depthwiseConv2d,
-      ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:residualHasVJP,
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
+      ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp,
+      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:residualHasVJP,
       thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
@@ -10753,7 +10754,7 @@ Three new operations this chapter, still three rules. What ran is
 \texttt{verified\_mlir/\allowbreak convnext\_adam\_train\_step.mlir}, and
 every channel-LayerNorm in it backpropagates by
 Theorem~\ref{thm:chanLNTensor3HasVJP} (the head's vector LayerNorm by
-Theorem~\ref{thm:layerNormVecHasVJP}), every GELU by
+Theorem~\ref{thm:layerNormVecHasVJP}), every GELU, at either form, by
 Theorem~\ref{thm:geluHasVJP}, every layer scale by its own diagonal
 adjoint, every depthwise convolution by Theorem~\ref{ax:depthwiseHasVJP3}, and every
 residual skip by Theorem~\ref{thm:residualHasVJP}.
@@ -10798,9 +10799,14 @@ forces the codegen to substitute a subgradient convention
 soft-gate behavior near zero that empirically helps transformers
 (and, it turns out, modernized CNNs). Diagonal activation Jacobian,
 same family as ReLU's diagonal, just with a smooth scalar derivative
-instead of an indicator. Theorems
-\ref{ax:geluScalar}--\ref{thm:geluHasVJP} provide the scalar
-function, its derivative, the Jacobian, and the assembled VJP.
+instead of an indicator. It comes in two forms: the tanh approximation
+(Definition~\ref{ax:geluScalar}), which the Imagenette tier below trained
+on both paths, and the exact \(x \cdot \Phi(x)\)
+(Definition~\ref{ax:geluErfScalar}), which the paper's code and the
+ImageNet pairs compute. Definition~\ref{def:geluForm} names the choice,
+Theorem~\ref{thm:geluHasVJP} is the VJP at either, and
+Theorem~\ref{thm:geluErf_as_computed} is the exact form in the
+\(\mathrm{erfc}\) spelling the emitter prints.
 
 Both primitives are used by the upcoming Vision Transformer chapter
 (Chapter~\ref{chap:attention}) without modification. ConvNeXt
@@ -10863,14 +10869,16 @@ Figure~\ref{fig:depgraph_layernorm} is the dependency graph of this section.
 \label{fig:depgraph_layernorm}
 \end{figure}
 
-\begin{definition}[GELU scalar function]
+\begin{definition}[GELU scalar function, tanh form]
   \label{ax:geluScalar}
   \lean{Proofs.geluScalar}
   \leanok
-  The tanh approximation the codegen actually emits (not the exact
-  \(x \cdot \Phi(x)\) erf form):
+  The tanh approximation, \texttt{jax.nn.gelu}'s default and the form
+  every Imagenette-tier run in this chapter trained:
   \(\mathrm{geluScalar}(x) = 0.5\, x\, \bigl(1 + \tanh(\sqrt{2/\pi}\,
-  (x + 0.044715\, x^3))\bigr)\).
+  (x + 0.044715\, x^3))\bigr)\). The exact \(x \cdot \Phi(x)\) is
+  Definition~\ref{ax:geluErfScalar}; the codegen emits either, and
+  Theorem~\ref{thm:geluHasVJP} is the VJP of both.
 \end{definition}
 
 \begin{definition}[GELU scalar derivative]
@@ -10929,6 +10937,70 @@ through a projection, convert back to the scalar derivative.}
 \end{enumerate}
 \end{proof}
 
+\begin{definition}[GELU scalar function, exact form]
+  \label{ax:geluErfScalar}
+  \lean{Proofs.geluErfScalar, Proofs.gaussPhi, Proofs.gaussPdf}
+  \leanok
+  GELU as Hendrycks and Gimpel define it:
+  \[
+    \mathrm{geluErfScalar}(x) = x \cdot \Phi(x), \qquad
+    \Phi(x) = \tfrac12 + \int_0^x \varphi, \qquad
+    \varphi(t) = \frac{e^{-t^2/2}}{\sqrt{2\pi}},
+  \]
+  with \(\Phi\) the standard-normal CDF and \(\varphi\) its density. This is PyTorch's
+  \texttt{nn.GELU} and \texttt{jax.nn.gelu(approximate=False)}, the form the
+  ConvNeXt and DeiT recipes train, and what the ImageNet pairs of this chapter
+  and the next compute on both paths. The CDF is written as a closed form over
+  the interval integral, so that \(\Phi' = \varphi\) is the fundamental
+  theorem of calculus at a continuous integrand
+  (\texttt{hasDerivAt\_gaussPhi}) rather than a fact about a measure.
+\end{definition}
+
+\begin{definition}[GELU scalar derivative, exact form]
+  \label{ax:geluErfScalarDeriv}
+  \lean{Proofs.geluErfScalarDeriv, Proofs.geluErfScalarDeriv_eq, Proofs.hasDerivAt_gaussPhi}
+  \leanok
+  \uses{ax:geluErfScalar}
+  Mathlib's \(\mathrm{deriv}\, \mathrm{geluErfScalar}\), as the tanh form's
+  is. The closed form is the theorem \texttt{geluErfScalarDeriv\_eq}:
+  \(\mathrm{geluErfScalar}'(x) = \Phi(x) + x\, \varphi(x)\), the product rule
+  on \(x \cdot \Phi(x)\) with \(\Phi' = \varphi\).
+\end{definition}
+
+\begin{theorem}[GELU Jacobian, exact form]
+  \label{ax:pdiv_geluErf}
+  \lean{Proofs.pdiv_geluErf}
+  \leanok
+  \uses{ax:geluErfScalar, ax:geluErfScalarDeriv, ax:pdiv}
+  \Prove{} \(\pdiv(\mathrm{geluErf})\, x\, i\, j
+    = \delta_{ij} \cdot \mathrm{geluErfScalar}'(x_i)\).
+\end{theorem}
+
+\begin{proof}
+\leanok
+Theorem~\ref{ax:pdiv_gelu}'s four steps at \(\mathrm{geluErfScalar}\) in
+place of \(\mathrm{geluScalar}\); the differentiability witness is
+\(x \cdot \Phi(x)\)'s, a product of the identity and a function whose
+derivative the fundamental theorem of calculus supplies. \Qed{}
+\end{proof}
+
+\begin{definition}[Either GELU]
+  \label{def:geluForm}
+  \lean{Proofs.GeluForm.scalar, Proofs.GeluForm.map}
+  \leanok
+  \uses{ax:geluScalar, ax:geluErfScalar}
+  \(\mathrm{GeluForm}\) has two values, \texttt{tanh} and \texttt{erf};
+  \(\mathrm{scalar}\) sends them to Definitions~\ref{ax:geluScalar}
+  and~\ref{ax:geluErfScalar}, and \(\mathrm{map}\) applies the chosen scalar
+  componentwise, which at each value is the tanh \(\mathrm{gelu}\) and
+  \(\mathrm{geluErf}\) by \texttt{rfl}. Every ConvNeXt and ViT definition
+  and theorem from here on takes a \(\mathrm{GeluForm}\), so the renders that
+  trained the tanh form and the ones that train the exact form are instances
+  of one statement, and no proof outside the GELU's own two files cases on
+  which. The StableHLO GELU ops carry the same value, and the exact one
+  emits through \texttt{chlo.erfc} (Theorem~\ref{thm:geluErf_as_computed}).
+\end{definition}
+
 \begin{theorem}[LayerNorm VJP]
   \label{thm:layerNormHasVJP}
   \lean{Proofs.layerNormHasVJP}
@@ -10981,25 +11053,76 @@ row-wise vector LayerNorm (Theorem~\ref{thm:layerNormHasVJP} at
 back, reassociate back; see \leandocref{Proofs.chanLNTensor3HasVJP}.
 \end{proof}
 
-\begin{theorem}[GELU VJP]
+\begin{theorem}[GELU VJP, either form]
   \label{thm:geluHasVJP}
-  \lean{Proofs.geluHasVJP}
+  \lean{Proofs.GeluForm.hasVJP, Proofs.GeluForm.hasVJP_correct, Proofs.geluHasVJP, Proofs.geluErfHasVJP}
   \leanok
-  \uses{ax:geluScalar, ax:geluScalarDeriv, ax:pdiv, ax:pdiv_gelu, def:hasvjp}
-  \(\HasVJP\, (\mathrm{gelu})\), with backward
-  \(B(x, dy)_i = dy_i \cdot \mathrm{geluScalar}'(x_i)\).
+  \uses{ax:geluErfScalar, ax:geluErfScalarDeriv, ax:geluScalar, ax:geluScalarDeriv,
+      ax:pdiv, ax:pdiv_gelu, ax:pdiv_geluErf, def:geluForm, def:hasvjp}
+  For every \(gf : \mathrm{GeluForm}\),
+  \(\HasVJP\, (gf.\mathrm{map})\), with backward
+  \(B(x, dy)_i = dy_i \cdot gf.\mathrm{scalar}'(x_i)\). At \texttt{tanh} the
+  record is \(\mathrm{geluHasVJP}\) and at \texttt{erf} it is
+  \(\mathrm{geluErfHasVJP}\), each by \texttt{rfl}; the whole-net theorems
+  below and in Chapter~\ref{chap:attention} use it at the variable \(gf\).
 \end{theorem}
 
 \begin{proof}
 \leanok
 \begin{enumerate}
-  \item \Suffices{} \(B(x, dy)_i = \sum_j \pdiv(\mathrm{gelu})\,
+  \item \Suffices{} \(B(x, dy)_i = \sum_j \pdiv(gf.\mathrm{map})\,
     x\, i\, j \cdot dy_j\). \pf{Definition~\ref{def:hasvjp}.}
   \item \Qed{}
-    \pf{By the GELU Jacobian (Theorem~\ref{ax:pdiv_gelu}) the sum is
-    diagonal and collapses at \(j = i\) to
-    \(\mathrm{geluScalar}'(x_i) \cdot dy_i\). Same template as ReLU,
+    \pf{The Jacobian of \(gf.\mathrm{map}\) is diagonal at either form
+    (Theorems~\ref{ax:pdiv_gelu} and~\ref{ax:pdiv_geluErf}, one proof over
+    \(gf.\mathrm{scalar}\)), so the sum collapses at \(j = i\) to
+    \(gf.\mathrm{scalar}'(x_i) \cdot dy_i\). Same template as ReLU,
     Swish, h-swish: diagonal Jacobian \(\Rightarrow\) one-step VJP.}
+\end{enumerate}
+\end{proof}
+
+\begin{theorem}[The exact GELU as computed]
+  \label{thm:geluErf_as_computed}
+  \lean{Proofs.geluErfScalar_eq_erfc, Proofs.geluErfScalarDeriv_eq_erfc, Proofs.gaussPhi_eq_erfc, Proofs.erf, Proofs.IR.geluErf_back_bridge}
+  \leanok
+  \uses{ax:geluErfScalar, ax:geluErfScalarDeriv, def:hasvjp, thm:geluHasVJP}
+  Mathlib has no error function, so the book defines
+  \(\mathrm{erf}(z) = \tfrac{2}{\sqrt\pi}\int_0^z e^{-t^2}\,dt\) and
+  \(\mathrm{erfc} = 1 - \mathrm{erf}\). \Prove{} with
+  \(z = -x\sqrt{1/2}\),
+  \[
+    \Phi(x) = \tfrac12\,\mathrm{erfc}(z), \qquad
+    \mathrm{geluErfScalar}(x) = (0.5\,x)\,\mathrm{erfc}(z),
+  \]
+  \[
+    \mathrm{geluErfScalar}'(x) = 0.5\,\mathrm{erfc}(z)
+      + \tfrac{2}{\sqrt\pi}\,(0.5\,x)\,e^{-z^2}\sqrt{1/2},
+  \]
+  which are, term for term, the arithmetic of
+  \texttt{jax.nn.gelu(approximate=False)} and of its \texttt{jax.vjp}, and
+  the text the verified emitter prints around its one \texttt{chlo.erfc}.
+  The backward bridge \texttt{geluErf\_back\_bridge} pins the emitted
+  diagonal to \(\mathrm{geluErfHasVJP}\)'s backward by \texttt{rfl}.
+\end{theorem}
+
+\begin{proof}
+\leanok
+\begin{enumerate}
+  \item \(\Phi(x) = \tfrac12\,(1 + \mathrm{erf}(x/\sqrt2))\).
+    \pf{Substitute \(t = \sqrt2\, s\) in \(\int_0^x \varphi\)
+    (\texttt{intervalIntegral.integral\_comp\_div}).}
+  \item \(\Phi(x) = \tfrac12\,\mathrm{erfc}(z)\).
+    \pf{\(\mathrm{erf}\) is odd, its integrand being even, so
+    \(1 + \mathrm{erf}(x/\sqrt2) = 1 - \mathrm{erf}(z) = \mathrm{erfc}(z)\).
+    As real numbers the two spellings are equal; in floats the
+    \(\mathrm{erfc}\) one keeps the negative tail that \(1 + \mathrm{erf}\)
+    cancels away, which is why the emitter, like JAX, prints it.}
+  \item \Qed{}
+    \pf{The forward is 2 times \(x\); the derivative is
+    Definition~\ref{ax:geluErfScalarDeriv}'s \(\Phi(x) + x\,\varphi(x)\)
+    with \(\Phi\) by 2 and \(\varphi(x) = e^{-z^2}/\sqrt{2\pi}\) regrouped
+    as the derivative of \(\mathrm{erfc}\) at \(z\) times \(dz/dx\)
+    (\texttt{field\_simp}, \texttt{ring}).}
 \end{enumerate}
 \end{proof}
 
@@ -11012,11 +11135,11 @@ certified step; each node is the loss's derivative.
   \lean{Proofs.convnextInputGradB_correct, Proofs.convnextImagenetInputGradB_eq_vjp}
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
-      ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:geluScalar, ax:pdiv, ax:pdiv_comp,
-      ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:chanLNTensor3HasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:layerNormVecHasVJP, thm:residualHasVJP, thm:rowwiseHasVJPMat,
-      thm:transposeHasVJP, thm:vjpComp}
+      ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:pdiv, ax:pdiv_comp, ax:pdiv_reindex, def:geluForm, def:hasvjp,
+      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:chanLNTensor3HasVJP,
+      thm:denseHasVJP, thm:geluHasVJP, thm:identityHasVJP, thm:layerNormVecHasVJP,
+      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:transposeHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the stem's, the four stages', the three
@@ -11047,14 +11170,15 @@ the block's, the downsample's or the head's; see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dBiasGradHasVJP,
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:depthwiseBiasGradHasVJP,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:depthwiseWeightGradHasVJP3,
-      ax:geluScalar, ax:pdiv, ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const, ax:pdiv_reindex,
-      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:biPathHasVJP, thm:bnHasVJP,
+      ax:geluErfScalar, ax:geluErfScalarDeriv, ax:geluScalar, ax:pdiv, ax:pdiv_add,
+      ax:pdiv_comp, ax:pdiv_const, ax:pdiv_reindex, def:geluForm, def:hasvjp,
+      def:hasvjp3, def:hasvjpmat, thm:biPathHasVJP, thm:bnHasVJP,
       thm:chanLNTensor3HasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:denseWeightGrad_correct, thm:identityHasVJP, thm:layerNormVecHasVJP,
-      thm:residualHasVJP, thm:transposeHasVJP, thm:vjpComp}
+      thm:denseWeightGrad_correct, thm:geluHasVJP, thm:identityHasVJP,
+      thm:layerNormVecHasVJP, thm:residualHasVJP, thm:transposeHasVJP, thm:vjpComp}
   \Prove{} each of the 182 parameter gradients of the batched ConvNeXt-T
   step (\([3, 3, 9, 3]\) blocks, channel-LayerNorm at twenty-two sites,
-  per-channel layer scale, GELU) denotes the certified batch gradient at the
+  per-channel layer scale, GELU at either form) denotes the certified batch gradient at the
   chain cotangent of the label-smoothed cross-entropy, with the batch and the
   number of classes binders: \texttt{convnext\_adam\_train\_step.mlir} and
   the \texttt{convnextin\_*} steps emit these nodes. Stated at one replica,
@@ -11080,12 +11204,13 @@ downsample and head backwards; see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dBiasGradHasVJP,
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:depthwiseBiasGradHasVJP,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:depthwiseWeightGradHasVJP3,
-      ax:geluScalar, ax:pdiv, ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const, ax:pdiv_mul,
-      ax:pdiv_reindex, ax:softmaxCE_grad, def:hasgradat, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:biPathHasVJP, thm:bnHasVJP, thm:chanLNTensor3HasVJP,
-      thm:convnext_step_tie, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:denseWeightGrad_correct, thm:hasGradAt_comp, thm:identityHasVJP,
-      thm:layerNormVecHasVJP, thm:pdiv_finset_sum, thm:transposeHasVJP, thm:vjpComp}
+      ax:geluErfScalar, ax:geluErfScalarDeriv, ax:geluScalar, ax:pdiv, ax:pdiv_add,
+      ax:pdiv_comp, ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:softmaxCE_grad,
+      def:geluForm, def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat,
+      thm:biPathHasVJP, thm:bnHasVJP, thm:chanLNTensor3HasVJP, thm:convnext_step_tie,
+      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
+      thm:geluHasVJP, thm:hasGradAt_comp, thm:identityHasVJP, thm:layerNormVecHasVJP,
+      thm:pdiv_finset_sum, thm:transposeHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the LayerNorms \hfill[\texttt{h\(\varepsilon\)}]
@@ -11504,9 +11629,11 @@ The elements of the paper recipe, wired and on:
 \noindent The peak LR is $2.5\mathrm{e}{-}4$ (the
 $4\mathrm{e}{-}3$@4096 official value linearly scaled to batch 256)
 over a 20-epoch warmup. No deviation from the paper's architecture remains
-but the GELU, which is the tanh approximation on both paths
-(Definition~\ref{ax:geluScalar}); where the recipe departs from the
-paper's is the marker after the side-by-side table. Table~\ref{tab:cnx_jax} is
+but the GELU, which every run in this chapter trained as the tanh
+approximation on both paths (Definition~\ref{ax:geluScalar}); the queued
+ImageNet pair computes the exact form (Definition~\ref{ax:geluErfScalar}),
+and where the recipe departs from the paper's is the marker after the
+side-by-side table. Table~\ref{tab:cnx_jax} is
 the full 300-epoch tier,
 trained and evaluated on an antialiased bicubic resize and scored at the
 paper's protocol, $224$ with a $0.875$ centre crop.
@@ -11944,7 +12071,8 @@ for S and $10.42$ for B.
 
 \prosesection{Recap}
 
-GELU is a smooth scalar function, so its Jacobian is a diagonal like ReLU's
+GELU is a smooth scalar function, in its tanh approximation and in the exact
+\(x \cdot \Phi(x)\) alike, so its Jacobian is a diagonal like ReLU's
 with a derivative that exists everywhere; LayerNorm is BatchNorm along the
 channel axis, and its backward is the same emitted graph; layer scale is a
 per-channel multiply and the patchify stem is a strided convolution. Nothing
@@ -12933,11 +13061,11 @@ computed independently by the 1D three-term formula. \Qed{}
   \lean{Proofs.layerNormVecHasVJP, Proofs.layerNormVecPerTokenHasVJPMat,
         Proofs.transformerBlockV, Proofs.vitFullHasVJP}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar,
-      ax:mhsaLayer_flat_differentiable, ax:patchEmbedFlatHasVJP,
-      ax:patchEmbedFlat_differentiable, ax:pdiv, ax:pdiv_reindex, def:hasvjp,
-      def:hasvjpmat, thm:denseHasVJP, thm:layerNormHasVJP, thm:rowwiseHasVJPMat,
-      thm:vitBodyHasVJPMat, thm:vjpComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaLayer_flat_differentiable, ax:patchEmbedFlatHasVJP,
+      ax:patchEmbedFlat_differentiable, ax:pdiv, ax:pdiv_reindex, def:geluForm,
+      def:hasvjp, def:hasvjpmat, thm:denseHasVJP, thm:layerNormHasVJP,
+      thm:rowwiseHasVJPMat, thm:vitBodyHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)}]
@@ -12980,14 +13108,16 @@ row-by-row with shared weights. \Qed{}
   \label{thm:geluPerTokenHasVJPMat}
   \lean{Proofs.geluPerTokenHasVJPMat}
   \leanok
-  \uses{ax:geluScalar, ax:pdiv, def:hasvjp, def:hasvjpmat, thm:rowwiseHasVJPMat}
+  \uses{ax:geluErfScalar, ax:geluErfScalarDeriv, ax:geluScalar, def:geluForm,
+      def:hasvjpmat, thm:geluHasVJP, thm:rowwiseHasVJPMat}
 \end{theorem}
 
 \begin{proof}
 \leanok
 Instantiate the rowwise lift (Theorem~\ref{thm:rowwiseHasVJPMat})
-at \(g = \mathrm{gelu}\), with Theorem~\ref{thm:geluHasVJP} as the
-\(\HasVJP\) witness and the tanh-chain smoothness as the
+at \(g = gf.\mathrm{map}\) for either GELU form, with
+Theorem~\ref{thm:geluHasVJP} as the \(\HasVJP\) witness and the
+scalar's smoothness (Definition~\ref{def:geluForm}) as the
 differentiability witness. Elementwise activation: the Jacobian is
 diagonal both across rows and within a row. \Qed{}
 \end{proof}
@@ -13022,8 +13152,9 @@ diagonal both across rows and within a row. \Qed{}
   \label{thm:transformerMlpHasVJPMat}
   \lean{Proofs.transformerMlpHasVJPMat}
   \leanok
-  \uses{ax:geluScalar, def:hasvjpmat, thm:densePerTokenHasVJPMat,
-      thm:geluPerTokenHasVJPMat, thm:vjpMatComp}
+  \uses{ax:geluErfScalar, ax:geluErfScalarDeriv, ax:geluScalar, def:geluForm,
+      def:hasvjpmat, thm:densePerTokenHasVJPMat, thm:geluPerTokenHasVJPMat,
+      thm:vjpMatComp}
   \(\HasVJPMat\) of
   \(\mathrm{dense}_2 \circ \mathrm{gelu} \circ \mathrm{dense}_1\),
   all per-token.
@@ -13036,7 +13167,7 @@ diagonal both across rows and within a row. \Qed{}
     matrix chain rule (Theorem~\ref{thm:vjpMatComp}) on the two
     per-token lifts (Theorems~\ref{thm:densePerTokenHasVJPMat},
     \ref{thm:geluPerTokenHasVJPMat}); both flat forms are
-    differentiable (dense affine, GELU via the tanh chain), and the
+    differentiable (dense affine, GELU at either form), and the
     composition inherits it.
   \item \Qed{}
     \pf{One more chain-rule application against the outer
@@ -13078,7 +13209,8 @@ diagonal both across rows and within a row. \Qed{}
   \label{thm:transformerMlpSublayerHasVJPMat}
   \lean{Proofs.transformerMlpSublayerHasVJPMat}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, def:hasvjpmat, thm:biPathMatHasVJP,
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, def:geluForm, def:hasvjpmat, thm:biPathMatHasVJP,
       thm:identityMatHasVJP, thm:layerNormPerTokenHasVJPMat,
       thm:transformerMlpHasVJPMat, thm:vjpMatComp}
   \Assume{} \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)}]\\
@@ -13102,7 +13234,8 @@ identity arm (Theorems~\ref{thm:biPathMatHasVJP},
   \label{thm:transformerBlockHasVJPMat}
   \lean{Proofs.transformerBlockHasVJPMat}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, ax:mhsaLayer_flat_differentiable, def:hasvjpmat,
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaLayer_flat_differentiable, def:geluForm, def:hasvjpmat,
       thm:transformerAttnSublayerHasVJPMat, thm:transformerMlpSublayerHasVJPMat,
       thm:vjpMatComp}
   \Prove{} \(\HasVJPMat\) of one pre-norm encoder block
@@ -13124,7 +13257,8 @@ arms (both are \(\mathrm{id} + \text{smooth}\)). \Qed{}
   \label{thm:transformerTowerHasVJPMat}
   \lean{Proofs.transformerTowerHasVJPMat}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, ax:mhsaLayer_flat_differentiable, def:hasvjpmat,
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaLayer_flat_differentiable, def:geluForm, def:hasvjpmat,
       thm:identityMatHasVJP, thm:transformerBlockHasVJPMat, thm:vjpMatComp}
   \Prove{} \(\HasVJPMat\) of the \(k\)-block tower, for every
   \(k\) --- ViT-Tiny/Base (\(k = 12\)) and Large (\(k = 24\)) are
@@ -13153,9 +13287,9 @@ Induction on \(k\):
   \label{thm:vitBodyHasVJPMat}
   \lean{Proofs.vitBodyHasVJPMat}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, ax:mhsaLayer_flat_differentiable, def:hasvjpmat,
-      thm:layerNormPerTokenHasVJPMat, thm:transformerTowerHasVJPMat,
-      thm:vjpMatComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaLayer_flat_differentiable, def:geluForm, def:hasvjpmat,
+      thm:layerNormPerTokenHasVJPMat, thm:transformerTowerHasVJPMat, thm:vjpMatComp}
   \Prove{} the full ViT transformer backbone
   \(\mathrm{finalLN} \circ \mathrm{transformerTower}\) is one
   \(\HasVJPMat\).
@@ -13181,12 +13315,12 @@ the rendered backward, the emitted step, the loss gradient.
   \label{thm:vitForwardKVHasVJP}
   \lean{Proofs.vitForwardKVHasVJP_correct, Proofs.vitForwardKVHasVJP}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, ax:mhsaHasVJPMat,
-      ax:mhsaLayer_flat_differentiable, ax:patchEmbedFlatHasVJP,
-      ax:patchEmbedFlat_differentiable, ax:pdiv, ax:pdiv_reindex, def:hasvjp,
-      def:hasvjpmat, thm:biPathMatHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:identityMatHasVJP, thm:layerNormVecHasVJP, thm:transformerMlpHasVJPMat,
-      thm:vjpComp, thm:vjpMatComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaHasVJPMat, ax:mhsaLayer_flat_differentiable,
+      ax:patchEmbedFlatHasVJP, ax:patchEmbedFlat_differentiable, ax:pdiv,
+      ax:pdiv_reindex, def:geluForm, def:hasvjp, def:hasvjpmat, thm:biPathMatHasVJP,
+      thm:denseHasVJP, thm:identityHasVJP, thm:identityMatHasVJP,
+      thm:layerNormVecHasVJP, thm:transformerMlpHasVJPMat, thm:vjpComp, thm:vjpMatComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)}]
@@ -13212,7 +13346,7 @@ head; see \leandocref{Proofs.vitForwardKVHasVJP\_correct}.
   \label{thm:vitFwdGraphKMHV_faithful}
   \lean{Proofs.StableHLO.vitFwdGraphKMHV_faithful, Proofs.StableHLO.vitFwdGraphBDrop_faithful}
   \leanok
-  \uses{ax:geluScalar, thm:layerNormVecHasVJP}
+  \uses{def:geluForm, thm:layerNormVecHasVJP}
   \Prove{} for every depth \(k\) the typed forward graph
   \texttt{vitFwdGraphKMHV} denotes \texttt{vitForwardKV}; and with stochastic
   depth on both residual branches of every block, the batched graph of the
@@ -13234,9 +13368,10 @@ Op by op along the graph, block by block along the tower; see
   \label{thm:vitTinyHasVJP_correct}
   \lean{Proofs.vitTinyHasVJP_correct, Proofs.vitTinyInputGrad_eq_vitTiny_vjp}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, ax:mhsaHasVJPMat,
-      ax:mhsaLayer_flat_differentiable, ax:pdiv, ax:rowSoftmax_flat_differentiable,
-      def:hasvjp, def:hasvjpmat, thm:biPathMatHasVJP, thm:bnHasVJP, thm:denseHasVJP,
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaHasVJPMat, ax:mhsaLayer_flat_differentiable, ax:pdiv,
+      ax:rowSoftmax_flat_differentiable, def:geluForm, def:hasvjp, def:hasvjpmat,
+      thm:biPathMatHasVJP, thm:bnHasVJP, thm:denseHasVJP, thm:geluHasVJP,
       thm:identityHasVJP, thm:identityMatHasVJP, thm:layerNormVecHasVJP,
       thm:rowwiseHasVJPMat, thm:sdpaBackK_correct, thm:sdpaBackQ_correct,
       thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat, thm:vitForwardKVHasVJP,
@@ -13285,14 +13420,15 @@ Op by op along the graph, block by block along the tower; see
   \label{thm:vit_whole_back}
   \lean{Proofs.vitTinyInputGradB_eq_vitTiny_vjp, Proofs.vitInputGradKB_correct, Proofs.vitInputGradKB}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, ax:mhsaHasVJPMat,
-      ax:mhsaLayer_flat_differentiable, ax:patchEmbedFlatHasVJP,
-      ax:patchEmbedFlat_differentiable, ax:pdiv, ax:pdiv_comp, ax:pdiv_reindex,
-      ax:rowSoftmax_flat_differentiable, def:hasvjp, def:hasvjpmat, thm:biPathMatHasVJP,
-      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:identityMatHasVJP,
-      thm:layerNormVecHasVJP, thm:rowwiseHasVJPMat, thm:sdpaBackK_correct,
-      thm:sdpaBackQ_correct, thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat,
-      thm:vitForwardKVHasVJP, thm:vjpComp, thm:vjpMatComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaHasVJPMat, ax:mhsaLayer_flat_differentiable,
+      ax:patchEmbedFlatHasVJP, ax:patchEmbedFlat_differentiable, ax:pdiv, ax:pdiv_comp,
+      ax:pdiv_reindex, ax:rowSoftmax_flat_differentiable, def:geluForm, def:hasvjp,
+      def:hasvjpmat, thm:biPathMatHasVJP, thm:bnHasVJP, thm:denseHasVJP, thm:geluHasVJP,
+      thm:identityHasVJP, thm:identityMatHasVJP, thm:layerNormVecHasVJP,
+      thm:rowwiseHasVJPMat, thm:sdpaBackK_correct, thm:sdpaBackQ_correct,
+      thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat, thm:vitForwardKVHasVJP,
+      thm:vjpComp, thm:vjpMatComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)}]
@@ -13314,14 +13450,14 @@ batch; see \leandocref{Proofs.vitTinyInputGradB\_eq\_vitTiny\_vjp}.
   \lean{Proofs.ViTTieGB.vit_net_tiedGB, Proofs.ViTTieGB.vitBlockCotInB_eq_vjp,
         Proofs.ViTTieGB.vitCotTowerOutB_eq_vjp}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, ax:mhsaHasVJPMat,
-      ax:mhsaLayer_flat_differentiable, ax:pdiv, ax:pdiv_reindex,
-      ax:rowSoftmax_flat_differentiable, def:hasvjp, def:hasvjpmat, thm:biPathHasVJP,
-      thm:biPathMatHasVJP, thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:denseWeightGrad_correct, thm:identityHasVJP, thm:identityMatHasVJP,
-      thm:layerNormVecHasVJP, thm:rowwiseHasVJPMat, thm:sdpaBackK_correct,
-      thm:sdpaBackQ_correct, thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat,
-      thm:vjpComp, thm:vjpMatComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaHasVJPMat, ax:mhsaLayer_flat_differentiable, ax:pdiv,
+      ax:pdiv_reindex, ax:rowSoftmax_flat_differentiable, def:geluForm, def:hasvjp,
+      def:hasvjpmat, thm:biPathHasVJP, thm:biPathMatHasVJP, thm:bnHasVJP,
+      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
+      thm:geluHasVJP, thm:identityHasVJP, thm:identityMatHasVJP, thm:layerNormVecHasVJP,
+      thm:rowwiseHasVJPMat, thm:sdpaBackK_correct, thm:sdpaBackQ_correct,
+      thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat, thm:vjpComp, thm:vjpMatComp}
   \Prove{} each of the 200 parameter gradients of the batched ViT-Tiny step
   (three heads of 64, depth 12, \(16 \times 16\) patches) denotes the
   certified batch gradient at the chain cotangent of the label-smoothed
@@ -13347,17 +13483,17 @@ of the lifted block and the head; see
   \lean{Proofs.ViTTieGB.vit_net_lossGrad, Proofs.ViTTieGB.vit_net_lossGrad_smoothedCE, Proofs.ViTTieGB.vitNetB_eq_vitForwardKV,
     Proofs.ViTTieGB.vit_net_tied_lossGrad, Proofs.ViTTieGB.vitNetB}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:geluScalar, ax:mhsaHasVJPMat,
-      ax:mhsaLayer_flat_differentiable, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
-      ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:rowSoftmax_flat_differentiable,
-      ax:softmaxCE_grad, def:hasgradat, def:hasvjp, def:hasvjpmat, thm:biPathHasVJP,
-      thm:biPathMatHasVJP, thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:densePerTokenHasVJPMat, thm:denseWeightGrad_correct,
-      thm:geluPerTokenHasVJPMat, thm:hasGradAt_comp, thm:identityHasVJP,
-      thm:identityMatHasVJP, thm:layerNormVecHasVJP, thm:pdiv_finset_sum,
-      thm:rowwiseHasVJPMat, thm:sdpaBackK_correct, thm:sdpaBackQ_correct,
-      thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat, thm:vit_step_tie, thm:vjpComp,
-      thm:vjpMatComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:geluErfScalar, ax:geluErfScalarDeriv,
+      ax:geluScalar, ax:mhsaHasVJPMat, ax:mhsaLayer_flat_differentiable, ax:pdiv,
+      ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex,
+      ax:rowSoftmax_flat_differentiable, ax:softmaxCE_grad, def:geluForm, def:hasgradat,
+      def:hasvjp, def:hasvjpmat, thm:biPathHasVJP, thm:biPathMatHasVJP, thm:bnHasVJP,
+      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:densePerTokenHasVJPMat,
+      thm:denseWeightGrad_correct, thm:geluHasVJP, thm:geluPerTokenHasVJPMat,
+      thm:hasGradAt_comp, thm:identityHasVJP, thm:identityMatHasVJP,
+      thm:layerNormVecHasVJP, thm:pdiv_finset_sum, thm:rowwiseHasVJPMat,
+      thm:sdpaBackK_correct, thm:sdpaBackQ_correct, thm:sdpaBackV_correct,
+      thm:transformerMlpHasVJPMat, thm:vit_step_tie, thm:vjpComp, thm:vjpMatComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the LayerNorms \hfill[\texttt{h\(\varepsilon\)}]
