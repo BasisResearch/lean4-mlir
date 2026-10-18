@@ -279,11 +279,39 @@ Phase 2:           demos/MainMuZeroTtt.lean (`lake exe muzero-ttt`, AlphaZero's 
 Phase 3:           3×3 run. Gate A as AlphaZero's: unbeaten vs perfect both sides with
                    search. Then M2–M5 on the saved net (`iters=0 params=<file>`, the
                    AlphaZero trainer's knob).
-Phase 4:           4×4, same binary (ask first: AlphaZero's 4×4 was 10 min with the C tree;
-                   MuZero is ~3–5× the calls a step and a deeper search a move).
+Phase 4:           4×4, same binary, on a GPU box (below). Gate B as AlphaZero's: never
+                   loses to perfect as either side.
 Phase 5:           figure, section, README, run README, bestiary cross-link
                    (`Bestiary/MuZero.lean` ↔ the trained specs), prior-art re-check.
 ```
+
+**Phase 4 on a GPU (the plan as of 2026-10-18).** The CPU box measured what 4×4 costs
+and is too slow for tuning:
+
+- Measured on CPU (88 threads = 44 cores × 2, IREE llvm-cpu, `local-sync`, 80 runs side by
+  side, `n=4 steps=300 sims=50 qnorm=0 sweepN=20000`): 17–35 min an iteration, middle
+  25–27 (self-play ~7, training ~12–13, the sampled eval ~6–8). Setup ~8 min a run with the
+  compile cache pre-seeded (Table.build, the symmetry check). 60 iterations ≈ 25–35 h a
+  run; 80 at once ≈ 1.4 days. The full 9,062,619-position sweep is ~2 core-hours, which is
+  why `sweepN=` exists; `mode=score` still sweeps them all.
+- Expected on GPU (an estimate, not measured): AlphaZero's 4×4 ran ~15 s an iteration on
+  an RTX 4060 Ti with the full sweep every iteration (`runs/2026-09-29-alphazero-ttt/
+  n4_run2_ctree.log`, XLA on CUDA). MuZero is ~3–5× that (a K = 5 unroll is ~6 net passes
+  a sample; three nets a simulation): ~45–75 s an iteration, ~1 h a 60-iteration run.
+  The calls are small (batch 64–256, 140,826 params), so the floor is launch overhead and
+  the Lean host side, not FLOPs; several runs sharing one GPU is likely the throughput play.
+- First step on the GPU box: the demo has only ever run on IREE llvm-cpu. Drop the CPU env
+  (`LEAN_MLIR_LOWERER`, `IREE_BACKEND=llvm-cpu`, `IREE_DEVICE`; the defaults are XLA and
+  `cuda`) and run the one-iteration smoke: `lake exe muzero-ttt n=4 iters=1 steps=300
+  sims=50 qnorm=0 sweepN=20000`, with `(play … train … score … ms)` replacing the estimate
+  above. Then 2–4 side by side on one GPU to see whether they share.
+- Then the arms: the 3×3 winner (50-sim self-play, 300 steps an iteration, raw Q, the
+  AlphaZero-schedule never passed) across 3 inits (`initSeed=101/201/301`), 60 iterations,
+  `sweepN=20000`; Gate B on the final net; M2–M5 via `mode=score` (full sweep). Steps 600
+  and sims 25/100 as second arms if the first passes.
+- Keep a binary copy per run and per-tag `.vmfb` caches (copy one tag's
+  `.vmfb` + `.vmfb.hash` + `.mlir` to the others' names: concurrent `iree-compile`
+  failed before; on XLA the cache question is open).
 
 Optional arm, after Phase 4: the state-consistency loss (g(s_k, a_k) pulled toward
 stop-grad h(o_{k+1}); EfficientZero, and the 2411.04580 line). Same instrument; the
@@ -330,3 +358,6 @@ Stochastic MuZero, Sampled MuZero, Gumbel MuZero's root selection, reanalyse, Co
 - 2026-10-18: Phase 3 replicated: three fresh inits at 50-sim self-play all pass Gate A
   (25 and 100 sims); the AlphaZero-schedule arm (22 h) never passes. Phase 4 (4×4) waits on
   the user (§9: ask first).
+- 2026-10-18: 4×4 costed on CPU — 80 runs side by side at 25–27 min an iteration (middle),
+  ≈ 1.4 days for 60 iterations; `sweepN=` added (the full sweep is ~2 core-hours). Phase 4
+  moves to a GPU box (§9).
