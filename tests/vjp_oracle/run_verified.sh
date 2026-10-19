@@ -49,12 +49,10 @@ for net in "${NETS[@]}"; do
     || { echo "FAIL  ${net}  JAX side crashed (see $jax_log)"; FAIL=1; continue; }
   [ -f "${jax_base}.bin" ] || { echo "FAIL  ${net}  JAX side wrote no params (see $jax_log)"; FAIL=1; continue; }
 
-  # One f32 step; the two lowerers' GEMM/conv reduction orders differ at ~1e-6 relative, the
-  # max-pool's argmax tie-breaks on MNIST's zero pixels push the conv net higher.
-  case "$net" in
-    cnn) tol=1e-3 ;;
-    *)   tol=1e-4 ;;
-  esac
+  # One f32 step; the two lowerers' GEMM/conv reduction orders differ at ~1e-6 relative. Measured
+  # 2026-10-19 (CI): linear 1.25e-6, mlp 1.24e-6, cnn 7.41e-6 worst relative — the conv net's
+  # a-priori 1e-3 (for the max-pool's argmax tie-breaks on zero pixels) is tightened to 1e-4.
+  tol=1e-4
   $PY tests/vjp_oracle/diff_params.py "$init_bin" "$lean_bin" "${jax_base}.bin" "$net" "$tol" || FAIL=1
 done
 

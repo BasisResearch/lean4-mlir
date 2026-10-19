@@ -131,9 +131,15 @@ LEAN_MLIR_LOWERER=iree IREE_BACKEND=llvm-cpu JAX_PLATFORMS=cpu VJP_ORACLE_DATA=/
   tests/vjp_oracle/run_verified.sh
 ```
 
-Tolerances: 1e-4 for the two dense nets, 1e-3 for the conv net (the pool's argmax tie-breaks on
-zero pixels, as in `conv-pool` above). It runs in `iree.yml`'s `vjp-oracle` job after the fourteen
-per-axiom cases. The parameter layout on both sides is the render's argument order with dense
+Tolerance: 1e-4 for all three (the conv net started at 1e-3 a priori, for the pool's argmax
+tie-breaks on zero pixels, and was tightened once measured). It runs in `iree.yml`'s `vjp-oracle`
+job after the fourteen per-axiom cases.
+
+Measured (CI run 39193283840, 2026-10-19, IREE llvm-cpu vs JAX CPU, f32, one step at batch 128 on
+the synthetic MNIST): worst relative ‖Δlean − Δjax‖ / ‖Δjax‖ over the tensors — linear 1.25e-6 (`b0`;
+`W0` 1.19e-7), mlp 1.24e-6 (`W0`), cnn 7.41e-6 (`b1`; the two kernels 5.5e-6 and 6.5e-6, the dense
+head under 5e-6); max|Δlean − Δjax| ≤ 4.0e-8 everywhere. That is float32 reduction-order noise:
+the proven text and autodiff compute the same gradient. The parameter layout on both sides is the render's argument order with dense
 `[in, out]` and conv `[oc, ic, k, k]`; `diff_params.py` carries the three nets' shape lists.
 
 ## Adding a case
