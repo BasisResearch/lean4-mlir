@@ -315,7 +315,7 @@ theorem convBSgdTiedB_holds {ic' oc h' w' : Nat} {bN lrStr cotN : String} {W : K
   rw [convBiasSgdB_eq_grad, GradNodeB.convBGradB_den]
 
 /-- **Output weight at the whole loss, summed over the batch.** -/
-theorem W5B_tied (aN : String) (lr : ℝ) (i : Fin d1) (j : Fin nClasses) :
+theorem w5B_tied (aN : String) (lr : ℝ) (i : Fin d1) (j : Fin nClasses) :
     den (SHlo.denseWeightSgdB aN "%W5" nm.lrStr (den (a4B N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ xB)) W₅ lr
           (.operand nm.dyN (den (cotB N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ W₅ b₅ xB label)))) (finProdFinEquiv (i, j))
       = W₅ i j - lr * ∑ k : Fin N,
@@ -335,7 +335,7 @@ theorem W5B_tied (aN : String) (lr : ℝ) (i : Fin d1) (j : Fin nClasses) :
     `g`/`mlpCotOut1`/`mlpCotOut0` per example (`dy4B_slice`, `dy3B_slice`), conv₂ against the
     emitted pool-back chain (`dhc2B_slice` = `cnnChainCotW2`), conv₁ against the emitted conv-back
     chain (`dhc1B_slice` = `cnnChainCotW1` for odd kernels). The output weight folds to the whole
-    loss in `W5B_tied`. -/
+    loss in `w5B_tied`. -/
 theorem cnn_train_step_tiedB (a4N a3N poolN ac1N : String) (lr : ℝ) :
     let a4v := den (a4B N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ xB)
     let a3v := den (a3B N W₁ b₁ W₂ b₂ W₃ b₃ xB)

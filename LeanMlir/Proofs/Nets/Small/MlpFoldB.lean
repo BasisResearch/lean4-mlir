@@ -166,7 +166,7 @@ theorem cot0B_slice (p₀N p₁N dyN c₁N : String) (k : Fin N) :
 /-! ## The six parameter nodes at batch `N` -/
 
 /-- **Output weight, at the WHOLE loss, summed over the batch.** -/
-theorem W2B_tied (aN lrStr dyN : String) (lr : ℝ) (i : Fin d₂) (j : Fin d₃) :
+theorem w2B_tied (aN lrStr dyN : String) (lr : ℝ) (i : Fin d₂) (j : Fin d₃) :
     den (SHlo.denseWeightSgdB aN "%W2" lrStr (den (actB1 N W₀ b₀ W₁ b₁ xB)) W₂ lr
           (.operand dyN (den (cotB N W₀ b₀ W₁ b₁ W₂ b₂ xB label)))) (finProdFinEquiv (i, j))
       = W₂ i j - lr * ∑ k : Fin N,
@@ -198,7 +198,7 @@ theorem b2B_tied (lrStr dyN : String) (lr : ℝ) (j : Fin d₃) :
   rw [batchSlice_cotB]
 
 /-- Hidden weight `W₁`, at the layer-1 chain cotangent. -/
-theorem W1B_tied (aN lrStr p₁N dyN c₁N : String) (lr : ℝ) (i : Fin d₁) (j : Fin d₂) :
+theorem w1B_tied (aN lrStr p₁N dyN c₁N : String) (lr : ℝ) (i : Fin d₁) (j : Fin d₂) :
     den (SHlo.denseWeightSgdB aN "%W1" lrStr (den (actB0 N W₀ b₀ xB)) W₁ lr
           (.operand c₁N (den (cot1B N W₀ b₀ W₁ b₁ W₂ b₂ xB label p₁N dyN)))) (finProdFinEquiv (i, j))
       = W₁ i j - lr * ∑ k : Fin N, ∑ k' : Fin d₂,
@@ -228,7 +228,7 @@ theorem b1B_tied (lrStr p₁N dyN c₁N : String) (lr : ℝ) (j : Fin d₂) :
   rw [cot1B_slice]
 
 /-- Input weight `W₀`, at the layer-0 chain cotangent. -/
-theorem W0B_tied (lrStr p₀N p₁N dyN c₁N c₀N : String) (lr : ℝ) (i : Fin d₀) (j : Fin d₁) :
+theorem w0B_tied (lrStr p₀N p₁N dyN c₁N c₀N : String) (lr : ℝ) (i : Fin d₀) (j : Fin d₁) :
     den (SHlo.denseWeightSgdB "%x" "%W0" lrStr xB W₀ lr
           (.operand c₀N (den (cot0B N W₀ b₀ W₁ b₁ W₂ b₂ xB label p₀N p₁N dyN c₁N)))) (finProdFinEquiv (i, j))
       = W₀ i j - lr * ∑ k : Fin N, ∑ k' : Fin d₁,
@@ -299,11 +299,11 @@ theorem mlp_train_step_tiedB (lrStr aN a₀N p₀N p₁N dyN c₁N c₀N : Strin
               pdiv (fun b' : Vec d₁ => dense W₀ b' (xk N xB k)) b₀ j i
                 * (mlpCotOut0 W₁ W₂ (p0 N W₀ b₀ xB k) (p1 N W₀ b₀ W₁ b₁ xB k)).denote
                     (gk N W₀ b₀ W₁ b₁ W₂ b₂ xB label k) i) :=
-  ⟨fun i j => W2B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label aN lrStr dyN lr i j,
+  ⟨fun i j => w2B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label aN lrStr dyN lr i j,
    fun j => b2B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label lrStr dyN lr j,
-   fun i j => W1B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label a₀N lrStr p₁N dyN c₁N lr i j,
+   fun i j => w1B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label a₀N lrStr p₁N dyN c₁N lr i j,
    fun j => b1B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label lrStr p₁N dyN c₁N lr j,
-   fun i j => W0B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label lrStr p₀N p₁N dyN c₁N c₀N lr i j,
+   fun i j => w0B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label lrStr p₀N p₁N dyN c₁N c₀N lr i j,
    fun j => b0B_tied N W₀ b₀ W₁ b₁ W₂ b₂ xB label lrStr p₀N p₁N dyN c₁N c₀N lr j⟩
 
 end Proofs.MlpFoldB

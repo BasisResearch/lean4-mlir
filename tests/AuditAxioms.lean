@@ -460,7 +460,7 @@ open Proofs
 -- mnist-cnn at batch N (CnnFoldB.lean): the chain pinned to the emitted subgraphs
 #print axioms CnnFoldB.dhc2B_slice
 #print axioms CnnFoldB.dhc1B_slice
-#print axioms CnnFoldB.W5B_tied
+#print axioms CnnFoldB.w5B_tied
 #print axioms CnnFoldB.cnn_train_step_tiedB
 -- ch5-CIFAR fully folded (no-BN, 2-scale)
 #print axioms SgdNode.convW_den
