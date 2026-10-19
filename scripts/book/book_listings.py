@@ -3,6 +3,11 @@
 
     python3 scripts/book/book_listings.py            # one block per listing: its file, and every quoted unit the file no longer has
     python3 scripts/book/book_listings.py --summary  # one line per listing
+    python3 scripts/book/book_listings.py --check    # CI: exit 1 on a drifted listing not in the historical list
+
+A listing the book deliberately quotes at a past commit ("its recipe as the run trained it") is
+named in scripts/gates/book_listings_historical.txt as `<section heading> | <file>`; `--check`
+reports it but does not fail on it. Everything else that drifts fails the gate.
 
 The book quotes specs, configs, drivers, trainer bodies and renders in `verbatim` blocks and
 nothing checks them against the tree (the MNIST drivers said `xVerified.train` for a month after
@@ -15,8 +20,15 @@ is the one under LeanMlir/, apps/, jax/, Bestiary/, scripts/, tests/ or the lake
 contains the most units; a block whose best file holds at least half its units is a quotation
 of that file, and each unit the file lacks is printed with the file's closest unit, which is
 usually what it drifted from; a Lean block no file holds half of (a listing assembled from a spec
-file and a driver, marked `*`) is checked unit by unit against every file. MLIR blocks are matched line-exact against verified_mlir/.
-Blocks matching nothing (transcripts, shell sessions, pseudocode) are only counted.
+file and a driver, marked `*`) is checked unit by unit against every file. An MLIR block is an
+excerpt of one committed verified_mlir/ artifact, compared op by op: an op is its logical line
+(an SSA definition, `return`, a region line, with the continuation lines the artifact or the book
+wraps it over), whitespace removed, the default `precision = [DEFAULT, DEFAULT]` dropped and
+`//` comments skipped, and every op the book prints must be in the artifact the block quotes,
+which is the `verified\_mlir/<name>.mlir` the prose names between the previous heading and the
+block (else the artifact holding most of its ops).
+An MLIR block matching no artifact fails the gate: the book has no illustrative StableHLO.
+Other blocks matching nothing (transcripts, shell sessions, pseudocode) are only counted.
 """
 import bisect, difflib, os, re, sys
 from collections import Counter
@@ -33,6 +45,23 @@ def squash(s):
     for a, u in ARROWS.items(): s = s.replace(a, u)
     s = re.sub(r'^\s*noncomputable\s+', '', s)
     return re.sub(r'\s+', '', s)
+
+MLIR_NEW = re.compile(r'^\s*(%\w+\s*=|return\b|stablehlo\.return\b|\^|\}|func\.func|module|//)')
+def mlir_ops(lines):
+    """the comparable ops of an MLIR text: logical lines joined, `//` comments and `...` dropped, precision default dropped, squashed"""
+    out = []
+    for l in lines:
+        s = l.rstrip()
+        if not s.strip(): continue
+        if MLIR_NEW.match(s) or not out: out.append(s.strip())
+        else: out[-1] += ' ' + s.strip()
+    ops = []
+    for o in out:
+        if o.startswith('//') or o.strip() == '...': continue
+        o = re.sub(r'\s//.*$', '', o).replace(', precision = [DEFAULT, DEFAULT]', '')
+        q = squash(o)
+        if len(q) >= 12: ops.append(q)
+    return ops
 
 def units(lines):
     """merge continuation lines into their unit; drop comments, docstrings, blanks and elisions"""
@@ -76,10 +105,18 @@ def load_code():
 def load_mlir():
     idx = {}
     for p in walk(['verified_mlir'], {'.mlir'}):
-        for l in open(p, encoding='utf-8', errors='replace'):
-            s = squash(l)
-            if len(s) >= 12: idx.setdefault(s, set()).add(p)
+        for op in mlir_ops(open(p, encoding='utf-8', errors='replace').read().split('\n')):
+            idx.setdefault(op, set()).add(p)
     return idx
+
+NAMED = re.compile(r'verified\\_mlir/([A-Za-z0-9_\\]+)\.mlir')
+def named_artifact(tex_lines, start):
+    """the `verified\_mlir/<name>.mlir` the prose names between the previous heading and the block, if one"""
+    for i in range(start - 1, max(-1, start - 40), -1):
+        if HEAD.match(tex_lines[i]): break
+        m = NAMED.findall(tex_lines[i])
+        if m: return 'verified_mlir/' + m[-1].replace('\\_', '_') + '.mlir'
+    return None
 
 def blocks(tex_lines):
     out = []; i = 0
@@ -107,8 +144,22 @@ def candidates(us, files):
         if c: return c
     return list(files)
 
+HISTORICAL = 'scripts/gates/book_listings_historical.txt'
+
+def historical():
+    if not os.path.exists(HISTORICAL): return set()
+    out = set()
+    for l in open(HISTORICAL):
+        l = l.strip()
+        if not l or l.startswith('#'): continue
+        h, _, f = l.partition('|')
+        out.add((h.strip(), f.strip()))
+    return out
+
 def main():
     summary = '--summary' in sys.argv
+    check = '--check' in sys.argv
+    allowed = historical(); failures = []
     tex_lines = open(TEX).read().split('\n')
     heads = [(i + 1, m.group(2)) for i, l in enumerate(tex_lines) for m in [HEAD.match(l)] if m]
     head_lines = [h[0] for h in heads]
@@ -118,9 +169,12 @@ def main():
     for start, body in blocks(tex_lines):
         k = kind(body)
         if k == 'mlir':
-            ls = [squash(l) for l in body if len(squash(l)) >= 12]
+            ls = mlir_ops(body)
             votes = Counter(p for l in ls for p in mlir.get(l, ()))
             best, n = votes.most_common(1)[0] if votes else (None, 0)
+            named = named_artifact(tex_lines, start)          # the file the introducing sentence names wins
+            if named in votes: best, n = named, votes[named]
+            elif named: best, n = named, 0
             missing = [l for l in ls if best not in mlir.get(l, ())] if best else ls
             total = len(ls)
         else:
@@ -133,6 +187,9 @@ def main():
                 if best: missing = [u for u in us if f' {u} ' not in files[best][0]]
         if (not best or n < max(1, total / 2)) and not (k == 'lean' and best):
             kinds[k] += 1
+            if k == 'mlir':
+                failures.append((start, heading(start), f'no verified_mlir/ artifact holds half of its {total} ops'))
+                if check or summary: print(f'DRIFT L{start:<6d} {n}/{total:<4d}  (no artifact)   {heading(start)[:40]}')
             if summary: print(f'  --  L{start:<6d} {k:10s} {total:3d} units   {heading(start)[:50]}')
             continue
         composite = n < max(1, total / 2)
@@ -140,9 +197,15 @@ def main():
         if k != 'mlir':
             missing_anywhere = [u for u in missing if not any(f' {u} ' in txt for txt, _ in files.values())]
         else:
-            missing_anywhere = [u for u in missing if u not in mlir]
+            missing_anywhere = missing          # an excerpt is of one artifact: every op must be in it
         drifted += bool(missing_anywhere)
+        if missing_anywhere and (heading(start), best) not in allowed:
+            failures.append((start, heading(start), best))
         tag = f'{n}/{total}' + ('*' if composite else '')
+        if check:
+            if missing_anywhere:
+                print(f'{"hist." if (heading(start), best) in allowed else "DRIFT"} L{start:<6d} {tag:>7s}  {best}   {heading(start)[:40]}')
+            continue
         if summary:
             print(f'{"DRIFT" if missing_anywhere else "  ok "} L{start:<6d} {tag:>7s}  {best}   {heading(start)[:40]}'); continue
         print(f'\n=== L{start}  {heading(start)}  ->  {best}  ({tag} units found)')
@@ -159,6 +222,12 @@ def main():
             print(f'  file: {(near[0][:150] if near else "(no unit like it)")}')
     print(f'\n{quoted} listings quote a file, {drifted} with units the file no longer has; '
           + ', '.join(f'{v} {k}' for k, v in kinds.most_common()) + ' matched nothing')
+    if check:
+        if failures:
+            print(f'{len(failures)} listing(s) drifted from the tree and are not listed in {HISTORICAL}:')
+            for start, h, best in failures: print(f'  L{start}  {h}  ({best})')
+            sys.exit(1)
+        print('every listing matches its file (or is listed as historical)')
 
 if __name__ == '__main__':
     main()

@@ -32,6 +32,11 @@ on:
       - 'tests/BlueprintCheckDecls.lean'
       - 'scripts/book/blueprint_uses.py'
       - 'scripts/book/book_floats.py'
+      - 'scripts/book/book_listings.py'
+      - 'scripts/book/book_counts.py'
+      - 'scripts/book/book_prose_idents.py'
+      - 'scripts/gates/book_listings_historical.txt'
+      - 'scripts/gates/book_prose_idents_allow.txt'
       # Fifth instance of the same bug: the docstring gate's SOURCE and its ratchet decide the
       # verdict at the `docstring-checkrefs` step below, and until 2026-09-09 a change to either
       # triggered nothing. The last two emit PUBLISHED content (sitemap, analytics tag).
@@ -91,6 +96,20 @@ jobs:
         # Runs first: it needs only python and the checkout.
         run: |
           python3 scripts/book/book_floats.py --strict
+
+      - name: Check every code listing against the file it quotes
+        # The book quotes specs, configs, drivers and renders in verbatim blocks. Until
+        # 2026-10-19 nothing held them to the tree, and six had drifted (an init kind, a
+        # dropped field, a config the file no longer has). A listing the book deliberately
+        # quotes at a past commit is named in scripts/gates/book_listings_historical.txt.
+        run: |
+          python3 scripts/book/book_listings.py --check
+
+      - name: Check the counts the book states by hand
+        # Bestiary entries, demo groups, comparator theorem counts, the theorem-budget table's
+        # sums. Each had drifted at least once (45 vs 46 files; 88 vs 87 vs 107 theorems).
+        run: |
+          python3 scripts/book/book_counts.py
 
       - name: Install elan (Lean toolchain manager)
         # GitHub's release server intermittently returns 504 when fetching
@@ -372,6 +391,13 @@ jobs:
         # rewrites them locally.
         run: |
           python3 scripts/book/blueprint_uses.py --check
+
+      - name: Check Lean identifiers cited in the book's PROSE
+        # `blueprint-checkdecls` resolves `\lean{}`; the prose cites hundreds more names in
+        # `\texttt{}`, and `conv_back_bridge_1to2` survived its deletion by three weeks that
+        # way. Resolves against the .ilean index the build above produced, plus the sources.
+        run: |
+          python3 scripts/book/book_prose_idents.py
 
       - name: Check Lean declarations cited in DOCSTRINGS
         # The peer of the step above, and the reason it exists: the blueprint came
