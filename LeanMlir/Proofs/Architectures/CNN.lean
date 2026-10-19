@@ -83,13 +83,11 @@ noncomputable def unflatten {oc ic kH kW : Nat}
 
 theorem unflatten_flatten {oc ic kH kW : Nat}
     (W : Kernel4 oc ic kH kW) : unflatten (flatten W) = W := by
-  funext o c kh kw
-  unfold unflatten flatten
-  simp [Equiv.symm_apply_apply]
+  grind [Equiv.symm_apply_apply, unflatten, flatten]
 
 theorem flatten_unflatten {oc ic kH kW : Nat}
     (v : Vec (oc * ic * kH * kW)) : flatten (unflatten v) = v := by
-  funext k; simp only [flatten, unflatten, Prod.mk.eta, Equiv.apply_symm_apply]
+  grind [flatten, unflatten, Prod.mk.eta, Equiv.apply_symm_apply]
 
 end Kernel4
 
@@ -847,25 +845,25 @@ theorem winRow_winRowInv {h : Nat} (ho : Fin h) (a : Fin 2) :
     winRow (winRowInv ho a) = ho := by
   apply Fin.ext
   show (2 * ho.val + a.val) / 2 = ho.val
-  have := a.isLt; omega
+  grind
 
 theorem winRowMod_winRowInv {h : Nat} (ho : Fin h) (a : Fin 2) :
     winRowMod (winRowInv ho a) = a := by
   apply Fin.ext
   show (2 * ho.val + a.val) % 2 = a.val
-  have := a.isLt; omega
+  grind
 
 theorem winCol_winColInv {w : Nat} (wo : Fin w) (b : Fin 2) :
     winCol (winColInv wo b) = wo := by
   apply Fin.ext
   show (2 * wo.val + b.val) / 2 = wo.val
-  have := b.isLt; omega
+  grind
 
 theorem winColMod_winColInv {w : Nat} (wo : Fin w) (b : Fin 2) :
     winColMod (winColInv wo b) = b := by
   apply Fin.ext
   show (2 * wo.val + b.val) % 2 = b.val
-  have := b.isLt; omega
+  grind
 
 theorem winRowInv_zero {h : Nat} (ho : Fin h) :
     winRowInv ho (0 : Fin 2) =
@@ -1431,8 +1429,7 @@ noncomputable def maxPoolFlatHasVJPAt {c h w : Nat}
 /-- `maxPoolFlat` is the 2×2 `windowMaxFlat` (`maxPool2_eq_windowMax`, flattened). -/
 theorem maxPoolFlat_eq_windowMaxFlat (c h w : Nat) :
     maxPoolFlat c h w = windowMaxFlat (c := c) (winRowInv (h := h)) (winColInv (w := w)) := by
-  funext v
-  simp only [maxPoolFlat, windowMaxFlat, maxPool2_eq_windowMax]
+  grind [maxPoolFlat, windowMaxFlat, maxPool2_eq_windowMax]
 
 /-- Flattened `maxPoolFlat` closeness — the form the `Vec`-space MNIST-CNN forward
     (`mnistCnnNoBnForward`) composes. -/

@@ -760,9 +760,7 @@ theorem ed0 (q : Nat) (hq : q ≤ 7) (nCls : Nat) (t : ℝ) :
     exact eDiff_convS2 (h := (2 * (2 * (2 * (2 * q))))) (w := (2 * (2 * (2 * (2 * q)))))
       (kH := 7) (kW := 7) (0 : Fin 3) rfl (by norm_num) (by norm_num) 1
       (kv 64 0) _ (fun _ => t) _ (eDiff_rayX _ _ t) (fun o => by norm_num)
-  · intro ci
-    simp only [dS, kv_apply]
-    ring
+  · grind [dS, kv_apply]
 
 theorem ed1 (q : Nat) (hq0 : 0 < q) (hq : q ≤ 7) (nCls : Nat) (t : ℝ) :
     EDiff (dP1 q nCls t) (r50Pre1 2 q (sealW nCls) (sealX q t)) := by
@@ -898,8 +896,7 @@ theorem gd_ray (q : Nat) (hq0 : 0 < q) (hq : q ≤ 7) (nCls : Nat) (hn : 0 < nCl
       = t * Rr q nCls t := by
   rw [resnet50ForwardBFull_eq_chain, Function.comp_apply,
     head_diff q hq0 nCls hn _ (dP4 q nCls t) (ed16 q hq0 hq nCls t)]
-  simp only [dP4, dP3, dP2, dP1, dS, Rr]
-  ring
+  grind [dP4, dP3, dP2, dP1, dS, Rr]
 
 -- ════════════════════════════════════════════════════════════════
 -- § 11. `R` is continuous

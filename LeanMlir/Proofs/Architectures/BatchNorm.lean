@@ -175,8 +175,7 @@ theorem bnVar_shard_chan {R m M : Nat} (hR : R ≠ 0) (hm : m ≠ 0)
   simp only [hpt]
   rw [Finset.sum_add_distrib, Finset.sum_sub_distrib, Fin.sum_const, nsmul_eq_mul,
       ← Finset.mul_sum, hS1, hS2, bnVar_eq_bnMeanSq_sub_sq _ hM]
-  field_simp
-  ring
+  grind
 
 /-- `istd = 1/√(σ²+ε) > 0` (variance ≥ 0, `ε > 0`). -/
 theorem bnIstd_pos {n : Nat} (v : Vec n) (ε : ℝ) (hε : 0 < ε) : 0 < bnIstd n v ε := by
@@ -396,8 +395,7 @@ theorem bnSyncGradInput_at_own_stats (n : Nat) (hn : n ≠ 0) (ε γ : ℝ) (x d
   -- sides end up with different arguments under the square root.
   simp only [bnSyncGradInput, bnSyncXhat]
   rw [hv]
-  simp only [bnGradInput, bnXhat, bnIstd, bnMean]
-  field_simp
+  grind [bnGradInput, bnXhat, bnIstd, bnMean]
 
 -- ════════════════════════════════════════════════════════════════
 -- § Correctness statements
@@ -461,7 +459,7 @@ theorem pdiv_bnAffine (n : Nat) (γ β : ℝ)
   rw [show bnAffine n γ β = fun y => (fun k => γ * y k) + fun _ => β from rfl, pdiv_of_affine]
   · simp only [basisVec_apply, mul_ite, mul_one, mul_zero, @eq_comm _ j i]
   · intro u v; funext k; simp only [Pi.add_apply, mul_add]
-  · intro a v; funext k; simp only [Pi.smul_apply, smul_eq_mul, mul_left_comm γ a]
+  · grind [Pi.smul_apply, smul_eq_mul]
 
 -- ════════════════════════════════════════════════════════════════
 -- § The hard Jacobian: `pdiv_bnNormalize` — derived
@@ -495,9 +493,7 @@ noncomputable def bnIstdBroadcast (n : Nat) (ε : ℝ) : Vec n → Vec n :=
 /-- `bnXhat` factors as `bnCentered · bnIstdBroadcast` (elementwise product). -/
 theorem bnXhat_eq_product (n : Nat) (ε : ℝ) (x : Vec n) :
     bnXhat n ε x = fun j => bnCentered n x j * bnIstdBroadcast n ε x j := by
-  funext j
-  unfold bnXhat bnCentered bnIstdBroadcast
-  rfl
+  grind [bnXhat, bnCentered, bnIstdBroadcast]
 
 /-- **Centered-input Jacobian** — proved from foundation rules.
 
@@ -556,8 +552,7 @@ theorem sum_sub_bnMean (n : Nat) (hn : n ≠ 0) (x : Vec n) :
   have hnR : (n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hn
   rw [Finset.sum_sub_distrib, Fin.sum_const, nsmul_eq_mul,
     bnMean]
-  field_simp
-  ring
+  grind
 
 /-- The derivative of the variance at `x`: `(1/n) Σ_k 2 (x_k − μ) · center_k`. -/
 noncomputable def bnVarDeriv (n : Nat) (x : Vec n) : Vec n →L[ℝ] ℝ :=
@@ -656,9 +651,7 @@ theorem pdiv_bnNormalize (n : Nat) (ε : ℝ) (hε : 0 < ε)
   unfold bnXhat bnIstdBroadcast bnCentered
   -- Both sides are now polynomial in (x_i - μ), (x_j - μ), istd, n (with `(↑n)⁻¹`).
   -- Handle the `if i = j` branches, then `field_simp` + `ring` closes both.
-  by_cases hij : i = j
-  · subst hij; simp; field_simp; ring
-  · simp [hij]; field_simp; ring
+  grind
 
 /-- **Affine VJP** (the easy half): `back(v, dy)ᵢ = γ · dyᵢ`.
 
@@ -775,7 +768,7 @@ theorem bn_input_grad_correct (n : Nat) (ε γ β : ℝ) (hε : 0 < ε)
     the difference is `γ · (difference) · istd` with `istd` evaluated at the *same* activation. -/
 theorem bnForward_chan_diff_γ {n : Nat} (ε γ β : ℝ) (z : Vec n) (k₀ k₁ : Fin n) :
     bnForward n ε γ β z k₀ - bnForward n ε γ β z k₁ = γ * (z k₀ - z k₁) * bnIstd n z ε := by
-  simp only [bnForward, bnXhat]; ring
+  grind [bnForward, bnXhat]
 
 /-- **The two-sided BN margin** `|bn − β| ≤ |γ|·√n`, with no mean/variance computation
     (`bnXhat_sq_le`). This is what makes a large `β` keep a relu off its
