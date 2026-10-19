@@ -68,7 +68,7 @@ P-A and P-G have an execution plan: `planning/gelu_erf_and_torchvision_crop.md` 
 | P-G | **Random resized crop** | torchvision `RandomResizedCrop` (scale 0.08–1, ratio 3/4–4/3, 10 tries, center-crop fallback) | TF `sample_distorted_bounding_box` (`min_object_covered=0.1`) | Fleet-wide pipeline change, every net's reference moves. |
 | P-H | **Patch-embed bias init** | PyTorch Conv2d default `U(±1/√768)` | 0 both | A kind for the stem bias (verified) + the emitter's `vitInit` branch. Negligible. |
 | P-I | **Batch** | 1024 (8 GPUs × 128), lr 1e-3 | 512, lr 5e-4 (DeiT's own linear scaling) | Hardware. |
-| P-J | **timm-protocol eval resize** | `math.floor(224 / crop)` (248 at 0.9) | `round(…)` (249 at 0.9; 236 vs 235 at 0.95, which also affects the A3 and MNv4 timm-protocol scores) | One emitted line, fleet-wide. Only affects post-hoc timm-protocol scoring, not the in-training 0.875. |
+| P-J | **timm-protocol eval resize** | `math.floor(224 / crop)` (248 at 0.9) | `round(…)` (249 at 0.9; 236 vs 235 at 0.95, which also affects the A3 and MNv4 timm-protocol scores) | One emitted line, fleet-wide. Only affects post-hoc timm-protocol scoring, not the in-training 0.875. ✅ 2026-10-19 (F6): fixed in `Jax/Codegen.lean`, and the "not the 0.875" claim was wrong — torchvision truncates the LONG side too (`int(256 · long / short)`), which `tf.round` rounded up on some shapes (a 350 × 500 image: 366 → 365), so ViT-Ti's shim moved with the rest. Gated in `crop_sampler_gate.py` part 4. |
 
 ## 4. Beyond ViT (found here, owned elsewhere)
 

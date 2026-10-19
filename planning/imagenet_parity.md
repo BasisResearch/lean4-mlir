@@ -518,7 +518,7 @@ did not move).
 | F3 | repeated aug | index-level `RASampler` | stream repeat + shuffle window (P-F) |
 | F4 | LR schedule | per epoch, warmup from `warmup_lr`, cosine over the whole span to `min_lr` — DeiT 1e-6 / 1e-5; RSB-A3 **1e-4 / 1e-6** with timm's then-default `cooldown_epochs 10` at the floor (the args files on pytorch-image-models discussion #924; the paper counts 100) | per step, from ~0, cosine after warmup (P-D) |
 | F5 | RandAugment fill and 0-bit Posterize | img_mean; PIL black | 128; TF keeps the top bit (X1 fixed both for B0's AutoAugment only) |
-| F6 | timm-protocol resize | `floor(224/crop)` | `round` (P-J) |
+| F6 | timm-protocol resize | `floor(224/crop)` | `round` (P-J). ✅ 2026-10-19: `tf.math.floor` for the short side AND torchvision's truncated `int(target · long / short)` for the long one (v0.28.0 `_compute_resized_output_size`), so all 68 `jax/generated/*.py` re-emitted, not only the 0.95 ones; `crop_sampler_gate.py` part 4 holds the sizes to torchvision's with the old form as its red. The landed A3 JAX checkpoint rescored at 235: 77.58 / 93.66 against 77.61 / 93.61 at 236 (`runs/2026-10-12-r50-a3-jax/rescore_f6.sh`); the verified half's rescore is owed on the GPU box, and the book's pair moves when both have |
 | F7 | ConvNeXt min lr | 1e-6 (official) | 0 |
 | F8 | eval precision | f32/AMP | JAX scores through the bf16 training forward, verified through an f32 forward (G1) |
 | F9 | `aa_v0_timm_check.py` and `aug_bicubic_pil_check.py` | — | not in CI (no TF in any CI job) |

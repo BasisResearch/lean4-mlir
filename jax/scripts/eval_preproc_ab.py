@@ -107,10 +107,13 @@ def pp_timm(image_bytes):
     img = tf.io.decode_jpeg(image_bytes, channels=3)
     shape = tf.shape(img)
     h, w = shape[0], shape[1]
-    target = tf.cast(tf.round(S / CROP_PCT), tf.int32)          # 256
-    scale = tf.cast(target, tf.float32) / tf.cast(tf.minimum(h, w), tf.float32)
-    nh = tf.cast(tf.round(tf.cast(h, tf.float32) * scale), tf.int32)
-    nw = tf.cast(tf.round(tf.cast(w, tf.float32) * scale), tf.int32)
+    # F6 (2026-10-19): the emitter's form — timm's math.floor for the short side, torchvision's
+    # int(target * long / short) for the long one; both were tf.round before.
+    target = tf.cast(tf.math.floor(S / CROP_PCT), tf.int32)     # 256
+    short = tf.minimum(h, w)
+    nl = tf.cast(tf.cast(target * tf.maximum(h, w), tf.float64) / tf.cast(short, tf.float64), tf.int32)
+    nh = tf.where(w <= h, nl, target)
+    nw = tf.where(w <= h, target, nl)
     img = tf.image.resize(img, [nh, nw], method=tf.image.ResizeMethod.BICUBIC,
                           antialias=True)                        # PIL-like
     oy, ox = (nh - S) // 2, (nw - S) // 2

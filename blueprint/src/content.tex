@@ -7350,6 +7350,16 @@ box). Not taken, on either path: \texttt{timm}'s then-default
 \texttt{cooldown\_epochs 10} at the floor (the paper counts 100 epochs,
 and $10^{-6}$ moves nothing).
 
+\medskip\noindent\textbf{[TODO: both A3 numbers above were scored with the
+eval resize's short side at $236$, where \texttt{timm} takes
+$\lfloor 224 / 0.95 \rfloor = 235$, and the long side rounded where
+torchvision truncates it. The emitter now matches \texttt{timm} and
+torchvision (2026-10-19); the reference checkpoint rescored under it reads
+$77.58$ / $93.66$ ($-13$ images on top-1, $+24$ on top-5,
+\texttt{runs/2026-10-12-r50-a3-jax/rescore\_f6.sh}). The verified
+checkpoint's rescore is owed, and the pair moves together: the column and
+the paired test above are the $236$ scoring of both halves until then.]}
+
 \medskip\noindent\textbf{The verified path lands ahead on both recipes}, by
 $0.33$ points on 2018 and $0.47$ on A3 on top-1 ($-0.03$ and $+0.23$ on
 top-5) --- 2018's inside the 95\% Wilson interval, $\pm0.37$ at $77\%$ on

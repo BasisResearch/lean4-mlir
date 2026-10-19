@@ -81,3 +81,21 @@ with the verified run's e100 bitmap (`scripts/demos/mcnemar.py <jax> <verified>`
 
 These two checkpoints are separable on this validation set (the 10-07/09 pair was not: p = 0.20 on 82
 images of 4,014). One seed per arm, so a statement about the two checkpoints, not the two paths.
+
+## The eval resize at timm's integers — `rescore_f6.sh`, 2026-10-19
+
+F6 (`planning/imagenet_parity.md` §9.3): the emitted timm-protocol eval resize took `tf.round` where timm
+takes `math.floor(224 / crop_pct)` for the short side (235 at 0.95, not 236) and torchvision's `Resize(int)`
+takes `int(target · long / short)` for the long one (truncated, not rounded). The emitter was fixed and
+every trainer and shim re-emitted. `rescore_f6.sh` is `rescore.sh` through the re-emitted trainer, same
+checkpoint, same CPU, same f32 forward, `bitmaps/r50-a3_jax_f32_f6.bin` (`rescore_f6_f32.log`):
+
+| protocol | top-1 | top-5 |
+|---|---|---|
+| 236, rounded long side (`rescore.sh`, the book's pair) | 77.606 (38,803) / **77.61** | 93.610 / **93.61** |
+| 235, truncated long side (`rescore_f6.sh`) | 77.580 (38,790) / **77.58** | 93.658 / **93.66** |
+
+−13 images on top-1, +24 on top-5: a rounding-sized move, inside the pair's noise. The book's pair stays at
+the 236 protocol for now, because the verified half (`runs/2026-10-12-r50-a3-rsb-bf16`, 78.08 / 93.84)
+was scored at 236 as well and its checkpoint lives on the GPU box; the two halves move together when the
+verified rescore at 235 lands, or not at all.

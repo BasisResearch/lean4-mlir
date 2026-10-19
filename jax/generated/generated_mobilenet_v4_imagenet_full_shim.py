@@ -291,10 +291,13 @@ def _imagenet_decode_center_crop_timm(image_bytes):
     img = tf.io.decode_jpeg(image_bytes, channels=3)
     shape = tf.shape(img)
     h, w = shape[0], shape[1]
-    target = tf.cast(tf.round(_IMG_SIZE / _CROP_PCT), tf.int32)
-    scale = tf.cast(target, tf.float32) / tf.cast(tf.minimum(h, w), tf.float32)
-    nh = tf.cast(tf.round(tf.cast(h, tf.float32) * scale), tf.int32)
-    nw = tf.cast(tf.round(tf.cast(w, tf.float32) * scale), tf.int32)
+    # timm: short side math.floor(_IMG_SIZE / _CROP_PCT); torchvision Resize(int): long side
+    # int(target * long / short), float64 division truncated (F6: both were tf.round before).
+    target = tf.cast(tf.math.floor(_IMG_SIZE / _CROP_PCT), tf.int32)
+    short = tf.minimum(h, w)
+    nl = tf.cast(tf.cast(target * tf.maximum(h, w), tf.float64) / tf.cast(short, tf.float64), tf.int32)
+    nh = tf.where(w <= h, nl, target)
+    nw = tf.where(w <= h, target, nl)
     img = tf.image.resize(img, [nh, nw], method=tf.image.ResizeMethod.BICUBIC,
                           antialias=True)   # PIL-equivalent; see the emitter's note
     oy = (nh - _IMG_SIZE) // 2

@@ -131,26 +131,43 @@ the run behind the book's number:
   - 0.875 is exact (256), so R34, R50-2018, ConvNeXt and ViT emit the same bytes.
 - Planning ids: F6 (`imagenet_parity.md:520`), P-J (`vit_parity_todo.md:71`).
 
-- [ ] Change the target to `tf.math.floor`.
-- [ ] **Also check the long side.** torchvision's `Resize(int)` computes it as
+- [x] Change the target to `tf.math.floor` (2026-10-19; timm 1.0.28 `transforms_imagenet_eval`:
+      `scale_size = math.floor(img_size / crop_pct)`, read off the pinned tag).
+- [x] **Also check the long side.** torchvision's `Resize(int)` computes it as
       `int(size · long / short)`, which truncates. The emitted `nh` / `nw` use `tf.round`. Read
       torchvision's `_compute_resized_output_size` at the pinned version and match it. If it does
-      truncate, this is the same fix.
-- [ ] Add a differential gate in the `crop_sampler_gate.py` mould: the emitted eval resize against
+      truncate, this is the same fix. — It does (v0.28.0: `new_long = int(requested_new_short *
+      long / short)`), so the emitter now computes `int(target · max(h, w) / min(h, w))` in float64
+      and places it with `tf.where(w <= h, …)` the way torchvision assigns short/long. **This moves
+      every timm-protocol emitter, not only the 0.95 ones**: at 0.875 the short side stays 256 but
+      the long side truncates where it rounded up (a 350 × 500 image: 365, not 366). All 68
+      `jax/generated/*.py` re-emitted, 7 lines each, nothing else in the diff.
+- [x] Add a differential gate in the `crop_sampler_gate.py` mould: the emitted eval resize against
       torchvision's `Resize(int(224/crop)) + CenterCrop(224)` output size, at 0.875 / 0.9 / 0.95, on
       a few aspect ratios, plus a red control at the old `round`. Wire it where the sibling gates run
-      (jax.yml, or the TF-gate list F9 names).
-- [ ] Re-emit with `scripts/regen_jax_generated.sh write` / `sync` / `check`. Expect only the
+      (jax.yml, or the TF-gate list F9 names). — Part 4 of `scripts/gates/crop_sampler_gate.py`
+      (2026-10-19): the emitted `_imagenet_decode_center_crop` exec'd out of the ViT-Ti shim (0.875)
+      and the RSB shim (0.95), `_CROP_PCT` also set to 0.9, twelve shapes, torchvision's `F.resize`
+      in `.venv-timm` as the reference; the pre-F6 text is the control and goes red at every crop.
+      Ran green on atlas (`.venv-score` + a fresh `.venv-timm`); it rides the existing jax.yml step.
+- [x] Re-emit with `scripts/regen_jax_generated.sh write` / `sync` / `check`. Expect only the
       0.95-crop (and any 0.9) trainers and shims to move. The rest must stay byte-identical; say
-      which moved in the commit.
-- [ ] Update the confs whose prechecks grep the eval resize line.
-- [ ] **The landed A3 pair** (78.08 / 77.60) was scored at 236:
+      which moved in the commit. — The expectation was wrong because of the long side (above):
+      all 68 moved, each by the same 7-line block. `write` and `sync` done 2026-10-19 on atlas.
+- [x] Update the confs whose prechecks grep the eval resize line. — None does: the prechecks grep
+      `_CROP_PCT = 0.875`, the `_timm` function name and TF-slim's `oy = tf.cast(…)` line, none of
+      which moved (`grep -n 'tf.round\|_CROP_PCT\|decode_center_crop' scripts/jobs/*.conf`).
+- [~] **The landed A3 pair** (78.08 / 77.60) was scored at 236:
   - Rescore both checkpoints at 235 on atlas's CPU; `runs/2026-10-12-r50-a3-jax/rescore.sh` is the
-    template.
+    template. — JAX half done (`rescore_f6.sh`, 2026-10-19): **77.58 / 93.66** at 235 against
+    77.61 / 93.61 at 236, −13 images top-1, +24 top-5. The verified half cannot be scored on atlas
+    (its checkpoint and eval path are on the GPU box): **owed**, with the pair's book numbers to
+    move together or not at all.
   - Report the move. Update the book only if it moves the printed digits; either way, note the
-    protocol in the run READMEs.
-  - The MNv4 timm-protocol rescores, if any are printed, likewise.
-- [ ] Mark F6 / P-J ✅ in both planning files.
+    protocol in the run READMEs. — It moves top-1 by 0.03; the book keeps 77.61 / 93.61 with a
+    marker on the A3 section until the verified rescore lands. Noted in the run's RESULTS.md.
+  - The MNv4 timm-protocol rescores, if any are printed, likewise. — None printed (D18 is open).
+- [x] Mark F6 / P-J ✅ in both planning files (2026-10-19).
 
 ### 6. Docstrings and stale text
 

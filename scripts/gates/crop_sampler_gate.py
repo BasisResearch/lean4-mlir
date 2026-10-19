@@ -25,6 +25,14 @@ Part 3, `trainResize`: TF's antialiased bilinear and bicubic resize against PIL'
 down to 224² (what torchvision's and timm's resized_crop run). Pass: mean |Δ| ≤ 0.3 grey levels;
 bilinear max |Δ| ≤ 1 (bicubic's max is PIL's clamping of its overshoot, as C6 measured).
 
+Part 4, the eval resize's integer arithmetic (F6, planning/imagenet_parity.md): the emitted timm-protocol
+`_imagenet_decode_center_crop`, exec'd out of the ViT-Ti shim (0.875) and the RSB shim (0.95), with
+`_CROP_PCT` also set to 0.9, against torchvision's `Resize(math.floor(224 / crop_pct))` output size (run
+in .venv-timm) on ten image shapes, square through 1:2.5 either way. Pass: every [nh, nw] equal, and
+nh, nw ≥ 224 so `CenterCrop(224)` fits. Control, which must go red: the pre-F6 form (`tf.round` on both
+the short side and the long one), which says 236 at 0.95 where timm's `math.floor` says 235 and rounds
+the long side up where torchvision's `int(...)` truncates it.
+
 Usage:
     .venv/bin/python scripts/gates/crop_sampler_gate.py [--n 200000]
 """
@@ -44,6 +52,7 @@ ap.add_argument("--n", type=int, default=200_000)
 ap.add_argument("--shim", default=os.path.join(GEN, "generated_vit_tiny_imagenet_shim.py"))
 ap.add_argument("--b0", default=os.path.join(GEN, "generated_efficientnet_b0_imagenet.py"))
 ap.add_argument("--mnv4", default=os.path.join(GEN, "generated_mobilenet_v4_imagenet_full.py"))
+ap.add_argument("--rsb", default=os.path.join(GEN, "generated_resnet50_imagenet_rsbfaithful_shim.py"))
 args = ap.parse_args()
 
 
@@ -225,4 +234,97 @@ for h, w in ((480, 640), (300, 300), (150, 200), (80, 80)):
 print(f"emitted sampler: {'✅ matches torchvision' if ok else '⛔ differs from torchvision'}")
 for k, v in red.items():
     print(f"CONTROL {k}: {'✅ red, as it must be' if v else '⛔ GREEN on every shape — the gate is blind'}")
-sys.exit(0 if ok and b0_ok and m4_ok and rs_ok and all(red.values()) else 1)
+
+# ── Part 4: the eval resize's output size against torchvision's Resize(int) (F6) ──
+import math
+EVAL_SHAPES = [(375, 375), (500, 375), (375, 500), (333, 500), (500, 333), (350, 500), (500, 350),
+               (360, 640), (640, 360), (500, 200), (200, 500), (1200, 1600)]
+# (H, W). 333/500 is where round and int disagree at 0.9 and 0.95; 350/500 (256 · 10/7 = 365.71) is
+# where they disagree at 0.875 too, so the control is red at every crop and not only the fractional ones.
+EVAL_CROPS = [0.875, 0.9, 0.95]
+PRE_F6 = """
+def _imagenet_decode_center_crop(image_bytes):
+    img = tf.io.decode_jpeg(image_bytes, channels=3)
+    shape = tf.shape(img)
+    h, w = shape[0], shape[1]
+    target = tf.cast(tf.round(_IMG_SIZE / _CROP_PCT), tf.int32)
+    scale = tf.cast(target, tf.float32) / tf.cast(tf.minimum(h, w), tf.float32)
+    nh = tf.cast(tf.round(tf.cast(h, tf.float32) * scale), tf.int32)
+    nw = tf.cast(tf.round(tf.cast(w, tf.float32) * scale), tf.int32)
+    img = tf.image.resize(img, [nh, nw], method=tf.image.ResizeMethod.BICUBIC, antialias=True)
+    oy = (nh - _IMG_SIZE) // 2
+    ox = (nw - _IMG_SIZE) // 2
+    return tf.image.crop_to_bounding_box(img, oy, ox, _IMG_SIZE, _IMG_SIZE)
+"""
+
+
+def torchvision_eval_sizes():
+    code = f"""
+import sys, json, math, torch
+from torchvision.transforms import functional as F, InterpolationMode
+out = {{}}
+for crop in {EVAL_CROPS!r}:
+    s = math.floor(224 / crop)   # timm transforms_imagenet_eval: scale_size = math.floor(img_size / crop_pct)
+    for H, W in {EVAL_SHAPES!r}:
+        r = F.resize(torch.zeros(3, H, W), s, interpolation=InterpolationMode.BICUBIC, antialias=True)
+        out[f"{{crop}}:{{H}}x{{W}}"] = list(r.shape[1:])
+json.dump(out, open(sys.argv[1], "w"))
+"""
+    with tempfile.TemporaryDirectory() as d:
+        f = os.path.join(d, "tv.json")
+        subprocess.run([TIMM_PY, "-c", code, f], check=True)
+        import json
+        return json.load(open(f))
+
+
+def eval_block(path):
+    src = open(path).read().split("\n")
+    a = next((i for i, l in enumerate(src) if l.startswith("def _imagenet_decode_center_crop(")), None)
+    if a is None:
+        sys.exit(f"⛔ {path} has no `_imagenet_decode_center_crop(` — not a timm-protocol shim")
+    b = next(i for i in range(a + 1, len(src)) if src[i].startswith("def ") or src[i].startswith("class "))
+    return "\n".join(src[a:b])
+
+
+def emitted_sizes(code, crop):
+    """[nh, nw] the exec'd decode hands tf.image.resize, per shape, at _CROP_PCT = crop."""
+    g = {"tf": tf, "np": np, "os": os, "_IMG_SIZE": 224, "_CROP_PCT": crop}
+    exec(code, g)
+    fn = g["_imagenet_decode_center_crop"]
+    out, real = {}, tf.image.resize
+    def rec(img, size, **kw):
+        out["size"] = [int(v) for v in np.asarray(size)]
+        return real(img, size, **kw)
+    tf.image.resize = rec
+    try:
+        sizes = {}
+        for H, W in EVAL_SHAPES:
+            fn(tf.io.encode_jpeg(tf.zeros([H, W, 3], tf.uint8)))
+            sizes[f"{crop}:{H}x{W}"] = out["size"]
+    finally:
+        tf.image.resize = real
+    return sizes
+
+
+tv_eval = torchvision_eval_sizes()
+ev_ok, pre_red = True, False
+print(f"{'crop':>5s} {'shape':>9s} {'torchvision':>12s} {'emitted':>12s} {'pre-F6':>12s}")
+for label, path in (("vit-ti shim", args.shim), ("rsb shim", args.rsb)):
+    code = eval_block(path)
+    if "tf.round(_IMG_SIZE" in code:
+        sys.exit(f"⛔ {path}: the eval resize still rounds the short side (pre-F6) — re-emit")
+    for crop in EVAL_CROPS:
+        ours = emitted_sizes(code, crop)
+        old = emitted_sizes(PRE_F6, crop)
+        for H, W in EVAL_SHAPES:
+            k = f"{crop}:{H}x{W}"
+            good = ours[k] == tv_eval[k] and min(ours[k]) >= 224
+            ev_ok &= good
+            pre_red |= old[k] != tv_eval[k]
+            if label == "vit-ti shim" or not good:
+                print(f"{crop:5.3f} {H:4d}x{W:<4d} {str(tv_eval[k]):>12s} {str(ours[k]):>12s} {str(old[k]):>12s}  "
+                      f"{'✅' if good else '⛔'}{'' if label == 'vit-ti shim' else '  (' + label + ')'}")
+print(f"eval resize ({', '.join(str(c) for c in EVAL_CROPS)}): "
+      f"{'✅ matches torchvision Resize(floor(224/crop)) on every shape' if ev_ok else '⛔ differs from torchvision'}")
+print(f"CONTROL pre-F6 round: {'✅ red, as it must be' if pre_red else '⛔ GREEN on every shape — the gate is blind'}")
+sys.exit(0 if ok and b0_ok and m4_ok and rs_ok and all(red.values()) and ev_ok and pre_red else 1)

@@ -631,7 +631,7 @@ jobs:
           set -o pipefail
           python3 scripts/gates/aug_bicubic_pil_check.py 2>&1 | tee -a /tmp/parity.log
 
-      - name: Train-crop samplers against torchvision (with TF's sampler and a uniform-aspect control)
+      - name: Train-crop samplers and the eval resize's sizes against torchvision (with TF's sampler, a uniform-aspect and the pre-F6 round control)
         run: |
           set -o pipefail
           python3 scripts/gates/crop_sampler_gate.py 2>&1 | tee -a /tmp/parity.log

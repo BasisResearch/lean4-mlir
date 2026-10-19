@@ -722,14 +722,25 @@ private def emitDataLoading (ds : DatasetKind) (cfg : TrainConfig) (u8Wire : Boo
     -- the biggest images in the set. Both measurements: `planning/archive/resize_eval_reconciliation.md`.
     -- It costs a full `decode_jpeg` where the Inception form could `decode_and_crop_jpeg`, because
     -- the resize precedes the crop. Eval only, and eval is a small share of a run.
+    -- **The integer arithmetic is timm's and torchvision's, not a rounding of them** (F6,
+    -- 2026-10-19). timm's `transforms_imagenet_eval` sets the short side to
+    -- `math.floor(img_size / crop_pct)` — 235 at 0.95, where `round` said 236 — and torchvision's
+    -- `_compute_resized_output_size` sets the long side to `int(short_target * long / short)`,
+    -- a float64 division truncated. Both were `tf.round` here until F6; the long side moved on
+    -- every timm-protocol emitter, the short side only where `_IMG_SIZE / _CROP_PCT` is
+    -- fractional (0.875 is exactly 256). `scripts/gates/crop_sampler_gate.py` part 4 holds the
+    -- emitted sizes to torchvision's `Resize(int) + CenterCrop`, with the old `round` as its red.
     "def " ++ (if cfg.evalCropTf then "_imagenet_decode_center_crop_timm" else "_imagenet_decode_center_crop") ++ "(image_bytes):\n" ++
     "    img = tf.io.decode_jpeg(image_bytes, channels=3)\n" ++
     "    shape = tf.shape(img)\n" ++
     "    h, w = shape[0], shape[1]\n" ++
-    "    target = tf.cast(tf.round(_IMG_SIZE / _CROP_PCT), tf.int32)\n" ++
-    "    scale = tf.cast(target, tf.float32) / tf.cast(tf.minimum(h, w), tf.float32)\n" ++
-    "    nh = tf.cast(tf.round(tf.cast(h, tf.float32) * scale), tf.int32)\n" ++
-    "    nw = tf.cast(tf.round(tf.cast(w, tf.float32) * scale), tf.int32)\n" ++
+    "    # timm: short side math.floor(_IMG_SIZE / _CROP_PCT); torchvision Resize(int): long side\n" ++
+    "    # int(target * long / short), float64 division truncated (F6: both were tf.round before).\n" ++
+    "    target = tf.cast(tf.math.floor(_IMG_SIZE / _CROP_PCT), tf.int32)\n" ++
+    "    short = tf.minimum(h, w)\n" ++
+    "    nl = tf.cast(tf.cast(target * tf.maximum(h, w), tf.float64) / tf.cast(short, tf.float64), tf.int32)\n" ++
+    "    nh = tf.where(w <= h, nl, target)\n" ++
+    "    nw = tf.where(w <= h, target, nl)\n" ++
     "    img = tf.image.resize(img, [nh, nw], method=tf.image.ResizeMethod.BICUBIC,\n" ++
     "                          antialias=True)   # PIL-equivalent; see the emitter's note\n" ++
     "    oy = (nh - _IMG_SIZE) // 2\n" ++
