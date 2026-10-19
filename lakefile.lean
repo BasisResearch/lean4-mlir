@@ -2352,7 +2352,9 @@ script «imagenette-orin» (args) do
     axis sibling. Axis siblings — `r34-default-4gpu`, `r50-2018-4gpu`, `r50-a3-4gpu`, `r50-a3-wxclip-4gpu`,
     `r50-a3-wxclip-bf16-4gpu` (RSB-A3 at 8 × 64: the same effective 2048 at a BatchNorm group of 256),
     `vit-default-4gpu`, `vits-default-g512-4gpu`, `vitb-default-g512-4gpu` (the non-EMA f32 S/B jobs),
-    `cnx-default-emabf16-4gpu`, `cnxs-default-4gpu` / `cnxb-default-4gpu` (ConvNeXt-S/B f32 at 4 × 32) (ConvNeXt-T with the EMA shadow), the MNv4 100-epoch pair `mnv4-default-4gpu` /
+    `cnx-default-4gpu` (ConvNeXt-T's one-shot batch-256 job, the landed 09-18 run; the row is the official
+    recipe `cnx-default-emabf16-4gpu` since 2026-10-19), `cnxs-default-4gpu` / `cnxb-default-4gpu`
+    (ConvNeXt-S/B f32 at 4 × 32), the MNv4 100-epoch pair `mnv4-default-4gpu` /
     `mnv4-default-jax-4gpu` (run as overnight chunks, `START_AT`/`STOP_AT`), `selftest`, `chunktest` — stay `scripts/supervise.sh`-only.
     `r34-default-bf16-4gpu`, `r50-2018-bf16-4gpu` and `r50-a3-wxclip4x128-bf16-4gpu` are the 4× 3060
     box's confs, named by the
@@ -2367,7 +2369,7 @@ private def imagenetRows : List (String × String × String) :=
     ("mnv2-default-4gpu",      "mobilenetv2-imagenet-verified",  "Ch. 6  MobileNetV2"),
     ("mnv4-full-4gpu",         "mobilenetv4-imagenet-verified",  "Ch. 6  MobileNetV4-Conv-M, `full` (500 ep), bf16 (side quest)"),
     ("enet-default-4gpu",      "efficientnet-imagenet-verified", "Ch. 7  EfficientNet-B0"),
-    ("cnx-default-4gpu",       "convnext-imagenet-verified",     "Ch. 8  ConvNeXt-T"),
+    ("cnx-default-emabf16-4gpu", "convnext-imagenet-verified",   "Ch. 8  ConvNeXt-T, the official recipe (EMA, batch 4096 accumulated), bf16"),
     ("cnxs-default-emabf16-4gpu", "convnext-s-imagenet-verified", "Ch. 8  ConvNeXt-S, EMA + bf16 (side quest)"),
     ("cnxb-default-emabf16-4gpu", "convnext-b-imagenet-verified", "Ch. 8  ConvNeXt-B, EMA + bf16 (side quest)"),
     ("vit-default-emabf16-4gpu", "vit-imagenet-verified",        "Ch. 9  ViT-Tiny (DeiT-Ti), EMA + bf16"),
@@ -2418,7 +2420,7 @@ script «r50-a1-bf16-4gpu»       (args) do runJobScript "r50-a1-bf16-4gpu" args
 script «mnv2-default-4gpu»      (args) do runJobScript "mnv2-default-4gpu" args
 script «mnv4-full-4gpu»         (args) do runJobScript "mnv4-full-4gpu" args
 script «enet-default-4gpu»      (args) do runJobScript "enet-default-4gpu" args
-script «cnx-default-4gpu»       (args) do runJobScript "cnx-default-4gpu" args
+script «cnx-default-emabf16-4gpu» (args) do runJobScript "cnx-default-emabf16-4gpu" args
 script «cnxs-default-emabf16-4gpu» (args) do runJobScript "cnxs-default-emabf16-4gpu" args
 script «cnxb-default-emabf16-4gpu» (args) do runJobScript "cnxb-default-emabf16-4gpu" args
 script «vit-default-emabf16-4gpu» (args) do runJobScript "vit-default-emabf16-4gpu" args

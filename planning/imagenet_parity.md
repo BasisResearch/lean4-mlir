@@ -325,8 +325,9 @@ the ETA is now the measured 73 h, marked pre-sync-BN. ⚠ The `RECIPE=default` v
 Decisions: (a) exact-erf GELU on both paths (touches the proof-side GELU node: cost it first)?
 (b) drop the clip for the 300-ep recipe? (c) `pixel` erasing lands with C6 regardless.
 
-**Status (2026-09-25):** ✅ CX-1: `cnx-default-emabf16-4gpu` is a short conf that sources
-`cnx-default-4gpu` and swaps the variant; its ETA says it carries the non-EMA number. Both confs'
+**Status (2026-09-25, updated 2026-10-19):** ✅ CX-1: `cnx-default-emabf16-4gpu` was a short conf sourcing
+`cnx-default-4gpu`; it is standalone since 10-12 (the official recipe) and the Ch. 8 `imagenetRows` row
+since 10-19, `cnx-default-4gpu` the one-shot sibling behind the landed 09-18 number. Both confs'
 "AutoAugment + RandAugment" became RandAugment + random erasing. ✅ CX-2: `scripts/jobs/run_cnx_verified.sh [JOB]`
 defaults to the EMA job and no longer pins a RUNDIR. S/B confs use the shared checks; CX-3/CX-4 open.
 

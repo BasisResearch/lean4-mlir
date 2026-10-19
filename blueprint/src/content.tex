@@ -6793,11 +6793,17 @@ difference is who wrote the StableHLO. Every ImageNet section reports the
 reference first, the verified path second, and then the two side by side.
 
 The recipe in full: SGD with momentum $0.9$ at batch 256, cosine LR with a
-5-epoch warmup from peak $0.1$, label smoothing $0.1$, Inception-style
-random-resized-crop through TensorFlow's sampler ($10$--$100\%$ of the
-image area at a $\frac{3}{4}$--$\frac{4}{3}$ aspect ratio, resized to
-$224\times224$) plus a horizontal flip, and $\ell_2$ weight decay
-$10^{-4}$. SGD with momentum and the weight decay are the original paper's;
+5-epoch warmup from peak $0.1$, label smoothing $0.1$, a random-resized
+crop to $224\times224$ plus a horizontal flip, and $\ell_2$ weight decay
+$10^{-4}$. The crop is where the two halves below part: the verified run
+trained TensorFlow's \texttt{sample\_distorted\_bounding\_box} ($8$--$100\%$
+of the area at a $\frac{3}{4}$--$\frac{4}{3}$ aspect ratio, at least
+$10\%$ of the image covered, the whole image after ten failed draws), and
+the reference, which started after the pipeline moved to torchvision's
+\texttt{RandomResizedCrop} on 2026-10-06, trained that ($8$--$100\%$ of the
+area, the same aspect range, bilinear). The committed verified shim now
+crops with torchvision's too; the marker after Table~\ref{tab:r34_paths}
+names the rerun that closes the gap. SGD with momentum and the weight decay are the original paper's;
 the cosine schedule, the warmup, the label smoothing and the
 random-resized-crop are the ``bag of tricks'' polish that became standard
 after 2018.
@@ -6994,6 +7000,7 @@ trusted, as it is at every op of an f32 render.
 lowering            & JAX $\to$ XLA            & \texttt{pretty(provenGraph)} $\to$ XLA \\
 Python in the step  & yes                      & none \\
 evaluation forward  & bf16                     & fp32 \\
+train crop          & torchvision \texttt{RandomResizedCrop} & TF \texttt{sample\_distorted\_bounding\_box} \\
 \hline
 precision           & bf16 convolutions        & bf16 convolutions \\
 classifier head     & fp32                     & fp32 \\
@@ -7019,6 +7026,16 @@ against. Paired on the same images the reading is the same: the two
 checkpoints disagree on $5{,}398$ of them, $2{,}692$ one way and $2{,}706$
 the other, and McNemar's exact test puts $p = 0.86$ on the $14$ images
 between them.
+
+\medskip\noindent\textbf{[TODO: the pair above did not share a train crop.
+The verified half (\texttt{runs/2026-09-22-r34-syncbn-bf16-90ep}) trained
+TensorFlow's \texttt{sample\_distorted\_bounding\_box}; the reference
+(\texttt{runs/2026-10-07-r34-jax-bf16-90ep}) trained torchvision's
+\texttt{RandomResizedCrop}, which every torchvision-side recipe has emitted
+since 2026-10-06. The recipe both rows emulate is the 2018 DAWNBench one.
+A verified rerun on torchvision's crop is owed ---
+\texttt{r34-default-bf16-4gpu} under its own checkpoint tag, ${\sim}21$\,h
+on the four 3060s --- and its number replaces the verified column.]}
 
 \medskip\noindent Both paths normalize over the global $256$: the
 reference's \texttt{@jit} mesh reduces the batch statistics across its
@@ -12079,13 +12096,16 @@ raw weights,
 and the pairing below is made against the reference's raw arm, which the
 reference section measured at $0.03$ points under its EMA. Mixup and
 CutMix never enter the graph at all, because they are data-side and ride
-the shim. It runs with:
+the shim. It ran as the one-shot batch-256 job:
 
 \begin{verbatim}
 lake run cnx-default-4gpu
 \end{verbatim}
 
-\noindent Table~\ref{tab:cnx_pjrt} is the run.
+\noindent Table~\ref{tab:cnx_pjrt} is the run. The chapter's row in
+\texttt{lake run imagenet} is no longer that job but
+\texttt{cnx-default-emabf16-4gpu}, the official recipe; the marker after
+Table~\ref{tab:cnx_paths} says what that changes and what is owed.
 
 \begin{table}[H]
 \centering
@@ -12144,8 +12164,12 @@ BatchNorm), no gradient clip, Mixup or CutMix drawn per batch,
 torchvision's crop; plus the exact erf GELU, the cosine floor at
 $10^{-6}$, RandAugment's fill at the image mean, the EMA decay constant
 from step $0$, an fp32 evaluation forward, and scoring at
-\texttt{timm}'s $288$ / $1.0$. The EMA pair, in code since 2026-10-12, has
-not run; one rerun of both halves takes all of it ---
+\texttt{timm}'s $288$ / $1.0$. The pair published above predates that
+recipe: it is the one-shot job \texttt{cnx-default-4gpu} at global batch
+$256$ and $2.5\mathrm{e}{-4}$, with a global-norm clip and the tanh GELU.
+Since 2026-10-19 the chapter's row runs the official recipe,
+\texttt{cnx-default-emabf16-4gpu}, in code since 2026-10-12 and not yet
+run, and the pair on it is owed, both halves ---
 \texttt{cnx-default-jax-4gpu} / \texttt{cnx-default-emabf16-4gpu},
 ${\sim}76 + 109$\,h.]}
 
@@ -19302,7 +19326,7 @@ name.
 \texttt{resnet50-imagenet-verified}     & \texttt{a3} (RSB-A3, train@$160$)  & \texttt{r50-a3-wxclip4x128-bf16-4gpu} \\
 \texttt{mobilenetv2-imagenet-verified}  & \texttt{default}                   & \texttt{mnv2-default-4gpu} \\
 \texttt{efficientnet-imagenet-verified} & \texttt{default}                   & \texttt{enet-default-4gpu} \\
-\texttt{convnext-imagenet-verified}     & \texttt{default}                   & \texttt{cnx-default-4gpu} \\
+\texttt{convnext-imagenet-verified}     & \texttt{default} (the official recipe) & \texttt{cnx-default-emabf16-4gpu} \\
 \texttt{vit-imagenet-verified}          & \texttt{default} (DeiT-Ti)         & \texttt{vit-default-emabf16-4gpu} \\
 \end{tabular}
 \end{table}
@@ -19998,9 +20022,11 @@ another, with autodiff as the judge. The oracle that runs the proven text is
 Theorems~\ref{thm:linear_fold}, \ref{thm:mlp_fold} and~\ref{thm:cnn_fold} are
 about --- through the book's own trainers, against one step of the same nets
 in JAX from the same initial weights on the same batch, compared parameter
-update by parameter update, at tolerances of $10^{-4}$ for the dense nets and
-$10^{-3}$ for the convolutional one. It runs beside the per-operator cases in
-the IREE workflow. Every other layer is unaffected, since the proofs, the
+update by parameter update, at a tolerance of $10^{-4}$. It runs beside the
+per-operator cases in the IREE workflow, and its first run (2026-10-19) put
+the worst relative difference over every tensor at $1.3\times10^{-6}$ for
+the linear and MLP steps and $7.4\times10^{-6}$ for the CNN's, float32
+reduction-order noise. Every other layer is unaffected, since the proofs, the
 bridge theorems and the rounding budgets are statements about the graph rather
 than about any compiler, and both lowerers consume the same StableHLO text.
 

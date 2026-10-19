@@ -22,7 +22,7 @@ EfficientNet, facebookresearch/ConvNeXt, DeiT). This file is the work list for t
 
 ## Approved scope (the user, 2026-10-19), in order
 
-### 1. ConvNeXt-T: point the Ch. 8 row at the faithful conf
+### 1. ConvNeXt-T: point the Ch. 8 row at the faithful conf — ✅ 2026-10-19
 
 `imagenetRows` (`lakefile.lean:2367`) and its per-job script (`:2418`) name `cnx-default-4gpu`. That is
 the one-shot recipe behind the landed 09-18 run: 4 × 64 = 256, lr 2.5e-4, clip 1.0, no EMA.
@@ -30,20 +30,20 @@ the one-shot recipe behind the landed 09-18 run: 4 × 64 = 256, lr 2.5e-4, clip 
 The official recipe is `cnx-default-emabf16-4gpu`: 4 × 64 × k16 = 4096, lr 4e-3, no clip, EMA 0.9999
 from step 0, `G2_STEPS=4992`. The book's own TODO (~`content.tex:11837`) already names it.
 
-- [ ] Swap the row to `cnx-default-emabf16-4gpu` and add a `script «cnx-default-emabf16-4gpu»`.
+- [x] Swap the row to `cnx-default-emabf16-4gpu` and add a `script «cnx-default-emabf16-4gpu»`.
       Drop `cnx-default-4gpu`'s script and move it to the axis-sibling list.
-- [ ] Fix the garbled sibling sentence in the `imagenetRows` docstring (~`:2352`). "(ConvNeXt-T with
+- [x] Fix the garbled sibling sentence in the `imagenetRows` docstring (~`:2352`). "(ConvNeXt-T with
       the EMA shadow)" is spliced into the S/B "f32 at 4 × 32" clause.
-- [ ] `cnx-default-4gpu.conf` header: it says the emabf16 conf "sources this file" and that the Ch. 8
+- [x] `cnx-default-4gpu.conf` header: it says the emabf16 conf "sources this file" and that the Ch. 8
       row "names this file". Neither is true after this step. Same claim at `imagenet_parity.md:338`.
-- [ ] Note in that conf that it does NOT reproduce the landed 81.30 any more. The app now always
+- [x] Note in that conf that it does NOT reproduce the landed 81.30 any more. The app now always
       passes `minLR 1e-6` (`MainConvNeXtImagenet.lean:88`), and the conf runs the erf render, not
       tanh. Either freeze it, or say so.
-- [ ] Book: the pair table (`content.tex:11963`, `:11972`, `:11980`) describes the one-shot run
+- [x] Book: the pair table (`content.tex:11963`, `:11972`, `:11980`) describes the one-shot run
       (2.5e-4, "global-norm 1.0, this book's addition", batch 256). Leave the numbers and keep the
       TODO marker, but make the marker say the row now runs the official recipe and the pair is owed.
 
-### 2. R34: the published pair did not share a train crop
+### 2. R34: the published pair did not share a train crop — ✅ 2026-10-19 (rerun prepared, not launched)
 
 - The verified 74.17 (`runs/2026-09-22-r34-syncbn-bf16-90ep`) started before `aa974a95` (2026-10-06,
   torchvision's `RandomResizedCrop` on the torchvision-side recipes). It trained on TF's
@@ -52,21 +52,21 @@ from step 0, `G2_STEPS=4992`. The book's own TODO (~`content.tex:11837`) already
 - `tab:r34_paths` (`content.tex:6755`) lists neither crop.
 - The prose at `content.tex:6563` ("TensorFlow's sampler (10–100%)") is wrong for both halves.
 
-- [ ] Book: a `\textbf{[TODO: …]}` marker on the R34 section, in the file's existing marker style
+- [x] Book: a `\textbf{[TODO: …]}` marker on the R34 section, in the file's existing marker style
       (e.g. `content.tex:7361`). It should say:
       - the verified half trained TF's sampler and the JAX half torchvision's;
       - the recipe is the DAWNBench one (item 3);
       - a verified rerun on the torchvision crop is owed.
-- [ ] Add a `train crop` row to `tab:r34_paths` that shows the two crops. Fix the 6563 prose to name
+- [x] Add a `train crop` row to `tab:r34_paths` that shows the two crops. Fix the 6563 prose to name
       what each half ran.
-- [ ] Prepare the verified rerun, but do not launch it (launching needs the user's word). Two traps:
+- [x] Prepare the verified rerun, but do not launch it (prepared 2026-10-19: `CKPT_TAG=tvcrop`, tagged `CKPT_EPOCH_FILE`, `pc_ckpt`, fresh RUNDIR in the header; `pc_crop` does grep the crop call) (launching needs the user's word). Two traps:
   - **Checkpoint tag.** `r34-default-bf16-4gpu.conf:142` keys the checkpoint on the variant alone, so
     the finished 09-22 checkpoint on the 3060 box reads as COMPLETE, and a launch exits 0 without
     training. Add a `CKPT_TAG` (as `mnv4-full-e100-4gpu` does), give the run a fresh RUNDIR, and
     have the PRECHECK refuse an untagged epoch-90 file.
   - **Crop check.** `precheck_r34_bf16_90` already has `pc_crop … torchvision bilinear`. Confirm it
     greps the committed R34 shim's crop, not just its existence.
-- [ ] The conf header (`r34-default-bf16-4gpu.conf:17–30`) still calls `r34-default-4gpu` the
+- [x] The conf header (`r34-default-bf16-4gpu.conf:17–30`) still calls `r34-default-4gpu` the
       `imagenetRows` row and cites the retired fp32 74.14 / 91.86 pair. Update both.
 
 ### 3. R34 / R50-2018: the recipe is DAWNBench's, and the book says so
