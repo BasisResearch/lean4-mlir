@@ -160,9 +160,14 @@ the run behind the book's number:
 - [~] **The landed A3 pair** (78.08 / 77.60) was scored at 236:
   - Rescore both checkpoints at 235 on atlas's CPU; `runs/2026-10-12-r50-a3-jax/rescore.sh` is the
     template. — JAX half done (`rescore_f6.sh`, 2026-10-19): **77.58 / 93.66** at 235 against
-    77.61 / 93.61 at 236, −13 images top-1, +24 top-5. The verified half cannot be scored on atlas
-    (its checkpoint and eval path are on the GPU box): **owed**, with the pair's book numbers to
-    move together or not at all.
+    77.61 / 93.61 at 236, −13 images top-1, +24 top-5. The verified half: **owed**, with the
+    pair's book numbers to move together or not at all. Its checkpoint (2611 `.bin` / `.bn` /
+    `.epoch`) is on atlas at `~/lean/incoming/` since 2026-10-19, but atlas cannot score it:
+    `score-checkpoint` through IREE `llvm-cpu` segfaults in the first invoke on `local-task` and
+    runs single-threaded for hours on `local-sync` (noted in
+    `runs/2026-10-12-r50-a3-rsb-bf16/rescore_f6.sh`, which is written for any PJRT box — ares, or
+    a ROCm card through `historical/ROCM.md`'s fast path — as `pre` (the 236 control against
+    ares's 39,039) and `f6`).
   - Report the move. Update the book only if it moves the printed digits; either way, note the
     protocol in the run READMEs. — It moves top-1 by 0.03; the book keeps 77.61 / 93.61 with a
     marker on the A3 section until the verified rescore lands. Noted in the run's RESULTS.md.
