@@ -1,0 +1,300 @@
+# imagenet_finish_line.md — what stands between `lake run imagenet` and a paper-accurate book
+
+**Written 2026-10-19** on atlas, from a six-way read-only audit of HEAD `e9e59edc` (ResNet, MobileNet,
+EfficientNet, ConvNeXt, ViT, cross-cutting). Each net's emitted JAX trainer, shim, verified render and
+conf were read against the upstream code (torchvision, RSB + timm, TF-slim, tf-models, tensorflow/tpu
+EfficientNet, facebookresearch/ConvNeXt, DeiT). This file is the work list for the next session;
+`imagenet_parity.md` §10–§11 stay the history.
+
+**Where things stand.**
+- On a GPU box all 28 prechecks pass: the 14 `imagenetRows` rows and their 14 JAX peers. That was
+  simulated on atlas with a fake plugin, python and binaries.
+- Every render and generated file a conf names exists, and `regen_jax_generated.sh check` is clean.
+  (On atlas `lake run imagenet` refuses every row, but only for box reasons: no plugin, no GPU, no
+  binaries. The local `jax/.lake/build` MNv4 copies are also stale since 3333bbd5; `sync` fixes that.)
+- **Recipes clean against upstream, nothing left to build:**
+  - MNv2: TF-slim's README.
+  - MNv4 `full`: the tf-models yaml, with 3333bbd5's 26-entry ramp and centre-crop fallback on both paths.
+  - B0: TF EfficientNet.
+  - ConvNeXt T/S/B: the `*-emabf16` confs.
+  - ViT Ti/S/B: DeiT.
+  - RSB A3/A2/A1: clean apart from F6.
+
+## Approved scope (the user, 2026-10-19), in order
+
+### 1. ConvNeXt-T: point the Ch. 8 row at the faithful conf
+
+`imagenetRows` (`lakefile.lean:2367`) and its per-job script (`:2418`) name `cnx-default-4gpu`. That is
+the one-shot recipe behind the landed 09-18 run: 4 × 64 = 256, lr 2.5e-4, clip 1.0, no EMA.
+
+The official recipe is `cnx-default-emabf16-4gpu`: 4 × 64 × k16 = 4096, lr 4e-3, no clip, EMA 0.9999
+from step 0, `G2_STEPS=4992`. The book's own TODO (~`content.tex:11837`) already names it.
+
+- [ ] Swap the row to `cnx-default-emabf16-4gpu` and add a `script «cnx-default-emabf16-4gpu»`.
+      Drop `cnx-default-4gpu`'s script and move it to the axis-sibling list.
+- [ ] Fix the garbled sibling sentence in the `imagenetRows` docstring (~`:2352`). "(ConvNeXt-T with
+      the EMA shadow)" is spliced into the S/B "f32 at 4 × 32" clause.
+- [ ] `cnx-default-4gpu.conf` header: it says the emabf16 conf "sources this file" and that the Ch. 8
+      row "names this file". Neither is true after this step. Same claim at `imagenet_parity.md:338`.
+- [ ] Note in that conf that it does NOT reproduce the landed 81.30 any more. The app now always
+      passes `minLR 1e-6` (`MainConvNeXtImagenet.lean:88`), and the conf runs the erf render, not
+      tanh. Either freeze it, or say so.
+- [ ] Book: the pair table (`content.tex:11963`, `:11972`, `:11980`) describes the one-shot run
+      (2.5e-4, "global-norm 1.0, this book's addition", batch 256). Leave the numbers and keep the
+      TODO marker, but make the marker say the row now runs the official recipe and the pair is owed.
+
+### 2. R34: the published pair did not share a train crop
+
+- The verified 74.17 (`runs/2026-09-22-r34-syncbn-bf16-90ep`) started before `aa974a95` (2026-10-06,
+  torchvision's `RandomResizedCrop` on the torchvision-side recipes). It trained on TF's
+  `sample_distorted_bounding_box` (`min_object_covered` 0.1, uniform aspect, whole-image fallback).
+- The JAX 74.14 (`runs/2026-10-07-r34-jax-bf16-90ep`) trained torchvision's crop.
+- `tab:r34_paths` (`content.tex:6755`) lists neither crop.
+- The prose at `content.tex:6563` ("TensorFlow's sampler (10–100%)") is wrong for both halves.
+
+- [ ] Book: a `\textbf{[TODO: …]}` marker on the R34 section, in the file's existing marker style
+      (e.g. `content.tex:7361`). It should say:
+      - the verified half trained TF's sampler and the JAX half torchvision's;
+      - the recipe is the DAWNBench one (item 3);
+      - a verified rerun on the torchvision crop is owed.
+- [ ] Add a `train crop` row to `tab:r34_paths` that shows the two crops. Fix the 6563 prose to name
+      what each half ran.
+- [ ] Prepare the verified rerun, but do not launch it (launching needs the user's word). Two traps:
+  - **Checkpoint tag.** `r34-default-bf16-4gpu.conf:142` keys the checkpoint on the variant alone, so
+    the finished 09-22 checkpoint on the 3060 box reads as COMPLETE, and a launch exits 0 without
+    training. Add a `CKPT_TAG` (as `mnv4-full-e100-4gpu` does), give the run a fresh RUNDIR, and
+    have the PRECHECK refuse an untagged epoch-90 file.
+  - **Crop check.** `precheck_r34_bf16_90` already has `pc_crop … torchvision bilinear`. Confirm it
+    greps the committed R34 shim's crop, not just its existence.
+- [ ] The conf header (`r34-default-bf16-4gpu.conf:17–30`) still calls `r34-default-4gpu` the
+      `imagenetRows` row and cites the retired fp32 74.14 / 91.86 pair. Update both.
+
+### 3. R34 / R50-2018: the recipe is DAWNBench's, and the book says so
+
+The user's call: the recipe these two rows emulate is the **2018 DAWNBench** recipe. The book's intro
+(`content.tex:253`) says the user was on the winning team. "Bag of Tricks" (He et al. 2018) is a copy
+of it, not its source. Today the book credits Bag of Tricks for the cosine, warmup, label smoothing
+and crop (`content.tex:6566–6569`, and the "Popularized by … Bag of Tricks" at ~`:6323`).
+`imagenet_parity.md:635` names "torchvision reference recipe" as the source of truth for these rows.
+**It is not that either:** torchvision's legacy recipe is step decay ×0.1 every 30 epochs, no warmup,
+no smoothing.
+
+- [ ] Write the DAWNBench values down as the source of truth, in `imagenet_parity.md` §10.1's table
+      (replacing "torchvision reference recipe"). Get the exact values from the user, or from the
+      fast.ai DAWNBench write-up and code the book already links (`content.tex:6318`).
+- [ ] Diff the two rows against those values and list what differs:
+  - **Progressive resizing:** the book says it was part of the winning recipe; neither row does it.
+  - **BN decay:** 0.99 on R34 on both paths (`jax/MainResnetImagenet.lean:33` never sets
+    `bnMomentum`), against R50-2018's 0.9.
+  - **Warmup length:** the book says 3 epochs at ~`:6330` and 5 at `:6563`.
+  - **Zero-γ:** on R50.
+  - **Train crop.**
+  Each one either matches or gets disclosed. Anything that would need a rerun comes back to the user
+  as a question, not a launch.
+- [ ] Book: re-attribute in the prose at `:6318–6325` and `:6563–6569` (DAWNBench first, Bag of Tricks
+      as the later write-up). Put the differences in the R34 TODO marker from item 2.
+- [ ] `MainResnet34Imagenet.lean:38` says "He et al.'s own schedule"; correct it. Sweep the R34/R50
+      app and conf headers for "torchvision recipe" / "2018 recipe" wording that should now say
+      DAWNBench.
+
+### 4. Pairs the book publishes that predate their row's conf
+
+The book says every row has run (`content.tex:18963`). Three rows now train a different recipe from
+the run behind the book's number:
+
+| row | book's pair (verified / JAX) | ran | the row now trains |
+|---|---|---|---|
+| MNv2 `mnv2-default-4gpu` | 71.12 / 71.63, `runs/2026-09-27-*` | 350 ep, old RMSProp form, depthwise decayed | the TF-slim README's 420 ep (`emarmstf…`) |
+| B0 `enet-default-4gpu` | 76.88 / 77.15, `09-12` / `jax/runs/enet_b0_imagenet_bf16_350ep` | pre-D3/D6/D13 | TF's code row for row (`emarmstf…`, SAME padding) |
+| ConvNeXt-T (after item 1) | 81.30 / 81.53, `09-18` | one-shot 256, clip, tanh GELU | the official 4096 recipe |
+
+- [ ] Fix the `:18963` sentence. Each row either has run on its current recipe, or has a pair on an
+      earlier recipe, named.
+- [ ] Each of the three chapters' TODO markers (MNv2 `:8730`, B0 `:10399`, ConvNeXt `:11837`) should
+      say plainly that the published pair predates the faithful recipe. Check each one does.
+- [ ] Also: the B0 sentence at ~`content.tex:10340–10344` says, in the present tense, that the rate
+      multiplies the momentum buffer on both paths. D13 changed that, so put it in the past tense
+      for the landed pair.
+- [ ] The row count: the book says "fourteen" but its side-quest table has 8 rows, 15 in all,
+      including `mnv4-full-e100`. `imagenetRows` has 14. Make the book match.
+- [ ] Two small book fixes:
+  - The R50-2018 curve ends at 76.80, the pre-rescore number; the table says 77.09.
+  - README:57 still quotes ViT-Ti 72.42 and MNv4 76.68. The book has 71.61 and 77.35.
+
+### 5. F6: `floor`, not `round`, in the timm-protocol eval resize
+
+- The site is `jax/Jax/Codegen.lean:724`: `target = tf.cast(tf.round(_IMG_SIZE / _CROP_PCT), tf.int32)`.
+  timm and torchvision use `int(224 / crop_pct)`, i.e. floor.
+- It only moves crop values where 224/crop is fractional:
+  - 0.95 (RSB A3/A2/A1, and the A3 / MNv4 timm-protocol rescoring): 236 → 235.
+  - 0.9: 249 → 248.
+  - 0.875 is exact (256), so R34, R50-2018, ConvNeXt and ViT emit the same bytes.
+- Planning ids: F6 (`imagenet_parity.md:520`), P-J (`vit_parity_todo.md:71`).
+
+- [ ] Change the target to `tf.math.floor`.
+- [ ] **Also check the long side.** torchvision's `Resize(int)` computes it as
+      `int(size · long / short)`, which truncates. The emitted `nh` / `nw` use `tf.round`. Read
+      torchvision's `_compute_resized_output_size` at the pinned version and match it. If it does
+      truncate, this is the same fix.
+- [ ] Add a differential gate in the `crop_sampler_gate.py` mould: the emitted eval resize against
+      torchvision's `Resize(int(224/crop)) + CenterCrop(224)` output size, at 0.875 / 0.9 / 0.95, on
+      a few aspect ratios, plus a red control at the old `round`. Wire it where the sibling gates run
+      (jax.yml, or the TF-gate list F9 names).
+- [ ] Re-emit with `scripts/regen_jax_generated.sh write` / `sync` / `check`. Expect only the
+      0.95-crop (and any 0.9) trainers and shims to move. The rest must stay byte-identical; say
+      which moved in the commit.
+- [ ] Update the confs whose prechecks grep the eval resize line.
+- [ ] **The landed A3 pair** (78.08 / 77.60) was scored at 236:
+  - Rescore both checkpoints at 235 on atlas's CPU; `runs/2026-10-12-r50-a3-jax/rescore.sh` is the
+    template.
+  - Report the move. Update the book only if it moves the printed digits; either way, note the
+    protocol in the run READMEs.
+  - The MNv4 timm-protocol rescores, if any are printed, likewise.
+- [ ] Mark F6 / P-J ✅ in both planning files.
+
+### 6. Docstrings and stale text
+
+Lakefile, Tier 4 (line numbers as of `e9e59edc`):
+
+- [ ] `:561` R34, and `:601 / :612 / :648`: "(all five)" shims. `scripts/gen_shims.sh` has more than that now.
+- [ ] `:574` R50: "AdamW … NOT RSB-A3 — no LAMB, no bs2048, no gradient accumulation". The exe trains
+      `momdp64` (2018) and `lambaccdp4x128` (RSB, LAMB accumulated to 2048). Same text at
+      `MainResnet50Imagenet.lean:13`.
+- [ ] `:582` MNv2 and `:609` B0: "Optimizer does NOT match the reference (RMSProp there, AdamW here)".
+      Both run TF1 `ApplyRMSProp` now (`emarmstf…`).
+- [ ] `:587–597` MNv4: says `B := 64`, names the `mnv4-default-4gpu` job, and says "drop-path … absent
+      on this path". The row is `mnv4-full` at `mnv4in256_accdp8x128wxdropdowd01bf16`, 256², with
+      the 26-entry ramp.
+- [ ] `:615–622` ConvNeXt-T: "batch stays 32 per device … NOT the ConvNeXt paper recipe".
+- [ ] `:642 / :655` ConvNeXt-S/B: "NOTHING has been trained", and the `adamdpwxclipdrop` variants.
+      Name the `emaaccdp16x…` renders. Probed and smoked, not trained.
+- [ ] `:660–668` ViT-Ti: "bs := 128", "SHIM_WORKERS=2", "NOT the DeiT recipe". It is now DeiT at
+      4 × 256 = 1024, on the `smx` render.
+- [ ] `:673–681` ViT-S: "FOUR-REPLICA ONLY — `adamdp128x4wxclipdrop` is the sole variant",
+      `vits-default-g512-4gpu` as the job, "NOTHING has been trained".
+- [ ] `:686–687` ViT-B: "per-device 32 (global 128, NOT the DeiT 512) … unmeasured". It runs
+      `emaaccdp2x128x4…smx…`, global 1024.
+
+Lakefile, `imagenetRows` docstring (`:2340–2362`):
+
+- [ ] The ETAs are dated "measured 2026-10-05", but several confs were rewritten after that.
+- [ ] It says the R50 ETAs are the 3060 box's; the R50 confs quote 4060 Ti numbers.
+- [ ] The MNv4 100-epoch sibling is now `mnv4-full-e100-4gpu` / `mnv4-full100-jax-4gpu`, not
+      `mnv4-default-4gpu` (the 224 tier, retired 6b5c6fcc).
+- [ ] The garbled ConvNeXt clause (item 1).
+
+Lakefile, the `script imagenet` docstring:
+
+- [ ] It says `lake build imagenet` leaves the plan "nothing to warn about". The ConvNeXt-S/B and
+      three ViT confs always warn "vit-ema-drop-render not built — layout gate skipped". Either add
+      that exe to `target imagenet`, or soften the sentence.
+
+Apps:
+
+- [ ] `MainViTImagenet.lean:20–22, 36–38` (`emadp128x4wxclipdropbf16` at 512).
+- [ ] `MainViTSImagenet.lean:30, 39` ("Nothing has been trained", the non-`smx` render name).
+- [ ] `MainViTBImagenet.lean:24–57, 65, 100–102` ("GLOBAL 512" as DeiT's batch, "no wall clock
+      probed", the non-`smx` name).
+- [ ] `jax/MainVitImagenet.lean:107` ("bs512").
+- [ ] `MainEfficientNetImagenet.lean:13–16, 33–35` (name `…dropdowxeps0001bf16`, omit `emarmstf`).
+- [ ] `EfficientNetRender/Basic.lean:1252`: the banner says "EfficientNet-B0 AdamW train step" on
+      the RMSProp render. This is a render-text change, so check `regen_verified_mlir check`
+      afterwards.
+
+Confs:
+
+- [ ] `enet-full-jax-4gpu.conf:5,9` (`…dropdowx…`, "biases off decay"; its own ⭐ note contradicts both).
+- [ ] `enet-default-4gpu.conf:36–37` ("PRE-SYNC-BN … re-probe owed"; the 10-12 smoke probed it).
+- [ ] `r50-a3-wxclip4x128-bf16-4gpu.conf:41` ("2610 = the book's 77.91") and `r50-a3-jax-4gpu.conf:19`
+      ("the book's 77.75"). The book is at 78.08 / 77.60, from tag 2611.
+- [ ] `vitb-default-g512-4gpu.conf:6` (claims 5e-4; see Parked).
+
+Book:
+
+- [ ] ViT patch-embed bias, `content.tex:13858`, is backwards. DeiT leaves the conv bias at PyTorch's
+      default, U(±1/√768). Ours is 0.
+- [ ] RSB, `tab:r50_a2_a1_time` (~`:7330`): the step times are 10-05's. The confs now say 476 ms per
+      micro-batch (~99 h) verified and 1,440 ms per step JAX.
+- [ ] The TODO at ~`:7362` says "A3's three [repeats] … ran on A3". A3 has no repeated augmentation.
+
+Planning (mark done what is done):
+
+- [ ] `imagenet_parity.md` §11 says "uncommitted"; it is 3333bbd5.
+- [ ] §10.4 and `recipe_prep.md` §9: the ViT-Ti pair (04c72553) and the MNv4 100-epoch pair
+      (6bcdb7f3) landed.
+- [ ] §10.4's ViT-S/B paragraph names the erf renders, not `smx` (`imagenet_parity.md:717, 763–774`).
+- [ ] `mnv4_timm_parity.md:75` "QUEUED". The pair ran 09-26/27.
+- [ ] `vit_parity_todo.md` §3: check P-B / P-D / P-E / P-F / P-I against the code, and mark them.
+- [ ] `side_quest_runs.md`: batch-512 ViT ETAs, `vits-default-jax-4gpu` (now `vits-accum-jax-4gpu`),
+      the clip renders, ConvNeXt-B "no accumulation render", MNv4 `mnv4in_…` at 224 with
+      "1 − 0.075·i/20" (`:29–48, 104, 110–116`).
+- [ ] `recipe_prep.md:274–275` still says /25.
+- [ ] `global_bn_verified.md` §3.5 names retired MNv2/B0 variants.
+
+## Parked: found by the audit, not yet approved (ask before doing)
+
+**Launch hazards**, cheap to fix:
+- `scripts/jobs/run_enet_verified.sh:20` sets `RUNDIR=runs/2026-09-12-enet-verified-350ep`, so a launch
+  writes into the finished run's directory. Line 3 also names the retired `emarmsdp64dropdobf16` arm.
+- `vit-default-4gpu`, `vits-default-g512-4gpu` and `vitb-default-g512-4gpu` set no
+  `LEAN_MLIR_BASE_LR_U`. The drivers now default to 1e-3, so these confs would train at batch 512 with
+  twice DeiT's scaled rate. Retire them, or pin 5e-4.
+- `cnxs-default-4gpu` and `cnxb-default-4gpu` are CX-4 leftovers (f32, 4 × 32 = 128, clip, no lr or
+  epochs set). Nothing references them as rows. Retire them.
+
+**Precheck gaps:**
+- The R34, R50-2018 and A3 confs never call `pc_pjrt_so`, so a stale `ffi/libpjrt_ffi.so` would not
+  be caught on those three rows; the other eleven rows check it.
+- R34 hard-refuses a missing binary in plan mode; the others warn through `pc_exe`.
+- A3's PRECHECK stops at the first failure.
+- ViT-B misreports a missing `.so` as "predates the allocator options" (conf :204).
+- MNv4's `pc_crop … tf-centre` (`precheck.sh:129`) only greps `^    _cs = `, which EfficientNet's
+  fallback also matches. None of the four MNv4 confs greps `0.875 * tf.minimum`.
+- The ConvNeXt S/B JAX confs don't grep the last drop-path keep (`dpkeys[35]`).
+- `jax_job.sh:32`'s `JAX_PY=$BOX_PY` is repo-relative but is used from inside `jax/`. Fine on ares and
+  the 3060 box; a third box would break. This one is a suspicion.
+
+**Recipe questions:**
+- **ConvNeXt precision.** Upstream `main.py` defaults to `--use_amp False`, and TRAINING.md's commands
+  don't pass it, so the official runs look fp32. Every ConvNeXt conf here is bf16, and the book says
+  bf16 "carries over unchanged" (`content.tex:11981`). Confirm upstream, then disclose it.
+- **ViT patch-embed bias, R4.** A ~1–2 h build (`recipe_prep.md:621`). Decide before ViT-S/B launch:
+  build it (S/B then leave Ti's recipe), or keep disclosing it.
+- **ViT headline.** It is the EMA shadow, but DeiT's `main.py` scores the live model. The book has
+  both numbers; this is a judgement call on which to headline.
+- **B0's BN statistic group.** TF's real group size is unread (`utils.TpuBatchNormalization`), so
+  read it before claiming the global 256. Also the `bnFirst` running-stat seeding mismatch (B0-3).
+- **RSB's BN group.** "512 (Ghost-BN)" vs timm's per-GPU 2048/n_gpu. Unverified.
+- **Mixup λ under accumulation** (A2/A1 verified; the ConvNeXt shim) is drawn per micro-batch, not
+  per global batch. Disclose it in the book.
+
+**Builds:**
+- **The recipe manifest + gate (§10.2 Phase 1) and generated book tables (Phase 5).** Neither exists:
+  the only manifest is the MLIR one. This is why the hand-written tables drifted (item 4). It is the
+  biggest build left if "paper-accurate" is to be checked rather than asserted.
+- Index-level `RASampler` (F3).
+- A heavy-ball row in `opt_step_tie` (§9.4).
+- The TF-based gates in CI (F9).
+
+**Runs owed.** Each needs the user's go. ETAs are the confs' figures, JAX + verified:
+
+| pair | JAX conf | verified conf | box-hours |
+|---|---|---|---|
+| MNv2, 420 ep | `mnv2-full-jax-4gpu` | `mnv2-default-4gpu` | 49 + 63 |
+| B0, TF 350 ep | `enet-full-jax-4gpu` | `enet-default-4gpu` | 49 + 67 |
+| ConvNeXt-T | `cnx-default-jax-4gpu` | `cnx-default-emabf16-4gpu` | 76 + 109 |
+| ConvNeXt-S | `cnxs-default-jax-4gpu` | `cnxs-default-emabf16-4gpu` | 106 + 144 |
+| ConvNeXt-B | `cnxb-default-jax-4gpu` | `cnxb-default-emabf16-4gpu` | 151 + 219 |
+| ViT-S | `vits-accum-jax-4gpu` | `vits-default-emabf16-4gpu` | ~72 + ~72 |
+| ViT-B | `vitb-accum-jax-4gpu` | `vitb-default-emabf16-4gpu` | ~180 + ~188 |
+| MNv4 `full`, 500 ep | `mnv4-full-jax-4gpu` | `mnv4-full-4gpu` | 112 + 75 |
+| RSB-A2 | `r50-a2accum-jax-4gpu` | `r50-a2-bf16-4gpu` | ~75 + ~99 |
+| RSB-A1 | `r50-a1-jax-4gpu` | `r50-a1-bf16-4gpu` | ~150 + ~193 |
+| R34, verified only | — | `r34-default-bf16-4gpu` + tag (item 2) | ~21 |
+
+- **ViT-S/B:** smoke the `smx` renders (60d88a93) on a GPU before launch. Their confs' ETAs come
+  from the unshifted renders.
+- **The ViT-B verified render:** check that its EMA updates once per optimizer step, not per
+  micro-step, as the JAX accum trainer does (`generated_vit_b_imagenet_accum.py:1995`).
+- **Total:** about 2,300 box-hours, roughly seven weeks on two boxes. Launch the long ones first.
+- **D18**, the timm-protocol rescores of the landed MNv4-100 and ConvNeXt-T checkpoints, is still open.
