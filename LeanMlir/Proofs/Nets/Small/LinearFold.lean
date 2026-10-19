@@ -13,7 +13,9 @@ trains on `verified_mlir/linear_train_step.mlir`, which is written by
 `StableHLO.Basic`). This file certifies *that* renderer for a single example `x`: the emitted
 weight output denotes `W − lr·∂(crossEntropy ∘ dense)/∂W` (Mathlib-`fderiv`-derived) and the bias
 output denotes `b − lr·(certified ∂dense/∂b · (softmax − onehot))`. The committed module
-batch-contracts over `B` examples, which this file does not state.
+batch-contracts over `B` examples; `LinearFoldB` states that reading (`lin_train_step_tiedB`,
+every `N`), with `tests/TestSmallNetsBatchedEmit.lean` pinning the batched graph's print to this
+file's text.
 
 (Namespace/name lengths are kept short on purpose: [`tests/AuditAxioms.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/AuditAxioms.lean)'s
 three-axiom closure check greps `#print axioms` output per line, which Lean wraps
@@ -41,8 +43,9 @@ linTrainStepText(…)`) is enforced in CI (regenerate + `git diff`, the
   `dot_general`/`reduce`/`multiply`/`subtract` compute their `den` is the same trusted
   op-level modelling the forward `den` relies on (the weight-grad piece is `wGrad`, tied to
   `IR.emitWeightGrad` by `wGrad_faithful`).
-* **Single example (B = 1):** `wGrad x dy = x ⊗ dy`; the emitted module
-  batch-contracts. The mean-loss cotangent makes the batch sum the mean gradient.
+* **Single example (B = 1) here;** the batch is `LinearFoldB`: `wGrad x dy = x ⊗ dy` per example,
+  and the emitted module's batch contraction is `Σₖ` of it (`LinFoldB.weightSgdB_tied`), the mean
+  loss's gradient at `lr = α/N` (`LinFoldB.lin_weight_meanlossB`).
 * **ℝ → Float32:** not stated here; `FloatBridge.lean` and `MlpFloatBridge.lean` cover the
   linear/MLP rounding budget separately.
 -/

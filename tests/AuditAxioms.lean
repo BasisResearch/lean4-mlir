@@ -159,6 +159,9 @@ import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtParamGrad
 import LeanMlir.Proofs.Nets.ViT.ViTParamGrad
 import LeanMlir.Proofs.Nets.Small.MlpFold
 import LeanMlir.Proofs.Nets.Small.CnnFold
+import LeanMlir.Proofs.Nets.Small.LinearFoldB
+import LeanMlir.Proofs.Nets.Small.MlpFoldB
+import LeanMlir.Proofs.Nets.Small.CnnFoldB
 import LeanMlir.Proofs.Nets.Small.CifarFold
 import LeanMlir.Proofs.Nets.Small.Cifar8StepTie
 import LeanMlir.Proofs.Nets.Small.Cifar8BnStepTie
@@ -422,6 +425,10 @@ open Proofs
 #print axioms LinFold.poc_weightSgd_den_eq
 #print axioms LinFold.poc_biasSgd_den_eq
 #print axioms LinFold.poc_train_step_tail_certified
+-- MNIST-linear at batch N (LinearFoldB.lean)
+#print axioms LinFoldB.lossCotB_slice
+#print axioms LinFoldB.lin_train_step_tiedB
+#print axioms LinFoldB.lin_weight_meanlossB
 -- mnist-MLP fully folded
 #print axioms MlpFold.cot1_den
 #print axioms MlpFold.cot0_den
@@ -435,6 +442,10 @@ open Proofs
 #print axioms MlpFold.mlpLossCot_den
 #print axioms MlpFold.mlp_W2_tied_totalloss
 #print axioms MlpFold.mlp_train_step_tied_certified
+-- mnist-mlp at batch N (MlpFoldB.lean)
+#print axioms MlpFoldB.cot1B_slice
+#print axioms MlpFoldB.cot0B_slice
+#print axioms MlpFoldB.mlp_train_step_tiedB
 -- mnist-CNN fully folded
 #print axioms CnnFold.cW1_den
 #print axioms CnnFold.cb1_den
@@ -446,6 +457,11 @@ open Proofs
 #print axioms CnnFold.cnn_W5_tied_totalloss
 -- mnist-cnn CONV fold
 #print axioms CnnFold.cnn_train_step_tied_certified
+-- mnist-cnn at batch N (CnnFoldB.lean): the chain pinned to the emitted subgraphs
+#print axioms CnnFoldB.dhc2B_slice
+#print axioms CnnFoldB.dhc1B_slice
+#print axioms CnnFoldB.W5B_tied
+#print axioms CnnFoldB.cnn_train_step_tiedB
 -- ch5-CIFAR fully folded (no-BN, 2-scale)
 #print axioms SgdNode.convW_den
 #print axioms SgdNode.convB_den

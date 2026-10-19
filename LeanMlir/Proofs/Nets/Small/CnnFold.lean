@@ -60,9 +60,12 @@ and false-fail the check.)
 * **Cotangent subgraph ⇄ rendered SHlo.** The chain cotangents (`cnnChainCotW1/2`,
   `mlpCotOut0/1`) are proven = the rendered backward form in `CnnChainClose`
   (`cnnChainCotW1_eq`, `cnnChainCotW2_eq`) and `MlpTrainStep` (`mlpCotOut0_denote`,
-  `mlpCotOut1_denote`); they are not pinned
+  `mlpCotOut1_denote`); they are not pinned here
   to the emitted `selectPos`/`dotOut`/`convBack`/`maxPoolBack` SHlo subgraph (as
-  `MlpFold.cot0_den`/`MlpFold.cot1_den` do for the MLP).
+  `MlpFold.cot0_den`/`MlpFold.cot1_den` do for the MLP). `CnnFoldB` closes that at the batched
+  index: `dhc2B_slice`/`dhc1B_slice` read the emitted `selectPosB`/`maxPoolBackB`/`convBackP`
+  subgraphs and get `cnnChainCotW2`/`cnnChainCotW1` back (the latter for odd kernels), and
+  `cnn_train_step_tiedB` states all ten nodes at those subgraphs' slices, for every `N`.
 * **Per-op `pretty` lexing** (shared with the whole suite) + **ℝ → Float32**.
 -/
 

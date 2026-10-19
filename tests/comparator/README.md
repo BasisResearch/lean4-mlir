@@ -1,6 +1,6 @@
 # Comparator-based independent kernel re-check
 
-This directory holds an end-to-end verification of 87 theorems from the
+This directory holds an end-to-end verification of 110 theorems from the
 proof suite using `lake comparator` — Lean's bundled frontend (since 4.35) to
 [leanprover/comparator](https://github.com/leanprover/comparator), the
 trustworthy-judge tool the Lean Zulip community recommended for projects
@@ -61,7 +61,7 @@ nothing else.
 
 ## What gets verified
 
-The 87 theorems span foundation rules (incl. `chk_pdiv_is_fderiv`, which pins
+The 110 theorems span foundation rules (incl. `chk_pdiv_is_fderiv`, which pins
 `pdiv` to Mathlib's `fderiv`), every chapter's headline Jacobian, the public
 `*HasVJP_correct` wrappers, six whole-network VJPs, and the tie /
 faithfulness / certificate tier. The first two buckets are `Challenge.lean`,
@@ -175,10 +175,10 @@ core, present in any non-trivial Lean program).
   `_diff` smoothness lemmas, `_eq_compose` rewrites, the per-leaf ties beneath
   each whole-net chain). `tests/AuditAxioms.lean` prints the axiom closure of
   every one of them on every proof-path push (count its `#print axioms`
-  lines); this directory re-checks 87 of them with an independent kernel. The
+  lines); this directory re-checks 110 of them with an independent kernel. The
   gap between the two is deliberate: what the comparator adds is a second, non-elaborator opinion, and
   a second opinion on the advertised set plus the calculus floor it rests on is
-  the claim being made. It is not a claim that 87 is all that is proved.
+  the claim being made. It is not a claim that 110 is all that is proved.
 - **`noncomputable def` *witnesses*** themselves like `vitFullHasVJP`,
   `cnnHasVJPAt`, `mhsaLayerHasVJPMat`, etc. comparator's
   `theorem_names` matches `Lean.ConstantInfo.thm`, not `defn`, so the

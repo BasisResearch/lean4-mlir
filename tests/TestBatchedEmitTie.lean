@@ -100,6 +100,17 @@ private def cases : List (String × String × String) :=
   , ("sub",
      render (pretty BS (.sub (.operand "%x" zv) (.operand "%y" zv))),
      render (pretty BS (.subB (.operand "%x" zvb) (.operand "%y" zvb))))
+  -- ── the conv input-VJP as a descriptor. `convBackP` exists so the Chapter-3 artifact, which
+  --    was rendered through the per-example `.convBack` (transpose THEN reverse), can be read at
+  --    the batched index without re-rendering it; `convBackBatched` spells the kernel prep the
+  --    other way round and is NOT this pair's peer. ──
+  , ("convBackP",
+     render (pretty BS (.convBack (h := ch) (w := ch) "%W" (fun _ _ _ _ => 0 : Kernel4 oc ic kk kk)
+                          (fun _ => 0 : Vec oc) (fun _ => 0 : Vec (ic*ch*ch))
+                          (.operand "%x" (fun _ => 0 : Vec (oc*ch*ch))))),
+     render (pretty BS (.batchOp (N := BS) (.convBackP (h := ch) (w := ch) "%W"
+                          (fun _ _ _ _ => 0 : Kernel4 oc ic kk kk) (fun _ => 0 : Vec oc))
+                          (.operand "%x" (fun _ => 0 : Vec (BS*(oc*ch*ch)))))))
   , ("softmaxRow",
      render (pretty BS (.softmaxRowF (m := rows) (n := c) (.operand "%x" zr))),
      render (pretty BS (.batchOp (N := BS) (.softmaxRow (m := rows) (n := c))

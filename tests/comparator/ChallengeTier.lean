@@ -49,6 +49,9 @@ import LeanMlir.Proofs.Nets.Small.CnnParamGrad
 import LeanMlir.Proofs.Nets.Small.CifarParamGrad
 import LeanMlir.Proofs.Nets.Small.Cifar8ParamGrad
 import LeanMlir.Proofs.Nets.Small.Cifar8BnParamGrad
+import LeanMlir.Proofs.Nets.Small.LinearFoldB
+import LeanMlir.Proofs.Nets.Small.MlpFoldB
+import LeanMlir.Proofs.Nets.Small.CnnFoldB
 
 universe u_1
 
@@ -987,6 +990,164 @@ theorem chk_cnn_net_lossGrad :
               ∀ {L : Proofs.Vec nClasses → Proofs.Vec (1 : ℕ)} {g : Proofs.Vec nClasses},
                 Proofs.HasGradAt L (Proofs.mnistCnnNoBnForward W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ W₅ b₅ x) g →
                   Proofs.CnnFold.CnnNetLossTied xN cotN W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ W₅ b₅ x σ L g := by sorry
+
+/-- `Proofs.LinFoldB.lin_train_step_tiedB` -/
+theorem chk_lin_train_step_tiedB :
+    ∀ {m n : ℕ} (N : ℕ) (W : Proofs.Mat m n) (b : Proofs.Vec n)
+      (xB : Proofs.Vec (N * m)) (label : Fin N → Fin n) (lrStr : String) (lr : ℝ),
+      (∀ (i : Fin m) (j : Fin n),
+          Proofs.StableHLO.den
+              (Proofs.StableHLO.SHlo.denseWeightSgdB "%x" "%W0" lrStr xB W lr
+                (Proofs.LinFoldB.lossCotGraphB N W b xB label))
+              (finProdFinEquiv (i, j)) =
+            W i j -
+              lr *
+                ∑ k : Fin N,
+                  Proofs.pdiv
+                    (fun (v : Proofs.Vec (m * n)) (_ : Fin (1 : ℕ)) =>
+                      Proofs.crossEntropy n (Proofs.dense (Proofs.Mat.unflatten v) b (Proofs.StableHLO.batchSlice N m xB k))
+                        (label k))
+                    W.flatten (finProdFinEquiv (i, j)) (0 : Fin (1 : ℕ))) ∧
+        ∀ (j : Fin n),
+          Proofs.StableHLO.den
+              (Proofs.StableHLO.SHlo.denseBiasSgdB "%b0" lrStr b lr (Proofs.LinFoldB.lossCotGraphB N W b xB label)) j =
+            b j -
+              lr *
+                ∑ k : Fin N,
+                  ∑ i : Fin n,
+                    Proofs.pdiv (fun (b' : Proofs.Vec n) => Proofs.dense W b' (Proofs.StableHLO.batchSlice N m xB k)) b j
+                        i *
+                      (Proofs.softmax n (Proofs.mnistLinear W b (Proofs.StableHLO.batchSlice N m xB k)) i -
+                        Proofs.oneHot n (label k) i) := by sorry
+
+/-- `Proofs.MlpFoldB.mlp_train_step_tiedB` -/
+theorem chk_mlp_train_step_tiedB :
+    ∀ {d₀ d₁ d₂ d₃ : ℕ} (N : ℕ) (W₀ : Proofs.Mat d₀ d₁) (b₀ : Proofs.Vec d₁)
+      (W₁ : Proofs.Mat d₁ d₂) (b₁ : Proofs.Vec d₂) (W₂ : Proofs.Mat d₂ d₃) (b₂ : Proofs.Vec d₃) (xB : Proofs.Vec (N * d₀))
+      (label : Fin N → Fin d₃) (lrStr aN a₀N p₀N p₁N dyN c₁N c₀N : String) (lr : ℝ),
+      (∀ (i : Fin d₂) (j : Fin d₃),
+          Proofs.StableHLO.den
+              (Proofs.StableHLO.SHlo.denseWeightSgdB aN "%W2" lrStr
+                (Proofs.StableHLO.den (Proofs.MlpFoldB.actB1 N W₀ b₀ W₁ b₁ xB)) W₂ lr
+                (Proofs.StableHLO.SHlo.operand dyN
+                  (Proofs.StableHLO.den (Proofs.MlpFoldB.cotB N W₀ b₀ W₁ b₁ W₂ b₂ xB label))))
+              (finProdFinEquiv (i, j)) =
+            W₂ i j -
+              lr *
+                ∑ k : Fin N,
+                  Proofs.pdiv
+                    (fun (v : Proofs.Vec (d₂ * d₃)) (_ : Fin (1 : ℕ)) =>
+                      Proofs.crossEntropy d₃
+                        (Proofs.dense (Proofs.Mat.unflatten v) b₂ (Proofs.relu d₂ (Proofs.MlpFoldB.p1 N W₀ b₀ W₁ b₁ xB k)))
+                        (label k))
+                    W₂.flatten (finProdFinEquiv (i, j)) (0 : Fin (1 : ℕ))) ∧
+        (∀ (j : Fin d₃),
+            Proofs.StableHLO.den
+                (Proofs.StableHLO.SHlo.denseBiasSgdB "%b2" lrStr b₂ lr
+                  (Proofs.StableHLO.SHlo.operand dyN
+                    (Proofs.StableHLO.den (Proofs.MlpFoldB.cotB N W₀ b₀ W₁ b₁ W₂ b₂ xB label))))
+                j =
+              b₂ j -
+                lr *
+                  ∑ k : Fin N,
+                    ∑ i : Fin d₃,
+                      Proofs.pdiv
+                          (fun (b' : Proofs.Vec d₃) =>
+                            Proofs.dense W₂ b' (Proofs.relu d₂ (Proofs.MlpFoldB.p1 N W₀ b₀ W₁ b₁ xB k)))
+                          b₂ j i *
+                        Proofs.MlpFoldB.gk N W₀ b₀ W₁ b₁ W₂ b₂ xB label k i) ∧
+          (∀ (i : Fin d₁) (j : Fin d₂),
+              Proofs.StableHLO.den
+                  (Proofs.StableHLO.SHlo.denseWeightSgdB a₀N "%W1" lrStr
+                    (Proofs.StableHLO.den (Proofs.MlpFoldB.actB0 N W₀ b₀ xB)) W₁ lr
+                    (Proofs.StableHLO.SHlo.operand c₁N
+                      (Proofs.StableHLO.den (Proofs.MlpFoldB.cot1B N W₀ b₀ W₁ b₁ W₂ b₂ xB label p₁N dyN))))
+                  (finProdFinEquiv (i, j)) =
+                W₁ i j -
+                  lr *
+                    ∑ k : Fin N,
+                      ∑ k' : Fin d₂,
+                        Proofs.pdiv
+                            (fun (v : Proofs.Vec (d₁ * d₂)) =>
+                              Proofs.dense (Proofs.Mat.unflatten v) b₁ (Proofs.relu d₁ (Proofs.MlpFoldB.p0 N W₀ b₀ xB k)))
+                            W₁.flatten (finProdFinEquiv (i, j)) k' *
+                          (Proofs.IR.mlpCotOut1 W₂ (Proofs.MlpFoldB.p1 N W₀ b₀ W₁ b₁ xB k)).denote
+                            (Proofs.MlpFoldB.gk N W₀ b₀ W₁ b₁ W₂ b₂ xB label k) k') ∧
+            (∀ (j : Fin d₂),
+                Proofs.StableHLO.den
+                    (Proofs.StableHLO.SHlo.denseBiasSgdB "%b1" lrStr b₁ lr
+                      (Proofs.StableHLO.SHlo.operand c₁N
+                        (Proofs.StableHLO.den (Proofs.MlpFoldB.cot1B N W₀ b₀ W₁ b₁ W₂ b₂ xB label p₁N dyN))))
+                    j =
+                  b₁ j -
+                    lr *
+                      ∑ k : Fin N,
+                        ∑ i : Fin d₂,
+                          Proofs.pdiv
+                              (fun (b' : Proofs.Vec d₂) =>
+                                Proofs.dense W₁ b' (Proofs.relu d₁ (Proofs.MlpFoldB.p0 N W₀ b₀ xB k)))
+                              b₁ j i *
+                            (Proofs.IR.mlpCotOut1 W₂ (Proofs.MlpFoldB.p1 N W₀ b₀ W₁ b₁ xB k)).denote
+                              (Proofs.MlpFoldB.gk N W₀ b₀ W₁ b₁ W₂ b₂ xB label k) i) ∧
+              (∀ (i : Fin d₀) (j : Fin d₁),
+                  Proofs.StableHLO.den
+                      (Proofs.StableHLO.SHlo.denseWeightSgdB "%x" "%W0" lrStr xB W₀ lr
+                        (Proofs.StableHLO.SHlo.operand c₀N
+                          (Proofs.StableHLO.den (Proofs.MlpFoldB.cot0B N W₀ b₀ W₁ b₁ W₂ b₂ xB label p₀N p₁N dyN c₁N))))
+                      (finProdFinEquiv (i, j)) =
+                    W₀ i j -
+                      lr *
+                        ∑ k : Fin N,
+                          ∑ k' : Fin d₁,
+                            Proofs.pdiv
+                                (fun (v : Proofs.Vec (d₀ * d₁)) =>
+                                  Proofs.dense (Proofs.Mat.unflatten v) b₀ (Proofs.MlpFoldB.xk N xB k))
+                                W₀.flatten (finProdFinEquiv (i, j)) k' *
+                              (Proofs.IR.mlpCotOut0 W₁ W₂ (Proofs.MlpFoldB.p0 N W₀ b₀ xB k)
+                                    (Proofs.MlpFoldB.p1 N W₀ b₀ W₁ b₁ xB k)).denote
+                                (Proofs.MlpFoldB.gk N W₀ b₀ W₁ b₁ W₂ b₂ xB label k) k') ∧
+                ∀ (j : Fin d₁),
+                  Proofs.StableHLO.den
+                      (Proofs.StableHLO.SHlo.denseBiasSgdB "%b0" lrStr b₀ lr
+                        (Proofs.StableHLO.SHlo.operand c₀N
+                          (Proofs.StableHLO.den (Proofs.MlpFoldB.cot0B N W₀ b₀ W₁ b₁ W₂ b₂ xB label p₀N p₁N dyN c₁N))))
+                      j =
+                    b₀ j -
+                      lr *
+                        ∑ k : Fin N,
+                          ∑ i : Fin d₁,
+                            Proofs.pdiv (fun (b' : Proofs.Vec d₁) => Proofs.dense W₀ b' (Proofs.MlpFoldB.xk N xB k)) b₀ j
+                                i *
+                              (Proofs.IR.mlpCotOut0 W₁ W₂ (Proofs.MlpFoldB.p0 N W₀ b₀ xB k)
+                                    (Proofs.MlpFoldB.p1 N W₀ b₀ W₁ b₁ xB k)).denote
+                                (Proofs.MlpFoldB.gk N W₀ b₀ W₁ b₁ W₂ b₂ xB label k) i := by sorry
+
+/-- `Proofs.CnnFoldB.cnn_train_step_tiedB` -/
+theorem chk_cnn_train_step_tiedB :
+    ∀ {ic c h w d1 nClasses kH kW : ℕ} (N : ℕ) (W₁ : Proofs.Kernel4 c ic kH kW)
+      (b₁ : Proofs.Vec c) (W₂ : Proofs.Kernel4 c c kH kW) (b₂ : Proofs.Vec c) (W₃ : Proofs.Mat (c * h * w) d1)
+      (b₃ : Proofs.Vec d1) (W₄ : Proofs.Mat d1 d1) (b₄ : Proofs.Vec d1) (W₅ : Proofs.Mat d1 nClasses)
+      (b₅ : Proofs.Vec nClasses) (xB : Proofs.Vec (N * (ic * ((2 : ℕ) * h) * ((2 : ℕ) * w)))) (label : Fin N → Fin nClasses)
+      (nm : Proofs.CnnFoldB.Names) (a4N a3N poolN ac1N : String) (lr : ℝ),
+      have a4v := Proofs.StableHLO.den (Proofs.CnnFoldB.a4B N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ xB);
+      have a3v := Proofs.StableHLO.den (Proofs.CnnFoldB.a3B N W₁ b₁ W₂ b₂ W₃ b₃ xB);
+      have poolv := Proofs.StableHLO.den (Proofs.CnnFoldB.poolB N W₁ b₁ W₂ b₂ xB);
+      have ac1v := Proofs.StableHLO.den (Proofs.CnnFoldB.ac1B N W₁ b₁ xB);
+      have g := Proofs.StableHLO.den (Proofs.CnnFoldB.cotB N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ W₅ b₅ xB label);
+      have dy4 := Proofs.StableHLO.den (Proofs.CnnFoldB.dy4B N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ W₅ b₅ xB label nm);
+      have dy3 := Proofs.StableHLO.den (Proofs.CnnFoldB.dy3B N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ W₅ b₅ xB label nm);
+      have dhc2 := Proofs.StableHLO.den (Proofs.CnnFoldB.dhc2B N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ W₅ b₅ xB label nm);
+      have dhc1 := Proofs.StableHLO.den (Proofs.CnnFoldB.dhc1B N W₁ b₁ W₂ b₂ W₃ b₃ W₄ b₄ W₅ b₅ xB label nm);
+      Proofs.CnnFoldB.DenseWSgdTiedB N a4N "%W5" nm.lrStr nm.dyN a4v W₅ b₅ g lr ∧
+        Proofs.CnnFoldB.DenseBSgdTiedB N "%b5" nm.lrStr nm.dyN W₅ a4v b₅ g lr ∧
+          Proofs.CnnFoldB.DenseWSgdTiedB N a3N "%W4" nm.lrStr nm.dy4N a3v W₄ b₄ dy4 lr ∧
+            Proofs.CnnFoldB.DenseBSgdTiedB N "%b4" nm.lrStr nm.dy4N W₄ a3v b₄ dy4 lr ∧
+              Proofs.CnnFoldB.DenseWSgdTiedB N poolN "%W3" nm.lrStr nm.dy3N poolv W₃ b₃ dy3 lr ∧
+                Proofs.CnnFoldB.DenseBSgdTiedB N "%b3" nm.lrStr nm.dy3N W₃ poolv b₃ dy3 lr ∧
+                  Proofs.CnnFoldB.ConvWSgdTiedB N ac1N "%W2" nm.lrStr nm.dhc2N b₂ ac1v W₂ dhc2 lr ∧
+                    Proofs.CnnFoldB.ConvBSgdTiedB N "%b2" nm.lrStr nm.dhc2N W₂ ac1v b₂ dhc2 lr ∧
+                      Proofs.CnnFoldB.ConvWSgdTiedB N "%x" "%W1" nm.lrStr nm.dhc1N b₁ xB W₁ dhc1 lr ∧
+                        Proofs.CnnFoldB.ConvBSgdTiedB N "%b1" nm.lrStr nm.dhc1N W₁ xB b₁ dhc1 lr := by sorry
 
 /-- `Proofs.CifarFold.cifar_net_lossGrad` -/
 theorem chk_cifar_net_lossGrad :

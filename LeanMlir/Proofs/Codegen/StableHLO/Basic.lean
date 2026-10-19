@@ -276,6 +276,16 @@ inductive BatchableOp : Nat → Nat → Type where
       : BatchableOp (ic*(2*(2*h))*(2*(2*w))) (oc*h*w)
   | layerScaleCh {c h w : Nat} (γName : String) (γ : Vec c)  : BatchableOp (c*h*w) (c*h*w)
   | dotOut {m n : Nat} (wName : String) (W : Mat m n)        : BatchableOp n m
+  -- ── The conv input-VJP as a descriptor. Conv is linear, so its backward reads no saved
+  --    activation and carries only `W`/`b`: batch-INVARIANT data, the descriptor precondition.
+  --    `den` is `batchMap N` of the certified conv input-VJP, the same function `convBackBatched`
+  --    denotes; what differs is the EMIT. `convBackBatched` writes `reverse` then `transpose` on the
+  --    kernel; the per-example `.convBack` the Chapter-3 renderer prints writes `transpose` then
+  --    `reverse`, and `cnn_train_step.mlir` (the artifact the MNIST-CNN run trained on) has that
+  --    spelling. This descriptor emits byte-for-byte `.convBack`'s text, so the batched reading of
+  --    that artifact (`CnnFoldB`) is of the committed bytes and not of a re-rendered twin.
+  | convBackP {ic oc h w kH kW : Nat} (wName : String)
+      (W : Kernel4 oc ic kH kW) (b : Vec oc)                : BatchableOp (oc*h*w) (ic*h*w)
   | expe {n : Nat}                                          : BatchableOp n n
   | softmaxDiv {n : Nat}                                    : BatchableOp n n
   | lnRow {m n : Nat} (gName bName epsStr : String) (ε γ β : ℝ) : BatchableOp (m*n) (m*n)
@@ -1794,6 +1804,9 @@ noncomputable def denOp : {a b : Nat} → BatchableOp a b → (Vec a → Vec b)
   | _, _, .layerScaleCh (c := c) (h := h) (w := w) _ γ =>
       fun v => layerScale (fun k => γ (chanIdx c h w k)) v
   | _, _, .dotOut _ W => fun v i => ∑ j, W i j * v j
+  -- The certified conv input-VJP (`conv2dHasVJP3`'s backward, activation-independent), per
+  -- example; `batchMap N` of it is what `convBackBatched` denotes too.
+  | _, _, .convBackP _ W b => fun dy => (HasVJP3.toHasVJP (conv2dHasVJP3 W b)).backward (fun _ => 0) dy
   | _, _, .expe => fun v j => Real.exp (v j)
   -- Per-EXAMPLE softmax: the denominator is that example's own sum, which is the whole point of
   -- giving `softmaxDiv` a descriptor (see the constructor's note).

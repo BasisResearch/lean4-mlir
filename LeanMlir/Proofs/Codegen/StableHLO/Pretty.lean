@@ -338,6 +338,9 @@ def batchOpDescr {a b : Nat} (N : Nat) : BatchableOp a b → (String × List Str
   | .depthwiseStridedXlaBf16 (c := c) (h := h) (w := w) (kH := kH) (kW := kW) _ wN bN _ _ =>
       ("depthwiseStridedXlaBf16", [wN, bN], [N, c, h, w, kH, kW])
   | .dense (c := c) wN bN _ _ => ("dense", [wN, bN], [N, a, c])
+  -- The per-example `.convBack` spelling at the batched index (see the constructor).
+  | .convBackP (ic := ic) (oc := oc) (h := h) (w := w) (kH := kH) (kW := kW) wN _ _ =>
+      ("convBackP", [wN], [N, ic, oc, h, w, kH, kW])
   | .gap (c := c) (h := h) (w := w) => ("gap", [], [N, c, h, w])
   | .seBlock (c := c) (h := h) (w := w) (r := r) w1 b1 w2 b2 _ _ _ _ =>
       ("seBlock", [w1, b1, w2, b2], [N, c, h, w, r])
@@ -1124,7 +1127,8 @@ def tokIO : Tok → Option (Nat × Nat × Nat) × Option (Nat × Nat × Nat)
       --    `addV`, and every pointwise op after it in that chain goes with it.
       | "convBackBatched",        [_, ic, oc, h, w, _, _]
       | "convBackBatchedBf16",    [_, ic, oc, h, w, _, _]
-      | "convBackBatchedF8",      [_, ic, oc, h, w, _, _] => (some (oc, h, w), some (ic, h, w))
+      | "convBackBatchedF8",      [_, ic, oc, h, w, _, _]
+      | "convBackP",              [_, ic, oc, h, w, _, _] => (some (oc, h, w), some (ic, h, w))
       | "convStridedBackBatched", [_, ic, oc, h, w, _, _]
       | "convStridedBackBatchedBf16", [_, ic, oc, h, w, _, _] =>
           (some (oc, h, w), some (ic, 2*h, 2*w))
@@ -3872,6 +3876,21 @@ def emitTok (B : Nat) : Tok → List String → StateM EmitS (String × List Str
             pure (s!"    // [EfficientNet Item B] batched {tag} {names} {info} — render TODO\n", r :: st)
       -- bf16 operands, **bf16-typed convolution result**, convert back. An f32-typed
       -- result reads identically and compiles to pure f32 (measured) — see `flatConvFBf16`.
+      -- `.convBack`'s text, byte for byte (transpose, THEN reverse; a plain f32 convolution, no
+      -- precision switch): the batched reading of `cnn_train_step.mlir` goes through this tag.
+      | "convBackP", [w], [_N, ic, oc, h, w', kH, kW] => do
+          let pH := (kH - 1) / 2; let pW := (kW - 1) / 2
+          let dn ← fresh; let wt ← fresh; let wr ← fresh; let dx ← fresh; let o ← fresh
+          pure (
+            s!"    {dn} = stablehlo.reshape {r} : ({ty [B, oc*h*w']}) -> {ty [B,oc,h,w']}\n" ++
+            s!"    {wt} = stablehlo.transpose {w}, dims = [1, 0, 2, 3] : ({ty [oc,ic,kH,kW]}) -> {ty [ic,oc,kH,kW]}\n" ++
+            s!"    {wr} = stablehlo.reverse {wt}, dims = [2, 3] : {ty [ic,oc,kH,kW]}\n" ++
+            s!"    {dx} = stablehlo.convolution({dn}, {wr})\n" ++
+            "      dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],\n" ++
+            s!"      window = " ++ "{" ++ s!"stride = [1, 1], pad = [[{pH}, {pH}], [{pW}, {pW}]], lhs_dilate = [1, 1], rhs_dilate = [1, 1]" ++ "}\n" ++
+            "      {batch_group_count = 1 : i64, feature_group_count = 1 : i64}" ++
+            s!" : ({ty [B,oc,h,w']}, {ty [ic,oc,kH,kW]}) -> {ty [B,ic,h,w']}\n" ++
+            s!"    {o} = stablehlo.reshape {dx} : ({ty [B,ic,h,w']}) -> {ty [B, ic*h*w']}\n", o :: st)
       | "convBackBatched", [wN], [_N, ic, oc, h, w, kH, kW] | "convBackBatchedBf16", [wN], [_N, ic, oc, h, w, kH, kW] | "convBackBatchedF8", [wN], [_N, ic, oc, h, w, kH, kW] => do
           -- conv input-VJP: dx = conv(dy, reverse(W,[2,3])ᵀ), reversed+transposed
           -- kernel, stride 1, same-pad p. (1×1 in enet ⇒ p=0, reverse a no-op.)

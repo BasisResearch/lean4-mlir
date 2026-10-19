@@ -22,8 +22,9 @@ emitted loss cotangent (`mlp_W2_tied_totalloss`), and that each of the other fiv
 No new core `SHlo` ops are needed: the backward chain uses the existing
 `dotOut`/`selectPos`, and the param updates reuse `weightSgd`/`biasSgd`.
 
-Scope: one example (the emitted module batch-contracts; `den` is per-example); per-op `pretty`
-lexing; ℝ→Float32. At the same chain cotangents `mlpCotOut1.denote g` / `mlpCotOut0.denote g`,
+Scope: one example here (`den` of these nodes is per-example); the batch is `MlpFoldB`, which reads
+the same text at the batched index (`mlp_train_step_tiedB`, every `N`). Per-op `pretty` lexing;
+ℝ→Float32. At the same chain cotangents `mlpCotOut1.denote g` / `mlpCotOut0.denote g`,
 `mlp_net_lossGrad` (`MlpParamGrad`) states each layer's gradient node as the loss gradient in its
 parameter, at smooth points.
 -/
