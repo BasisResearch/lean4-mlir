@@ -14,7 +14,7 @@ trains on `verified_mlir/linear_train_step.mlir`, which is written by
 weight output denotes `W − lr·∂(crossEntropy ∘ dense)/∂W` (Mathlib-`fderiv`-derived) and the bias
 output denotes `b − lr·(certified ∂dense/∂b · (softmax − onehot))`. The committed module
 batch-contracts over `B` examples; `LinearFoldB` states that reading (`lin_train_step_tiedB`,
-every `N`), with `tests/TestSmallNetsBatchedEmit.lean` pinning the batched graph's print to this
+every `N`), with [`tests/TestSmallNetsBatchedEmit.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestSmallNetsBatchedEmit.lean) pinning the batched graph's print to this
 file's text.
 
 (Namespace/name lengths are kept short on purpose: [`tests/AuditAxioms.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/AuditAxioms.lean)'s

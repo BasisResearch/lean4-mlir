@@ -13,7 +13,7 @@ public import LeanMlir.Proofs.Foundation.GradNodesB
 This file states it. The same text is the print of a graph at the batched index — `batchOp`
 lifts of `dense`/`expe`/`softmaxDiv`, `subB`, and the `denseWeightSgdB`/`denseBiasSgdB` nodes
 whose `den` sums the per-example gradient over `batchSlice n` — and
-`tests/TestSmallNetsBatchedEmit.lean` pins that print byte-for-byte to `linTrainStepText` at the
+[`tests/TestSmallNetsBatchedEmit.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestSmallNetsBatchedEmit.lean) pins that print byte-for-byte to `linTrainStepText` at the
 committed shape. So:
 
 * `lin_train_step_tiedB` — at a batch of `N` examples with labels `label : Fin N → Fin n`, the

@@ -8,7 +8,7 @@ public import LeanMlir.Proofs.Nets.Small.MlpFoldB
 /-! # The MNIST-CNN train step at batch `N` — `CnnFold` with the batch stated
 
 `CnnFold` certifies the ten parameter outputs of `cnn_train_step.mlir` for ONE example.
-`tests/TestSmallNetsBatchedEmit.lean` pins that text, byte for byte, as the print of a graph at
+[`tests/TestSmallNetsBatchedEmit.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestSmallNetsBatchedEmit.lean) pins that text, byte for byte, as the print of a graph at
 the batched index: `batchOp` lifts of `conv`/`relu`/`maxPool`/`dense`/`expe`/`softmaxDiv`/
 `dotOut`, `subB`, `selectPosB`, `maxPoolBackB`, the `convBackP` descriptor (the per-example
 conv input-VJP spelling, at the batched index) and the `convWeightSgdB`/`convBiasSgdB`/

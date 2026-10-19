@@ -8,7 +8,7 @@ public import LeanMlir.Proofs.Nets.Small.LinearFoldB
 /-! # The MNIST-MLP train step at batch `N` — `MlpFold` with the batch stated
 
 `MlpFold` certifies the six parameter outputs of `mlp_train_step.mlir` for ONE example.
-`tests/TestSmallNetsBatchedEmit.lean` pins that same text as the print of a graph at the batched
+[`tests/TestSmallNetsBatchedEmit.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestSmallNetsBatchedEmit.lean) pins that same text as the print of a graph at the batched
 index — `batchOp` lifts of `dense`/`relu`/`expe`/`softmaxDiv`/`dotOut`, `subB`, `selectPosB` on
 the whole-batch pre-activations, and the `denseWeightSgdB`/`denseBiasSgdB` nodes — so every
 node's `den` can be read at a batch of `N` examples. This file does that reading:

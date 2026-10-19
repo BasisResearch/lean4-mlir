@@ -224,7 +224,7 @@ end VjpOracle
 
 `tests/vjp_oracle/run_verified.sh` trains ONE step of the committed, theorem-tied artifacts
 `verified_mlir/{linear,mlp,cnn}_train_step.mlir` through the book's own trainers
-(`apps/mnist/MainMnist*Verified.lean`, with `LEAN_MLIR_INIT_DUMP` / `LEAN_MLIR_MAX_STEPS=1` /
+([`apps/mnist/MainMnist*Verified.lean`](https://github.com/brettkoonce/lean4-mlir/tree/main/apps/mnist), with `LEAN_MLIR_INIT_DUMP` / `LEAN_MLIR_MAX_STEPS=1` /
 `LEAN_MLIR_DUMP_PARAMS`) and one step of these JAX nets from that dumped init on the same batch,
 then diffs the two parameter updates tensor for tensor (`tests/vjp_oracle/diff_params.py`). The
 specs below are the three verified nets spelled as `NetSpec`s — the renders bake their SGD
