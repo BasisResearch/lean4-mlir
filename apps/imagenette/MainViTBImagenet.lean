@@ -21,8 +21,9 @@ Small and Base at different arguments. The width lives in the RENDERER: `ViTRend
 ViT-Tiny artifact re-renders byte-identical, which is the gate that says the parameterisation is
 inert.
 
-**GLOBAL 512 — DeiT's OWN BATCH — FITS ON FOUR CARDS WITHOUT GRADIENT ACCUMULATION**
-(`runs/2026-08-27-vitb-global512/`).
+**GLOBAL 512 FITS ON FOUR CARDS WITHOUT GRADIENT ACCUMULATION** (`runs/2026-08-27-vitb-global512/`;
+the recipe before 2026-10-11). DeiT-B's own batch is 1024, which the pair render below reaches
+as two accumulated micro-batches of 4 × 128.
 
 The default arena is NOT what "the BFC allocator gets on a 16 GB card" — it is what it gets at the
 CUDA plugin's `memory_fraction = 0.75` DEFAULT, which the verified path raises through the create
@@ -54,7 +55,9 @@ ViT has no BatchNorm, so there is no running-stats eval forward. `vitbin_drop_fw
 train step is the complete artifact set for this net.
 
 **Nothing has been trained.** The artifacts render, the shapes tie to `VLayer.toSpecs`, and the
-parameter count is `#guard`ed. No accuracy has been measured and no wall clock has been probed.
+parameter count is `#guard`ed. No accuracy has been measured. The wall clock HAS been probed on
+four cards: the pair render in `runs/2026-10-11-vitb-default-emabf16-4gpu/` (the conf's ETA),
+the 4 × 128 clip renders in `runs/2026-08-27-vitb-global512/`.
 
 **Run it through the job config**, which is where the required options live and which refuses
 to start without them:
@@ -62,13 +65,14 @@ to start without them:
 scripts/supervise.sh vitb-default-emabf16-4gpu
 DRY_RUN=1 scripts/supervise.sh vitb-default-emabf16-4gpu   # print the plan, run nothing
 ```
-`vitb-default-emabf16-4gpu` is the pair job: `vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16`, Tiny's
+`vitb-default-emabf16-4gpu` is the pair job: `vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16`, Tiny's
 pair recipe as DeiT runs it (2026-10-11): DeiT-B's batch 1024 as TWO ACCUMULATED micro-batches of
 4 × 128 (exact under LayerNorm; the `2` is read off the name by `VerifiedVariant.accK` and the graph
 applies on every second micro-batch — the first accumulating ViT render), no gradient clip, EMA
 0.99996 constant from step 0, timm's per-epoch cosine from 1e-6, timm/DeiT init, bf16, DeiT's
-LayerNorm ε 1e-6, min lr 1e-5 and the exact GELU at this width; its eval forward is
-`vitbin_emaaccdp2x128x4wxdropeps0000001erfbf16_fwd.mlir`. Its reference is `vitb-accum-jax-4gpu`
+LayerNorm ε 1e-6, min lr 1e-5, the shifted softmax (`smx`) and the exact GELU at this width; its
+eval forward is `vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16_fwd.mlir` (the unshifted
+`…erfbf16` pair stays committed beside it). Its reference is `vitb-accum-jax-4gpu`
 (`vitBImagenetConfigAccum`, 512 × 2). The 4 × 128 clip render
 `vitbin_emadp128x4wxclipdropeps0000001erfbf16` (the 10-06 recipe) stays committed; a checkpoint
 under it cannot be resumed into this one (five blob regions against four).
@@ -97,9 +101,10 @@ small-batch fallback and the allocator option is not optional for THIS net:
 sentence rather than letting XLA raise `RESOURCE_EXHAUSTED`.
 -/
 
-/-- 300 epochs and 128 per device — the DeiT schedule length at DeiT's own batch, since four
-    replicas of 128 is the reference's global 512. That is what makes `baseLR` below correct
-    rather than merely inherited: 5e-4 is the batch-512 rate, and this is batch 512. -/
+/-- 300 epochs and 128 per device — the DeiT schedule length. Four replicas of 128 is a 512-row
+    micro-batch; the pair render accumulates two of them into DeiT-B's own 1024, which is the
+    batch `baseLR` below (1e-3) is DeiT's rate at. The single 4 × 128 clip renders are batch 512
+    and want 5e-4 by hand (`LEAN_MLIR_BASE_LR_U=500`). -/
 def vitBImagenetConfig : VerifiedConfig where
   epochs    := 300
   batchSize := 128

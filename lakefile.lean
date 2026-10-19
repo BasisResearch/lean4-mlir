@@ -563,20 +563,25 @@ lean_exe «vit-verified-adam» where
 
 /-- **ResNet-34 on full 1000-class ImageNet** — the scale/reference tier. Same certified renderer at
     `nClasses := 1000, B := 256`, heavy-ball + coupled L2 (the `jax/MainResnetImagenet.lean` recipe),
-    fed by the generated tfds shim so both paths see identical augmented batches.
+    fed by the generated tfds shim so both paths see identical augmented batches. The Ch. 5 row,
+    `r34-default-bf16-4gpu`, runs `momdp64bf16`: four replicas of 64, the same global 256.
 
-    Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (all five). Not
-    `lake exe resnet34-imagenet default --shim` — that is R34's, and every net fed from it
-    streams R34's augmentation.
+    Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (every ImageNet net's shim,
+    this one included). Not `lake exe resnet34-imagenet default --shim` — that is R34's, and every
+    net fed from it streams R34's augmentation.
     Does NOT move the verification tier — proofs stop at Imagenette. -/
 lean_exe «resnet34-imagenet-verified» where
   root := `apps.imagenette.MainResnet34Imagenet
   moreLinkArgs := lowererLink
 
 /-- **ResNet-50 on full 1000-class ImageNet** — R50 phase 3. The bottleneck renderer
-    (`ResNet50RenderB`) at `nClasses := 1000`, AdamW, 4-replica by default.
-    NOT RSB-A3 — no LAMB, no bs2048, no gradient accumulation. And no incumbent render to tie
-    against, so name the check that licenses any number off it. -/
+    (`ResNet50RenderB`) at `nClasses := 1000`; the optimizer follows the variant. One exe, two
+    recipes in the book's Ch. 5 rows: `r50-2018-bf16-4gpu` trains `momdp64bf16` (the 2018 recipe,
+    SGD + momentum at 4 × 64 = 256) and `r50-a3-wxclip4x128-bf16-4gpu` trains
+    `lambaccdp4x128wxclipbcebf16` on the `resnet50in160` renders (RSB-A3: LAMB, BCE, the effective
+    2048 as four accumulated micro-batches of 4 × 128). The A2/A1 side quests are the
+    `lambaccdp4x128wxclipdropbce…bf16` renders at 224. No incumbent render to tie against, so name
+    the check that licenses any number off it. -/
 lean_exe «resnet50-imagenet-verified» where
   root := `apps.imagenette.MainResnet50Imagenet
   moreLinkArgs := lowererLink
@@ -585,21 +590,26 @@ lean_exe «resnet50-imagenet-verified» where
     B := 64`; four replicas is global 256, the reference's batch. Batch-BN, so it has a `_fwd_eval`
     peer and a running-stat region.
 
-    Optimizer does NOT match the reference (RMSProp there, AdamW here). -/
+    The optimizer follows the variant. The Ch. 6 row, `mnv2-default-4gpu`, trains
+    `emarmstfdp64wxdwdoeps0001bf16`: TF1's `ApplyRMSProp` (the rate inside the momentum buffer),
+    TF-slim's README recipe row for row, as the JAX `full` config carries it. The `adam*` renders
+    are the AdamW siblings. -/
 lean_exe «mobilenetv2-imagenet-verified» where
   root := `apps.imagenette.MainMobileNetV2Imagenet
   moreLinkArgs := lowererLink
 
-/-- **MobileNetV4-Conv-M on full 1000-class ImageNet** — the sixth scale-tier trainer.
-    `nClasses := 1000, B := 64`; four replicas would be global 256. Batch-BN, so it has a
-    `_fwd_eval` peer and a running-stat region.
+/-- **MobileNetV4-Conv-M on full 1000-class ImageNet** — the sixth scale-tier trainer. Batch-BN,
+    so it has a `_fwd_eval` peer and a running-stat region.
 
-    **Conv-M.** `mnv4ImagenetVerified` (`Verified.NetsCore`) carries the Conv-M block table and
-    names itself "MobileNetV4-Conv-M (ImageNet-1k)".
+    **Conv-M.** `mnv4ImagenetVerified` (`Verified.NetsCore`, 224²) and `mnv4Imagenet256FullVerified`
+    (the `mnv4in256` renders, the paper's 256²) carry the Conv-M block table.
 
-    The job `mnv4-default-4gpu` runs the JAX reference's `default` recipe (AdamW 0.004 at effective
-    batch 4096 by accumulation, EMA, wd 0.05 off norm/bias, classifier dropout); drop-path in the
-    UIB blocks, used only by the 500-epoch paper tier, is absent on this path. -/
+    The Ch. 6 row is `mnv4-full-4gpu`, the paper's 500-epoch tier as tf-models' own yaml has it:
+    `accdp8x128wxdropdowd01bf16` on `mnv4in256` — AdamW 0.004 at effective 4096 as 8 accumulated
+    micro-batches of 4 × 128, wd 0.1 off norm/bias, classifier dropout 0.2, drop-path 0.075 over
+    tf-models' 26-entry ramp, no EMA. `mnv4-full-e100-4gpu` is the same job cut to 100 epochs (the
+    book's landed pair). `mnv4-default-4gpu` is the retired 224 tier (`emaaccdp8x128wxdowd005bf16`,
+    the JAX `default` recipe: EMA, wd 0.05, no drop-path), kept as an axis sibling. -/
 lean_exe «mobilenetv4-imagenet-verified» where
   root := `apps.imagenette.MainMobilenetV4Imagenet
   moreLinkArgs := lowererLink
@@ -608,22 +618,29 @@ lean_exe «mobilenetv4-imagenet-verified» where
     B := 64`; four replicas is global 256, the reference's batch. The first ImageNet net here with
     BatchNorm, so it has a `_fwd_eval` peer and a running-stat region.
 
-    Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (all five). Not
-    `lake exe resnet34-imagenet default --shim` — that is R34's, and every net fed from it
+    Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (every ImageNet net's shim).
+    Not `lake exe resnet34-imagenet default --shim` — that is R34's, and every net fed from it
     streams R34's augmentation.
-    Optimizer does NOT match the reference (RMSProp there, AdamW here). -/
+    The optimizer follows the variant. The Ch. 7 row, `enet-default-4gpu`, trains
+    `emarmstfdp64dropdowneps0001bf16`: TF1's `ApplyRMSProp` (the rate inside the momentum buffer),
+    TF's own decay set (`wn`: BN γ/β exempt, biases decayed), SAME padding on the strided
+    depthwises — TF TPU EfficientNet's code row for row. The `adam*` renders are the AdamW
+    siblings. -/
 lean_exe «efficientnet-imagenet-verified» where
   root := `apps.imagenette.MainEfficientNetImagenet
   moreLinkArgs := lowererLink
 
-/-- **ConvNeXt-T on full 1000-class ImageNet**. Same certified renderer at `nClasses := 1000`;
-    batch stays 32 per device (`cBS` is still private), so four replicas is global 128 and 10,009
-    steps/epoch — more optimizer steps than the reference's 5,004 at batch 256.
+/-- **ConvNeXt-T on full 1000-class ImageNet**. Same certified renderer at `nClasses := 1000`
+    and 64 per device (`ConvNeXtRenderB.cnxInBS`): four replicas is a 256-row micro-batch. The
+    Ch. 8 row, `cnx-default-emabf16-4gpu`, trains `emaaccdp16xwxdroperfbf16` — the official
+    recipe: 16 micro-batches accumulated to 4096, lr 4e-3, no clip, EMA from step 0, the exact
+    GELU, bf16. `cnx-default-4gpu` (the landed 09-18 one-shot run at global 256 with clip) is the
+    axis sibling.
 
-    Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (all five). Not
-    `lake exe resnet34-imagenet default --shim` — that is R34's, and every net fed from it
+    Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (every ImageNet net's shim).
+    Not `lake exe resnet34-imagenet default --shim` — that is R34's, and every net fed from it
     streams R34's augmentation.
-    Does NOT move the verification tier, and is NOT the ConvNeXt paper recipe. -/
+    Does NOT move the verification tier. -/
 lean_exe «convnext-imagenet-verified» where
   root := `apps.imagenette.MainConvNeXtImagenet
   moreLinkArgs := lowererLink
@@ -641,9 +658,13 @@ lean_exe «convnext-imagenet-verified» where
     is correct — the paper does not change the data pipeline between T and S).
     Stochastic depth is **0.4**, the paper's S value, not Tiny's 0.1 — the one recipe knob that
     moves with model size. Use `LEAN_MLIR_DROP_RATE_U=200000` on the 80-epoch tier.
-    Both `adamwxclipdrop` (single device, the default) and `adamdpwxclipdrop` (4 replicas) are
-    rendered, so unlike `vit-s-imagenet-verified` a plain invocation runs.
-    Renders and ties its shapes; NOTHING has been trained on it. -/
+    The job `cnxs-default-emabf16-4gpu` trains `emaaccdp16xwxdroperfbf16`, ConvNeXt-T's official
+    recipe at this depth (16 × (4 × 64) = 4096, EMA, no clip, the exact GELU, bf16); the
+    single-device `emawxclipdroperfbf16` is the driver's default, so unlike
+    `vit-s-imagenet-verified` a plain invocation runs. The `adam*wxclipdrop*` siblings are the
+    retired CX-4 renders at 32 per device.
+    Renders, ties, and smoked on four cards (`runs/2026-10-12-cnxs-default-emabf16-4gpu/`);
+    NOTHING has been trained on it. -/
 lean_exe «convnext-s-imagenet-verified» where
   root := `apps.imagenette.MainConvNeXtSImagenet
   moreLinkArgs := lowererLink
@@ -656,20 +677,27 @@ lean_exe «convnext-s-imagenet-verified» where
     `(S depths, T dims)` cannot be spelled. B shares S's depth table, so anything keyed on block
     count cannot separate them — a banner keyed that way would call every B artifact a ConvNeXt-S.
     Stochastic depth is 0.5 (paper value for B; S is 0.4, T is 0.1).
-    Renders and ties its shapes; NOTHING has been trained on it. -/
+    The job `cnxb-default-emabf16-4gpu` trains `emaaccdp16xwxdroperfbf16`, the official recipe at
+    this width (16 × (4 × 64) = 4096, EMA, no clip, the exact GELU, bf16, under
+    `LEAN_MLIR_MEM_FRACTION=0.90`); the `adam*wxclipdrop*` siblings are the retired CX-4 renders at
+    32 per device. Renders, ties, and smoked on four cards
+    (`runs/2026-10-12-cnxb-default-emabf16-4gpu/`); NOTHING has been trained on it. -/
 lean_exe «convnext-b-imagenet-verified» where
   root := `apps.imagenette.MainConvNeXtBImagenet
   moreLinkArgs := lowererLink
 
 /-- **ViT-Tiny on full 1000-class ImageNet** — the ViT peer of the R34 scale tier. Same certified
-    renderer at `nClasses := 1000, bs := 128`; at four replicas that is global batch 512, the
-    reference's (`jax/MainVitImagenet.lean`). Fed by the generated tfds shim.
+    renderer at `nClasses := 1000, bs := 256`; at four replicas that is global batch 1024, DeiT's
+    own and the reference's (`jax/MainVitImagenet.lean`). Fed by the generated tfds shim.
 
-    Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (all five). Not
-    `lake exe resnet34-imagenet default --shim` — that is R34's, and every net fed from it
+    Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (every ImageNet net's shim).
+    Not `lake exe resnet34-imagenet default --shim` — that is R34's, and every net fed from it
     streams R34's augmentation.
-    Set `SHIM_WORKERS=2` — one producer cannot feed a 4×128 ViT step.
-    Does NOT move the verification tier, and is NOT the DeiT recipe. -/
+    The Ch. 9 row, `vit-default-emabf16-4gpu`, trains `emadp256x4wxdropeps0000001smxerfbf16`: the
+    DeiT-Ti recipe as DeiT runs it — EMA from step 0, no clip, LayerNorm ε 1e-6, the exact GELU,
+    the shifted softmax, bf16 — at `SHIM_WORKERS=4`, the conf's measured peak. One producer cannot
+    feed a four-replica ViT step.
+    Does NOT move the verification tier. -/
 lean_exe «vit-imagenet-verified» where
   root := `apps.imagenette.MainViTImagenet
   moreLinkArgs := lowererLink
@@ -678,17 +706,24 @@ lean_exe «vit-imagenet-verified» where
     12), 22,050,664 parameters. The first net added by widening rather than by a new chain: the
     proof side needed nothing, since `vitForwardKVHasVJP` is already `∀ heads d_head mlpDim k`
     and global (GELU/softmax/LayerNorm carry no kink).
-    FOUR-REPLICA ONLY — `adamdp128x4wxclipdrop` is the sole rendered variant, so this needs
-    `PJRT_REPLICAS=4` AND `LEAN_MLIR_REPLICAS=4`; there is no single-device peer. At 128 per
-    device that is DeiT's global 512, so the recipe's LR is the rate this batch was set for.
-    `scripts/supervise.sh vits-default-g512-4gpu` is the job. Renders, ties and STEPS; NOTHING
-    has been trained on it. -/
+    FOUR-REPLICA ONLY — every `vitsin` train step is a `dp` render, so this needs
+    `PJRT_REPLICAS=4` AND `LEAN_MLIR_REPLICAS=4`; there is no single-device peer.
+    `scripts/supervise.sh vits-default-emabf16-4gpu` is the job: `emadp256x4wxdropeps0000001smxerfbf16`,
+    Tiny's recipe at this width — DeiT's global 1024 as 4 × 256, EMA, no clip, the exact GELU, the
+    shifted softmax, bf16. `vits-default-g512-4gpu` is the non-EMA f32 sibling at 4 × 128.
+    Renders, ties, and smoked on four cards (`runs/2026-10-11-vits-default-emabf16-4gpu/`);
+    NOTHING has been trained on it. -/
 lean_exe «vit-s-imagenet-verified» where
   root := `apps.imagenette.MainViTSImagenet
   moreLinkArgs := lowererLink
 
-/-- **ViT-Base (DeiT-B) on ImageNet-1k** — 86,567,656 parameters. Per-device batch 32 (global
-    128, NOT the DeiT 512) because ViT-B OOMs at 4×128 on 16 GB cards. Renders; unmeasured. -/
+/-- **ViT-Base (DeiT-B) on ImageNet-1k** — 86,567,656 parameters. The job
+    `vitb-default-emabf16-4gpu` trains `emaaccdp2x128x4wxdropeps0000001smxerfbf16`: DeiT-B's
+    global 1024 as TWO accumulated micro-batches of 4 × 128 (the first accumulating ViT render),
+    EMA, no clip, the exact GELU, the shifted softmax, bf16. The fp32 `adamdp128x4…` renders do not
+    fit the plugin's default arena and need `LEAN_MLIR_MEM_FRACTION`; the driver refuses without
+    it. Renders, ties, and smoked on four cards (`runs/2026-10-11-vitb-default-emabf16-4gpu/`);
+    NOTHING has been trained on it. -/
 lean_exe «vit-b-imagenet-verified» where
   root := `apps.imagenette.MainViTBImagenet
   moreLinkArgs := lowererLink
@@ -2366,19 +2401,23 @@ script «imagenette-orin» (args) do
     `imagenette` convention): (job config, the exe it runs, the book's row). The seven Track-4
     rows are the ones with chapter numbers; the seven side-quest rows are the verified halves of
     `planning/side_quest_runs.md`'s queue (their JAX peers, the `*-jax-4gpu` confs, stay
-    `scripts/supervise.sh`-only), each conf's ETA measured on this box on 2026-10-05. MobileNetV4's
-    row is the 500-epoch `full` job; its 100-epoch pair (`mnv4-default-4gpu`, landed 09-27) is an
-    axis sibling. Axis siblings — `r34-default-4gpu`, `r50-2018-4gpu`, `r50-a3-4gpu`, `r50-a3-wxclip-4gpu`,
+    `scripts/supervise.sh`-only). Each conf carries its own `ETA` line, dated and naming the box
+    it was probed on (the 4× 4060 Ti box, the 4× 3060 box, or ares); the ETA lives there, not
+    here. MobileNetV4's row is the 500-epoch `full` job; the book's 100-epoch pair is its
+    length-cut `mnv4-full-e100-4gpu` / `mnv4-full100-jax-4gpu` (landed 2026-10-14), an axis
+    sibling. Axis siblings — `r34-default-4gpu`, `r50-2018-4gpu`, `r50-a3-4gpu`, `r50-a3-wxclip-4gpu`,
     `r50-a3-wxclip-bf16-4gpu` (RSB-A3 at 8 × 64: the same effective 2048 at a BatchNorm group of 256),
-    `vit-default-4gpu`, `vits-default-g512-4gpu`, `vitb-default-g512-4gpu` (the non-EMA f32 S/B jobs),
-    `cnx-default-4gpu` (ConvNeXt-T's one-shot batch-256 job, the landed 09-18 run; the row is the official
-    recipe `cnx-default-emabf16-4gpu` since 2026-10-19), `cnxs-default-4gpu` / `cnxb-default-4gpu`
-    (ConvNeXt-S/B f32 at 4 × 32), the MNv4 100-epoch pair `mnv4-default-4gpu` /
-    `mnv4-default-jax-4gpu` (run as overnight chunks, `START_AT`/`STOP_AT`), `selftest`, `chunktest` — stay `scripts/supervise.sh`-only.
-    `r34-default-bf16-4gpu`, `r50-2018-bf16-4gpu` and `r50-a3-wxclip4x128-bf16-4gpu` are the 4× 3060
-    box's confs, named by the
-    book's Track-4 table as the jobs behind their rows; their PRECHECK passes here too (`_box.sh`
-    picks the plugin), and their ETAs are the 3060 box's where they say so. -/
+    `vit-default-4gpu`, `vits-default-g512-4gpu`, `vitb-default-g512-4gpu` (the non-EMA f32 ViT jobs
+    at 4 × 128; see their headers before launching one — the drivers now default to the batch-1024
+    rate), `cnx-default-4gpu` (ConvNeXt-T's one-shot batch-256 job, the landed 09-18 run; the row is
+    the official recipe `cnx-default-emabf16-4gpu` since 2026-10-19), the retired 224 tier's
+    `mnv4-default-4gpu` / `mnv4-default-jax-4gpu` (the 09-27 pair, run as overnight chunks,
+    `START_AT`/`STOP_AT`), `selftest`, `chunktest` — stay `scripts/supervise.sh`-only. The CX-4
+    ConvNeXt-S/B f32 confs (`cnxs-default-4gpu`, `cnxb-default-4gpu`) were retired 2026-10-19.
+    `r34-default-bf16-4gpu`, `r50-2018-bf16-4gpu` and `r50-a3-wxclip4x128-bf16-4gpu` were written
+    for the 4× 3060 box and are named by the book's Track-4 table as the jobs behind their rows;
+    their PRECHECK passes on either box (`_box.sh` picks the plugin). R34's ETA is the 3060
+    box's; the two R50 confs quote the 4060 Ti box's. -/
 private def imagenetRows : List (String × String × String) :=
   [ ("r34-default-bf16-4gpu",  "resnet34-imagenet-verified",     "Ch. 5  ResNet-34, the 2018 recipe, bf16"),
     ("r50-2018-bf16-4gpu",     "resnet50-imagenet-verified",     "Ch. 5  ResNet-50, 2018"),
@@ -2454,8 +2493,9 @@ script «vitb-default-emabf16-4gpu» (args) do runJobScript "vitb-default-emabf1
     through `scripts/supervise.sh` in order and stops at the first failure; a row whose checkpoint
     is complete exits 0 at once, so re-invoking resumes where it left off. `lake run imagenet
     start cnx vit` (job-name prefixes) runs a subset. Rows are sequential by construction: every
-    job claims all four cards. `lake build imagenet` builds every row's trainer first, so the
-    plan's binary-freshness checks have nothing to warn about. -/
+    job claims all four cards. `lake build imagenet` builds every row's trainer first, and the
+    `vit-ema-drop-render` layout gate the EMA confs' PRECHECKs call, so the plan's
+    binary-freshness checks have nothing to warn about. -/
 script imagenet (args) do
   let (go, only) := match args with
     | "start" :: rest => (true, rest)
@@ -2489,10 +2529,12 @@ script imagenet (args) do
 
 -- `imagenet` the script owns the root name, hence the namespace; the target's name is still `imagenet`.
 namespace ImagenetBuild
-/-- `lake build imagenet` — every trainer the ImageNet rows run, each built once, so a
+/-- `lake build imagenet` — every trainer the ImageNet rows run, each built once, plus
+    `vit-ema-drop-render` (the layout gate the EMA confs' PRECHECKs run, and warn without), so a
     `lake run imagenet` plan afterwards reads current binaries. -/
 target imagenet : Array System.FilePath := do
-  let exes := imagenetRows.foldl (fun acc (_, e, _) => if acc.contains e then acc else acc.push e) #[]
+  let exes := imagenetRows.foldl (fun acc (_, e, _) => if acc.contains e then acc else acc.push e)
+    #["vit-ema-drop-render"]
   let jobs ← exes.mapM fun e => do
     let some exe ← findLeanExe? (Lean.Name.mkSimple e) | error s!"imagenetRows names an unknown exe: {e}"
     exe.fetch

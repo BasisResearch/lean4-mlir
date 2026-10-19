@@ -7570,19 +7570,21 @@ against A2's $0.02$.
 \medskip\noindent \textbf{A full schedule.} Table~\ref{tab:r50_a2_a1_time} is four
 cards, each path's own trainer timed on real ImageNet at the job's shape ---
 four replicas of $128$ accumulated four times to $2048$, $625$ optimizer steps
-an epoch.
+an epoch; the rates are the 2026-10-07 re-probe
+(\texttt{runs/2026-10-07-d17-reprobe/}), after torchvision's crop and the
+bicubic RandAugment geometry entered the shims.
 
 \begin{table}[H]
 \centering
-\caption{Measured step time and projected training time for A2 and A1 on four cards, on each path. A step is one optimizer step, four micro-batches; totals are training steps alone, and evaluation adds a few hours a run.}
+\caption{Measured step time and projected training time for A2 and A1 on four cards, on each path. A step is one optimizer step, four micro-batches; the verified column is four times its measured micro-batch; totals are training steps alone, and evaluation adds a few hours a run.}
 \label{tab:r50_a2_a1_time}
 \begin{tabular}{@{}l r r r r r@{}}
 \hline
  & & \multicolumn{2}{c}{reference (JAX)} & \multicolumn{2}{c}{verified path (PJRT)} \\
 4 cards, bf16 & epochs & ms/step & total & ms/step & total \\
 \hline
-A2 & $300$ & $1{,}467$ & $76$\,h \;($3.2$\,d)  & $1{,}784$ & $93$\,h \;($3.9$\,d) \\
-A1 & $600$ & $1{,}469$ & $153$\,h \;($6.4$\,d) & $1{,}776$ & $185$\,h \;($7.7$\,d) \\
+A2 & $300$ & $1{,}440$ & $75$\,h \;($3.1$\,d)  & $1{,}904$ & $99$\,h \;($4.1$\,d) \\
+A1 & $600$ & $1{,}441$ & $150$\,h \;($6.3$\,d) & $1{,}852$ & $193$\,h \;($8.0$\,d) \\
 \hline
 \end{tabular}
 \end{table}
@@ -7620,7 +7622,9 @@ Optimizer tied at the update, seven variants to ${\sim}10^{-7}$ & \\
 \end{table}
 
 \noindent\textbf{[TODO: \texttt{timm}'s index-level \texttt{RASampler} for
-the $3\times$ repeats (A3's three are in both tiers' code, and ran on A3);
+the $3\times$ repeats (both tiers' code places the three copies adjacent in
+one optimizer step; A3 has no repeated augmentation, so no landed run
+carries it);
 neither tier has run ---
 \texttt{r50-a2-bf16-4gpu} / \texttt{r50-a1-bf16-4gpu},
 \texttt{r50-a2accum-jax-4gpu} / \texttt{r50-a1-jax-4gpu}.]}
@@ -14056,6 +14060,12 @@ softmax is prone to collapse if gradients push logits too hard
 early, and warmup keeps the first few epochs slow enough to avoid
 that failure mode.
 
+The GELU inside every block's MLP is the tanh approximation, on both
+paths (Definition~\ref{ax:geluScalar}), as Chapter~\ref{chap:layernorm}'s
+Imagenette runs trained it; the ImageNet pairs of
+\S\ref{sec:vit_imagenet} compute DeiT's exact form
+(Definition~\ref{ax:geluErfScalar}).
+
 \subsection*{Results}
 \label{sec:vit_results}
 
@@ -14234,7 +14244,8 @@ the model EMA at $0.99996$ held from step $0$; LayerNorm at
 $\varepsilon = 10^{-6}$; the exact erf GELU; torchvision's crop; and an
 fp32 evaluation forward, with bf16 under an fp32 patch embedding and head
 on both paths. One thing is out, disclosed on both paths: the
-patch-embedding bias sits at PyTorch's default rather than DeiT's. Both
+patch-embedding bias starts at zero here, where DeiT leaves it at
+PyTorch's \texttt{Conv2d} default, $U(\pm 1/\sqrt{768})$. Both
 halves of the pair ran on the same four RTX 3060 cards.
 
 \prosesection{The reference (JAX)}

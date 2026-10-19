@@ -1248,10 +1248,12 @@ def efficientnetAdamTrainStepText (B nClasses : Nat) (epsStr : String)
                      ++ (if ema then ["%emad", "%oemad"] else []) ++ statNames ++ dpNames
     let retTys := packedTrainRetTys pTy (ema := ema) ++ statTypes ++ dpTys
     pure (
+      -- The banner names the optimizer it renders (`OptRecipe.label`): "AdamW" is unchanged, and
+      -- the `.rmsprop` / `.rmspropTf` artifacts said "AdamW" until 2026-10-19.
       (if replicas ≤ 1 then
-        s!"    // ── EfficientNet-B0 AdamW train step: {trainStepHandNote} ──\n"
+        s!"    // ── EfficientNet-B0 {opt.label} train step: {trainStepHandNote} ──\n"
        else
-        s!"    // ── EfficientNet-B0 AdamW train step, DATA-PARALLEL over {replicas} replicas ──\n" ++
+        s!"    // ── EfficientNet-B0 {opt.label} train step, DATA-PARALLEL over {replicas} replicas ──\n" ++
         s!"    // {trainStepHandNote}.\n" ++
         syncBnBanner "EnetSyncTieG.efficientnet_net_syncTiedG"
           "StableHLO.efficientnetFwdGraphSyncFull_shard" "EfficientNet" ++

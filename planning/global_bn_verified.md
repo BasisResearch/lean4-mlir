@@ -973,11 +973,11 @@ it through `scripts/supervise.sh`). ⚠ ares carries the box-wide stall
 | order | net | job | variant | verified side | what it retires |
 |---|---|---|---|---|---|
 | ✅ 1 | ResNet-34 | `scripts/jobs/r34-default-bf16-4gpu.conf` | `momdp64bf16` | 23.7 h, landed 2026-09-23 (`runs/2026-09-22-r34-syncbn-bf16-90ep/`, 74.168 / 91.894) | §5.7 rewritten: BN row moved below the rule, `\globalbntodo` gone, §6.5/§7 cross-refs follow |
-| 2 | MobileNetV2 | `scripts/jobs/mnv2-default-4gpu.conf` | `rmsdp64bf16` | ~51 h | `:7059` row + §6's `[TODO: global BN.]` |
-| 3 | EfficientNet-B0 | `scripts/jobs/enet-default-4gpu.conf` | `emarmsdp64dropdobf16` | ~73 h | `:8266` row |
+| 2 | MobileNetV2 | `scripts/jobs/mnv2-default-4gpu.conf` | `emarmstfdp64wxdwdoeps0001bf16` (was `rmsdp64bf16`; the README's recipe since 6762494c, 2026-10-12) | ~63 h for 420 ep (the conf's 2026-10-12 smoke) | `:7059` row + §6's `[TODO: global BN.]` |
+| 3 | EfficientNet-B0 | `scripts/jobs/enet-default-4gpu.conf` | `emarmstfdp64dropdowneps0001bf16` (was `emarmsdp64dropdobf16`; TF's own recipe since dedb34f5, 2026-10-12) | ~67 h for 350 ep (the conf's 2026-10-12 probe) | `:8266` row |
 | ✅ 1 | ResNet-50 2018 | `r50-2018-bf16-4gpu.conf` | `momdp64bf16` | 31.6 h, landed 2026-09-25 (`runs/2026-09-24-r50-2018-syncbn-bf16-90ep/`, 77.160 / 93.430, +0.21 on the reference) | §5.8 rewritten 2026-09-26 with the A3 leg: both BN-group rows below the rule, `\globalbntodo` gone, §5.9's ghost-BN paragraph retired, §6.5's pair count follows |
 | ✅ 1 | ResNet-50 A3 | `r50-a3-wxclip4x128-bf16-4gpu.conf` | `lambaccdp4x128wxclipbcebf16` | 21.8 h, landed 2026-09-24 (`runs/2026-09-23-r50-a3-syncbn-bf16-100ep/`, 78.330 / 94.034, +0.07 on the reference) | see the 2018 row; the job is now `lake run r50-a3-wxclip4x128-bf16-4gpu` and the Track-4 row |
-| — | MobileNetV4 | `scripts/jobs/mnv4-default-4gpu.conf` | `adamdp64` | not costed here | none — its FIRST pair; no caveat row needed |
+| — | MobileNetV4 | `scripts/jobs/mnv4-default-4gpu.conf` (the 224 tier, retired 6b5c6fcc; the row is now `mnv4-full-4gpu` at `accdp8x128wxdropdowd01bf16`, 256², and its 100-epoch sibling `mnv4-full-e100-4gpu`, whose pair landed 6bcdb7f3) | `adamdp64` | not costed here | none — its FIRST pair; no caveat row needed |
 
 ⚠⚠ **R50 A3 trains the 4×128 render, not its old conf.** Sync-BN normalises over `R × micro`
 rows per micro-step, so `lambaccdp8x64…` gives 256 against the reference's 512 (its `4 × 512`,
@@ -994,7 +994,8 @@ would resume it); on the other box move the finished bf16 runs' `.epoch` files a
 supervisor would call those jobs COMPLETE); rebuild `ffi/libpjrt_ffi.so` if it predates
 `be70ae32` (ares' did); and the other box needs this branch pulled.
 
-⚠ B0's job trains `emarmsdp64dropdobf16`. Its twin and `imagenet-syncbn-check` cover
+⚠ B0's job trains `emarmsdp64dropdobf16` (since dedb34f5: `emarmstfdp64dropdowneps0001bf16`, TF 1's
+`ApplyRMSProp` with the decay set and ε of TF's code). Its twin and `imagenet-syncbn-check` cover
 `rmsdp64bf16`, the same net without EMA and the host-fed masks. The render is sync-BN either way.
 
 These are now **scheduling** decisions, not whether-to: once a net's DP render normalises globally, its

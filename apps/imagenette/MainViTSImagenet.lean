@@ -19,16 +19,18 @@ and Small at different arguments. The widths live in the RENDERER: `ViTRenderB.l
 `VitDims` record as a trailing defaulted parameter, so one renderer serves both sizes.
 
 **Only the 4-replica variant is rendered**, so unlike the other ImageNet drivers this one has no
-single-device default to fall back to. `adamdp128x4wxclipdroperf` at 128 per device × 4 = the
-global 512 the DeiT recipe uses. There is no `adam128` peer for ViT-S; asking for one fails at
-load. The `erf` marker is the exact GELU `x · Φ(x)`, DeiT's own and the JAX reference's
+single-device default to fall back to. `adamdp128x4wxclipdroperf` at 128 per device × 4 = global
+512 is the driver's default (the recipe before 2026-10-11; DeiT's own batch is the pair's 1024,
+below). There is no `adam128` peer for ViT-S; asking for one fails at load. The `erf` marker is the exact GELU `x · Φ(x)`, DeiT's own and the JAX reference's
 (`geluExact`); each render also exists without it, at the tanh approximation.
 
 ViT has no BatchNorm, so there is no running-stats eval forward. `vitsin_drop_fwd` plus the
 train step is the complete artifact set for this net.
 
 **Nothing has been trained**, and no accuracy has been measured. The wall clock HAS been
-probed on real ImageNet on four cards, fp32 and bf16: `runs/2026-08-27-vitb-global512/`.
+probed on real ImageNet on four cards: the pair render in
+`runs/2026-10-11-vits-default-emabf16-4gpu/` (the conf's ETA), the 4 × 128 clip renders fp32 and
+bf16 in `runs/2026-08-27-vitb-global512/`.
 
 **Run it through the job config**, which owns the device list, the epoch budget and the restart
 policy:
@@ -36,11 +38,13 @@ policy:
 scripts/supervise.sh vits-default-emabf16-4gpu
 DRY_RUN=1 scripts/supervise.sh vits-default-emabf16-4gpu   # print the plan, run nothing
 ```
-`vits-default-emabf16-4gpu` is the pair job: `vitsin_emadp256x4wxdropeps0000001erfbf16`, Tiny's
+`vits-default-emabf16-4gpu` is the pair job: `vitsin_emadp256x4wxdropeps0000001smxerfbf16`, Tiny's
 pair recipe as DeiT runs it (2026-10-11): DeiT's batch 1024 as 4 × 256 (one shot, exact under
 LayerNorm), no gradient clip, EMA 0.99996 constant from step 0, timm's per-epoch cosine from 1e-6,
-timm/DeiT init, bf16, DeiT's LayerNorm ε 1e-6, min lr 1e-5 and the exact GELU at this width; its
-eval forward is `vitsin_emadp256x4wxdropeps0000001erfbf16_fwd.mlir`. The 4 × 128 clip render
+timm/DeiT init, bf16, DeiT's LayerNorm ε 1e-6, min lr 1e-5, the shifted softmax (`smx`) and the
+exact GELU at this width; its eval forward is
+`vitsin_emadp256x4wxdropeps0000001smxerfbf16_fwd.mlir` (the unshifted `…erfbf16` pair stays
+committed beside it). The 4 × 128 clip render
 `vitsin_emadp128x4wxclipdropeps0000001erfbf16` (the 10-06 recipe) stays committed; a checkpoint
 under it cannot be resumed into this one. `vits-default-g512-4gpu` is the non-EMA f32 sibling.
 

@@ -33,6 +33,10 @@ per run) are not included. The 2026-10-05 numbers stand in parentheses.
 | 5 | ConvNeXt-B JAX 167, then verified 201 | ~368 (383) | ~15.3 |
 | total | | ~1,826 (1,860) | ~76 |
 
+(These are the 10-07 shapes — ViT-S/B at batch 512, ConvNeXt-S/B one-shot at 256, MNv4 at 224. The
+recipe commits of 2026-10-11/12 moved every row but A2/A1 to DeiT's / the paper's shapes; the
+re-measured hours are under §3's "Superseded" note, and the confs' `ETA=` strings carry them.)
+
 The rates behind each row:
 
 | run | step | steps/epoch × epochs | ms/step (10-05) | bound |
@@ -101,7 +105,8 @@ taken before X2 / X5 / X6 of `imagenet_parity.md` §9.1; the re-probes are its D
 ### Batch 1, JAX A2 / MNv4 `full` / ViT-S — done (`b84da996`)
 
 (as committed: `TrainConfig.bceTargetThresh`, A2/A1 per RSB Table 2, MNv4 `full` without EMA,
-confs `r50-a2accum-jax-4gpu`, `mnv4-full-jax-4gpu`, `vits-default-jax-4gpu`)
+confs `r50-a2accum-jax-4gpu`, `mnv4-full-jax-4gpu`, `vits-default-jax-4gpu` — renamed
+`vits-accum-jax-4gpu` 2026-10-11, a39f5cf7, when the reference went to 512 × 2 accumulated)
 
 ### Batches 2–5 — done (2026-09-29, uncommitted)
 
@@ -114,6 +119,27 @@ confs `r50-a2accum-jax-4gpu`, `mnv4-full-jax-4gpu`, `vits-default-jax-4gpu`)
 | MNv4 paper | `mnv4-full-4gpu` | `mnv4-full-jax-4gpu` (batch 1) | `mnv4in_acc{dp,}8x128wxdropdowd01bf16`: UIB drop-path on the 18 skip blocks, `mnv4ImagenetFullVerified` (m15 shim, dropout 0.2, keeps 1 − 0.075·i/20) |
 | ConvNeXt-S | `cnxs-default-emabf16-4gpu` | `cnxs-default-jax-4gpu` | `convnextsin_ema{dp,}wxclipdropbf16` at 64, peak 6.80 GiB; `convnextsin_fwd` at 64, `_fwd_s288`; `cnxInit` both paths |
 | ConvNeXt-B | `cnxb-default-emabf16-4gpu` | `cnxb-default-jax-4gpu` | as S; peak **9.53 GiB of the 11.68 default**, so no accumulation render |
+
+**Superseded 2026-10-11/12 by the recipe commits** (`recipe_prep.md` §9; the table above is the
+2026-09-29 state). The confs keep their names (bar the one rename above) and now train:
+* ViT-S (a39f5cf7, `smx` 60d88a93): `vitsin_emadp256x4wxdropeps0000001smxerfbf16` at 4 × 256 one-shot
+  (no clip, LN ε 1e-6, exact GELU, max-shifted softmax); JAX `vits-accum-jax-4gpu` at 512 × 2.
+* ViT-B (same): `vitbin_emaaccdp2x128x4wxdropeps0000001smxerfbf16`, the first accumulating ViT render,
+  2 × (4 × 128) under `LEAN_MLIR_MEM_FRACTION=0.97`; JAX 512 × 2 under `XLA_PYTHON_CLIENT_MEM_FRACTION=0.97`.
+* R50 A2 / A1 (4d612bb9): the renders are unchanged; timm's per-epoch cosine, warmup from 1e-4, the
+  p 0.5 Mixup/CutMix draw, the fill at the image mean and the adjacent ×3 are host-side and in the shims.
+* MNv4 paper tier (263da67a, 3333bbd5): `mnv4in256_accdp8x128wxdropdowd01bf16` at 256², the yaml's
+  rows — keeps `1 − 0.075·(i+3)/26` over tf-models' 26-entry list, the whole-image crop falling back to
+  its centre crop. The 224 `mnv4in_…` render stays on disk for the landed 100-epoch sibling.
+* ConvNeXt-S / B (a0c125b3): `convnext{s,b}in_emaaccdp16xwxdroperfbf16` — the official 4096 as
+  16 × (4 × 64) accumulated, no clip, EMA from step 0; B under `LEAN_MLIR_MEM_FRACTION=0.90`. "No
+  accumulation render" no longer holds: the accumulation is the recipe's, not memory's.
+
+§1's 10-07 rates were re-measured by each conf's 2026-10-11/12 smoke at the new shapes, and the
+`ETA=` strings carry those: ViT-S ~70–73 h verified / ~70–75 h JAX; ViT-B ~185–190 h / ~180 h;
+ConvNeXt-S ~144 h / ~106 h; ConvNeXt-B ~219 h / ~151 h; MNv4 `full` ~75 h / ~112 h; A2 and A1 as
+§1 (~99 / ~75 h, ~193 / ~150 h). The batch totals of §1 re-sum to about 2,300 box-hours across the
+eleven owed pairs (`imagenet_finish_line.md`, "Runs owed").
 
 Shared pieces:
 * **The BCE target transform rides the shim.** The BCE renders take `%onehot` as given, so the

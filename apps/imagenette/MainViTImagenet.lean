@@ -16,10 +16,12 @@ ImageNet-scale number here to compare against.
 **This does not move the verification tier** — the proof-carrying claims stop at Imagenette.
 See `vitImagenetVerified`'s claim-ceiling note for what the variant carries of the DeiT recipe.
 
-The job is `scripts/jobs/vit-default-emabf16-4gpu.conf` (`emadp128x4wxclipdropbf16`: EMA, clip,
-drop-path, weight decay off norm/bias, bf16, 4 × 128 = global 512). It sets `SHIM_WORKERS`,
-`LEAN_MLIR_EPOCHS` and both replica knobs; run the job, not the bare binary,
-for anything printable. The worker count is an open probe.
+The job is `scripts/jobs/vit-default-emabf16-4gpu.conf` (`emadp256x4wxdropeps0000001smxerfbf16`:
+EMA from step 0, no clip, drop-path, weight decay off norm/bias, DeiT's LayerNorm ε 1e-6, the
+shifted softmax, the exact GELU, bf16, 4 × 256 = DeiT's global 1024). It sets `SHIM_WORKERS`
+(4, its measured peak at 1024), `LEAN_MLIR_EPOCHS` and both replica knobs; run the job, not the
+bare binary, for anything printable. The 4 × 128 clip renders (`emadp128x4wxclipdrop…`, the
+recipe before 2026-10-11) stay committed; a checkpoint under one cannot be resumed into the pair.
 
 ```bash
 scripts/gen_shims.sh                       # this net's OWN data shim (NOT R34's — see VerifiedNet.shimScript)
@@ -33,10 +35,10 @@ trusted lowerer `$LEAN_MLIR_LOWERER` selects -- XLA/PJRT by default, IREE with
 `=iree` -- resolved by dlopen at run time (`ffi/lowerer.h`).
 -/
 
-/-- 300 epochs at 128 per device — the DeiT-Ti schedule length, and at four replicas the
-    reference's global batch of 512. `batchSize` is PER DEVICE, as everywhere else here
-    (`LEAN_MLIR_BATCH` overrides, and must match the batch the selected variant was rendered at,
-    since it is baked into the graph). -/
+/-- 300 epochs at 256 per device — the DeiT-Ti schedule length, and at four replicas DeiT's own
+    global batch of 1024 (`vitTinyImagenetConfig.batchSize`). `batchSize` is PER DEVICE, as
+    everywhere else here (`LEAN_MLIR_BATCH` overrides, and must match the batch the selected
+    variant was rendered at, since it is baked into the graph: 128 for the clip renders). -/
 def vitImagenetConfig : VerifiedConfig where
   epochs    := 300
   batchSize := 256   -- PER REPLICA: 4 × 256 = DeiT-Ti's global 1024 (`vitTinyImagenetConfig.batchSize`)

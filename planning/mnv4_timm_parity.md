@@ -72,4 +72,7 @@ replacement exists.
 - [x] P3: BackB0 → Seal all rebuilt. The seal is now 38 clauses, with no swish machinery (kit §13–14,
   `hasDerivAt_mul_of_zero`, `bnIstd_le_one`, `swishScalar_lt`/`Deriv_pos` deleted). AuditAxioms
   pins renamed. Comparator, docstring-checkrefs and blueprint `\uses` are green.
-- [ ] P4: docs marked (book §`mnv4_side_quest`, README). The 100-epoch rerun is QUEUED, not launched.
+- [ ] P4: docs marked (book §`mnv4_side_quest` ✅ 6b5c6fcc; README:57 still quotes 76.68 —
+  `imagenet_finish_line.md` item 4). The 100-epoch rerun ran 2026-09-26/27
+  (`runs/2026-09-26-mnv4-jax-bf16-100ep/`, `runs/2026-09-26-mnv4-verified-bf16-100ep/`); the pair
+  on the paper's own config at 256² landed 2026-10-15 (6bcdb7f3): verified 77.35 / 93.53, JAX 77.39 / 93.46.

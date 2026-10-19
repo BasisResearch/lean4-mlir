@@ -13,8 +13,13 @@ needs only a `slug`, and the report-only loss's −α/K is derived rather than h
 Does NOT move the verification tier. The optimizer follows the variant: the `rms*`/`emarms*`
 renders are the reference's RMSProp with its ×0.97-every-2.4 decay, EMA, drop-connect and
 classifier dropout; the `adam*` renders are AdamW + cosine. The shipping
-`emarmsdp64dropdowxeps0001bf16` is the TF recipe the JAX `full` config carries: `wx`, BN ε 1e-3,
-the staircase on the global step (`enetImagenetRmsSchedule`) and the i/16 drop-connect ramp.
+`emarmstfdp64dropdowneps0001bf16` (`enet-default-4gpu`, 2026-10-12, planning/recipe_prep.md §7) is
+TF TPU EfficientNet's own code row for row, as the JAX `full` config carries it: TF1's
+`ApplyRMSProp` with the rate inside the momentum buffer (`tf`), TF's decay set (`wn`: BN γ/β
+exempt, biases decayed), BN ε 1e-3, the staircase on the global step
+(`enetImagenetRmsSchedule`), the i/16 drop-connect ramp and SAME padding on the strided
+depthwises. `emarmsdp64dropdowxeps0001bf16` (`wx`: biases off decay, timm's RMSProp form) is the
+2026-09-25 recipe it replaced.
 
 **One file, one binary, either lowerer.** The proven graph goes to whichever
 trusted lowerer `$LEAN_MLIR_LOWERER` selects -- XLA/PJRT by default, IREE with
@@ -32,8 +37,8 @@ trusted lowerer `$LEAN_MLIR_LOWERER` selects -- XLA/PJRT by default, IREE with
     different LR curve end to end, not a prefix of one, so the two results would not be comparable.
 
     The committed variants are the AdamW family (`adam64`, `adamdp64`) and the RMSProp family
-    (`rms64`, `rmsdp64`, `emarms64*`, `emarmsdp64*`); only the RMSProp family matches the
-    reference. -/
+    (`rms64`, `rmsdp64`, `emarms64*`, `emarmsdp64*`, `emarmstfdp64*`); only the RMSProp family
+    matches the reference, and only the `emarmstf` render matches its code. -/
 def efficientnetImagenetConfig : VerifiedConfig where
   epochs    := 350
   batchSize := 64

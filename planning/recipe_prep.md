@@ -271,10 +271,12 @@ and a second scoring protocol. Read off the yaml and the tf-models sources it in
 `classification_input.py`, `preprocess_ops.py`, `lr_schedule.py`, `nn_layers.py`, `mobilenet.py`), and
 set on both paths (the user: build every row; the JAX config names its source per line):
 `input_size 256` (train and eval); `norm_momentum 0.997`, `norm_epsilon 1e-3` (D9's "timm 0.9" was
-wrong — the paper's code is TF's 0.997); the drop-path ramp `0.075·(block_idx+1)/25` over the 25-entry
-block list with `flat_stochastic_depth_drop_rate: false` — UIB `i` at `(i+3)/25`, residual rows only
-(D10's "/23" was timm's; **corrected 2026-10-17 to /26** — `len(self._decoded_specs)` counts the
-`gpooling` entry, `imagenet_parity.md` §11 A1); RandAugment m15 at p 0.7 under tf-models' `augment.py`: `magnitude_std 0` so
+wrong — the paper's code is TF's 0.997); the drop-path ramp `0.075·(block_idx+1)/26` over tf-models'
+26-entry decoded block list (stem, fused_ib, 21 UIBs, `convbn 960`, `gpooling`, `convbn 1280`) with
+`flat_stochastic_depth_drop_rate: false` — UIB `i` at `(i+3)/26`, residual rows only
+(D10's "/23" was timm's; first read here as /25 over a list without the pool, **corrected 2026-10-17 to
+/26**, committed 3333bbd5 — `len(self._decoded_specs)` counts the `gpooling` entry, `imagenet_parity.md`
+§11 A1; the landed 100-epoch pair carries /25); RandAugment m15 at p 0.7 under tf-models' `augment.py`: `magnitude_std 0` so
 no clamp — m15 extrapolates (D7 settled; Posterize 6 bits, Solarize a no-op, enhance 2.8, rotate 45°),
 TF's non-increasing mappings (D8 withdrawn: inc1 at m15 would be Posterize −2 bits and Solarize at −128,
 black and inverted images), an identity branch in the 16-way draw, `translate_const 100` (±150 px),
@@ -590,10 +592,10 @@ f32 eval); `imagenet_parity.md` D6 / D13 / D20–D22 / F2 and §10.4 carry the s
 |---|---|---|---|---|---|---|---|---|---|
 | R34, R50-2018 | — | — | — | — | — | — | 8a659b2f, 5be4f349 | landed | R34 deleted; 2018 paid |
 | R50 A3 / A2 / A1 | done | done | existing | done | green | done | 4d612bb9 | A3 landed 10-13/14 (77.60 / 78.08); A2 / A1 pending | A3's deleted; A2/A1's stands (RASampler, the runs) |
-| ViT-Ti | done | done | done | done | green | done | 320f5045, 3336f4a7 | pending | stands |
+| ViT-Ti | done | done | done (the `smx` render, 2170bd9f) | done | green | done | 320f5045, 3336f4a7 | ✅ landed 2026-10-16 (04c72553): verified 71.612 / 90.948, JAX 71.638 / 90.980 | stands for the patch-embed bias (R4) only |
 | ViT-S / B | done | done | done (B: the first `acc` render) | done | green | done | a39f5cf7 | pending | stands |
 | ConvNeXt-T / S / B | done | done | done (the first `acc` ConvNeXt renders, six) | done | green | done | a0c125b3 | pending | stands |
-| MNv4-Conv-M | done (the paper's yaml) | done | done (`mnv4in256`, five) | done | green | done | 263da67a | pending | stands, rewritten |
+| MNv4-Conv-M | done (the paper's yaml) | done | done (`mnv4in256`, five) | done | green | done | 263da67a (+ 3333bbd5: /26 and the crop fallback) | ✅ the 100-epoch pair landed 2026-10-15 (6bcdb7f3): verified 77.35 / 93.53, JAX 77.39 / 93.46 — before 3333bbd5; the 500-epoch tier pending | stands, rewritten |
 | MNv2 | done (the README's command, every row: + `evalCropSlim` / TF 1's bilinear, D23) | done | done (the first `rmstf` + EMA MNv2 render) | done | green | done | 6762494c + the D23 addendum | pending | stands, rewritten (the crop and the kernel in it) |
 | EfficientNet-B0 | done (TF's code, every row: 5 new flags + `rmspropTf` / `evalF32`) | done (`headTfUniform`) | done (D3's 36 Xla artifacts; the `emarmstfdp64dropdowneps0001bf16` render) | done | green | done | a89fa9af + dedb34f5 | pending | stands, rewritten to TF's rows |
 

@@ -663,8 +663,8 @@ emitter (`Jax/Codegen.lean`) and the shims, so they go in one pass before any pe
 | order | net | code left | size | rerun (JAX + verified, conf ETAs) |
 |---|---|---|---|---|
 | 1 | MNv2 | D11 depthwise wd exclusion (new variant), D12 slim colour distortion (shim), D13 lr inside momentum (render), TF init if the manifest says so; F8 only — ✅ 2026-10-12 as the README's command, every row (`recipe_prep.md` §6; the `emarmstfdp64wxdwdoeps0001bf16` render) | M | smoked 2026-10-12 (the confs' ETAs); the variant is in the checkpoint name, so the conf's lineage is fresh |
-| 2 | ViT-Ti | D2 clip off, D19 live-weight scoring, k2 accumulation; Phase 2 | S | ~46 + ~65 h |
-| 3 | MNv4 `full` | D7–D10, EMA off; Phase 2 — ✅ 2026-10-12 as the paper's own yaml at 256² (`recipe_prep.md` §5; the `mnv4in256` renders) | S each | smoked 2026-10-12 (the confs' ETAs) |
+| 2 | ViT-Ti | D2 clip off, D19 live-weight scoring, k2 accumulation; Phase 2 — ✅ 2026-10-11 as DeiT runs it (320f5045; 4 × 256 one-shot, no accumulation; the `smx` render 2170bd9f) | S | ✅ the pair landed 2026-10-16 (04c72553): verified 71.612 / 90.948, JAX 71.638 / 90.980 |
+| 3 | MNv4 `full` | D7–D10, EMA off; Phase 2 — ✅ 2026-10-12 as the paper's own yaml at 256² (`recipe_prep.md` §5; the `mnv4in256` renders); §11's three corrections 3333bbd5 | S each | smoked 2026-10-12 (the confs' ETAs); ✅ the 100-epoch sibling pair landed 2026-10-15 (6bcdb7f3, `mnv4-full-e100-4gpu` / `mnv4-full100-jax-4gpu`: verified 77.35 / 93.53, JAX 77.39 / 93.46 — before 3333bbd5, so it carries /25 and no fallback); the 500-epoch tier not run |
 | 4 | ConvNeXt-T | D2 clip off, k16 accumulation, D15 (rerun JAX too); Phase 2 | S–M | ~77 + ~107 h |
 | 5 | B0 | **D3 SAME padding on strided depthwise moves the T2/T3 ties**; D6 classifier init; D13 — ✅ 2026-10-12, both halves (D3 a89fa9af; the rest as TF's own code has it, every row: `recipe_prep.md` §7's "Done" paragraph — D6, D13, the decay set (BN alone exempt), AutoAugment as `autoaugment.py` applies it, TF 1's bicubic, `_decode_and_center_crop`, the f32 eval) | M–L, the only proof work | smoked 2026-10-12 (the confs' ETAs) |
 | — | R34 / R50 | heavy-ball `opt_step_tie` row (§9.4); D16 Imagenette zero-γ | S | none; A3's F1 / F4 / F5 ran 2026-10-12/13 |
@@ -717,6 +717,9 @@ determinism. ViT-Ti's config carries all of them plus DeiT's batch 1024 (4 × 25
 lr 1e-3; the verified render is `vitin_emadp256x4wxdropeps0000001erfbf16` (+ its tanh twin), with the
 clip decided by `runs/2026-10-11-vit-clipoff-probe/` (D2). Not done: the patch-embed bias at PyTorch's
 default (disclosed). Both confs rewritten; smokes and ETAs next, then mars = JAX, ares = verified.
+✅ 2026-10-16 (04c72553): the pair landed on the max-shifted `smx` render
+(`vitin_emadp256x4wxdropeps0000001smxerfbf16`, 2170bd9f — the erf render went NaN at epoch 3 on an f32
+eval), verified 71.612 / 90.948, JAX 71.638 / 90.980.
 
 **MobileNetV2 status (2026-10-12; `planning/recipe_prep.md` §6).** Wired on both paths as TF-slim's
 README runs it, every row (the user's call, as for MNv4): TF1's `ApplyRMSProp` (D13), the decay set
@@ -761,7 +764,8 @@ render: `vitAdamTrainStepText` / `vitAdamVariant` take `acc`, which routes the A
 RenderKit's `OptRecipe.adamwAccum` (the fifth `[θ|m|v|G|E]` region, `%aup` / `%akeep`, `1/k` in
 `optConstsB`) — the shared prerequisite recipe_prep §3.2 named, so ConvNeXt's `k = 16` is the same
 `acc` on its own writer. Renders `vitsin_emadp256x4wxdropeps0000001{erf,}bf16` and
-`vitbin_emaaccdp2x128x4wxdropeps0000001{erf,}bf16` (+ eval forwards); `vit-ema-drop-render` accepts the
+`vitbin_emaaccdp2x128x4wxdropeps0000001{erf,}bf16` (+ eval forwards; since 60d88a93, 2026-10-14, the confs
+run their max-shifted twins `…eps0000001smxerfbf16`, as Ti's 2170bd9f); `vit-ema-drop-render` accepts the
 five-region layout (1033 = 2 + 5 × 200 + 7 + 24); `TestVariantPredicates` pins `accK "emaaccdp2x128x4…"
 = 2` (the FIRST `x` ends k) and the GELU-form count 106 / 53. JAX: both references accumulate,
 `vit{S,B}ImagenetConfigAccum` = 512 × 2 (`vits-accum-jax-4gpu`, renamed from `…-default-…`, and
@@ -849,7 +853,7 @@ ABSOLUTE, so at σ 0.02 it never truncates and `random.normal · 0.02` (ConvNeXt
 `truncated_normal_initializer(0.09)` does truncate at 2σ and MNv2's `truncated_normal(-2, 2) · 0.09` is exact.
 
 **MNv4 `full` (the paper tier), three corrections, none of which the landed 100-epoch pair breaks (both
-halves carry them alike). ✅ All three landed 2026-10-17, uncommitted: `Codegen.lean` counts the pool
+halves carry them alike). ✅ All three landed 2026-10-17, committed 2026-10-18 as 3333bbd5: `Codegen.lean` counts the pool
 in `tfmBlocks` and emits tf-models' fallback window under `cropFallbackCenter` when
 `evalCropTfEfficientNet` is off (B0's branch unchanged, 64 artifacts byte-identical, the four MNv4
 `full` / `full100` files move); `dropDenom := 26` + guards; `cropFallbackCenter := true` on the `full`

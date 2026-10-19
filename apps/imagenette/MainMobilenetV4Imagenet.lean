@@ -15,17 +15,19 @@ The sixth scale-tier trainer, and the last of the Imagenette nets to get one. Bu
 **Conv-M, on the timm `mobilenetv4_conv_medium` layout** (stride on the post-DW, BN-only
 pre-DW, ReLU stage 0, symmetric stem, head pooled before `conv_head`), the same network as
 jax/MainMobilenetV4Imagenet.lean; `scripts/parity/mnv4_timm_parity.py` ties both to timm on
-shared weights. 9,715,512 parameters. The 100-epoch pair on the timm net:
-**76.68 / 93.14** here (`mnv4-default-4gpu`, runs/2026-09-26-mnv4-verified-bf16-100ep) against
-76.57 / 92.98 on the JAX path (`mnv4-default-jax-4gpu`, runs/2026-09-26-mnv4-jax-bf16-100ep), a
-tie inside one Wilson half-width. The pre-timm reference's 75.48 is a different network.
+shared weights. 9,715,512 parameters. The book's 100-epoch pair is the paper's 256² tier cut to
+100 epochs: **77.35 / 93.53** here (`mnv4-full-e100-4gpu`, runs/2026-10-14-mnv4-full-e100) against
+77.39 / 93.46 on the JAX path (`mnv4-full100-jax-4gpu`, runs/2026-10-14-mnv4-full100-jax), a tie inside
+one Wilson half-width. The retired 224 tier's pair (`mnv4-default-4gpu`, 76.68 / 93.14,
+runs/2026-09-26-mnv4-verified-bf16-100ep, against 76.57 / 92.98 on the JAX path) is history. The
+pre-timm reference's 75.48 is a different network.
 
 ✅ **The 4× renders are tied.** `mnv4-dp-check` (duplicated batch) covers the 4-replica renders,
 and `imagenet-syncbn-check mnv4` (split batch: 4×64 IS 1×256) covers `adamdp64`. Their BatchNorm
 is synchronised, so a 4×B step IS the single-device step at batch 4B. The split-batch gate does
 not yet cover the shipping `emaaccdp8x128wxdowd005bf16`.
 
-The job is `scripts/jobs/mnv4-default-4gpu.conf`: `emaaccdp8x128wxdowd005bf16`, i.e. AdamW 0.004
+The retired 224 tier's job is `scripts/jobs/mnv4-default-4gpu.conf`: `emaaccdp8x128wxdowd005bf16`, i.e. AdamW 0.004
 (`LEAN_MLIR_BASE_LR_U=4000`) at 8 accumulated micro-batches of 4 × 128 = effective 4096, sync-BN
 over 512, wd 0.05 off norm/bias, classifier dropout 0.1, EMA 0.9999, bf16, 100 epochs, RandAugment
 N2 m9 from the shim: the JAX reference's `default` recipe. The optimizer, schedule and
@@ -52,7 +54,7 @@ SHIM_WORKERS=8 \
 
 Run (4 GPUs, the 100-epoch pair's verified side, as overnight chunks):
 ```
-START_AT=00:00 STOP_AT=08:00 setsid nohup scripts/supervise.sh mnv4-default-4gpu >/dev/null 2>&1 &
+START_AT=00:00 STOP_AT=08:00 setsid nohup scripts/supervise.sh mnv4-full-e100-4gpu >/dev/null 2>&1 &
 ```
 -/
 

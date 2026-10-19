@@ -10,9 +10,12 @@ public import LeanMlir.Verified.Train
 The renderer needs nothing ImageNet-specific — `nClasses`, `B`, `replicas`, `opt` and `slug` are
 all parameters of `resnet50TrainStepText`, so the four artifacts are four `#eval`s.
 
-Before quoting anything from this: it is NOT RSB-A3 (no LAMB, no bs2048, no gradient
-accumulation), and R50 has no incumbent render to tie against, so the swap license every other net
-has does not exist here.
+Before quoting anything from this: the optimizer follows the variant, and the book's two Ch. 5
+rows are two of them — `momdp64bf16` (`r50-2018-bf16-4gpu`: the 2018 recipe, SGD + momentum at
+4 × 64 = 256) and `lambaccdp4x128wxclipbcebf16` on the `resnet50in160` renders
+(`r50-a3-wxclip4x128-bf16-4gpu`: RSB-A3, LAMB and BCE at the effective 2048 as four accumulated
+micro-batches of 4 × 128). R50 has no incumbent render to tie against, so the swap license every
+other net has does not exist here.
 
 ```bash
 scripts/gen_shims.sh

@@ -104,7 +104,7 @@ def vitTinyImagenetConfigXavier : TrainConfig :=
 def vitTinyImagenetRecipes : List Recipe := [
   { name := "default", cfg := vitTinyImagenetConfig,
     out := "generated_vit_tiny_imagenet.py",
-    desc := "full DeiT-Ti 300-epoch schedule, bs512, AdamW + full DeiT aug + EMA" },
+    desc := "full DeiT-Ti 300-epoch schedule, bs1024, AdamW + full DeiT aug + EMA" },
   { name := "xavier", cfg := vitTinyImagenetConfigXavier,
     out := "generated_vit_tiny_imagenet_xavier.py",
     desc := "300ep with the emitter's Xavier-uniform init — the A/B arm against `default`" }
