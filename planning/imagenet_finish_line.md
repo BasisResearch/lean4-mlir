@@ -216,6 +216,7 @@ Book:
 - [ ] RSB, `tab:r50_a2_a1_time` (~`:7330`): the step times are 10-05's. The confs now say 476 ms per
       micro-batch (~99 h) verified and 1,440 ms per step JAX.
 - [ ] The TODO at ~`:7362` says "A3's three [repeats] … ran on A3". A3 has no repeated augmentation.
+- [ ] Ch. 9 never says its Imagenette ViT-Tiny trained the tanh GELU. Ch. 8 says it for ConvNeXt (`:10802`, `:11632`), but Ch. 9 only names the exact erf form, for the ImageNet recipe (~`:13855`). Add Ch. 8's sentence to the Imagenette ViT section: tanh on both paths (Definition `ax:geluScalar`); the ImageNet pairs compute the exact form (`ax:geluErfScalar`). This is text only. Imagenette stays tanh by the 2026-10-06 decision (`gelu_erf_and_torchvision_crop.md` §5 a), and its renders are unchanged, so nothing is re-rendered or re-run.
 
 Planning (mark done what is done):
 
