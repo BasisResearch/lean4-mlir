@@ -112,6 +112,17 @@ lean_exe «convnext-b-imagenet» where
 -- VJP oracle — one binary per axiom under test. Trainers live in
 -- tests/vjp_oracle/phase2/ so jax/ isn't crowded with test-only files.
 -- See tests/vjp_oracle/README.md at the repo root.
+-- Verified-path oracle — the JAX reference for the three committed MNIST artifacts the proofs
+-- tie (tests/vjp_oracle/run_verified.sh). Specs in LeanMlir/VjpOracleNets.lean, `VerifiedOracle`.
+lean_exe «verified-oracle-linear» where
+  root := `tests.vjp_oracle.phaseV.MainVerifiedOracleLinear
+
+lean_exe «verified-oracle-mlp» where
+  root := `tests.vjp_oracle.phaseV.MainVerifiedOracleMlp
+
+lean_exe «verified-oracle-cnn» where
+  root := `tests.vjp_oracle.phaseV.MainVerifiedOracleCnn
+
 lean_exe «vjp-oracle-dense» where
   root := `tests.vjp_oracle.phase2.MainVjpOracleDense
 

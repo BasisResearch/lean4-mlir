@@ -11,7 +11,9 @@ lowers the `NetSpec` to MLIR at run time through `MlirCodegen`; entry points in
 tests/vjp_oracle/phase3/) and through the JAX reference (Lean → JAX → XLA,
 jax/tests/vjp_oracle/phase2/) from the same init, and diffs the step-2 loss. Both backwards are
 hand-written: the oracle checks them against each other, not against the verified_mlir/
-artifacts or a theorem. The declarations the docstrings below name are the proof-side
+artifacts or a theorem. The `VerifiedOracle` section at the end is the other oracle: the same JAX
+reference against the committed `verified_mlir/{linear,mlp,cnn}_train_step.mlir` the Lean-proved
+trainers run (tests/vjp_oracle/run_verified.sh). The declarations the docstrings below name are the proof-side
 statements of the same math. The diff is evidence only if both sides train the same `NetSpec`
 under the same config, so both import them from here rather than each carrying a copy.
 
@@ -217,3 +219,65 @@ def uibNet : NetSpec where
   ]
 
 end VjpOracle
+
+/-! ## The verified-path oracle — the proven text against JAX autodiff
+
+`tests/vjp_oracle/run_verified.sh` trains ONE step of the committed, theorem-tied artifacts
+`verified_mlir/{linear,mlp,cnn}_train_step.mlir` through the book's own trainers
+(`apps/mnist/MainMnist*Verified.lean`, with `LEAN_MLIR_INIT_DUMP` / `LEAN_MLIR_MAX_STEPS=1` /
+`LEAN_MLIR_DUMP_PARAMS`) and one step of these JAX nets from that dumped init on the same batch,
+then diffs the two parameter updates tensor for tensor (`tests/vjp_oracle/diff_params.py`). The
+specs below are the three verified nets spelled as `NetSpec`s — the renders bake their SGD
+(`0.00078125 = 0.1/128`, the mean-loss rate 0.1 at batch 128), so the JAX side runs plain SGD at
+0.1 on the mean loss. Unlike the `VjpOracle` cases above, the Lean side here is `pretty` of the
+graphs `LinearFoldB` / `MlpFoldB` / `CnnFoldB` certify, so a pass says the certified text and
+autodiff compute the same step at float32. -/
+namespace VerifiedOracle
+
+/-- SGD at the renders' effective rate, batch 128 (the artifacts' baked batch), no schedule, no
+    decay, no augmentation, one epoch (the runner caps it at one step). -/
+def cfg : TrainConfig where
+  learningRate := 0.1
+  batchSize    := 128
+  epochs       := 1
+  optimizer    := .sgd
+  weightDecay  := 0.0
+  cosineDecay  := false
+  warmupEpochs := 0
+  augment      := false
+
+/-- Chapter 1: `linearVerified` (784 → 10), `verified_mlir/linear_train_step.mlir`. -/
+def linearNet : NetSpec where
+  name   := "verified-oracle-linear"
+  imageH := 28
+  imageW := 28
+  layers := [ .dense 784 10 .identity ]
+
+/-- Chapter 2: `mlpVerified` (784 → 512 → 512 → 10), `verified_mlir/mlp_train_step.mlir`. -/
+def mlpNet : NetSpec where
+  name   := "verified-oracle-mlp"
+  imageH := 28
+  imageW := 28
+  layers := [
+    .dense 784 512 .relu,
+    .dense 512 512 .relu,
+    .dense 512  10 .identity
+  ]
+
+/-- Chapter 3: `cnnVerified` (conv 1→32, conv 32→32, both 3×3 SAME + ReLU, max-pool 2, flatten
+    6272, dense 512 → 512 → 10), `verified_mlir/cnn_train_step.mlir`. -/
+def cnnNet : NetSpec where
+  name   := "verified-oracle-cnn"
+  imageH := 28
+  imageW := 28
+  layers := [
+    .conv2d 1 32 3 .same .relu,
+    .conv2d 32 32 3 .same .relu,
+    .maxPool 2 2,
+    .flatten,
+    .dense 6272 512 .relu,
+    .dense 512 512 .relu,
+    .dense 512 10 .identity
+  ]
+
+end VerifiedOracle

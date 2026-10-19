@@ -105,6 +105,37 @@ All non-ViT cases produce byte-identical init as before the fix — the
 peek-ahead happened to work correctly for conv+BN layouts and was only
 wrong at patchEmbed / transformer boundaries.
 
+## The verified-path oracle (`run_verified.sh`)
+
+Everything above lowers its Lean side at run time through the reference codegen
+(`NetSpec.train` → `MlirCodegen`), which is unverified: the per-axiom cases check two hand-written
+backwards against each other. `run_verified.sh` is the oracle whose Lean side IS the proven text.
+For each of the three MNIST artifacts the proofs tie — `verified_mlir/{linear,mlp,cnn}_train_step.mlir`,
+the graphs `LinearFoldB` / `MlpFoldB` / `CnnFoldB` certify at batch 128 — it
+
+1. runs the book's own trainer (`mnist-{linear,mlp,cnn}-verified`) for ONE step with
+   `LEAN_MLIR_INIT_DUMP` (the init, raw f32 in the render's argument order), `LEAN_MLIR_MAX_EPOCHS=1
+   LEAN_MLIR_MAX_STEPS=1`, and `LEAN_MLIR_DUMP_PARAMS` (the stepped parameters);
+2. runs the same net in JAX (`jax/tests/vjp_oracle/phaseV/`, specs `VerifiedOracle.*` in
+   `LeanMlir/VjpOracleNets.lean`: plain SGD at 0.1 on the mean loss, batch 128, which is the rate the
+   renders bake as `0.00078125`) from that init with `LEAN_MLIR_NO_SHUFFLE=1 LEAN_MLIR_MAX_STEPS=1`,
+   writing its parameters with `LEAN_MLIR_PARAMS_OUT`;
+3. diffs the two UPDATES `θ₁ − θ₀` tensor for tensor (`diff_params.py`): relative ℓ₂ error per
+   tensor, failing on any over tolerance or any identically-zero JAX update.
+
+```bash
+.venv/bin/python3 jax/tests/vjp_oracle/make_tiny_mnist.py /tmp/tinyv 256 512   # ≥ 128 train rows: batch 128 is baked
+lake build mnist-linear-verified mnist-mlp-verified mnist-cnn-verified
+(cd jax && lake build verified-oracle-linear verified-oracle-mlp verified-oracle-cnn)
+LEAN_MLIR_LOWERER=iree IREE_BACKEND=llvm-cpu JAX_PLATFORMS=cpu VJP_ORACLE_DATA=/tmp/tinyv \
+  tests/vjp_oracle/run_verified.sh
+```
+
+Tolerances: 1e-4 for the two dense nets, 1e-3 for the conv net (the pool's argmax tie-breaks on
+zero pixels, as in `conv-pool` above). It runs in `iree.yml`'s `vjp-oracle` job after the fourteen
+per-axiom cases. The parameter layout on both sides is the render's argument order with dense
+`[in, out]` and conv `[oc, ic, k, k]`; `diff_params.py` carries the three nets' shape lists.
+
 ## Adding a case
 
 1. Add the NetSpec to `LeanMlir/VjpOracleNets.lean` — both sides import it, with the shared

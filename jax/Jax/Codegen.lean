@@ -3897,7 +3897,12 @@ private def emitMain (spec : NetSpec) (cfg : TrainConfig) (ds : DatasetKind) (da
   else "") ++
   "        epoch_loss = 0.0\n" ++
   "        n_batches = 0\n" ++
+  -- LEAN_MLIR_MAX_STEPS caps batches per epoch, the knob the verified Lean trainer has under the
+  -- same name; the verified-path VJP oracle runs both sides for exactly one step.
+  "        _max_steps = int(os.environ.get('LEAN_MLIR_MAX_STEPS', '0'))\n" ++
   "        for i in range(0, len(train_images) - BATCH_SIZE + 1, BATCH_SIZE):\n" ++
+  "            if _max_steps and n_batches >= _max_steps:\n" ++
+  "                break\n" ++
   (if cfg.augment && spec.imageH > 32 then
   "            batch = augment_batch(shuf_images[i:i+BATCH_SIZE].copy(), rng)\n" ++
   "            x = jax.device_put(batch, data_sharding)\n"
@@ -3930,6 +3935,12 @@ private def emitMain (spec : NetSpec) (cfg : TrainConfig) (ds : DatasetKind) (da
   "              \" top5: \" + str(round(acc5, 4)) +\n" ++
   "              \" Loss: \" + str(round(test_loss, 4)) +\n" ++
   "              \"  [\" + str(round(elapsed, 1)) + \"s]\")\n\n" ++
+  -- LEAN_MLIR_PARAMS_OUT: the final parameters as raw f32 in the phase-3 layout (`params_to_file`),
+  -- the save side the ImageNet trainer has; the verified-path VJP oracle reads it after one step.
+  "    _params_out = os.environ.get('LEAN_MLIR_PARAMS_OUT')\n" ++
+  "    if _params_out:\n" ++
+  "        params_to_file(params, f'{_params_out}.bin')\n" ++
+  "        print(\"params -> \" + _params_out + \".bin\")\n" ++
   "    print(\"\")\n" ++
   "    print(\"Done. Total time: \" + str(round(time.time() - t0, 1)) + \"s\")\n" ++
   "    if _trace_f: _trace_f.close()\n"

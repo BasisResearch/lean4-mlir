@@ -1404,6 +1404,15 @@ def VerifiedNet.train (net : VerifiedNet) (cfg : VerifiedConfig) (dataDir : Stri
         IO.println s!"  ▸ PERTURBED init: theta += r*u with ||r*u||_2 = {r}"
         F32.perturbUnit params0 0 net.nParams.toUSize r 12345
     | none   => pure params0
+  -- LEAN_MLIR_INIT_DUMP: write the initial parameters (post-perturb) as raw f32 bytes, in the
+  -- render's argument order. The verified-path VJP oracle (tests/vjp_oracle/run_verified.sh)
+  -- hands this file to the JAX reference as its init, so both trainers take their first step from
+  -- the same weights on the same batch and the step can be diffed parameter for parameter.
+  match ← IO.getEnv "LEAN_MLIR_INIT_DUMP" with
+  | some path => do
+      IO.FS.writeBinFile path params
+      IO.println s!"  init-dump  : {path} ({params.size} bytes)"
+  | none => pure ()
   -- LEAN_MLIR_MAX_EPOCHS caps the epoch count (opt-in; absent → full cfg.epochs).
   -- Used by `lake run benchmark` to probe steady-state per-epoch wall-clock with
   -- only a few epochs; harmless otherwise (timing per epoch is LR-independent).
@@ -3248,7 +3257,11 @@ def VerifiedNet.trainLinear (net : VerifiedNet) (cfg : VerifiedConfig) (dataDir 
   let evalName := match net.data with | .imagenette => "val" | _ => "test"
   IO.println s!"  train {nTrain}, {evalName} {nEval}; dense {d0}->{d1}, bs {bs}, SGD"
   (← IO.getStdout).flush
-  let nb  := nTrain / bs
+  -- LEAN_MLIR_MAX_STEPS caps batches per epoch, as in `train` (the verified-path oracle runs one).
+  let nbFull := nTrain / bs
+  let nb := match (← IO.getEnv "LEAN_MLIR_MAX_STEPS").bind (·.toNat?) with
+    | some n => min n nbFull
+    | none   => nbFull
   let nbt := (nEval + bs - 1) / bs   -- ceil: the last partial batch is zero-padded, not dropped
   let shapes := net.shapesBA          -- packed [W0|b0] layout for the verified forward
   let xShape := net.xShape bs
@@ -3273,6 +3286,12 @@ def VerifiedNet.trainLinear (net : VerifiedNet) (cfg : VerifiedConfig) (dataDir 
   -- The packed `[W0|b0]` the step returns, carried so the epoch boundary has ONE
   -- thing to make authoritative — the role `pbuf` plays in `trainAdamSched`.
   let mut packed := W0 ++ b0
+  -- LEAN_MLIR_INIT_DUMP, as in `train`: the verified-path oracle's shared init.
+  match ← IO.getEnv "LEAN_MLIR_INIT_DUMP" with
+  | some path => do
+      IO.FS.writeBinFile path packed
+      IO.println s!"  init-dump  : {path} ({packed.size} bytes)"
+  | none => pure ()
   -- LEAN_MLIR_MAX_EPOCHS cap + per-epoch (Nms) timing, matching `train` (used by
   -- `lake run benchmark`); opt-in, full cfg.epochs otherwise.
   let nEpochs := match (← IO.getEnv "LEAN_MLIR_MAX_EPOCHS").bind (·.toNat?) with

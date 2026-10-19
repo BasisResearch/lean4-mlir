@@ -49,6 +49,12 @@ on:
       - 'ffi/lowerer.c'
       - 'ffi/lowerer.h'
       - 'LeanMlir/VjpOracleNets.lean'
+      # The verified-path oracle: the book's MNIST trainers, their artifacts, and the loop they run.
+      - 'LeanMlir/Verified/**'
+      - 'apps/mnist/**'
+      - 'verified_mlir/linear_train_step.mlir'
+      - 'verified_mlir/mlp_train_step.mlir'
+      - 'verified_mlir/cnn_train_step.mlir'
       - 'LeanMlir/MlirCodegen.lean'
       - 'LeanMlir/Train.lean'
       - 'LeanMlir/IreeRuntime.lean'
@@ -362,6 +368,10 @@ jobs:
           oracles() { grep -oP '^lean_exe\s+«?\K[^»\s]+' lakefile.lean | sed 's/»$//' | grep '^vjp-oracle-' | tr '\n' ' '; }
           lake build $(oracles)
           (cd jax && lake build $(oracles))
+          # The verified-path oracle: the book's three MNIST trainers (the committed artifacts) and
+          # their JAX references.
+          lake build mnist-linear-verified mnist-mlp-verified mnist-cnn-verified
+          (cd jax && lake build verified-oracle-linear verified-oracle-mlp verified-oracle-cnn)
 
       - name: VJP oracle (14 layer families)
         run: |
@@ -386,6 +396,33 @@ jobs:
           } >> $GITHUB_STEP_SUMMARY
           n=$(grep -c '^PASS' /tmp/oracle.log)
           [ "$n" = 14 ] || { echo "::error::$n of 14 oracle cases passed"; rc=1; }
+          exit $rc
+
+      - name: Verified-path oracle (the proven text vs JAX, 3 nets)
+        run: |
+          set -o pipefail
+          # Batch 128 is baked into the artifacts, so the synthetic set needs ≥ 128 train rows.
+          .venv/bin/python3 jax/tests/vjp_oracle/make_tiny_mnist.py /tmp/tinyv 256 512
+          export LEAN_MLIR_LOWERER=iree IREE_BACKEND=llvm-cpu JAX_PLATFORMS=cpu VJP_ORACLE_DATA=/tmp/tinyv
+          rc=0
+          tests/vjp_oracle/run_verified.sh 2>&1 | tee /tmp/oracle_verified.log || rc=1
+          {
+            echo ""
+            echo "## Verified-path oracle"
+            echo ""
+            echo "One SGD step of the committed, theorem-tied \`verified_mlir/{linear,mlp,cnn}_train_step.mlir\` through the book's trainers (IREE, CPU) against one step of the same net in JAX (autodiff) from the same init on the same batch; the two parameter UPDATES are compared tensor for tensor. Synthetic MNIST (256 / 512)."
+            echo ""
+            echo "| | net | worst rel Δ | tol |"
+            echo "|---|---|---|---|"
+            sed -nE 's/^(PASS|FAIL) +([a-z]+) +worst rel Δ=([^ ]+) +\(tol=([^)]+)\).*/\1 \2 \3 \4/p' /tmp/oracle_verified.log |
+              while read v c d t; do
+                [ "$v" = PASS ] && m=✅ || m=❌
+                echo "| $m | \`$c\` | $d | $t |"
+              done
+            grep -E '^FAIL +[a-z]+ +(verified|JAX) side' /tmp/oracle_verified.log | sed -E 's/^FAIL +([a-z]+) +(.*)/| ❌ | `\1` | \2 | |/' || true
+          } >> $GITHUB_STEP_SUMMARY
+          n=$(grep -c '^PASS' /tmp/oracle_verified.log)
+          [ "$n" = 3 ] || { echo "::error::$n of 3 verified-path oracle nets passed"; rc=1; }
           exit $rc
 
       - name: Control (mismatched traces must go red)
