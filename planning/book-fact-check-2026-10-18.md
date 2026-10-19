@@ -4792,6 +4792,14 @@ Done, all gates green (`book_listings.py --check`, `book_prose_idents.py`, `book
   (`tests/vjp_oracle/run_verified.sh`, CI `iree.yml`), numbers pending CI.
 - §4 gate gaps: listings, prose `\texttt` names and counts are in `blueprint.yml`.
 
-Open: theme 4 (pdiv at a kink), theme 9 (visible TODO markers), theme 10 (ℝ-scoping sentences
+- Theme 4 (pdiv at a kink): the book now says what `pdiv` is at a non-smooth point — `fderiv`'s
+  zero map, so the pdiv-derived ReLU / max-pool backward is the zero vector there — and that the
+  codegen emits the framework convention instead, agreeing off the kink by theorem
+  (`relu_codegen_matches_canonical`, `maxPool2_codegen_matches_canonical`). "Declines to return a
+  value", "takes the standard convention", "permitted to fail", "measure-zero" (→ "null for generic
+  weights"), "discharged by Chapter se", "same convention as ReLU's kink", "depthwise … rfl" and the
+  "guarded subgradient" title/sketch are gone. Uncommitted.
+
+Open: theme 9 (visible TODO markers), theme 10 (ℝ-scoping sentences
 beyond Ch 1), §2 overclaims, §3 single fixes, the budget-table Steps column, other historical
 listing labels.

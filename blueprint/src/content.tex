@@ -557,45 +557,54 @@ audited.
 
 ReLU is $\max(0, x)$, which has no derivative at $x=0$. Absolute value
 flunks the same test for the same reason. maxPool over a window
-has no derivative when two entries tie. Mathlib's \(\fderiv\)
-correctly declines to return a value at these points, but ML
-frameworks have to return something, so they all pick a
-convention. PyTorch and JAX both use $0$ as ReLU's subgradient at
-the kink and break maxPool ties by the lowest index.
+has no derivative when two entries tie. Mathlib's \(\fderiv\) is a
+total function, so at such a point it returns a value anyway: its
+default, the zero map. ML frameworks also have to return something,
+and they pick a different convention. PyTorch and JAX both use $0$ as
+ReLU's slope at the corner, which keeps the gradient flowing on every
+other coordinate, and they break maxPool ties by the lowest index.
 Those choices aren't theorems. They're conventions that make
 backprop computable everywhere.
 
-We make those conventions formal. For a non-smooth $f$, we don't
-try to prove a closed-form \(\HasVJP\) from \(\fderiv\), which would
-fail at the singular set. Instead we define the \(\HasVJP\) directly,
-with backward function
+Both conventions appear in this book, and it matters which is which.
+\(\pdiv\) is \(\fderiv\) by definition, everywhere, so for a
+non-smooth $f$ we don't try to prove a closed-form \(\HasVJP\) from it,
+which would fail at the singular set. Instead we define the
+\(\HasVJP\) directly, with backward function
 $\mathrm{backward}(x, dy)_i := \sum_j \pdiv\, f\, x\, i\, j \cdot dy_j$.
 The \texttt{correct} field then holds by \texttt{rfl}, because by
-definition that is exactly what \texttt{backward} computes. Wherever
-$f$ is smooth, \(\pdiv\) agrees with \(\fderiv\), and that agreement is
-proved. At the non-smooth points \(\pdiv\) takes the standard convention
-by definition. The later chapters call this the \emph{pdiv-derived
-backward}: ReLU, maxPool and the depthwise input VJP each get a
-\(\HasVJP\) whose backward is built from \(\pdiv\) and whose
-\texttt{correct} is \texttt{rfl}.
+definition that is exactly what \texttt{backward} computes. The later
+chapters call this the \emph{pdiv-derived backward}: ReLU, maxPool and
+the MLP composition each get a \(\HasVJP\) built this way. Where $f$ is
+differentiable it is the true Jacobian. Where it is not, every entry is
+$0$, so at a point with even one coordinate exactly zero the
+pdiv-derived ReLU backward is the zero vector, in every coordinate, and
+at a point with even one tied pooling window the pdiv-derived maxPool
+backward is zero everywhere.
 
-The codegen then substitutes the same subgradient and argmax convention
-every framework already uses. The benefit isn't a different numerical
-result. It's a paper trail that says we know exactly which choice we made
-at each non-smooth point, and the typechecker has verified the algebra
-around it.
+The codegen emits the framework convention instead: the mask $[x > 0]$
+and the lowest-index tie-break. Off the singular set the two are the
+same number, and that is a theorem
+(\texttt{relu\_codegen\_matches\_canonical},
+\texttt{maxPool2\_codegen\_matches\_canonical}). On it they differ, and
+that difference is the one place where the proven backward and the
+emitted text part company. The benefit of writing it this way is a paper
+trail: every theorem that reaches an emitted ReLU or max-pool carries a
+smooth-point hypothesis naming that set, so the typechecker has verified
+the algebra everywhere the two agree and has marked exactly where it has
+not.
 
 These conventions are
 invoked by ReLU, by maxPool and by ReLU6, which is to say by
 Chapters~1--6, and a whole-network theorem in those chapters names an input
-and assumes every activation stayed off its kink there. From EfficientNet
+and assumes every activation stayed off its corner there. From EfficientNet
 on, every activation in Part~1 is smooth --- swish, the sigmoid of a
 squeeze-and-excitation gate, GELU, softmax --- and there is no max-pool, so
-that smooth-point hypothesis is discharged outright: the statements
-quantify over every input, as Chapter~\ref{chap:se}'s fold is the first to
-do. \(\pdiv\) stays on as the notation the Jacobian lemmas are written in,
-and from there on it agrees with \(\fderiv\) everywhere; the convention at
-the kink is never consulted again.
+there is no smooth-point hypothesis to carry: the statements quantify over
+every input, as Chapter~\ref{chap:se}'s fold is the first to do.
+\(\pdiv\) stays on as the notation the Jacobian lemmas are written in,
+and from there on it is the true Jacobian everywhere; \(\fderiv\)'s
+default at a corner is never consulted again.
 
 \section*{Why VJPs, not Jacobians?}
 
@@ -2445,9 +2454,11 @@ diagonal entry is \(1\) where \(x_i > 0\) and \(0\) where
 \(x_i < 0\). At \(x_i = 0\) the function is not differentiable in
 the classical sense, because the slope jumps from \(0\) to \(1\). For
 our purposes this matters less than you might fear. Theorem
-\ref{ax:pdiv_relu} states the Jacobian at smooth points, and the
-codegen substitutes the standard subgradient convention at the
-kink and we move on. The kink is the only place in the chapter
+\ref{ax:pdiv_relu} states the Jacobian at smooth points. At the corner
+\(\fderiv\) returns the zero map and the codegen emits the framework's
+\([x > 0]\) mask instead, so the two part company there and agree
+everywhere else, and every theorem that reaches the emitted mask says so
+with a smooth-point hypothesis. The corner is the only place in the chapter
 where ``differentiable'' becomes slightly subtle.
 
 \prosesection{Composition}
@@ -2481,7 +2492,7 @@ Figure~\ref{fig:depgraph_mlp} is the dependency graph of this section.
 \label{fig:depgraph_mlp}
 \end{figure}
 
-\begin{theorem}[ReLU Jacobian (guarded subgradient)]
+\begin{theorem}[ReLU Jacobian at smooth points]
   \label{ax:pdiv_relu}
   \lean{Proofs.pdiv_relu}
   \leanok
@@ -2508,12 +2519,14 @@ that map's derivative and transport it.}
   \item Define \(\Lambda_x := \Pi_k\,
     (\text{if } x_k > 0 \text{ then } \mathrm{proj}_k \text{ else } 0)\),
     the diagonal indicator CLM (\texttt{reluLinearPart}).
-  \item Let \(r := \min_k |x_k|\). Then \(r > 0\), and \(\mathrm{ReLU}\)
-    agrees with \(\Lambda_x\) on the ball \(B(x, r)\).
-    \pf{\(r > 0\) by assumption 1. For \(y \in B(x, r)\) and every
-    \(k\): \(|y_k - x_k| \le \lVert y - x \rVert < r \le |x_k|\), so
-    \(y_k\) has the sign of \(x_k\); both functions then return
-    \(y_k\) where \(x_k > 0\) and \(0\) where \(x_k < 0\).}
+  \item \(\mathrm{ReLU}\) agrees with \(\Lambda_x\) on a neighbourhood
+    of \(x\).
+    \pf{Each coordinate's sign persists near \(x\): \(x_k \neq 0\) by
+    assumption 1, so \(y_k\) has the sign of \(x_k\) for all \(y\) close
+    enough to \(x\), and finitely many such ``eventually'' statements
+    hold together (\texttt{Filter.eventually\_all}). On that neighbourhood
+    both functions return \(y_k\) where \(x_k > 0\) and \(0\) where
+    \(x_k < 0\).}
   \item \(\mathrm{ReLU}\) has Fréchet derivative \(\Lambda_x\) at \(x\).
     \pf{A continuous linear map is its own derivative; by 2 the two
     functions agree on a neighborhood of \(x\), and
@@ -2532,9 +2545,14 @@ that map's derivative and transport it.}
   \lean{Proofs.reluHasVJP}
   \leanok
   \uses{ax:pdiv, def:hasvjp}
-  The ReLU's VJP record, with the \(\pdiv\)-derived backward: off the kink
-  the cotangent is masked by \([x_j > 0]\); at the kink it is zero, as the
-  emitted mask \([x > 0]\) is.
+  The ReLU's VJP record, with the \(\pdiv\)-derived backward. At a point
+  with no zero coordinate the cotangent is masked by \([x_j > 0]\)
+  (Theorem~\ref{ax:pdiv_relu}), which is what the emitted mask computes
+  (\texttt{relu\_codegen\_matches\_canonical}). At a point with any zero
+  coordinate ReLU is not differentiable, \(\fderiv\) is the zero map, and
+  the backward is the zero vector in every coordinate, where the emitted
+  mask still passes \(dy\) on the positive ones. The record and the text
+  agree exactly off that set.
 \end{definition}
 
 \begin{definition}[MLP composition VJP]
@@ -2614,7 +2632,7 @@ see \leandocref{Proofs.MlpFold.mlp\_train\_step\_tied\_certified}.
       thm:hasGradAt_comp}
   \Assume{}
   \begin{enumerate}
-    \item both hidden pre-activations are off the ReLU kink
+    \item both hidden pre-activations are off the ReLU corner
           \hfill[\texttt{h\(_0\)}, \texttt{h\(_1\)}]
     \item \(L\) is any loss of the logits, with gradient \(g\) there
           \hfill[\texttt{hL}]
@@ -2784,7 +2802,7 @@ is still a layer: it holds a position in the list because the
 render needs it in order, not because the optimizer does.
 
 The tie back to the proofs has the same shape as before, now at a point,
-because ReLU has a kink. In \texttt{LeanMlir/Proofs/SpecVJP.lean}:
+because ReLU has a corner. In \texttt{LeanMlir/Proofs/SpecVJP.lean}:
 
 \begin{verbatim}
 noncomputable def mlpVerifiedHasVJPAt (W0 b0 W1 b1 W2 b2) (x)
@@ -2794,7 +2812,7 @@ noncomputable def mlpVerifiedHasVJPAt (W0 b0 W1 b1 W2 b2) (x)
 \end{verbatim}
 
 Again the backward --- the five per-layer backwards composed, at an input
-where neither ReLU sits on its kink --- is proved for the denotation of the
+where neither ReLU sits on its corner --- is proved for the denotation of the
 spec's own \texttt{layers} field, and that is the field the trainer reads
 to build its graph. The whole program is short enough to print:
 
@@ -3020,9 +3038,10 @@ at two widths.
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
   \item \textbf{ReLU is a smooth-point bridge.} Where a pre-activation is
-    exactly zero ReLU has no derivative. The emitted \texttt{compare GT 0}
-    sends that case to $0$, and the bridge is permitted to fail on that
-    measure-zero set.
+    exactly zero ReLU has no derivative: the pdiv-derived backward is the
+    zero vector there, while the emitted \texttt{compare GT 0} still
+    passes \(dy\) on the positive coordinates, so the bridge is stated
+    only off that set. For generic weights the set is null.
   \item \textbf{Trusted surface.} The printer's per-token text and the
     lowerer's translation are tested rather than proved. Rounding
     $\approx \mathbb{R}$ is not on this list: it is a theorem layer
@@ -3035,8 +3054,8 @@ at two widths.
 
 One new operation, and one new habit. The operation is ReLU, whose
 derivative does not exist at zero; its \(\HasVJP\) is built directly from
-\(\pdiv\) under the convention every framework uses, zero at the kink, and
-its \texttt{correct} field holds by definition. The habit is applying the
+\(\pdiv\), which is the mask \([x > 0]\) off the corner and \(\fderiv\)'s
+zero map on it, and its \texttt{correct} field holds by definition. The habit is applying the
 chain rule more than once: the whole MLP's backward is the dense backward
 and the ReLU backward strung together in reverse, and
 Theorem~\ref{thm:mlp_fold} says the six updates the trainer emits are
@@ -3045,15 +3064,15 @@ Theorem~\ref{thm:mlp_sgd_descends} the descent on the first layer at one
 example. Two witnesses, one hand-built and one at the trained weights,
 show the gradient is not the zero function.
 
-The price of the kink is a hypothesis. The bridge from the proof to the
+The price of the corner is a hypothesis. The bridge from the proof to the
 emitted \texttt{compare GT 0} holds where no pre-activation is exactly zero,
-a set of measure zero, and the whole-network statement names the input it
-holds at. That hypothesis rides along until Chapter~\ref{chap:se} discharges
-it. The limit of this chapter's network is what it throws away: the image
+a null set for generic weights, and the whole-network statement names the
+input it holds at. That hypothesis rides along until the activations turn
+smooth from Chapter~\ref{chap:se} on, where there is none to carry. The limit of this chapter's network is what it throws away: the image
 was flattened to a vector, so two pixels that were neighbours on the page
 are unrelated coordinates to a dense layer. The next chapter keeps the
-structure, and pays for it with a second convention, one that is not
-measure-zero.
+structure, and pays for it with a second convention, one whose excluded
+set is not null.
 
 \chapter{MNIST: 2D CNN}
 \label{chap:cnn}
@@ -3285,9 +3304,11 @@ with respect to that one input and \(0\) with respect to the
 other three. ``Jiggle the max'' moves the output, and ``jiggle a
 non-max'' does nothing. So the backward of max pool routes the
 upstream gradient back to whichever input was the winner in each
-window, and zeros out the rest. At ties the codegen breaks
-deterministically (same convention as ReLU's kink). Definition
-\ref{ax:maxPool2HasVJP3} states this formally.
+window, and zeros out the rest. At a tie the emitted
+\texttt{select\_and\_scatter} sends the whole cotangent to the first
+maximal cell, which is a different convention from ReLU's mask, and the
+pdiv-derived backward is \(\fderiv\)'s zero map there, as at ReLU's corner.
+Definition \ref{ax:maxPool2HasVJP3} states this formally.
 
 \prosesection{The rest of the network is Chapter 2}
 
@@ -3625,7 +3646,7 @@ see \leandocref{Proofs.CnnFold.cnn\_train\_step\_tied\_certified}.
   \Assume{}
   \begin{enumerate}
     \item odd kernels \hfill[\texttt{hkH}, \texttt{hkW}]
-    \item at \(x\), every ReLU is off its kink, and every pooling window is
+    \item at \(x\), every ReLU is off its corner, and every pooling window is
           entirely \(\le 0\) before its ReLU or has its maximum strictly above
           every other cell except its twins: cells equal at every value of
           both convolutions' weights, which two cells with identical
@@ -4134,12 +4155,12 @@ does not change.
     zero-extended to the next odd size (\texttt{padOdd}), which is the
     asymmetric pad the emitter writes there.
   \item \textbf{ReLU is a smooth-point bridge} (no pre-activation exactly
-    zero), failing only on that measure-zero set.
+    zero), stated only off that set, which is null for generic weights.
   \item \textbf{Max-pool is a smooth-point bridge too.} It holds where
     every $2\times2$ window attains its maximum at one cell
     (\texttt{MaxPool2Smooth}); the other cells may tie with each other. An
     all-zero post-ReLU window fails it, so for pooling the excluded set is
-    not measure-zero the way ReLU's kink is, and the whole-net theorem
+    not null the way ReLU's corner is, and the whole-net theorem
     states it as a hypothesis (\texttt{h\_mp} in
     Theorem~\ref{thm:mnistCnnNoBnHasVJPAt}).
   \item \textbf{Shape.} The listing is the trained net; the bridge
@@ -4156,7 +4177,7 @@ flipped, which is what the emitted \texttt{transpose} and \texttt{reverse}
 compute. The max-pool is the
 second convention after ReLU's, argmax ties broken by the lowest index, and
 its bridge holds where every window has one maximum. An all-zero window
-after ReLU fails that, so the excluded set is not measure-zero, and
+after ReLU fails that, so the excluded set is not null, and
 Theorem~\ref{thm:mnistCnnNoBnHasVJPAt} carries it as a stated hypothesis
 rather than hiding it. Theorems~\ref{thm:cnn_fold}
 and~\ref{thm:cnn_loss_grad} tie the four convolution updates and every
@@ -4761,7 +4782,7 @@ instead of one; see
   \Assume{}
   \begin{enumerate}
     \item odd kernels \hfill[\texttt{hkH}, \texttt{hkW}]
-    \item at \(x\), every ReLU is off its kink, and at each of the two pools
+    \item at \(x\), every ReLU is off its corner, and at each of the two pools
           every window is entirely \(\le 0\) before its ReLU or has its
           maximum strictly above every other cell except its twins, cells
           equal at every weight upstream of that pool \hfill[\texttt{hx}]
@@ -4881,7 +4902,7 @@ The fused ties' chain, node for node, with the update peeled off; see
   \begin{enumerate}
     \item odd kernels \hfill[\texttt{hkH}, \texttt{hkW}]
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{hq}]
-    \item at \(x\), every ReLU is off its kink, and at each of the four pools
+    \item at \(x\), every ReLU is off its corner, and at each of the four pools
           every window is entirely \(\le 0\) before its ReLU or has its
           maximum strictly above every other cell except its twins, cells
           equal at every weight upstream of that pool \hfill[\texttt{hx}]
@@ -5881,7 +5902,7 @@ derivative in its parameter. (v) The backward is not the zero map, at one
 fixed weight setting --- a seal. (vi) The data-parallel render's mean over
 replicas is one device's step on the global batch. Statements (i), (ii) and
 (iv) take the smooth-point hypotheses --- \(\varepsilon > 0\) at every
-BatchNorm, the batch's activations off every ReLU kink and every pool tie;
+BatchNorm, the batch's activations off every ReLU corner and every pool tie;
 (iii) and (vi) are identities of the emitted text and take none; (v) is at
 fixed weights.
 
@@ -5954,7 +5975,7 @@ As for ResNet-34, with the bottleneck in place of the basic block; see
       thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
-    \item \(\varepsilon_s > 0\), the stem ReLU off its kink and the stem pool's
+    \item \(\varepsilon_s > 0\), the stem ReLU off its corner and the stem pool's
           per-example condition \hfill[\texttt{h\(\varepsilon\)s}, \texttt{h\_stem}, \texttt{h\_pool}]
     \item sixteen block maps \(b_1, \dots, b_{16}\), each with a VJP and
           differentiable at its running activation
@@ -6028,7 +6049,7 @@ certified block backwards; see
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{R34PosB}]
-    \item at the batch's activations, every ReLU is off its kink and every
+    \item at the batch's activations, every ReLU is off its corner and every
           stem-pool window is entirely zero or has one maximal cell, up to
           twins --- cells that read identical input patches
           \hfill[\texttt{R34LossSmoothAtB}]
@@ -6840,7 +6861,7 @@ epoch by epoch.
 \label{fig:r34_jax_curve}
 \end{figure}
 
-\noindent The kink near epoch~5 is the end of
+\noindent The bend near epoch~5 is the end of
 warmup; the steady late climb is the cosine anneal.
 
 \prosesection{The verified path (PJRT)}
@@ -7735,7 +7756,7 @@ The full-depth fold is pointwise. It holds at a given input, and
 it carries one side condition per activation site, at every example of
 the batch, saying that the value entering relu6 is neither $0$ nor $6$.
 There are thirty-five such sites per example,
-and the reason for every one of them is that relu6 has two kinks. The
+and the reason for every one of them is that relu6 has two corners. The
 network is differentiable away from them and is not differentiable at
 them, so a statement quantified over all inputs would be false.
 Chapter~\ref{chap:se} does fold EfficientNet-B0 over all inputs
@@ -8020,7 +8041,7 @@ MobileNetV4-Conv-M take each of the six rungs in turn.
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{MNV2PosB}]
-    \item at the batch's activations, every ReLU6 is off both its kinks ---
+    \item at the batch's activations, every ReLU6 is off both its corners ---
           an expand clause and a depthwise clause per block, none after the
           residual add \hfill[\texttt{MNV2SmoothAtB}]
   \end{enumerate}
@@ -8052,7 +8073,7 @@ activation; see \leandocref{Proofs.mobilenetv2ForwardBFullHasVJPAt\_correct}.
       thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
-    \item at the activation its stage sees, every ReLU is off its kink; the
+    \item at the activation its stage sees, every ReLU is off its corner; the
           BatchNorm positivities are fields of the weights
           \hfill[\texttt{Mnv4SmoothAt}]
   \end{enumerate}
@@ -8086,7 +8107,7 @@ graph tie op by op; see
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the stem's and the head's BatchNorm, and the
-          stem's and head's ReLU6 off their kinks
+          stem's and head's ReLU6 off their corners
           \hfill[\texttt{h\(\varepsilon\)s}, \texttt{h\(\varepsilon\)h}, \texttt{h\_stem}, \texttt{h\_head}]
     \item seventeen block maps \(b_1, \dots, b_{17}\), each with a VJP and
           differentiable at its running activation
@@ -8125,7 +8146,7 @@ stem's endpoint ties, and each block's backward in its slot; see
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the stem's and the two head BatchNorms, and
-          the stem's and both head ReLUs off their kinks
+          the stem's and both head ReLUs off their corners
           \hfill[\texttt{h\(\varepsilon\)s}, \texttt{h\(\varepsilon\)h1}, \texttt{h\(\varepsilon\)h}, \texttt{h\_stem}, \texttt{h\_h1}, \texttt{h\_h2}]
     \item the fused stage and twenty-one block maps, each with a VJP and
           differentiable at its running activation
@@ -8196,7 +8217,7 @@ of the four block kinds, the stem and the head; see
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{MNV2PosB}]
-    \item at the batch's activations, every ReLU6 site is off both its kinks
+    \item at the batch's activations, every ReLU6 site is off both its corners
           \hfill[\texttt{MNV2SmoothAtB}]
     \item \(L\) is any loss of the logits, with gradient \(g\) there
           \hfill[\texttt{hL}]
@@ -8259,7 +8280,7 @@ of the body, skip and fused stages and the head; see
       thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
-    \item at the activation its stage sees, every ReLU is off its kink; the
+    \item at the activation its stage sees, every ReLU is off its corner; the
           BatchNorm positivities are fields of the weights
           \hfill[\texttt{Mnv4SmoothAt}]
     \item \(L\) is any loss of the logits, with gradient \(g\) there
@@ -8665,7 +8686,8 @@ seventeen blocks.
     all $3\times3$.
   \item \textbf{relu6 is a smooth-point bridge.} MobileNetV2's clamp to
     $[0,6]$ has no derivative where a pre-activation sits exactly at $0$ or
-    $6$, and the bridge may fail only on that measure-zero set.
+    $6$, and the bridge is stated only off that set, null for generic
+    weights.
   \item \textbf{Shape.} The listing is one block of the trained net; the
     theorem is stated at every channel count and odd kernel size.
 \end{itemize}
@@ -9607,7 +9629,7 @@ and nothing else --- so every operation in the graph that just trained
 carries a proved backward, and their composition into the whole network
 carries one too. What buys that is swish. It is smooth, so the statement
 quantifies over all inputs, where Chapter~\ref{chap:depthwise}'s fold had to name a point and assume
-every relu6 activation stayed off the kink. Depth was never the obstacle, the activation was --- and every
+every relu6 activation stayed off the corner. Depth was never the obstacle, the activation was --- and every
 network after this one is smooth.
 
 The three compile lines and the \texttt{running-stats BN} line are every
@@ -9790,7 +9812,7 @@ gradient and the data-parallel tie; no seal.
   denote the masked forward at every mask, at training and at inference
   BatchNorm, in f32 as the committed \texttt{efficientnetin\_drop\_fwd} and
   \texttt{efficientnetin\_dropdo\_fwd} are. There is no smooth-point
-  hypothesis: swish and the SE gate have no kink.
+  hypothesis: swish and the SE gate have no corner.
 \end{theorem}
 
 \begin{proof}
@@ -10288,7 +10310,7 @@ sixteen blocks.
 
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
-  \item \textbf{The SE fan-in carries no kink condition.} Swish and
+  \item \textbf{The SE fan-in carries no corner condition.} Swish and
     sigmoid are smooth everywhere, and the only smooth-point caveats in an
     MBConv come from its BatchNorms ($\epsilon > 0$).
   \item \textbf{Shape.} The listing is one block of the trained net; the
@@ -10857,7 +10879,7 @@ multiplicative fan-in that completes the three composition rules. Swish and
 the sigmoid inside the gate are smooth, and that is what
 Theorem~\ref{thm:efficientnetFullHasVJP} buys: the full B0, sixteen MBConv
 blocks, with its backward proved at every input, where every network before
-it had to name a point and assume the activations stayed off their kinks.
+it had to name a point and assume the activations stayed off their corners.
 The step is tied (Theorem~\ref{thm:efficientnet_step_tie}) and the
 data-parallel twin holds.
 
@@ -11023,7 +11045,7 @@ head through \texttt{vjpComp}, with
 \texttt{convNextForwardTChHasVJP\_correct} carrying it back to the
 forward the spec denotes. It assumes 23 positive LayerNorm epsilons and
 nothing else. Unlike Chapter~\ref{chap:depthwise}, whose full-depth fold is
-pointwise because relu6's kink makes a statement over all inputs false,
+pointwise because relu6's corner makes a statement over all inputs false,
 this one is a single global \texttt{HasVJP} over the entire network, and it
 can be because GELU is smooth everywhere. So for ConvNeXt the accurate sentence is the strong one:
 every operation in the graph that just trained carries a proved
@@ -11050,8 +11072,8 @@ lifts it to the channel axis of a feature map.
 \textbf{GELU} (Hendrycks \& Gimpel 2016,
 \href{https://arxiv.org/abs/1606.08415}{arXiv:1606.08415}). A smooth
 approximation of ReLU: \(\mathrm{GELU}(x) = x \cdot \Phi(x)\), where
-\(\Phi\) is the standard-normal CDF. ReLU has a kink at zero, which
-forces the codegen to substitute a subgradient convention
+\(\Phi\) is the standard-normal CDF. ReLU has a corner at zero, where the
+proven backward and the emitted mask part company
 (Chapter~\ref{chap:mlp}). GELU is differentiable everywhere, with a
 soft-gate behavior near zero that empirically helps transformers
 (and, it turns out, modernized CNNs). Diagonal activation Jacobian,
@@ -11803,7 +11825,7 @@ file, declared in the file's own header comment.
 that its text does is trusted, as the printer's text is. The GELU,
 LayerNorm, and convolution backwards around the multiply reuse their
 bridges. Every one holds at every input (the only hypothesis anywhere is
-LayerNorm's $\epsilon > 0$): ConvNeXt has no kinked operator, and neither
+LayerNorm's $\epsilon > 0$): ConvNeXt has no operator with a corner, and neither
 do EfficientNet-B0 and the Vision Transformer, the two other chapter nets
 whose whole-network VJP needs only $\epsilon > 0$. The full block is
 $\mathrm{residual}(\mathrm{layerScale} \circ \mathrm{project} \circ
@@ -19572,7 +19594,7 @@ deliberately as a property rather than a number --- and every one closes
 under the same three core axioms: \(\texttt{\#print axioms vitFullHasVJP}\) shows only
 Lean core (\texttt{propext}, \texttt{Classical.choice},
 \texttt{Quot.sound}), nothing project-level beneath those. (Earlier
-drafts axiomatized shortcuts for the kinked operators, and every one has
+drafts axiomatized shortcuts for the operators with corners, and every one has
 since been proved or become a \texttt{noncomputable def} over the
 canonical \(\fderiv\)-derived witness. The smooth-point caveats in
 the chapters are all that remains of them.)
@@ -19748,12 +19770,14 @@ attention. The convolution bridges hold at every input too, with one
 hypothesis on the kernel rather than the data: $k_H$ and $k_W$ odd, which
 every kernel in Part~1 satisfies except ConvNeXt's $4\times4$ stem and
 $2\times2$ downsamples, and those are tied through the kernel zero-extended
-to odd size (\texttt{padOdd}). For the kinked operators, which are ReLU, ReLU6 and max-pool, it
-holds only at a \emph{smooth point}: no pre-activation exactly on the kink
+to odd size (\texttt{padOdd}). For the operators with corners, which are ReLU, ReLU6 and max-pool, it
+holds only at a \emph{smooth point}: no pre-activation exactly on the corner
 (zero for ReLU, $0$ or $6$ for ReLU6), and every $2 \times 2$ pooling
 window's maximum attained at one cell (\texttt{MaxPool2Smooth}). The equality
-is permitted to fail precisely on that set, and nowhere else. For ReLU the set
-has measure zero; for a pool on its own it does not, because an all-zero
+is stated only off that set, where the pdiv-derived backward is
+\(\fderiv\)'s zero map and the emitted text is the framework convention.
+For ReLU the set is null for generic weights; for a pool on its own it is
+not, because an all-zero
 post-ReLU window attains its maximum at every cell, and the whole-net theorems
 carry the pooling clause as a hypothesis at the activations. The ResNets'
 $3 \times 3$/s2 stem pool is certified together with the ReLU before it
@@ -19830,12 +19854,13 @@ plumbing. The ReLU bridge is the first with real content:
   = (\texttt{reluHasVJP}\,n).\mathrm{backward}\,x\,dy\,i.
 \]
 The proof unfolds the denotation to $\text{if } x_i > 0 \text{ then } dy_i
-\text{ else } 0$ and shows it equals the canonical ReLU subgradient, but
+\text{ else } 0$ and shows it equals the pdiv-derived backward, but
 only under the hypothesis $h_{\text{smooth}}$ that no coordinate sits
-on the kink. That hypothesis is not a technicality. It names exactly the
-measure-zero set where the emitted \texttt{compare GT 0} disagrees with the
-true derivative, and the theorem is written to permit failure precisely there
-and nowhere else. The convolution bridge of Chapter~\ref{chap:cnn} is the same
+on the corner. That hypothesis is not a technicality. At a point with a zero
+coordinate ReLU has no derivative, \(\fderiv\) returns the zero map, and
+the pdiv-derived backward is the zero vector in every coordinate, while the
+emitted \texttt{compare GT 0} still passes $dy_i$ wherever $x_i > 0$; the
+theorem is stated exactly where the two agree, and nowhere else. The convolution bridge of Chapter~\ref{chap:cnn} is the same
 shape with a harder proof: \texttt{convBackDenote} unfolds to a forward
 \texttt{conv2d} of the reversed-and-transposed kernel, and
 \texttt{conv\_back\_bridge} shows it equals the certified input gradient at
@@ -20014,7 +20039,7 @@ than hypothetical nets.
 
 Each kind fails differently, and overlaying them is the guarantee. A
 deductive proof is blind to a miscompile, an empirical diff is blind to a
-measure-zero kink, and a faithful bridge is blind to a wrong formula it
+corner it never samples, and a faithful bridge is blind to a wrong formula it
 renders perfectly. Verified code generation straddles two
 of the kinds: its bridge is structural, its oracle empirical. The
 finite-precision theorem layer, next, straddles the other pair: its
@@ -20049,7 +20074,7 @@ relative, and the model does not cover it. The exact-arithmetic model
 (\(\mathrm{rnd} = \mathrm{id}\), \(u = 0\)) shows the interface is
 inhabited and collapses every budget to zero. Nothing about IEEE-754 is
 postulated, and the theorems are conditional on the standard model, the
-same way the ReLU theorems are conditional on being off the kink, and
+same way the ReLU theorems are conditional on being off the corner, and
 the axiom audit is untouched. Two further design choices are forced by
 the hardware: the dot-product budgets are stated in the classical
 compounded form valid for every summation association, because
@@ -20160,7 +20185,7 @@ The admissible \(\mathrm{lr}\) is a product of per-layer operator-norm
 factors, so each added layer shrinks it geometrically. Full-depth CIFAR and
 all five deep nets stay closeness-only, by design, not for want of effort.
 
-\paragraph{The kink.}
+\paragraph{The corner.}
 Over \(\mathbb{R}\), ReLU forced the hypotheses \(x_k \ne 0\). In
 float the same op inverts its role twice. The forward mask is
 exact, since compare-and-select rounds nothing, so the op that
