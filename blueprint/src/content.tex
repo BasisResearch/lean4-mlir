@@ -101,7 +101,8 @@ but exploitably structured:
     have a diagonal Jacobian, so the backward pass is one multiply.
   \item \textbf{Sparse Toeplitz.} Convolutions have a block-sparse Jacobian
     with a sliding-window structure, and the backward pass is another
-    convolution with a reversed kernel.
+    convolution with a reversed kernel (for odd kernel sizes; an even
+    kernel is zero-extended to the next odd size first).
   \item \textbf{Binary selection.} Max pooling routes the gradient to whichever input was the max.
   \item \textbf{Rank-1 correction to diagonal.} Softmax, batch norm, and layer
     norm all have dense Jacobians with a clean closed form, because each
@@ -320,13 +321,13 @@ started'' is where those commands live.
     capstone.
 \end{itemize}
 
-\textbf{Part 2: The bestiary (Chapter 10).} Forty-five further
+\textbf{Part 2: The bestiary (Chapter 10).} Forty-six further
 architectures, from U-Net to Mamba to Stable Diffusion, each written as
 a \texttt{NetSpec} in about fifteen lines of Lean and led by how many new
 primitives it asks for beyond Part 1's toolbox: none for VGG or
 AlphaZero, one for Mamba, never more than three. The entries are grouped
 by what they are for --- vision classifiers, detection, segmentation,
-language, generation, physics, signal processing --- and eleven of the
+language, generation, physics, signal processing --- and twelve of the
 groups carry a demo trained on a dataset from that field; a closing section on
 game theory trains three games --- Pong, Leduc poker, tic-tac-toe --- against their
 exact solutions, with the AlphaGo family and Deep CFR as its catalogue.
@@ -920,7 +921,8 @@ into the sum over the middle index.}
   \item \(\fderiv_{\R}\, g\, (f\,x)\, v\, k
           = \sum_j v_j \cdot \fderiv_{\R}\, g\, (f\,x)\, (\basisVec_j)\, k\).
     \pf{By 3 and linearity of \(\fderiv_{\R}\, g\, (f\,x)\)
-    (\texttt{map\_sum}, \texttt{map\_smul}).}
+    (\texttt{LinearMap.pi\_apply\_eq\_sum\_univ}, which is steps 3 and 4
+    in one lemma).}
   \item \Qed{}
     \pf{By Definition~\ref{ax:pdiv}, \(v_j = \pdiv f\, x\, i\, j\) and
     \(\fderiv_{\R}\, g\, (f\,x)\, (\basisVec_j)\, k
@@ -1038,7 +1040,15 @@ Mechanical; see \leandocref{Proofs.pdiv\_const}.
   \lean{Proofs.pdiv_reindex}
   \leanok
   \uses{ax:pdiv}
-  Covers permutations, reshapes, slicing. Generalizes \texttt{pdiv\_id}.
+  For \(\sigma : \mathrm{Fin}\, b \to \mathrm{Fin}\, a\),
+  \[
+    \pdiv\bigl(y \mapsto \lambda k.\; y_{\sigma(k)}\bigr)\, x\, i\, j
+      = [\,i = \sigma(j)\,].
+  \]
+  Covers permutations, reshapes, slicing. Generalizes \texttt{pdiv\_id}
+  (\(\sigma = \mathrm{id}\)). A gather is a continuous linear map, so the
+  proof is the affine rule's (Theorem~\ref{thm:pdiv_of_affine}): the map is
+  its own derivative, evaluated at \(\basisVec_i\).
 \end{theorem}
 
 \begin{proof}
@@ -1067,28 +1077,63 @@ Mechanical; see \leandocref{Proofs.pdiv\_reindex}.
 
 \begin{proof}
 \leanok
-\emph{Sketch: induction on \(S\); the two-summand sum rule does each
-inductive step.}
 \begin{enumerate}
-  \item \Case{} \(S = \emptyset\): both sides are \(0\).
-    \pf{The empty sum is the constant zero function, whose Jacobian
-    vanishes by Theorem~\ref{ax:pdiv_const}; the right side is an
-    empty sum.}
-  \item \Case{} \(S = \{a\} \cup T\) with \(a \notin T\), assuming the
-    claim holds for \(T\) (induction hypothesis):
-    \(\pdiv\bigl(\sum_{s \in S} f_s\bigr)\, x\, i\, j
-      = \pdiv f_a\, x\, i\, j + \sum_{s \in T} \pdiv f_s\, x\, i\, j\).
-    \pf{Split the sum as \(f_a + \sum_{s \in T} f_s\)
-    (\texttt{Finset.sum\_insert}, using \(a \notin T\)). The tail
-    \(\sum_{s \in T} f_s\) is differentiable at \(x\) as a finite sum
-    of functions differentiable by assumption 2
-    (\texttt{DifferentiableAt.fun\_sum}), so the sum rule
-    (Theorem~\ref{ax:pdiv_add}) splits the Jacobian; the induction
-    hypothesis rewrites the tail.}
+  \item The coordinatewise sum \(\lambda y\, k.\, \sum_{s \in S} f_s\, y\, k\)
+    is the pointwise sum of functions \(\sum_{s \in S} f_s\).
+    \pf{Extensionality (\texttt{Finset.sum\_apply}).}
+  \item \(\fderiv_{\R}\bigl(\sum_{s \in S} f_s\bigr)\, x
+          = \sum_{s \in S} \fderiv_{\R}\, f_s\, x\).
+    \pf{Mathlib's \texttt{fderiv\_fun\_sum}, applicable by assumption 2.}
   \item \Qed{}
-    \pf{By induction on the finite set \(S\)
-    (\texttt{Finset.induction\_on}): 1 is the base case, and
-    re-merging the sum in 2 gives the inductive step.}
+    \pf{Evaluate 2 at \((\basisVec_i, j)\) (Definition~\ref{ax:pdiv});
+    a sum of linear maps evaluates pointwise
+    (\texttt{Finset.sum\_apply}).}
+\end{enumerate}
+\end{proof}
+
+\begin{theorem}[Affine rule]
+  \label{thm:pdiv_of_affine}
+  \lean{Proofs.pdiv_of_affine, Proofs.pdiv_of_linear}
+  \leanok
+  \uses{ax:pdiv}
+  \Assume{}
+  \begin{enumerate}
+    \item \(f : \Vect{m} \to \Vect{n}\) is additive,
+          \(f(u + v) = f(u) + f(v)\) \hfill[\texttt{hadd}]
+    \item \(f\) is homogeneous, \(f(a \cdot v) = a \cdot f(v)\)
+          \hfill[\texttt{hsmul}]
+  \end{enumerate}
+  \Prove{} for every constant \(c \in \Vect{n}\), every \(x\) and all
+  \(i, j\):
+  \[
+    \pdiv\bigl(v \mapsto f(v) + c\bigr)\, x\, i\, j = f(\basisVec_i)_j .
+  \]
+  At \(c = 0\) this is \texttt{pdiv\_of\_linear}: the Jacobian of a linear
+  map is the map itself, read on the standard basis. There is no
+  differentiability hypothesis, because a linear map on a
+  finite-dimensional space is continuous and so is its own derivative
+  everywhere. This is the rule every layer that is linear in the variable
+  being differentiated goes through --- dense in \(x\), in \(W\) and in
+  \(b\); conv, depthwise and the patch embedding in each of their
+  arguments; BatchNorm's centering and affine steps; matmul against a
+  constant factor --- in place of distributing the sum, product and
+  reindex rules through the layer's definition term by term. Each use is
+  two one-line algebra side conditions, then the entry is read off
+  \(f(\basisVec_i)\) and a Kronecker indicator collapses.
+\end{theorem}
+
+\begin{proof}
+\leanok
+\begin{enumerate}
+  \item Assumptions 1 and 2 make \(f\) an \(\R\)-linear map \(L\), and
+    \(L\) is continuous because \(\Vect{m}\) is finite-dimensional.
+    \pf{Bundle the two laws; \texttt{LinearMap.continuous\_on\_pi}.}
+  \item \(\fderiv_{\R}\,(v \mapsto L\,v + c)\, x = L\).
+    \pf{\texttt{fderiv\_add\_const} drops \(c\), and a continuous linear
+    map is its own Fréchet derivative
+    (\texttt{ContinuousLinearMap.fderiv}).}
+  \item \Qed{}
+    \pf{Evaluate 2 at \((\basisVec_i, j)\) by Definition~\ref{ax:pdiv}.}
 \end{enumerate}
 \end{proof}
 
@@ -1356,7 +1401,7 @@ operands. One transpose, three spellings.
   \label{ax:pdiv_dense}
   \lean{Proofs.pdiv_dense}
   \leanok
-  \uses{ax:pdiv}
+  \uses{ax:pdiv, thm:pdiv_of_affine}
   For the dense layer
   \(\mathrm{dense}(W, b)\, x = \lambda j.\; \bigl(\sum_i x_i\, W_{ij}\bigr) + b_j\):
   \[
@@ -1368,36 +1413,22 @@ operands. One transpose, three spellings.
 
 \begin{proof}
 \leanok
-\emph{Sketch: factor the layer as (finite sum of bilinear summands) +
-constant, distribute \(\pdiv\), apply the product rule per summand,
-collapse the Kronecker \(\delta\). Every foundation rule from
-Chapter~1 except the chain rule fires exactly once.}
+\emph{Sketch: the layer is a linear map plus the constant \(b\); the
+affine rule reads the Jacobian entry off the basis vector.}
 \begin{enumerate}
+  \item \(\mathrm{dense}(W, b)
+          = \bigl(y \mapsto \lambda j'.\, \textstyle\sum_{i'} y_{i'} W_{i'j'}\bigr) + b\),
+    and the first summand is additive and homogeneous in \(y\).
+    \pf{Unfold; \(\sum_{i'} (u + v)_{i'} W_{i'j'}\) and
+    \(\sum_{i'} (a\,u)_{i'} W_{i'j'}\) distribute
+    (\texttt{add\_mul}, \texttt{Finset.sum\_add\_distrib},
+    \texttt{Finset.mul\_sum}).}
   \item \(\pdiv\bigl(\mathrm{dense}(W, b)\bigr)\, x\, i\, j
-          = \pdiv\bigl(\lambda y\, j'.\, \textstyle\sum_{i'} y_{i'} W_{i'j'}\bigr)\, x\, i\, j\).
-    \pf{Split the layer as \(\bigl(\sum_{i'} \cdots\bigr) + (\text{const } b)\)
-    and apply the sum rule (Theorem~\ref{ax:pdiv_add}) and the constant
-    rule (Theorem~\ref{ax:pdiv_const}). Their differentiability
-    hypotheses hold because each summand
-    \(y \mapsto y_{i'} \cdot W_{i'j'}\) is (reindex)\,\(\times\)\,(constant)
-    --- differentiable since reindexing is a continuous linear map ---
-    and the finite sum inherits differentiability
-    (\texttt{DifferentiableAt.fun\_sum}).}
-  \item \(\prev = \sum_{i'} \pdiv\bigl(\lambda y\, j'.\,
-          y_{i'} \cdot W_{i'j'}\bigr)\, x\, i\, j\).
-    \pf{Finite-sum rule (Theorem~\ref{thm:pdiv_finset_sum}), with the
-    same per-summand differentiability.}
-  \item For each \(i'\):
-    \(\pdiv\bigl(\lambda y\, j'.\, y_{i'} \cdot W_{i'j'}\bigr)\, x\, i\, j
-      = \delta_{i i'} \cdot W_{i'j}\).
-    \pf{Product rule (Theorem~\ref{ax:pdiv_mul}) on
-    (reindex)\,\(\times\)\,(constant); the reindex Jacobian
-    (Theorem~\ref{ax:pdiv_reindex}) with \(\sigma = \lambda\_.\, i'\)
-    contributes the \(\delta\), the constant factor's Jacobian
-    vanishes (Theorem~\ref{ax:pdiv_const}); case split on \(i = i'\).}
+          = \sum_{i'} (\basisVec_i)_{i'}\, W_{i'j}\).
+    \pf{Affine rule (Theorem~\ref{thm:pdiv_of_affine}) with 1.}
   \item \Qed{}
-    \pf{Substitute 3 into 2: \(\sum_{i'} \delta_{i i'} W_{i'j} = W_{ij}\)
-    (\texttt{Finset.sum\_ite\_eq}); with 1 this is the goal.}
+    \pf{\((\basisVec_i)_{i'} = \delta_{i i'}\), so the sum collapses to
+    \(W_{ij}\) (\texttt{Finset.sum\_ite\_eq}).}
 \end{enumerate}
 \end{proof}
 
@@ -1405,7 +1436,7 @@ Chapter~1 except the chain rule fires exactly once.}
   \label{ax:pdiv_dense_W}
   \lean{Proofs.pdiv_dense_W}
   \leanok
-  \uses{ax:pdiv}
+  \uses{ax:pdiv, thm:pdiv_of_affine}
   The symmetric counterpart of
   Theorem~\ref{ax:pdiv_dense}, differentiating in \(W\) instead of
   \(x\). Since \(\pdiv\) works on vectors, view the layer as a function
@@ -1422,38 +1453,24 @@ Chapter~1 except the chain rule fires exactly once.}
 
 \begin{proof}
 \leanok
-\emph{Sketch: same skeleton as Theorem~\ref{ax:pdiv_dense} --- split,
-distribute, product rule, collapse --- with the reindex step now going
-through the flatten bijection.}
+\emph{Sketch: as Theorem~\ref{ax:pdiv_dense}, with the flatten bijection
+inside the linear part.}
 \begin{enumerate}
-  \item \(F(v)_{j_o} = \bigl(\sum_{i'} x_{i'} \cdot v_{\varphi(i', j_o)}\bigr) + b_{j_o}\).
-    \pf{Unfold \(\mathrm{dense}\) and \(\mathrm{unflatten}\).}
+  \item \(F(v)_{j_o} = \bigl(\sum_{i'} x_{i'} \cdot v_{\varphi(i', j_o)}\bigr) + b_{j_o}\),
+    and the first summand is additive and homogeneous in \(v\).
+    \pf{Unfold \(\mathrm{dense}\) and \(\mathrm{unflatten}\);
+    \texttt{mul\_add}, \texttt{Finset.sum\_add\_distrib},
+    \texttt{Finset.mul\_sum}.}
   \item \(\pdiv F\, (\mathrm{flatten}\, W)\, \varphi(i, j')\, j
-          = \pdiv\bigl(\lambda w\, j_o.\, \textstyle\sum_{i'}
-            x_{i'} \cdot w_{\varphi(i', j_o)}\bigr)\,
-            (\mathrm{flatten}\, W)\, \varphi(i, j')\, j\).
-    \pf{Drop the constant bias: sum rule (Theorem~\ref{ax:pdiv_add})
-    and constant rule (Theorem~\ref{ax:pdiv_const}); each summand is
-    (constant)\,\(\times\)\,(reindex), differentiable, and the finite
-    sum inherits differentiability (\texttt{DifferentiableAt.fun\_sum}).}
-  \item \(\prev = \sum_{i'} \pdiv\bigl(\lambda w\, j_o.\,
-          x_{i'} \cdot w_{\varphi(i', j_o)}\bigr)\,
-          (\mathrm{flatten}\, W)\, \varphi(i, j')\, j\).
-    \pf{Finite-sum rule (Theorem~\ref{thm:pdiv_finset_sum}).}
-  \item For each \(i'\): the summand equals
-    \(\text{if } i = i' \wedge j' = j \text{ then } x_i \text{ else } 0\).
-    \pf{Product rule (Theorem~\ref{ax:pdiv_mul}) on
-    (constant \(x_{i'}\))\,\(\times\)\,(reindex
-    \(\sigma = \lambda j_o.\, \varphi(i', j_o)\)); the constant
-    factor's Jacobian vanishes (Theorem~\ref{ax:pdiv_const}), and the
-    reindex Jacobian (Theorem~\ref{ax:pdiv_reindex}) is \(1\) exactly
-    when \(\varphi(i, j') = \varphi(i', j)\), which by injectivity of
-    \(\varphi\) is \(i = i' \wedge j' = j\).}
+          = \sum_{i'} x_{i'} \cdot
+            (\basisVec_{\varphi(i, j')})_{\varphi(i', j)}\).
+    \pf{Affine rule (Theorem~\ref{thm:pdiv_of_affine}) with 1.}
   \item \Qed{}
-    \pf{Sum 4 over \(i'\): if \(j' = j\) the Kronecker condition picks
-    the single term \(x_i\) (\texttt{Finset.sum\_ite\_eq}); if
-    \(j' \neq j\) every term is \(0\). Both match
-    \(\delta_{jj'}\, x_i\); with 2 and 3 this is the goal.}
+    \pf{The basis entry is \(1\) exactly when
+    \(\varphi(i, j') = \varphi(i', j)\), which by injectivity of
+    \(\varphi\) is \(i' = i \wedge j = j'\). If \(j = j'\) the sum
+    collapses to \(x_i\); otherwise every term is \(0\). Both match
+    \(\delta_{jj'}\, x_i\).}
 \end{enumerate}
 \end{proof}
 
@@ -1507,7 +1524,7 @@ through the flatten bijection.}
     \pf{Dense Jacobian wrt weight (Theorem~\ref{ax:pdiv_dense_W}).}
   \item \Qed{}
     \pf{The sum in 1 collapses at \(k = j\)
-    (\texttt{Finset.sum\_eq\_single}) to \(x_i \cdot dy_j\), which is
+    (\texttt{Finset.sum\_ite\_eq}) to \(x_i \cdot dy_j\), which is
     \((x \otimes dy)_{ij}\) by definition of the outer product.}
 \end{enumerate}
 \end{proof}
@@ -1516,7 +1533,7 @@ through the flatten bijection.}
   \label{thm:denseBiasGrad_correct}
   \lean{Proofs.denseBiasGrad_correct}
   \leanok
-  \uses{ax:pdiv}
+  \uses{ax:pdiv, thm:pdiv_of_affine}
   \(db = dy\).
   \Prove{} for all \(i\):
   \[
@@ -1530,14 +1547,13 @@ through the flatten bijection.}
   \item \(\pdiv\bigl(b' \mapsto \mathrm{dense}(W, b')\, x\bigr)\, b\, i\, j
           = \delta_{ij}\).
     \pf{As a function of \(b'\), the layer is
-    \((\text{constant in } b') + b'\): sum rule
-    (Theorem~\ref{ax:pdiv_add}), constant rule
-    (Theorem~\ref{ax:pdiv_const}), and identity Jacobian
-    (Theorem~\ref{ax:pdiv_id}). (This is the Lean lemma
-    \texttt{pdiv\_dense\_b}.)}
+    \(b' + (\text{constant in } b')\), the identity plus a constant, so
+    the affine rule (Theorem~\ref{thm:pdiv_of_affine}) at
+    \(f = \mathrm{id}\) gives \((\basisVec_i)_j = \delta_{ij}\). (This is
+    the Lean lemma \texttt{pdiv\_dense\_b}.)}
   \item \Qed{}
     \pf{Substitute 1: \(\sum_j \delta_{ij}\, dy_j = dy_i\)
-    (\texttt{Finset.sum\_eq\_single}).}
+    (\texttt{Finset.sum\_ite\_eq}).}
 \end{enumerate}
 \end{proof}
 
@@ -1596,7 +1612,7 @@ inner derivative; the \(1/p_\ell\) from \(\log\) cancels the
   \item \(\pdiv\bigl(\mathrm{CE}(\cdot, \ell)\bigr)\, z\, j\, 0
           = \fderiv_{\R}\,\bigl(z' \mapsto \mathrm{CE}(z', \ell)\bigr)\, z\, (\basisVec_j)\).
     \pf{Definition~\ref{ax:pdiv}; the \(\Vect{1}\) wrapper just
-    evaluates the single output coordinate (\texttt{fderiv\_apply}),
+    evaluates the single output coordinate (\texttt{pdiv\_eq\_fderiv\_coord}),
     legitimate because the wrapper is differentiable ---
     \(\mathrm{softmax}\) is differentiable and \(\log\) is
     differentiable away from \(0\), which 1 grants.}
@@ -1627,25 +1643,35 @@ and one SGD step decreases the loss.
 
 \begin{theorem}[Emitted train step is the certified step]
   \label{thm:linear_fold}
-  \lean{Proofs.LinFold.poc_train_step_tail_certified}
+  \lean{Proofs.LinFold.poc_train_step_tail_certified, Proofs.LinFoldB.lin_train_step_tiedB,
+        Proofs.LinFoldB.lin_weight_meanlossB}
   \leanok
-  \uses{ax:pdiv, ax:pdiv_comp, ax:softmaxCE_grad, thm:denseBiasGrad_correct,
-      thm:denseWeightGrad_correct}
-  Write \(L(W) := \mathrm{CE}(\mathrm{dense}(W, b)\, x,\ \ell)\) for the
-  classifier's loss at fixed \(b\), \(x\), \(\ell\), and
-  \(p := \mathrm{softmax}(\mathrm{dense}(W, b)\, x)\).
+  \uses{ax:pdiv, ax:pdiv_comp, ax:pdiv_const, ax:pdiv_dense_W, ax:pdiv_mul,
+      ax:softmaxCE_grad, thm:denseBiasGrad_correct, thm:denseWeightGrad_correct,
+      thm:pdiv_finset_sum, thm:pdiv_of_affine}
+  For a batch of \(N\) examples \(x_k\) with labels \(\ell_k\), write
+  \(L_k(W) := \mathrm{CE}(\mathrm{dense}(W, b)\, x_k,\ \ell_k)\) for example
+  \(k\)'s loss at fixed \(b\), and
+  \(p_k := \mathrm{softmax}(\mathrm{dense}(W, b)\, x_k)\).
   \Prove{} the two update operations of
   \S~\ref{sec:mlir_training_step}'s \texttt{linear\_train\_step.mlir},
-  which consume the proven \texttt{lossCotGraph} node directly, denote
+  read as the batched graph that text is the print of, denote
   \[
-    W'_{ij} = W_{ij} - \alpha\,\pdiv(L)\,(\mathrm{flatten}\, W)\,(i,j)\,0,
+    W'_{ij} = W_{ij} - \alpha \sum_{k} \pdiv(L_k)\,(\mathrm{flatten}\, W)\,(i,j)\,0,
     \qquad
-    b'_j = b_j - \alpha \sum_i
-      \pdiv\bigl(\mathrm{dense}(W, \cdot)\, x\bigr)\, b\, j\, i
-      \,\bigl(p_i - \mathrm{onehot}(\ell)_i\bigr).
+    b'_j = b_j - \alpha \sum_{k} \sum_i
+      \pdiv\bigl(\mathrm{dense}(W, \cdot)\, x_k\bigr)\, b\, j\, i
+      \,\bigl((p_k)_i - \mathrm{onehot}(\ell_k)_i\bigr),
   \]
-  That is, the emitted step is the certified gradient step, and the
-  forward it differentiates is the proven \texttt{fwdGraph}.
+  for every \(N\); and at \(\alpha = \eta / N\) the weight update is one
+  gradient step at rate \(\eta\) on the batch-mean loss
+  \(\tfrac{1}{N}\sum_k L_k\). That is, the emitted step is the certified
+  gradient step on the batch, the forward it differentiates is the proven
+  \texttt{fwdGraph} lifted across the batch, and the artifact is the
+  instance \(N = 128\), \(\alpha = 0.1/128\). (The single-example reading,
+  \texttt{poc\_train\_step\_tail\_certified}, is the \(N = 1\) case; the
+  batched graph prints the committed text byte for byte,
+  \texttt{tests/TestSmallNetsBatchedEmit.lean}.)
 \end{theorem}
 
 \begin{proof}
@@ -1945,39 +1971,63 @@ bias across the batch, and an add. The shapes are the real ones, batch
 128 against 784 inputs and 10 classes, because this file is the render
 that trains and not an illustration of one.
 
-The backward pass is one operation. With the loss cotangent
-$dy = \mathrm{softmax}(\mathrm{logits}) - \text{onehot}$, the input
-gradient is $dx = dy\,W^{\!\top}$, a single matrix multiply. Here is
-what the code generator emits for it, shown at a small representative
-size so the shapes stay readable:
+The backward is two gradients, not one. Nothing sits upstream of the
+input, so the linear classifier never needs $dx$; what it needs is
+$dW = x^{\!\top} dy$ and $db = \sum_{\text{batch}} dy$, with
+$dy = \mathrm{softmax}(\mathrm{logits}) - \text{onehot}$ the loss
+cotangent. Here they are as the other file the run compiled,
+\texttt{verified\_mlir/linear\_train\_step.mlir}, emits them. The SSA
+names are the artifact's, the default \texttt{precision} attribute is
+dropped, and the long lines are wrapped for the page:
 
 \begin{verbatim}
-func.func @linear_back(%dy: tensor<2x3xf32>, %W0: tensor<4x3xf32>)
-    -> tensor<2x4xf32> {
-  %bk0 = stablehlo.dot_general %dy, %W0, contracting_dims = [1] x [1]
-           : (tensor<2x3xf32>, tensor<4x3xf32>) -> tensor<2x4xf32>
-  return %bk0 : tensor<2x4xf32>
-}
+%v7 = stablehlo.divide %v3, %v6 : tensor<128x10xf32>
+%v8 = stablehlo.subtract %v7, %onehot : tensor<128x10xf32>
+%v9 = stablehlo.dot_general %x, %v8, contracting_dims = [0] x [0]
+      : (tensor<128x784xf32>, tensor<128x10xf32>) -> tensor<784x10xf32>
+%v10 = stablehlo.constant dense<0.00078125> : tensor<784x10xf32>
+%v11 = stablehlo.multiply %v9, %v10 : tensor<784x10xf32>
+%v12 = stablehlo.subtract %W0, %v11 : tensor<784x10xf32>
+// ...
+%v23 = stablehlo.reduce(%v21 init: %v22)
+      applies stablehlo.add across dimensions = [0] : (tensor<128x10xf32>,
+      tensor<f32>) -> tensor<10xf32>
+%v24 = stablehlo.constant dense<0.00078125> : tensor<10xf32>
+%v25 = stablehlo.multiply %v23, %v24 : tensor<10xf32>
+%v26 = stablehlo.subtract %b0, %v25 : tensor<10xf32>
 \end{verbatim}
 
-\noindent That \texttt{dot\_general} contracts the output axis of $dy$ against the
-output axis of $W$, which is multiplication by $W^{\!\top}$, and by a
-machine-checked theorem that is the linear layer's exact reverse-mode
-derivative. Everything else in this book scales that one move up. Each
-architecture chapter closes with an ``MLIR: operator'' section that takes
-the chapter's new operator and shows that its emitted backward is
-likewise the rendering of a proven derivative. Those operators are
-convolution, BatchNorm, the residual fan-in, depthwise convolution,
-squeeze-excitation, layer scale, and attention.
+\noindent \texttt{\%v8} is $dy$. The \texttt{dot\_general} at
+\texttt{\%v9} contracts axis $0$ of $x$ against axis $0$ of $dy$, the
+batch axis of each, which is $x^{\!\top} dy$ summed over the 128
+examples; \texttt{\%v10}--\texttt{\%v12} scale it by $0.00078125 =
+0.1/128$ and subtract it from $W_0$. The bias gradient at
+\texttt{\%v23} is the same batch sum with nothing to contract against,
+and \texttt{\%v26} is its update. Theorem~\ref{thm:linear_fold} is the
+statement that these two returned tensors denote one SGD step on the
+certified gradient at batch 128, and that with the rate folded in as
+$\alpha/N$ it is a step at rate $0.1$ on the batch-mean loss. The graph
+that theorem is about is a Lean value, and
+\texttt{tests/TestSmallNetsBatchedEmit.lean} checks that printing it
+reproduces this file byte for byte.
 
-Each of those listings is shown at a small representative size, meaning a
-few channels, tokens, or units of width. The per-operator proof beneath
-is dimension-parameterized and the printer emits the identical graph at
-production scale, so each section states its toy shape and moves on.
-Appendix~\ref{app:verification} covers the shared machinery underneath
-them: the denoted intermediate representation, the bridge theorems that
-tie it to the proofs, the printer that turns it into the text above, and
-the execution oracle that checks the result on the GPU.
+Everything else in this book scales that one move up. Each architecture
+chapter closes with an ``MLIR: operator'' section that takes the
+chapter's new operator, cuts the operations computing its backward out of
+the committed artifact of the chapter's trained network, and names the
+theorem under which that text denotes a proven derivative. Those
+operators are dense layers, convolution, BatchNorm, the residual fan-in,
+depthwise convolution, squeeze-excitation, layer scale, and attention.
+
+Every listing in those sections is an excerpt of a
+\texttt{verified\_mlir/} file at the shape that trained, with the
+artifact's own SSA names, and a gate
+(\texttt{scripts/book/book\_listings.py}) refuses any StableHLO in this
+book that is not, operation for operation, in the file it quotes. The
+book has no illustrative StableHLO. What is proven, what is tested and
+what is trusted on the way from a theorem to that text is set out in
+Appendix~\ref{app:verification}: the denoted graph, the tie theorems,
+the printer, and the execution oracles.
 
 \section{What's inside \texttt{.train}?}
 \label{sec:mlp_inside_train}
@@ -2150,7 +2200,7 @@ Section~\ref{sec:mlp_inside_train} made a claim about the inner call. One
 dispatched StableHLO graph does the forward pass, the loss, the backward
 pass, and the optimizer update, with no tape and no per-step graph
 construction. The ``MLIR: Linear'' section
-above rendered a single operator's backward in isolation. Here is the
+above read the two gradient bands out of this file. Here is the
 whole thing the linear classifier compiles to. This is
 \texttt{verified\_mlir/linear\_train\_step.mlir} as committed, with the
 default \texttt{precision} attributes dropped and the long type
@@ -2266,9 +2316,10 @@ the depth the descent half actually reaches.
 rather than a mean. The constant \texttt{0.00078125} is
 $\alpha/N = 0.1/128$, the per-sample rate that turns that sum back into
 the mean update. Everything else in the listing is the rendering of a theorem
-proved earlier in this chapter, stated for one example: Theorem~\ref{thm:linear_fold}
-certifies the two updates at $N = 1$, and the batch sum and the $\alpha/N$
-scale are the render's.
+proved earlier in this chapter: Theorem~\ref{thm:linear_fold} certifies the
+two updates at every batch size, the batch sum and the $\alpha/N$ scale
+included, so with $\alpha/N = 0.1/128$ the emitted step is one step at rate
+$0.1$ on the batch-mean loss.
 
 \medskip\noindent That one function is the only heavy thing in the loop that
 drives it. Strip \S~\ref{sec:mlp_inside_train}'s driver of its logging
@@ -2281,10 +2332,13 @@ batches, nothing more.
 \medskip\noindent\textbf{Where this stands.} The scheme above is the one
 every architecture in Part~I trains under, and the book's official claim
 is exactly this, no more and no less: every architecture in Part~I
-trained end-to-end under one machine-checked scheme. The one open gap
-is that the theorems are over \(\mathbb{R}\) and the GPU runs a finite
-precision; \S~\ref{sec:precision} is the budget that sits between them,
-and Appendix~\ref{app:verification} carries the rest of the accounting.
+trained end-to-end under one machine-checked scheme. What stays open is
+three things, stated once here and accounted for in
+Appendix~\ref{app:verification}: the theorems are over \(\mathbb{R}\) while
+the GPU runs a finite precision, and \S~\ref{sec:precision} is the budget
+that sits between them; each operator's printed text is trusted to compute
+what its graph node denotes, the per-op lexing the whole suite shares; and
+the compiler between the text and the card is trusted, not proved.
 
 \section{Recap}
 
@@ -2294,13 +2348,17 @@ rules, chain, sum and product, is the calculus; a \(\HasVJP\) record is a
 backward function bundled with the proof that it is the transpose of the
 Jacobian; and a trainer is four of those composed, forward, loss, backward,
 step, printed as one StableHLO function and run on the GPU as it was
-printed. For the one-layer classifier the whole chain closes:
-Theorem~\ref{thm:linear_fold} says the emitted step is the certified step,
-and Theorem~\ref{thm:linear_sgd_descends} says the step goes downhill.
+printed. For the one-layer classifier the chain closes as far as the
+scheme reaches: Theorem~\ref{thm:linear_fold} says the emitted step is the
+certified gradient step on the batch-mean loss, at every batch size, and
+Theorem~\ref{thm:linear_sgd_descends} says that under its small-step
+conditions one SGD step on the weights decreases one example's loss.
 
 What it leaves open is stated once here and carried through the book: the
-theorems are over \(\mathbb{R}\), the card computes in a finite format, and
-\S\ref{sec:precision} is the budget between them. The other limit is the
+theorems are over \(\mathbb{R}\) while the card computes in a finite format,
+with \S\ref{sec:precision} the budget between them, and each operator's
+printed text is trusted to compute what its node denotes
+(Appendix~\ref{app:verification}). The other limit is the
 network's. A single dense layer is a linear map, and a linear map can only
 cut pixel space with flat boundaries, so the next chapter puts a
 non-linearity between two of them and applies the chain rule twice.
@@ -2521,16 +2579,22 @@ Chain rule at a point, five times; see
 
 \begin{theorem}[Emitted train step is the certified step]
   \label{thm:mlp_fold}
-  \lean{Proofs.MlpFold.mlp_train_step_tied_certified}
+  \lean{Proofs.MlpFold.mlp_train_step_tied_certified, Proofs.MlpFoldB.mlp_train_step_tiedB}
   \leanok
-  \uses{ax:pdiv, ax:pdiv_comp, ax:softmaxCE_grad, thm:denseBiasGrad_correct,
-      thm:denseWeightGrad_correct}
+  \uses{ax:pdiv, ax:pdiv_comp, ax:pdiv_dense_W, ax:softmaxCE_grad,
+      thm:denseBiasGrad_correct, thm:denseWeightGrad_correct, thm:pdiv_of_affine}
   \Prove{} \texttt{mlp\_train\_step.mlir} emits six update operations, the
-  weights and biases of all three dense layers, and each denotes
-  \(\theta - \alpha\,\partial L/\partial\theta\): the output layer's against the
-  gradient of the whole loss, the two hidden layers' against the certified
-  per-layer VJP at the chain cotangent, with the loss cotangent
-  \(\mathrm{softmax}(z) - \mathrm{onehot}(\ell)\) pinned to its proven graph.
+  weights and biases of all three dense layers, and at a batch of \(N\)
+  examples each denotes \(\theta - \alpha \sum_k (\cdot)_k\), a sum over the
+  batch of per-example terms: for the output weight \(W_2\) the term is
+  \(\partial L_k/\partial W_2\), the gradient of example \(k\)'s whole loss;
+  for the other five (\(b_2\) and both hidden layers) it is the certified
+  per-layer Jacobian at example \(k\) contracted with that example's chain
+  cotangent, the slice of the emitted \texttt{select}/\texttt{dot\_general}
+  backward subgraph. The loss cotangent
+  \(\mathrm{softmax}(z_k) - \mathrm{onehot}(\ell_k)\) is pinned to its proven
+  graph. For every \(N\); the artifact is \(N = 128\), and the single-example
+  reading is \texttt{mlp\_train\_step\_tied\_certified}.
 \end{theorem}
 
 \begin{proof}
@@ -2575,7 +2639,7 @@ above it; see \leandocref{Proofs.MlpFold.mlp\_net\_lossGrad}.
         Proofs.mlp_hidden_bias_sgd_descends}
   \leanok
   \uses{ax:pdiv, ax:pdiv_comp, ax:pdiv_dense, ax:pdiv_dense_W, ax:pdiv_relu,
-      ax:softmaxCE_grad}
+      ax:softmaxCE_grad, thm:pdiv_of_affine}
   \Assume{}
   \begin{enumerate}
     \item the pixels and the two upper weight matrices are bounded,
@@ -2882,66 +2946,76 @@ pinned by \texttt{denseWeightGrad\_correct} and
 question.
 
 \medskip\noindent\textbf{The gap and how we close it.} The emitted
-backward is a value of a Lean datatype, \texttt{Back}, with a denotation
-$[\![\cdot]\!]$ into the proofs' own vector type. For the MLP the graph is
+backward is a value of a Lean datatype with a denotation $[\![\cdot]\!]$
+into the proofs' own vector type, and a theorem equates that denotation
+with the proven derivative. The cotangent chain of the MLP's committed
+step, \texttt{verified\_mlir/mlp\_train\_step.mlir}, is the graph
 \[
-  \texttt{emitMlpBack}
-  = \texttt{dotGeneral}\,W_0 \circ \texttt{selectPos}\,p_0
+  \texttt{dotGeneral}\,W_0 \circ \texttt{selectPos}\,p_0
     \circ \texttt{dotGeneral}\,W_1 \circ \texttt{selectPos}\,p_1
-    \circ \texttt{dotGeneral}\,W_2,
+    \circ \texttt{dotGeneral}\,W_2
 \]
-rooted at the incoming cotangent, with
+rooted at the loss cotangent, with
 $[\![\texttt{dotGeneral}\,W]\!] = \texttt{Mat.mulVec}\,W$ and
 $[\![\texttt{selectPos}\,p]\!] = (v \mapsto \text{if } p>0 \text{ then }
-v \text{ else } 0)$, and the bridge theorem
+v \text{ else } 0)$. The per-example bridge
 \[
   \texttt{mlp\_whole\_bridge}:\quad
   [\![\texttt{emitMlpBack}]\!](dy)
   = \texttt{mlpHasVJPAt}.\mathrm{backward}(dy)
 \]
-says the denotation of that graph is the proven derivative. The forward,
-the loss cotangent, and the parameter gradients are covered the same way.
-
-Here is what \texttt{IRPrint.lean} prints for that graph, one
-\texttt{stablehlo} op per node (default \texttt{precision} attributes
-elided for the page). \texttt{Back} carries real-valued operands and cannot
-be printed directly, so the printer walks a mirror of it, \texttt{Hlo},
-built node for node from \texttt{emitMlpBack}'s shape with SSA names in
-place of values; that the mirror matches is checked by reading the two
-definitions side by side, not by a theorem:
+says that graph denotes the proven derivative, and
+Theorem~\ref{thm:mlp_fold} says the same of the batched graph the file
+is printed from. Here is the chain in the artifact, batch 128,
+$784{\to}512{\to}512{\to}10$, followed by the two weight gradients that
+consume it (SSA names the artifact's, default \texttt{precision}
+dropped, lines wrapped):
 
 \begin{verbatim}
-func.func @mlp_back(%dy: tensor<2x2xf32>, %W0: tensor<4x3xf32>,
-    %W1: tensor<3x3xf32>, %W2: tensor<3x2xf32>,
-    %p0: tensor<2x3xf32>, %p1: tensor<2x3xf32>) -> tensor<2x4xf32> {
-  %bk0 = stablehlo.dot_general %dy, %W2, contracting_dims = [1] x [1]
-           : (tensor<2x2xf32>, tensor<3x2xf32>) -> tensor<2x3xf32>
-  %bk1 = stablehlo.constant dense<0.0> : tensor<2x3xf32>
-  %bk2 = stablehlo.compare GT, %p1, %bk1
-           : (tensor<2x3xf32>, tensor<2x3xf32>) -> tensor<2x3xi1>
-  %bk3 = stablehlo.select %bk2, %bk0, %bk1
-           : tensor<2x3xi1>, tensor<2x3xf32>
-  %bk4 = stablehlo.dot_general %bk3, %W1, contracting_dims = [1] x [1]
-           : (tensor<2x3xf32>, tensor<3x3xf32>) -> tensor<2x3xf32>
-  %bk5 = stablehlo.constant dense<0.0> : tensor<2x3xf32>
-  %bk6 = stablehlo.compare GT, %p0, %bk5
-           : (tensor<2x3xf32>, tensor<2x3xf32>) -> tensor<2x3xi1>
-  %bk7 = stablehlo.select %bk6, %bk4, %bk5
-           : tensor<2x3xi1>, tensor<2x3xf32>
-  %bk8 = stablehlo.dot_general %bk7, %W0, contracting_dims = [1] x [1]
-           : (tensor<2x3xf32>, tensor<4x3xf32>) -> tensor<2x4xf32>
-  return %bk8 : tensor<2x4xf32>
-}
+%v18 = stablehlo.subtract %v17, %onehot : tensor<128x10xf32>
+%v19 = stablehlo.dot_general %v18, %W2, contracting_dims = [1] x [1]
+      : (tensor<128x10xf32>, tensor<512x10xf32>) -> tensor<128x512xf32>
+%v20 = stablehlo.constant dense<0.0> : tensor<128x512xf32>
+%v21 = stablehlo.compare GT, %v7, %v20 : (tensor<128x512xf32>,
+      tensor<128x512xf32>) -> tensor<128x512xi1>
+%v22 = stablehlo.select %v21, %v19, %v20 : tensor<128x512xi1>,
+      tensor<128x512xf32>
+%v23 = stablehlo.dot_general %v22, %W1, contracting_dims = [1] x [1]
+      : (tensor<128x512xf32>, tensor<512x512xf32>) -> tensor<128x512xf32>
+%v24 = stablehlo.constant dense<0.0> : tensor<128x512xf32>
+%v25 = stablehlo.compare GT, %v2, %v24 : (tensor<128x512xf32>,
+      tensor<128x512xf32>) -> tensor<128x512xi1>
+%v26 = stablehlo.select %v25, %v23, %v24 : tensor<128x512xi1>,
+      tensor<128x512xf32>
+// ...
+%v36 = stablehlo.dot_general %v4, %v22, contracting_dims = [0] x [0]
+      : (tensor<128x512xf32>, tensor<128x512xf32>) -> tensor<512x512xf32>
+// ...
+%v45 = stablehlo.dot_general %x, %v26, contracting_dims = [0] x [0]
+      : (tensor<128x784xf32>, tensor<128x512xf32>) -> tensor<784x512xf32>
 \end{verbatim}
 
-\noindent Read it against the graph: each \texttt{dot\_general}
-(\texttt{\%bk0}, \texttt{\%bk4}, \texttt{\%bk8}) is a
-\texttt{dotGeneral}\,$W$ node, whose denotation is
-$\texttt{Mat.mulVec}\,W$. Each \texttt{compare GT} + \texttt{select}
-pair (\texttt{\%bk2}/\texttt{\%bk3}, \texttt{\%bk6}/\texttt{\%bk7}) is a
-\texttt{selectPos}\,$p$ node, which is the ReLU subgradient. The bridge
-theorem is precisely the claim that this text computes
-\texttt{mlpHasVJPAt}'s backward.
+\noindent Read it against the graph. \texttt{\%v18} is the loss
+cotangent, softmax minus one-hot. Each \texttt{dot\_general} with
+\texttt{contracting\_dims = [1] x [1]} (\texttt{\%v19}, \texttt{\%v23})
+is a \texttt{dotGeneral}\,$W$ node: it contracts the output axis of the
+cotangent against the output axis of the weight, which is multiplication
+by $W^{\!\top}$. Each \texttt{compare GT} + \texttt{select} pair
+(\texttt{\%v21}/\texttt{\%v22}, \texttt{\%v25}/\texttt{\%v26}) is a
+\texttt{selectPos}\,$p$ node, the ReLU subgradient, and the tensor it
+compares is the saved pre-activation from the forward half of the same
+file: \texttt{\%v7} is the second layer's $Wx+b$ and \texttt{\%v2} the
+first's. The two \texttt{dot\_general}s with
+\texttt{contracting\_dims = [0] x [0]} contract the batch axis instead:
+\texttt{\%v36} is $a_1^{\!\top}\,dy_2$ and \texttt{\%v45} is
+$x^{\!\top}\,dy_1$, the weight gradients of
+Theorem~\ref{thm:denseWeightGrad_correct} summed over the batch.
+Theorem~\ref{thm:mlp_fold} states that each of the six returned updates
+is $\theta$ minus $\alpha/N$ times the certified gradient at the
+cotangent these very nodes carry: the slice lemmas it rests on say that
+example $k$'s slice of \texttt{\%v22} and \texttt{\%v26} is the
+one-example chain above, so the bridge and the batched tie are one claim
+at two widths.
 
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
@@ -2949,9 +3023,7 @@ theorem is precisely the claim that this text computes
     exactly zero ReLU has no derivative. The emitted \texttt{compare GT 0}
     sends that case to $0$, and the bridge is permitted to fail on that
     measure-zero set.
-  \item \textbf{Representative scale.} Shown small. The trained net is
-    $784{\to}512{\to}512{\to}10$.
-  \item \textbf{Trusted surface.} The printer's faithfulness and the
+  \item \textbf{Trusted surface.} The printer's per-token text and the
     lowerer's translation are tested rather than proved. Rounding
     $\approx \mathbb{R}$ is not on this list: it is a theorem layer
     over an arbitrary rounding model (\S~\ref{sec:precision}), conditional on
@@ -2968,8 +3040,9 @@ its \texttt{correct} field holds by definition. The habit is applying the
 chain rule more than once: the whole MLP's backward is the dense backward
 and the ReLU backward strung together in reverse, and
 Theorem~\ref{thm:mlp_fold} says the six updates the trainer emits are
-exactly that, with Theorem~\ref{thm:mlp_sgd_descends} the descent on the
-first layer. Two witnesses, one hand-built and one at the trained weights,
+exactly that, summed over the batch at every batch size, with
+Theorem~\ref{thm:mlp_sgd_descends} the descent on the first layer at one
+example. Two witnesses, one hand-built and one at the trained weights,
 show the gradient is not the zero function.
 
 The price of the kink is a hypothesis. The bridge from the proof to the
@@ -3278,21 +3351,31 @@ Figure~\ref{fig:depgraph_cnn} is the dependency graph of this section.
   \label{ax:conv2dHasVJP3}
   \lean{Proofs.conv2dHasVJP3}
   \leanok
-  \uses{ax:conv2d, ax:pdiv, def:hasvjp3}
-  \(\HasVJPthree\, \bigl(\mathrm{conv2d}(W, b)\bigr)\): the input
-  backward of a convolution is the reversed-kernel convolution.
-  No hypotheses: conv2d is affine in its input.
+  \uses{ax:conv2d, ax:pdiv, def:hasvjp3, thm:pdiv_of_affine}
+  \(\HasVJPthree\, \bigl(\mathrm{conv2d}(W, b)\bigr)\), with the input
+  backward
+  \[
+    dx_{c_i h_i w_i} = \sum_{c_o, h_o, w_o} [\text{pad-valid}]\;
+      W_{c_o, c_i, \hat{k}_h, \hat{k}_w} \cdot dy_{c_o h_o w_o},
+    \qquad
+    \hat{k}_h = h_i + p_H - h_o,\;\; \hat{k}_w = w_i + p_W - w_o .
+  \]
+  No hypotheses on the input or the kernel: conv2d is affine in its input.
+  For odd \(k_H\), \(k_W\) this sum is the reversed-kernel, channel-swapped
+  convolution of \(dy\) against \(W\) that the emitted backward runs
+  (\texttt{conv\_back\_bridge}, \S\ref{sec:mlir_conv}); at an even kernel
+  the reversed-kernel convolution is the adjoint of a convolution shifted by
+  one pixel, and the emitter zero-extends the kernel to the next odd size
+  first (\texttt{padOdd}, Chapter~\ref{chap:layernorm}).
 \end{theorem}
 
 \begin{proof}
 \leanok
-\emph{Sketch: same split--distribute--product-rule--collapse skeleton
-as the dense Jacobians (Theorems~\ref{ax:pdiv_dense},
-\ref{ax:pdiv_dense_W}), with two convolution-specific twists: the
-finite-sum rule fires three times (over \(c, k_h, k_w\)), and the
-product rule's variable factor is a pad-conditional projection
---- a case split on the SAME-padding condition decides between a
-coordinate projection and the zero function.}
+\emph{Sketch: the same affine-rule skeleton as the dense Jacobians
+(Theorems~\ref{ax:pdiv_dense}, \ref{ax:pdiv_dense_W}): the layer is
+linear in its input plus the bias, the Jacobian entry is the convolution
+of a basis vector, and that entry is a pad-conditional indicator which
+the closing collapse resolves.}
 \begin{enumerate}
   \item Define \(B(x, dy)_{c_i h_i w_i} :=
     \sum_{c_o, h_o, w_o} [\text{pad-valid}]\;
@@ -3300,8 +3383,9 @@ coordinate projection and the zero function.}
     where \(\hat{k}_h = h_i + p_H - h_o\),
     \(\hat{k}_w = w_i + p_W - w_o\) are the reconstructed kernel
     offsets and \([\text{pad-valid}]\) requires them to lie in
-    \([0, k_H) \times [0, k_W)\). Under the substitution
-    \(k_h \leftrightarrow k_H - 1 - k_h\) this is the reversed-kernel,
+    \([0, k_H) \times [0, k_W)\). For odd kernels, where
+    \(k_H - 1 - p_H = p_H\), the substitution
+    \(k_h \leftrightarrow k_H - 1 - k_h\) turns this into the reversed-kernel,
     channel-swapped convolution of \(dy\) against \(W\) that the MLIR
     backward emits (\texttt{transpose} + \texttt{reverse} +
     \texttt{convolution}).
@@ -3312,32 +3396,30 @@ coordinate projection and the zero function.}
   \item The flattened forward
     \(v \mapsto \mathrm{flatten}\bigl(\mathrm{conv2d}(W, b)\,
       (\mathrm{unflatten}\, v)\bigr)\)
-    is affine in \(v\): a constant bias term plus
+    is affine in \(v\): the bias-free convolution
     \(\sum_{c, k_h, k_w} W_{o(\mathrm{idx}), c, k_h, k_w} \cdot
-      (\text{pad-conditional projection of } v)\).
-    \pf{Unfold \(\mathrm{conv2d}\) and \(\mathrm{flatten}\);
-    definitional (Definition~\ref{ax:conv2d}).}
+      (\text{pad-conditional projection of } v)\), additive and
+    homogeneous in \(v\), plus the broadcast bias.
+    \pf{Unfold \(\mathrm{conv2d}\) and \(\mathrm{flatten}\)
+    (Definition~\ref{ax:conv2d}); the two side conditions distribute
+    through the \((c, k_h, k_w)\) sum and the pad case split
+    (\texttt{Finset.sum\_add\_distrib}, \texttt{Finset.mul\_sum}).}
   \item Per-index Jacobian: for every flat \(\mathrm{idx_{in}}\),
     \(\mathrm{idx_{out}}\),
     \(\pdiv\)(flattened forward) \(=
       \sum_{c, k_h, k_w} W_{o(\mathrm{idx_{out}}), c, k_h, k_w} \cdot
       [\text{pad-valid} \wedge \mathrm{idx_{in}} =
         \text{encoded input position}]\).
-    \pf{By 3: sum rule + constant rule
-    (Theorems~\ref{ax:pdiv_add}, \ref{ax:pdiv_const}) drop the bias;
-    the finite-sum rule (Theorem~\ref{thm:pdiv_finset_sum}) fires
-    three times over \((c, k_h, k_w)\); per summand the product rule
-    (Theorem~\ref{ax:pdiv_mul}) applies with the \(W\)-factor
-    constant, and a case split on the pad condition leaves either a
-    coordinate projection --- a reindex, whose Jacobian is the
-    Kronecker indicator (Theorem~\ref{ax:pdiv_reindex}) --- or the
-    zero function (Theorem~\ref{ax:pdiv_const}).}
+    \pf{Affine rule (Theorem~\ref{thm:pdiv_of_affine}) with 3: the entry
+    is the bias-free convolution of \(\basisVec_{\mathrm{idx_{in}}}\),
+    and a basis vector read at the pad-conditional position is exactly
+    the indicator.}
   \item Contract 4 with \(dy\) and collapse: re-index the sum over
     flat \(\mathrm{idx_{out}}\) to \((c_o, h_o, w_o)\); for each
     fixed output position the triple sum over \((c, k_h, k_w)\)
-    collapses by three \texttt{Finset.sum\_eq\_single} applications
-    at \(c = c_i\), \(k_h = \hat{k}_h\), \(k_w = \hat{k}_w\).
-    \pf{The indicator in 4 is nonzero for exactly that one summand.}
+    collapses at \(c = c_i\), \(k_h = \hat{k}_h\), \(k_w = \hat{k}_w\).
+    \pf{The indicator in 4 is nonzero for exactly that one summand
+    (\texttt{padTap\_indicator}, \texttt{Finset.sum\_ite\_eq'}).}
   \item \Qed{}
     \pf{What remains after 5 is exactly \(B(x, dy)_{c_i h_i w_i}\)
     from 1; with 2 this is the goal.}
@@ -3348,7 +3430,7 @@ coordinate projection and the zero function.}
   \label{ax:conv2dWeightGradHasVJP}
   \lean{Proofs.conv2dWeightGradHasVJP}
   \leanok
-  \uses{ax:conv2d, ax:pdiv, def:hasvjp}
+  \uses{ax:conv2d, ax:pdiv, def:hasvjp, thm:pdiv_of_affine}
   The transpose-trick formula. As with the dense weight
   Jacobian (Theorem~\ref{ax:pdiv_dense_W}), differentiate in the
   flattened kernel: let
@@ -3365,8 +3447,8 @@ coordinate projection and the zero function.}
 \begin{proof}
 \leanok
 \emph{Sketch: the dual of Theorem~\ref{ax:conv2dHasVJP3} --- the
-same affine decomposition, but now \(v\) (the kernel) sits in the
-reindex factor and the saved input \(x\) is the constant.}
+same affine decomposition, but now \(v\) (the kernel) is the variable
+and the saved input \(x\) is the constant coefficient.}
 \begin{enumerate}
   \item Define \(B(v, dy)_{\mathrm{idx}}\), decoding
     \(\mathrm{idx} \leftrightarrow (o', c', k_h', k_w')\), as
@@ -3379,28 +3461,26 @@ reindex factor and the saved input \(x\) is the constant.}
       dy_{\mathrm{idx_{out}}}\).
     \pf{Definition~\ref{def:hasvjp}, with \(B\) as the candidate
     backward function.}
-  \item \(F\) is affine in \(v\): constant bias plus
+  \item \(F\) is affine in \(v\): the bias-free convolution
     \(\sum_{c, k_h, k_w} v_{\varphi(o(\mathrm{idx_{out}}), c, k_h, k_w)}
-      \cdot (\text{pad-conditional } x \text{ term})\), where
+      \cdot (\text{pad-conditional } x \text{ term})\), additive and
+    homogeneous in \(v\), plus the broadcast bias, where
     \(\varphi\) is the kernel-index bijection
     (\texttt{Kernel4.flatten}).
-    \pf{Unfold \(\mathrm{conv2d}\) and the flattens; definitional
-    (Definition~\ref{ax:conv2d}).}
+    \pf{Unfold \(\mathrm{conv2d}\) and the flattens
+    (Definition~\ref{ax:conv2d}); \texttt{add\_mul},
+    \texttt{Finset.sum\_add\_distrib}, \texttt{Finset.mul\_sum}.}
   \item Per-index Jacobian:
     \(\pdiv F\, v\, \mathrm{idx}\, \mathrm{idx_{out}}
       = \sum_{c, k_h, k_w}
         [\mathrm{idx} = \varphi(o(\mathrm{idx_{out}}), c, k_h, k_w)]
         \cdot (\text{pad-conditional } x \text{ term})\).
-    \pf{By 3: sum rule + constant rule (Theorems~\ref{ax:pdiv_add},
-    \ref{ax:pdiv_const}) drop the bias; finite-sum rule
-    (Theorem~\ref{thm:pdiv_finset_sum}) \(\times 3\); product rule
-    (Theorem~\ref{ax:pdiv_mul}) with the \(x\)-factor constant and
-    the \(v\)-factor a reindex through \(\varphi\), whose Jacobian is
-    the Kronecker indicator (Theorem~\ref{ax:pdiv_reindex}).}
+    \pf{Affine rule (Theorem~\ref{thm:pdiv_of_affine}) with 3: the
+    bias-free convolution with the basis kernel
+    \(\basisVec_{\mathrm{idx}}\) has one nonzero tap.}
   \item Contract 4 with \(dy\) and collapse: the \((c, k_h, k_w)\)
     sum collapses on \(\mathrm{idx}\)'s decode
-    \((c', k_h', k_w')\) by injectivity of \(\varphi\)
-    (\texttt{Finset.sum\_eq\_single} \(\times 3\)); re-index
+    \((c', k_h', k_w')\) by injectivity of \(\varphi\); re-index
     \(\mathrm{idx_{out}}\) to \((o, h_i, w_i)\) and collapse the
     channel sum at \(o = o'\).
     \pf{The indicator forces \(o = o'\); the spatial sums survive.}
@@ -3414,7 +3494,7 @@ reindex factor and the saved input \(x\) is the constant.}
   \label{ax:conv2dBiasGradHasVJP}
   \lean{Proofs.conv2dBiasGradHasVJP}
   \leanok
-  \uses{ax:conv2d, ax:pdiv, def:hasvjp}
+  \uses{ax:conv2d, ax:pdiv, def:hasvjp, thm:pdiv_of_affine}
   Sum the cotangent over spatial dims per channel.
   \Prove{} \(\HasVJP\, \bigl(b \mapsto \mathrm{flatten}
     (\mathrm{conv2d}(W, b)\, x)\bigr)\), with backward
@@ -3436,14 +3516,13 @@ reindex factor and the saved input \(x\) is the constant.}
     \((\text{channel reindex of } b) + (\text{$W\!,x$ term constant
     in } b)\), so
     \(\pdiv = \delta_{o,\, \mathrm{chan}(\mathrm{idx})}\).
-    \pf{Sum rule (Theorem~\ref{ax:pdiv_add}), reindex Jacobian
-    (Theorem~\ref{ax:pdiv_reindex}) with
-    \(\sigma = \mathrm{idx} \mapsto \mathrm{chan}(\mathrm{idx})\),
-    constant rule (Theorem~\ref{ax:pdiv_const}).}
+    \pf{Affine rule (Theorem~\ref{thm:pdiv_of_affine}): the channel
+    broadcast \(b' \mapsto (\mathrm{idx} \mapsto b'_{\mathrm{chan}(\mathrm{idx})})\)
+    is linear, and \(\basisVec_o\) broadcast is that indicator.}
   \item \Qed{}
     \pf{Contract 3 with \(dy\): re-index the flat sum to
     \((c, h_i, w_i)\); the Kronecker keeps exactly channel \(o\)'s
-    spatial positions (\texttt{Finset.sum\_eq\_single}), leaving
+    spatial positions (\texttt{Finset.sum\_ite\_eq'}), leaving
     \(B(b, dy)_o\); with 2 this is the goal.}
 \end{enumerate}
 \end{proof}
@@ -3501,18 +3580,27 @@ Chain rule at a point through the six stages; see
 \end{proof}
 \begin{theorem}[Emitted updates are the certified steps]
   \label{thm:cnn_fold}
-  \lean{Proofs.CnnFold.cnn_train_step_tied_certified}
+  \lean{Proofs.CnnFold.cnn_train_step_tied_certified, Proofs.CnnFoldB.cnn_train_step_tiedB,
+        Proofs.CnnFoldB.dhc2B_slice, Proofs.CnnFoldB.dhc1B_slice}
   \leanok
-  \uses{ax:conv2d, ax:conv2dBiasGradHasVJP, ax:conv2dWeightGradHasVJP, ax:maxPool2,
-      ax:pdiv, def:hasvjp, thm:denseBiasGrad_correct, thm:denseWeightGrad_correct}
+  \uses{ax:conv2d, ax:conv2dBiasGradHasVJP, ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP,
+      ax:maxPool2, ax:pdiv, ax:pdiv_dense_W, def:hasvjp, def:hasvjp3,
+      thm:denseBiasGrad_correct, thm:denseWeightGrad_correct, thm:pdiv_of_affine}
   \Prove{} all ten parameter updates \texttt{cnn\_train\_step.mlir} emits
   --- the dense head's \(W_5, b_5, W_4, b_4, W_3, b_3\) and the convolutions'
-  \(W_2, b_2, W_1, b_1\) --- denote the certified SGD step at the real
-  forward: each update is the parameter minus \(\alpha\) times its layer's
-  VJP at the chain cotangent. That cotangent starts as the softmax
-  cross-entropy gradient at the logits; the dense head carries it back to the
-  max pool, the max pool to \(\mathrm{conv}_2\), and \(\mathrm{conv}_2\) to
-  \(\mathrm{conv}_1\).
+  \(W_2, b_2, W_1, b_1\) --- denote, at a batch of \(N\) examples, the
+  certified SGD step at the real forward: each update is the parameter
+  minus \(\alpha\) times the sum over the batch of its layer's VJP at example
+  \(k\), contracted with example \(k\)'s chain cotangent. That cotangent
+  starts as the softmax cross-entropy gradient at the logits; the dense head
+  carries it back to the max pool, the max pool to \(\mathrm{conv}_2\), and
+  \(\mathrm{conv}_2\) to \(\mathrm{conv}_1\). At the batched index the chain
+  is the emitted backward subgraph itself --- the \texttt{select}s, the
+  \texttt{select\_and\_scatter} and the reversed-kernel
+  \texttt{convolution} --- and its slices are the hand-named chain cotangents
+  of the single-example reading (\texttt{cnnChainCotW2} outright,
+  \texttt{cnnChainCotW1} for odd kernels, the artifact's being \(3\times3\)).
+  For every \(N\); the artifact is \(N = 128\).
 \end{theorem}
 
 \begin{proof}
@@ -3574,7 +3662,7 @@ and the gradient moves to the real net with the germ; see
   \leanok
   \uses{ax:conv2d, ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:maxPool2, ax:pdiv,
       ax:pdiv_comp, ax:pdiv_dense, ax:pdiv_relu, ax:softmaxCE_grad, def:hasvjp,
-      def:hasvjp3}
+      def:hasvjp3, thm:pdiv_of_affine}
   \Assume{}
   \begin{enumerate}
     \item the second convolution's input and the dense weights are bounded,
@@ -3915,6 +4003,7 @@ because the flatten hands it a 6272-vector and nobody trimmed it, not
 because the task needs the width.
 
 \section{MLIR: Convolution}
+\label{sec:mlir_conv}
 
 \noindent\textbf{What is already proven.} \texttt{mnistCnnNoBnForward} is
 the conv\,$\to$\,relu\,$\to$\,conv\,$\to$\,relu\,$\to$\,maxPool\,$\to$\,flatten\,$\to$\,dense
@@ -3946,54 +4035,104 @@ proofs' own tensor type,
 \]
 where $\bar k = K - 1 - k$ is the spatial flip, and the bridge theorem
 \[
-  \texttt{conv\_back\_bridge\_1to2}:\quad
+  \texttt{conv\_back\_bridge}\;(k_H, k_W \text{ odd}):\quad
   [\![\texttt{convBackDenote}\,W]\!](dy)
   = (\texttt{conv2dHasVJP3}\,W\,b).\mathrm{backward}(x, dy)
 \]
-says the denotation of that graph is the proven conv input-VJP, the
-reversed-kernel identity that \texttt{mnistCnnNoBnHasVJPAt} only asserts.
-It is discharged here by expansion at the concrete shape (and again at the
-$2{\to}2$ shape, by \texttt{conv\_back\_bridge\_2to2}). The printer walks the
-graph and emits one \texttt{stablehlo} op per node: \texttt{transpose}
-for the channel swap, \texttt{reverse} for the spatial flip,
-\texttt{convolution} for the contraction. Here it is for the first
-conv's backward ($1{\to}2$ channels, $3\times3$ kernel, at $4\times4$):
+says the denotation of that graph is the proven conv input-VJP. It holds at
+every channel count, image size and odd kernel size at once: per output
+coordinate the reversed-kernel sum and the gradient formula of
+Theorem~\ref{ax:conv2dHasVJP3} are the same finite sum under the reindexing
+$k \leftrightarrow K-1-k$ (\texttt{reverseSlab\_eq\_gradSlab}), and that
+reindexing is a bijection exactly when $K - 1 - p = p$, which is oddness
+(\texttt{hkH}, \texttt{hkW}).
+
+The committed step of the chapter's network,
+\texttt{verified\_mlir/cnn\_train\_step.mlir}, carries that graph at the
+trained shape, $1{\to}32{\to}32$ channels at $28\times28$, batch 128.
+Here are the three operators the chapter added, as the backward pass
+meets them: the max-pool, the second ReLU, and the second convolution's
+input gradient (SSA names the artifact's, default \texttt{precision}
+dropped, lines wrapped, the \texttt{select\_and\_scatter} body elided):
 
 \begin{verbatim}
-func.func @conv_back(%dy: tensor<1x2x4x4xf32>,
-    %W: tensor<2x1x3x3xf32>) -> tensor<1x1x4x4xf32> {
-  %Wt = stablehlo.transpose %W, dims = [1, 0, 2, 3]
-          : (tensor<2x1x3x3xf32>) -> tensor<1x2x3x3xf32>
-  %Wr = stablehlo.reverse %Wt, dims = [2, 3] : tensor<1x2x3x3xf32>
-  %dx = stablehlo.convolution(%dy, %Wr)
+%v50 = stablehlo.reshape %v17 : (tensor<128x25088xf32>)
+      -> tensor<128x32x28x28xf32>
+%v51 = stablehlo.reshape %v49 : (tensor<128x6272xf32>)
+      -> tensor<128x32x14x14xf32>
+%v52 = stablehlo.constant dense<0.0> : tensor<f32>
+%v53 = "stablehlo.select_and_scatter"(%v50, %v51, %v52) ({
+// ...
+%v58 = stablehlo.compare GT, %v56, %v57 : (tensor<128x32x28x28xf32>,
+      tensor<128x32x28x28xf32>) -> tensor<128x32x28x28xi1>
+%v59 = stablehlo.select %v58, %v55, %v57 : tensor<128x32x28x28xi1>,
+      tensor<128x32x28x28xf32>
+// ...
+%v62 = stablehlo.transpose %W2, dims = [1, 0, 2, 3]
+      : (tensor<32x32x3x3xf32>) -> tensor<32x32x3x3xf32>
+%v63 = stablehlo.reverse %v62, dims = [2, 3] : tensor<32x32x3x3xf32>
+%v64 = stablehlo.convolution(%v61, %v63)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
       window = {stride = [1, 1], pad = [[1, 1], [1, 1]],
-                lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
-      : (tensor<1x2x4x4xf32>, tensor<1x2x3x3xf32>)
-          -> tensor<1x1x4x4xf32>
-  return %dx : tensor<1x1x4x4xf32>
-}
+      lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      {batch_group_count = 1 : i64, feature_group_count = 1 : i64}
+      : (tensor<128x32x28x28xf32>, tensor<32x32x3x3xf32>)
+      -> tensor<128x32x28x28xf32>
 \end{verbatim}
 
-\noindent Read it against the graph: \texttt{\%Wt} is the
+\noindent Read it against the graph, bottom up. \texttt{\%v62} is the
 \texttt{transpose dims [1,0,2,3]} that swaps the kernel's out- and
-in-channel axes, and \texttt{\%Wr} is the \texttt{reverse dims [2,3]} that
-flips both spatial axes ($\bar k_h,\bar k_w$). Together they build
-\texttt{reverseSwap}\,$W$. The \texttt{convolution} then convolves the
-incoming cotangent \texttt{\%dy} against that kernel, exactly
-$\texttt{conv2d}\,(\texttt{reverseSwap}\,W)$, the
-$1\,\text{channel} \leftarrow 2\,\text{channels}$ adjoint of the forward
-conv. The bridge theorem is precisely the claim that this text computes
-\texttt{conv2dHasVJP3}'s backward. The max-pool, flatten, dense, and
-relu nodes of the full backward are bridged the same way, and the max-pool
-\texttt{select\_and\_scatter} by \texttt{maxpool\_back\_bridge}, the dense
-\texttt{dot\_general}s exactly as in Chapter~\ref{chap:mlp}, so the
-whole CNN backward is covered, op by op.
+in-channel axes, and \texttt{\%v63} is the \texttt{reverse dims [2,3]}
+that flips both spatial axes ($\bar k_h, \bar k_w$). Together they build
+\texttt{reverseSwap}\,$W_2$. The \texttt{convolution} at \texttt{\%v64}
+convolves the incoming cotangent \texttt{\%v61} against that kernel,
+exactly $\texttt{conv2d}\,(\texttt{reverseSwap}\,W_2)$, the
+$32 \leftarrow 32$ adjoint of the forward conv, under the same
+\texttt{pad = [[1, 1], [1, 1]]} the forward used. Above it,
+\texttt{\%v58}/\texttt{\%v59} is the ReLU mask at the saved
+pre-activation \texttt{\%v56}, the second convolution's output, and
+\texttt{\%v53} is the max-pool backward: \texttt{select\_and\_scatter}
+walks each $2\times2$ window of the pre-pool activation \texttt{\%v50}
+with a \texttt{GE} select, which picks the window's first maximal cell,
+and scatters the pooled cotangent \texttt{\%v51} onto it with
+\texttt{add}. That is the lowest-index tie-break of
+Definition~\ref{ax:maxPool2HasVJP3} written as an operation.
+
+Three theorems cover the three. \texttt{conv\_back\_bridge} is the
+convolution; \texttt{maxPoolBack\_faithful} says the
+\texttt{select\_and\_scatter} denotes \texttt{maxPoolFlatHasVJPAt}'s
+backward wherever every window has a single maximum
+(\texttt{MaxPool2Smooth}); the ReLU mask is Chapter~\ref{chap:mlp}'s
+\texttt{relu\_back\_bridge}. Theorem~\ref{thm:cnn_fold} then composes
+them at batch 128. Its slice lemmas identify example $k$'s slice of
+\texttt{\%v61}, the cotangent entering the second convolution's backward,
+with the certified chain (\texttt{dhc2B\_slice}), and the slice of
+\texttt{\%v70}, the cotangent at the first convolution's output once the
+first ReLU's mask \texttt{\%v69} is applied to \texttt{\%v64}, with the
+certified chain through \texttt{conv\_back\_bridge}
+(\texttt{dhc1B\_slice}), which is where the odd-kernel hypothesis
+enters. The cotangent each convolution's weight update is stated at is
+the slice of these emitted operations, not a hand-named value beside
+them. One detail of printing: this per-example renderer writes
+\texttt{transpose} then \texttt{reverse}, and the batched renderers of
+Chapters~\ref{chap:residual} onward write \texttt{reverse} then
+\texttt{transpose}. The two kernels are the same tensor, since swapping
+the channel axes and flipping the spatial ones commute, and the batched
+graph Theorem~\ref{thm:cnn_fold} reads this file at carries a descriptor
+(\texttt{convBackP}) for exactly this order, so that the printed text
+does not change.
+
 
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
-  \item \textbf{The convolution bridge is unconditional.} A convolution
-    is linear, so it holds at every input.
+  \item \textbf{The convolution bridge holds at every input, for odd
+    kernels.} A convolution is linear, so there is no hypothesis on $x$;
+    the one hypothesis is on the kernel shape, $k_H$ and $k_W$ odd, and
+    every kernel in Chapters~\ref{chap:cnn}--\ref{chap:se} is. Where a net
+    has an even kernel (ConvNeXt's $4\times4$ stem and $2\times2$
+    downsamples, Chapter~\ref{chap:layernorm}) the tie passes the kernel
+    zero-extended to the next odd size (\texttt{padOdd}), which is the
+    asymmetric pad the emitter writes there.
   \item \textbf{ReLU is a smooth-point bridge} (no pre-activation exactly
     zero), failing only on that measure-zero set.
   \item \textbf{Max-pool is a smooth-point bridge too.} It holds where
@@ -4003,17 +4142,18 @@ whole CNN backward is covered, op by op.
     not measure-zero the way ReLU's kink is, and the whole-net theorem
     states it as a hypothesis (\texttt{h\_mp} in
     Theorem~\ref{thm:mnistCnnNoBnHasVJPAt}).
-  \item \textbf{Representative scale.} $1{\to}2$ channels at $4\times4$
-    (production: $1{\to}32$ at $28\times28$).
+  \item \textbf{Shape.} The listing is the trained net; the bridge
+    theorems are shape-general and the tie is stated at batch 128.
 \end{itemize}
 
 \section{Recap}
 
 Two operations, and the first whole-network theorem with a hypothesis in
-it. The convolution is a linear map, so its backward is unconditional: a
-convolution of the cotangent against the kernel with its channel axes
-swapped and its spatial axes flipped, which is what the emitted
-\texttt{transpose} and \texttt{reverse} compute. The max-pool is the
+it. The convolution is a linear map, so its backward needs no hypothesis
+on the input: for an odd kernel it is a convolution of the cotangent
+against the kernel with its channel axes swapped and its spatial axes
+flipped, which is what the emitted \texttt{transpose} and \texttt{reverse}
+compute. The max-pool is the
 second convention after ReLU's, argmax ties broken by the lowest index, and
 its bridge holds where every window has one maximum. An all-zero window
 after ReLU fails that, so the excluded set is not measure-zero, and
@@ -4065,8 +4205,8 @@ them}. The takeaways are concrete:
   (Theorem~\ref{ax:bnIstdBroadcast_differentiable}).
 \item BN's payoff is speed and stability: a deeper
   network reaches the same accuracy in far fewer epochs with it than
-  without, and five runs of the same command land two to three times
-  closer together. The example in
+  without, and five runs of the same command land between two and a half
+  and more than ten times closer together, depending on the optimizer. The example in
   \S\ref{sec:bn_cifar_example} measures both directly.
 \end{itemize}
 
@@ -4097,6 +4237,24 @@ Together they are the layer.
 \item \textbf{Affine.} Scale and shift with learnable per-channel
   parameters \(\gamma\) and \(\beta\): \(\mathrm{bn}(x) = \gamma \hat{x} + \beta\).
 \end{enumerate}
+
+One thing to fix before the math, because the chapter's measurements
+depend on it. Ioffe \& Szegedy take \(\mu\) and \(\sigma^2\) over the
+batch: every image in the mini-batch, at every spatial position, for one
+channel. The networks this chapter trains take them \emph{per image}: for
+each example and each channel, over that image's \(32 \times 32 = 1{,}024\)
+spatial cells, and the batch axis is never reduced. Nothing crosses from
+one example to another, so there are no running statistics to keep, the
+layer computes the same thing in training and at evaluation, and every
+op in the emitted graph stays per-example, which is what lets the step
+theorems below be stated one example at a time. The three steps and their
+Jacobians are the same for any group of values that is normalized
+together; \(n\) below is the group size. Chapter~\ref{chap:residual}
+enlarges the group to the whole batch, \(N \times H \times W\) cells per
+channel, keeps running statistics for evaluation, and proves the batched
+form (\texttt{bnBatchTensor4}). Where this chapter says ``BatchNorm'' it
+means this per-image normalization with a learned per-channel scale and
+shift.
 
 The chapter's first six theorems are the Jacobian of each step
 and the VJPs that fall out of them. Theorem
@@ -4308,7 +4466,7 @@ Figure~\ref{fig:depgraph_bn} is the dependency graph of this section.
   \label{ax:pdiv_bnAffine}
   \lean{Proofs.pdiv_bnAffine}
   \leanok
-  \uses{ax:pdiv}
+  \uses{ax:pdiv, thm:pdiv_of_affine}
   For \(\mathrm{bnAffine}(\gamma, \beta)\, v = \lambda i.\;
   \gamma v_i + \beta\):
   \Prove{} \(\pdiv\bigl(\mathrm{bnAffine}(\gamma, \beta)\bigr)\, v\, i\, j
@@ -4318,20 +4476,13 @@ Figure~\ref{fig:depgraph_bn} is the dependency graph of this section.
 \begin{proof}
 \leanok
 \begin{enumerate}
-  \item \(\pdiv\bigl(\mathrm{bnAffine}(\gamma, \beta)\bigr)\, v\, i\, j
-          = \pdiv(y \mapsto \gamma \cdot y)\, v\, i\, j\).
-    \pf{Split \(\gamma v_i + \beta\) as
-    \((\gamma \cdot v) + (\text{const } \beta)\): sum rule
-    (Theorem~\ref{ax:pdiv_add}) and constant rule
-    (Theorem~\ref{ax:pdiv_const}).}
-  \item \(\pdiv(y \mapsto \gamma \cdot y)\, v\, i\, j
-          = \gamma\, \delta_{ij}\).
-    \pf{Factor as \((\text{const } \gamma) \cdot (\text{identity})\):
-    product rule (Theorem~\ref{ax:pdiv_mul}); the constant factor's
-    Jacobian vanishes (Theorem~\ref{ax:pdiv_const}) and the identity
-    Jacobian is \(\delta_{ij}\) (Theorem~\ref{ax:pdiv_id}).}
+  \item \(\mathrm{bnAffine}(\gamma, \beta)
+          = (y \mapsto \gamma \cdot y) + (\lambda\_.\; \beta)\), and
+    \(y \mapsto \gamma \cdot y\) is additive and homogeneous.
+    \pf{Unfold; \texttt{mul\_add} and commutativity of the scalars.}
   \item \Qed{}
-    \pf{Chain 1 and 2.}
+    \pf{Affine rule (Theorem~\ref{thm:pdiv_of_affine}) with 1: the entry
+    is \((\gamma \cdot \basisVec_i)_j = \gamma\, \delta_{ij}\).}
 \end{enumerate}
 \end{proof}
 
@@ -4339,7 +4490,7 @@ Figure~\ref{fig:depgraph_bn} is the dependency graph of this section.
   \label{ax:pdiv_bnCentered}
   \lean{Proofs.pdiv_bnCentered}
   \leanok
-  \uses{ax:pdiv}
+  \uses{ax:pdiv, thm:pdiv_of_affine}
   For \(\mathrm{bnCentered}\, x = \lambda j.\; x_j - \mu(x)\), where
   \(\mu(x) = \frac{1}{n}\sum_s x_s\):
   \Prove{} \(\pdiv(\mathrm{bnCentered})\, x\, i\, j
@@ -4349,27 +4500,17 @@ Figure~\ref{fig:depgraph_bn} is the dependency graph of this section.
 \begin{proof}
 \leanok
 \begin{enumerate}
-  \item \(\pdiv(\mathrm{bnCentered})\, x\, i\, j
-          = \delta_{ij}
-            + \pdiv\bigl(y \mapsto -\tfrac{1}{n}\textstyle\sum_s y_s\bigr)\, x\, i\, j\).
-    \pf{\(\mathrm{bnCentered} = \mathrm{id} + \bigl(y \mapsto
-    -(\sum_s y_s)/n\bigr)\): sum rule (Theorem~\ref{ax:pdiv_add}),
-    identity Jacobian (Theorem~\ref{ax:pdiv_id}).}
-  \item \(\pdiv\bigl(y \mapsto -\tfrac{1}{n}\textstyle\sum_s y_s\bigr)\, x\, i\, j
-          = -\tfrac{1}{n} \cdot
-            \pdiv\bigl(y \mapsto \textstyle\sum_s y_s\bigr)\, x\, i\, j\).
-    \pf{Factor as \((\text{const } -\tfrac{1}{n}) \cdot (\text{sum})\):
-    product rule (Theorem~\ref{ax:pdiv_mul}); the constant factor's
-    Jacobian vanishes (Theorem~\ref{ax:pdiv_const}).}
-  \item \(\pdiv\bigl(y \mapsto \textstyle\sum_s y_s\bigr)\, x\, i\, j
-          = \sum_s \delta_{is} = 1\).
-    \pf{Finite-sum rule (Theorem~\ref{thm:pdiv_finset_sum}) over the
-    coordinate projections; each projection is a reindex with
-    Jacobian \(\delta_{is}\) (Theorem~\ref{ax:pdiv_reindex});
-    the Kronecker sum collapses (\texttt{Finset.sum\_ite\_eq}).}
+  \item \(\mathrm{bnCentered}\) is linear: additive and homogeneous,
+    because the mean is.
+    \pf{\(\mu(u + v) = \mu(u) + \mu(v)\) and \(\mu(a\,v) = a\,\mu(v)\)
+    (\texttt{Finset.sum\_add\_distrib}, \texttt{Finset.mul\_sum}).}
   \item \Qed{}
-    \pf{Chain 1--3: \(\delta_{ij} + (-\tfrac{1}{n}) \cdot 1
-      = \delta_{ij} - 1/n\).}
+    \pf{Linear rule (Theorem~\ref{thm:pdiv_of_affine} at \(c = 0\),
+    \texttt{pdiv\_of\_linear}): the entry is
+    \(\mathrm{bnCentered}(\basisVec_i)_j
+      = (\basisVec_i)_j - \mu(\basisVec_i) = \delta_{ij} - 1/n\),
+    since a basis vector has mean \(1/n\)
+    (\texttt{Finset.sum\_ite\_eq'}).}
 \end{enumerate}
 \end{proof}
 
@@ -4437,8 +4578,10 @@ identity.}
           = \fderiv_{\R}\,\bigl(x' \mapsto \mathrm{istd}(x', \varepsilon)\bigr)\, x\, (\basisVec_i)\)
     --- the output is constant in \(j\), so \(\pdiv\) reduces to the
     scalar derivative.
-    \pf{Definition~\ref{ax:pdiv} and \texttt{fderiv\_apply},
-    legitimate by Theorem~\ref{ax:bnIstdBroadcast_differentiable}.}
+    \pf{\texttt{pdiv\_eq\_fderiv\_coord}: at a differentiable point,
+    \(\pdiv\) at \((i, j)\) is the Fréchet derivative of the \(j\)-th
+    coordinate function at \(\basisVec_i\); legitimate by
+    Theorem~\ref{ax:bnIstdBroadcast_differentiable}.}
   \item Derivative chain. Let \(C_k := \mathrm{proj}_k -
     \tfrac{1}{n}\sum_{i'} \mathrm{proj}_{i'}\) be the centering CLM
     (so \(C_k\, y = y_k - \mu(y)\)). Then
@@ -4643,7 +4786,7 @@ replaces the outer one first. See
   \label{thm:cifar_bn_fold}
   \lean{Proofs.SgdNode.bnSgdPairTied_holds}
   \leanok
-  \uses{ax:pdiv}
+  \uses{ax:pdiv, thm:pdiv_of_affine}
   \Prove{} for a per-channel BatchNorm at any spatial shape and any
   cotangent \(c\), the two emitted updates denote the certified steps
   \(\gamma - \alpha \sum \pdiv(\mathrm{bn})\cdot c\) and
@@ -4708,7 +4851,8 @@ Theorem~\ref{thm:cifar_bn_fold} at each convolution; see
   \lean{Proofs.Cifar8TieG.cifar8_train_step_tiedG, Proofs.Cifar8BnTieG.cifar8Bn_train_step_tiedG}
   \leanok
   \uses{ax:conv2d, ax:conv2dBiasGradHasVJP, ax:conv2dWeightGradHasVJP, ax:maxPool2,
-      ax:pdiv, def:hasvjp, thm:denseBiasGrad_correct, thm:denseWeightGrad_correct}
+      ax:pdiv, def:hasvjp, thm:denseBiasGrad_correct, thm:denseWeightGrad_correct,
+      thm:pdiv_of_affine}
   \Prove{} every gradient node of the packed steps
   \texttt{cifar8w\_\{sgd,mom,adam\}} and \texttt{cifar8w\_bn\_\{sgd,mom,adam\}}
   --- twenty-two without BatchNorm and thirty-eight with it --- denotes the
@@ -4732,7 +4876,7 @@ The fused ties' chain, node for node, with the update peeled off; see
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:maxPool2, ax:pdiv,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasgradat, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:denseWeightGrad_correct, thm:hasGradAt_comp, thm:vjpComp}
+      thm:denseWeightGrad_correct, thm:hasGradAt_comp, thm:pdiv_of_affine, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item odd kernels \hfill[\texttt{hkH}, \texttt{hkW}]
@@ -4846,11 +4990,13 @@ from that verified training step running on a GPU.
 \medskip\noindent\textbf{On repeatability.} Convolutional networks do not
 reproduce run to run on CUDA, because XLA selects convolution algorithms
 per process, so two runs of the identical command differ. Every accuracy
-in this section is therefore the median of five independent runs
-of the same command at the same seed, and each
-table states the observed range alongside it. That spread is about a
-point, which is wide enough to swallow small differences, so the text
-below only ranks gaps that are clearly outside it.
+in this section is therefore the median of five runs at seeds 1--5
+(\texttt{LEAN\_MLIR\_SEED}, which moves the initialisation, the shuffle
+and the flips), and each table states the observed range alongside it.
+That spread is seed-to-seed variance plus the nondeterminism: about a
+point with the normalization, about three without, which is wide enough
+to swallow small differences, so the text below only ranks gaps that are
+clearly outside it.
 
 \subsection*{Architecture}
 
@@ -4999,10 +5145,14 @@ BatchNorm's $\gamma$ initialises to ones and $\beta$ to zeros, so
 a freshly built net's BN is the identity and the surrounding
 convolutions see exactly what they would have seen without it. Zero-init
 $\gamma$ instead and the whole trunk outputs $\beta$ regardless of its
-input. Note also what is not here: the running mean and variance.
-Those are statistics, not parameters --- no gradient reaches them --- which
-is why they are threaded separately through \texttt{bnChannels} rather
-than living in this list.
+input. Note also what is not here: running mean and variance. This net
+has none, because its statistics are per image (\S\ref{sec:bn_runit}
+above), so training and evaluation compute the same forward and the spec
+leaves \texttt{runningBN} off. The ImageNet nets of
+Chapters~\ref{chap:residual}--\ref{chap:se} turn it on; there the
+running statistics are state, not parameters --- no gradient reaches them
+--- and the renderer threads them through separate \texttt{bnChannels}
+slots rather than this list.
 
 \medskip\noindent\textbf{The spec-to-proof tie.} These are
 \texttt{VerifiedNetSpec}s, which is what makes the listing above
@@ -5382,49 +5532,80 @@ book where the math reaches past chain-sum-product into real analysis.
 
 \medskip\noindent\textbf{The gap and how we close it.} The three-term
 backward is not elementwise, because the two $\sum_k$ reductions couple
-every coordinate to every other. The emitted backward graph is given a
+every coordinate in a group to every other. The emitted graph is given a
 denotation in the proofs' own vector type, and
 \texttt{bn\_back\_bridge} proves that denotation equal to
-\texttt{bnHasVJP}'s backward. The emitted reduce/broadcast/elementwise
-graph is, by machine check, the three-term formula. Here is what the
-printer emits, with the forward-statistic recompute (mean, variance,
-\texttt{rsqrt}, normalize) elided to its one comment line, at $n=4$:
+\texttt{bnHasVJP}'s backward: the reduce/broadcast/elementwise graph is,
+by machine check, the three-term formula. Here it is in the chapter's
+trained artifact, \texttt{verified\_mlir/cifar8w\_bn\_sgd\_train\_step.mlir},
+at the eighth convolution's BatchNorm (32 channels at $4\times4$, batch
+128), with the recompute of the forward statistics elided down to the
+\texttt{rsqrt} (SSA names the artifact's, lines wrapped):
 
 \begin{verbatim}
-// forward stats recomputed: %mu, %istd, %xhat = (x-mu)*istd
-%dxhat = stablehlo.multiply %gb, %dy : tensor<2x4xf32>   // dxhat = g*dy
-%sdx_r = stablehlo.reduce(%dxhat init: %sc)
-           applies stablehlo.add across dimensions = [1]
-           : (tensor<2x4xf32>, tensor<f32>) -> tensor<2xf32>
-%sdx = stablehlo.broadcast_in_dim %sdx_r, dims = [0]
-           : (tensor<2xf32>) -> tensor<2x4xf32>          // sum dxhat
-%xd = stablehlo.multiply %xhat, %dxhat : tensor<2x4xf32>
-%sxdx_r = stablehlo.reduce(%xd init: %sc)
-           applies stablehlo.add across dimensions = [1]
-           : (tensor<2x4xf32>, tensor<f32>) -> tensor<2xf32>
-%sxdx = stablehlo.broadcast_in_dim %sxdx_r, dims = [0]
-           : (tensor<2xf32>) -> tensor<2x4xf32>          // sum xhat*dxhat
-%t1 = stablehlo.multiply %dxhat, %nf : tensor<2x4xf32>   // N*dxhat
-%i1 = stablehlo.subtract %t1, %sdx : tensor<2x4xf32>     //   - sum dxhat
-%xs = stablehlo.multiply %xhat, %sxdx : tensor<2x4xf32>
-%i2 = stablehlo.subtract %i1, %xs : tensor<2x4xf32>      //   - xhat*(sum)
-%s = stablehlo.divide %istd, %nf : tensor<2x4xf32>       // istd/N
-%dx = stablehlo.multiply %s, %i2 : tensor<2x4xf32>
-return %dx : tensor<2x4xf32>
+%v289 = stablehlo.reshape %v288 : (tensor<128x512xf32>)
+      -> tensor<128x32x4x4xf32>
+%v290 = stablehlo.reshape %v219 : (tensor<128x512xf32>)
+      -> tensor<128x32x4x4xf32>
+%v292 = stablehlo.constant dense<16.0> : tensor<128x32x4x4xf32>
+// ...
+%v303 = stablehlo.rsqrt %v302 : tensor<128x32x4x4xf32>
+%v304 = stablehlo.multiply %v297, %v303 : tensor<128x32x4x4xf32>
+%v305 = stablehlo.broadcast_in_dim %g8, dims = [1] : (tensor<32xf32>)
+      -> tensor<128x32x4x4xf32>
+%v306 = stablehlo.multiply %v305, %v289 : tensor<128x32x4x4xf32>
+%v307 = stablehlo.reduce(%v306 init: %v291)
+      applies stablehlo.add across dimensions = [2, 3]
+      : (tensor<128x32x4x4xf32>, tensor<f32>) -> tensor<128x32xf32>
+%v308 = stablehlo.broadcast_in_dim %v307, dims = [0, 1]
+      : (tensor<128x32xf32>) -> tensor<128x32x4x4xf32>
+%v309 = stablehlo.multiply %v304, %v306 : tensor<128x32x4x4xf32>
+%v310 = stablehlo.reduce(%v309 init: %v291)
+      applies stablehlo.add across dimensions = [2, 3]
+      : (tensor<128x32x4x4xf32>, tensor<f32>) -> tensor<128x32xf32>
+%v311 = stablehlo.broadcast_in_dim %v310, dims = [0, 1]
+      : (tensor<128x32xf32>) -> tensor<128x32x4x4xf32>
+%v312 = stablehlo.multiply %v306, %v292 : tensor<128x32x4x4xf32>
+%v313 = stablehlo.subtract %v312, %v308 : tensor<128x32x4x4xf32>
+%v314 = stablehlo.multiply %v304, %v311 : tensor<128x32x4x4xf32>
+%v315 = stablehlo.subtract %v313, %v314 : tensor<128x32x4x4xf32>
+%v316 = stablehlo.divide %v303, %v292 : tensor<128x32x4x4xf32>
+%v317 = stablehlo.multiply %v316, %v315 : tensor<128x32x4x4xf32>
 \end{verbatim}
 
-\noindent Read it against the formula. \texttt{\%dxhat} is the affine
-backward $\gamma\,dy$, and each \texttt{reduce} along \texttt{dimensions = [1]}
-followed by a \texttt{broadcast\_in\_dim} is one of the cross-coordinate
-sums ($\sum_k dy_k$ as \texttt{\%sdx}, $\sum_k\hat{x}_k\,dy_k$ as
-\texttt{\%sxdx}). \texttt{\%i1} assembles $n\,dy - \sum dy$ (the direct term
-minus the centering correction), \texttt{\%i2} subtracts the rank-1
-normalization correction $\hat{x}\sum\hat{x}\,dy$, and \texttt{\%dx} scales
-the whole bracket by $\mathrm{istd}/n$. The graph folds $\gamma$ into
-\texttt{\%dxhat} up front, which is why that leading scale is
-$\mathrm{istd}/n$ and not $\mathrm{istd}\,\gamma/n$. It is the same
-formula with $\gamma$ pulled inside the parenthesis. The bridge theorem is
-precisely the claim that this text computes \texttt{bnHasVJP}'s backward.
+\noindent Read it against the formula. \texttt{\%v289} is the incoming
+cotangent $dy$ and \texttt{\%v290} the layer's input $x$; \texttt{\%v303}
+is $\mathrm{istd}$ and \texttt{\%v304} is $\hat{x}$, recomputed from $x$
+rather than saved. \texttt{\%v306} is the affine backward $\gamma\,dy$,
+with $\gamma$ (\texttt{\%g8}) broadcast along the channel axis. Each
+\texttt{reduce} across \texttt{dimensions = [2, 3]} followed by a
+\texttt{broadcast\_in\_dim} is one of the cross-coordinate sums:
+$\sum_k \gamma\,dy_k$ as \texttt{\%v308} and
+$\sum_k \hat{x}_k\,\gamma\,dy_k$ as \texttt{\%v311}. \texttt{\%v312} is
+$n\,\gamma\,dy$ with $n = 16$ (\texttt{\%v292}), \texttt{\%v313}
+subtracts the centering correction, \texttt{\%v315} subtracts the rank-1
+normalization correction $\hat{x}\sum\hat{x}\,\gamma\,dy$, and
+\texttt{\%v317} scales the bracket by $\mathrm{istd}/n$ (\texttt{\%v316}).
+The graph folds $\gamma$ into \texttt{\%v306} up front, which is why that
+leading scale is $\mathrm{istd}/n$ and not $\mathrm{istd}\,\gamma/n$: the
+same formula with $\gamma$ pulled inside the parenthesis.
+
+The reduction axes say which layer this is. \texttt{[2, 3]} are the two
+spatial axes, so each statistic is taken per image and per channel over
+the 16 cells of a $4\times4$ map, which is the per-image normalization
+the section ``What BN actually is'' above describes; a batch-statistics
+BatchNorm reduces over \texttt{[0, 2, 3]}, and that is what the ResNet
+and MobileNet artifacts of the next chapters emit. Both are instances of
+the one theorem, over groups of different width. The leaf theorem here is
+\texttt{bnPerChannelBack\_faithful}: the per-channel three-term graph
+denotes the input gradient of \texttt{bnPerChannelTensor3}, the
+block-diagonal Jacobian contracted against $dy$, under $\varepsilon > 0$;
+its batch-statistics twin is
+\texttt{bnBatchTensor4GradInput\_eq\_backward}.
+Theorems~\ref{thm:cifar8bn_step_tie} and~\ref{thm:cifar8_step_tieG} state
+that every parameter update in this file is the certified step at the
+cotangent the file's own backward delivers, the eight BatchNorms
+included.
 
 \medskip\noindent Because LayerNorm is BatchNorm along a different axis, the
 very same emitted graph denotes the LayerNorm backward
@@ -5435,12 +5616,11 @@ ConvNeXt blocks built on this foundation.
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
   \item \textbf{Needs $\varepsilon > 0$.} The inverse-stddev term carries an
-    $\mathrm{istd}^3$. Given $\varepsilon > 0$ the bridge is unconditional
-    (smooth everywhere, with no smooth-point exclusion, unlike ReLU and
-    max-pool).
-  \item \textbf{Representative scale} ($n = 4$).
+    $\mathrm{istd}^3$. Given $\varepsilon > 0$ the bridge holds at every
+    input, with no smooth-point exclusion, unlike ReLU and max-pool.
+  \item \textbf{Shape.} The listing is one of the eight BatchNorms of the
+    trained net; the theorem is stated over any group width $n$.
 \end{itemize}
-
 
 \section{Recap}
 
@@ -5712,7 +5892,7 @@ fixed weights.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{R34PosB}]
@@ -5745,7 +5925,7 @@ activation; see \leandocref{Proofs.resnet34ForwardBFullHasVJPAt\_correct}.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item the ResNet-34 conditions, at ResNet-50's sixteen bottleneck blocks
@@ -5770,7 +5950,8 @@ As for ResNet-34, with the bottleneck in place of the basic block; see
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon_s > 0\), the stem ReLU off its kink and the stem pool's
@@ -5809,8 +5990,8 @@ stem's endpoint ties, and each block's backward in its slot; see
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
       thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:denseWeightGrad_correct, thm:identityHasVJP, thm:rowwiseHasVJPMat,
-      thm:vjpComp}
+      thm:denseWeightGrad_correct, thm:identityHasVJP, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} each of the 110 emitted parameter gradients of the batched
   ResNet-34 step (\texttt{resnet34\_sgd\_train\_step.mlir} and
   \texttt{\_adam\_} at \(N = 32\), \texttt{resnet34in\_momdp64} at
@@ -5842,7 +6023,7 @@ certified block backwards; see
       ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad,
       def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
       thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
-      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum,
+      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine,
       thm:resnet34_step_tie, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
@@ -5882,7 +6063,7 @@ Theorem~\ref{thm:hasGradAt_comp} per stage; see
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
       thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
       thm:denseWeightGrad_correct, thm:identityHasVJP, thm:pdiv_finset_sum,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} each of the 161 parameter gradients of the batched ResNet-50 step
   denotes the certified batch gradient at the chain cotangent of a loss
   cotangent \(g\) left as a binder, generic in \(N\) and \(q\). Instantiated
@@ -5908,7 +6089,7 @@ As for ResNet-34, over the three block kinds; see
       ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad,
       def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
       thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
-      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum,
+      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine,
       thm:resnet50_step_tie, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
@@ -5938,7 +6119,7 @@ As for ResNet-34; see \leandocref{Proofs.ResNet50TieB.r50\_net\_lossGrad}.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:resnet34FullHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:resnet34FullHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} at the structural weights \texttt{sealW} and input
   \texttt{sealX}, batch 2, there is a class \(j_0\) and a pixel \(i_0\) at
   which the backward of the full-width ResNet-34 is non-zero: the identity of
@@ -5959,7 +6140,7 @@ coordinate; see \leandocref{Proofs.R34FullBSeal.sealX\_backward\_nontrivial}.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:resnet50FullHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:resnet50FullHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} the same witness for ResNet-50, at both 224 and 160 pixels
   (\(0 < q \le 7\)).
 \end{theorem}
@@ -5975,7 +6156,7 @@ As for ResNet-34; see \leandocref{Proofs.R50FullBSeal.sealX\_backward\_nontrivia
   \leanok
   \uses{ax:conv2d, ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:pdiv,
       ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:denseHasVJP,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(R \ge 1\) replicas of \(N \ge 1\) images each, every BatchNorm
@@ -6006,7 +6187,7 @@ its shard, so its node is the global node's sum over that shard, scaled by
   \leanok
   \uses{ax:conv2d, ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:pdiv,
       ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:denseHasVJP,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} the same for ResNet-50's 161 gradients, instantiated at the
   label-smoothed cross-entropy and at BCE with the committed divisors
   \(N \cdot K\) per replica and \((R \cdot N) \cdot K\) on one device.
@@ -6216,11 +6397,13 @@ size. From the log:
   times the batch, and the backward costs about twice the forward again.
 
 \item \textbf{Final loss plateaus near 0.50}, not zero. That's the
-  label-smoothing floor: with $\epsilon = 0.1$ and 10 classes, the
-  minimum possible cross-entropy against a smoothed target is
-  $-0.9 \log 0.9 - 0.1 \log (0.1/9) \approx 0.485$. The 0.50 value
-  at epoch 80 means the model has essentially converged. More
-  epochs would mostly just extend training time without budging the
+  label-smoothing floor: with $\epsilon = 0.1$ and $K = 10$ classes the
+  smoothed target puts $1 - \epsilon + \epsilon/K = 0.91$ on the true
+  class and $\epsilon/K = 0.01$ on each of the other nine, and the
+  minimum possible cross-entropy against it is that target's entropy,
+  $-0.91 \log 0.91 - 9 \cdot 0.01 \log 0.01 \approx 0.500$. The 0.502 at
+  epoch 80 sits on that floor, so the model has essentially converged.
+  More epochs would mostly just extend training time without budging the
   loss.
 
 \item \textbf{BN layers: 36}. Every residual block contains two normalized
@@ -6247,51 +6430,77 @@ whole block, and a tower of sixteen of them, composes by the chain
 rule \texttt{vjpCompAt} (Theorem~\ref{thm:vjpComp}).
 
 \medskip\noindent\textbf{The gap and how we close it.} The residual
-fan-in is the structural heart of a deep ResNet. The emitted backward is
-given a denotation valued in the proofs' own tensor type, shown equal to
-\texttt{residualHasVJPAt}'s backward, and the structural move is
-visible in the emitted text. The forward
-saves $\texttt{add} = f(x) + x$ and the block output
-$\texttt{relu}(\texttt{add})$. The backward first pushes the incoming
-cotangent back through that relu (a \texttt{compare}/\texttt{select} at the
-post-add, giving \texttt{\%dadd}), and then, and this is the fan-in, sends
-\texttt{\%dadd} through both branches and adds (the inner block's
-forward and $f$-backward elided, as they are the conv/BN nodes of
-Chapters~\ref{chap:cnn}--\ref{chap:bn}):
+fan-in is the structural heart of a deep ResNet, and it is visible in the
+emitted text. The forward saves $a = f(x) + x$ and returns
+$\mathrm{relu}(a)$. The backward first pushes the incoming cotangent back
+through that ReLU (a \texttt{compare}/\texttt{select} at the saved $a$),
+then runs $f$'s own backward on the result, and then, and this is the
+fan-in, adds the result of the ReLU mask to it again. Here it is in
+\texttt{verified\_mlir/resnet34\_sgd\_train\_step.mlir} for the last
+block of the fourth stage (\texttt{s4b1}: 512 channels at $7\times7$,
+batch 32), with the inner backward through BN$_2$, conv$_2$, the mid
+ReLU and BN$_1$ elided down to conv$_1$'s input gradient (SSA names the
+artifact's, lines wrapped):
 
 \begin{verbatim}
-// forward (saved): %out = f(%x)  [conv-BN-relu-conv-BN, Ch. 4-5]
-//                  %add = %out + %x
-%madd = stablehlo.compare GT, %add, %zc
-          : (tensor<1x2x4x4xf32>, tensor<1x2x4x4xf32>)
-            -> tensor<1x2x4x4xi1>
-%dadd = stablehlo.select %madd, %dOut, %zc
-          : tensor<1x2x4x4xi1>, tensor<1x2x4x4xf32>
-// %dF = f.backward(%dadd)  [conv/BN/relu input-VJP chain, Ch. 4-5]
-%dx = stablehlo.add %dF, %dadd : tensor<1x2x4x4xf32>
-return %dx : tensor<1x2x4x4xf32>
+%v1134 = stablehlo.reshape %v1095 : (tensor<32x25088xf32>)
+      -> tensor<32x512x7x7xf32>
+%v1135 = stablehlo.constant dense<0.0> : tensor<32x512x7x7xf32>
+%v1136 = stablehlo.compare GT, %v1134, %v1135 : (tensor<32x512x7x7xf32>,
+      tensor<32x512x7x7xf32>) -> tensor<32x512x7x7xi1>
+%v1137 = stablehlo.select %v1136, %v1133, %v1135 : tensor<32x512x7x7xi1>,
+      tensor<32x512x7x7xf32>
+// ...
+%v1211 = stablehlo.reverse %s4b1W1, dims = [2, 3] : tensor<512x512x3x3xf32>
+%v1212 = stablehlo.transpose %v1211, dims = [1, 0, 2, 3]
+      : (tensor<512x512x3x3xf32>) -> tensor<512x512x3x3xf32>
+%v1213 = stablehlo.convolution(%v1210, %v1212)
+      dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
+      window = {stride = [1, 1], pad = [[1, 1], [1, 1]],
+      lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      {batch_group_count = 1 : i64, feature_group_count = 1 : i64}
+      : (tensor<32x512x7x7xf32>, tensor<512x512x3x3xf32>)
+      -> tensor<32x512x7x7xf32>
+// ...
+%v1215 = stablehlo.reshape %v1214 : (tensor<32x25088xf32>)
+      -> tensor<32x512x7x7xf32>
+%v1216 = stablehlo.reshape %v1138 : (tensor<32x25088xf32>)
+      -> tensor<32x512x7x7xf32>
+%v1217 = stablehlo.add %v1215, %v1216 : tensor<32x512x7x7xf32>
 \end{verbatim}
 
-\noindent Read it against the theorem: \texttt{\%dadd} is the cotangent at
-the fan-in, and it appears twice in the last two lines, once as
-the input to $f$'s backward (\texttt{\%dF}, the gradient through the
-residual function) and once added directly (\texttt{\%dx = \%dF + \%dadd},
-the gradient straight down the identity skip). That single
-\texttt{stablehlo.add} is ``send the gradient through both branches
-and add'': the skip term is the same \texttt{\%dadd} the block term started
-from, which is why the gradient survives all sixteen blocks instead of
-attenuating away. The inner $f$ backward that computes \texttt{\%dF}, the
-convolution and BatchNorm input-VJPs, is bridged op by op exactly as in
-Chapters~\ref{chap:cnn} and~\ref{chap:bn}. Only the fan-in is new here.
+\noindent Read it against the theorem. \texttt{\%v1134} is the saved
+pre-ReLU sum $a$ and \texttt{\%v1133} the cotangent arriving from the
+head; \texttt{\%v1137} is their \texttt{select}, the cotangent at the
+fan-in. It then appears twice. Once it enters $f$'s backward, whose last
+operation is the convolution \texttt{\%v1213} against the first kernel
+reversed and transposed (\texttt{\%v1211}, \texttt{\%v1212}:
+Chapter~\ref{chap:cnn}'s \texttt{reverseSwap}, with the two steps in the
+other order), giving the gradient through the residual branch,
+\texttt{\%v1215}. And once it is added directly: \texttt{\%v1216} is the
+same \texttt{\%v1137} flattened and reshaped (\texttt{\%v1138}), and
+\texttt{\%v1217 = \%v1215 + \%v1216} is ``send the gradient through both
+branches and add''. The skip term is the very tensor the branch term
+started from, which is why the gradient survives all sixteen blocks
+instead of attenuating away, and \texttt{\%v1218}, its flattening, is the
+cotangent every parameter node of the block below reads.
+\texttt{r34IdCotIn\_eq\_vjp} is the theorem that this seven-node subgraph
+denotes $(\texttt{r34IdBHasVJPAt}).\mathrm{backward}$, the certified VJP
+of the whole block, and Theorem~\ref{thm:resnet34_step_tie} threads it
+through all sixteen; the three downsampling blocks, whose skip is a
+$1\times1$ convolution and BatchNorm rather than the identity, have their
+own (\texttt{r34DownCotIn\_eq\_vjp}).
 
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
-  \item \textbf{The fan-in \texttt{add} is unconditional}, because addition is
-    linear, so that bridge holds at every input.
-  \item \textbf{The post-add ReLU is a smooth-point bridge} (no
-    pre-activation exactly zero), and the two BatchNorms inside $f$ carry their own $\epsilon > 0$ conditions (Theorem~\ref{thm:bnHasVJP}).
-  \item \textbf{Representative scale}, a two-channel block at $4\times4$. The
-    same \texttt{\%dadd} fan-in repeats for all sixteen blocks.
+  \item \textbf{The fan-in \texttt{add} holds at every input}, because
+    addition is linear.
+  \item \textbf{Two ReLUs per block are smooth-point bridges}, the mid-block
+    one and the post-add one (no pre-activation exactly zero), and the two
+    BatchNorms inside $f$ carry their $\epsilon > 0$ condition
+    (Theorem~\ref{thm:bnHasVJP}).
+  \item \textbf{Shape.} The listing is one block of the trained net at batch
+    32; the same seven nodes repeat for all sixteen.
 \end{itemize}
 
 \section{What's in the production recipe?}
@@ -6349,11 +6558,15 @@ will explore data augmentation strategies in upcoming chapters.
 \textbf{Label smoothing} (Szegedy et al., 2016,
 \href{https://arxiv.org/abs/1512.00567}{arXiv:1512.00567}). Replaces
 the one-hot
-target with a smoothed $(\varepsilon / (K-1), \ldots, 1 - \varepsilon,
-\ldots)$. Stops the network from producing arbitrarily large logits on
+target with the smoothed $(1 - \varepsilon)\,\mathrm{onehot} + \varepsilon / K$:
+$1 - \varepsilon + \varepsilon/K$ on the true class and $\varepsilon / K$
+on every other, the form Szegedy et al.\ give and the one
+\texttt{TrainConfig.labelSmoothing} and \texttt{timm} implement. Stops the
+network from producing arbitrarily large logits on
 the correct class, which keeps training stable and improves calibration.
-Explains the \textbf{0.50 loss floor} in the Results section above:
-$-0.9 \log 0.9 - 0.1 \log (0.1/9) \approx 0.485$.
+Explains the \textbf{0.50 loss floor} in the Results section above: the
+target's entropy at $\varepsilon = 0.1$, $K = 10$ is
+$-0.91 \log 0.91 - 9 \cdot 0.01 \log 0.01 \approx 0.500$.
 
 Every chapter after this one uses the same six ingredients. The
 \texttt{NetSpec} changes, and the recipe stays.
@@ -7667,12 +7880,20 @@ Figure~\ref{fig:depgraph_depthwise} is the dependency graph of this section.
   \label{ax:depthwiseHasVJP3}
   \lean{Proofs.depthwiseHasVJP3}
   \leanok
-  \uses{ax:depthwiseConv2d, ax:pdiv, def:hasvjp3}
+  \uses{ax:depthwiseConv2d, ax:pdiv, def:hasvjp3, thm:pdiv_of_affine}
   \Prove{} \(\HasVJPthree\, \bigl(\mathrm{depthwiseConv2d}(W, b)\bigr)\),
-  with the per-channel reversed-kernel backward
-  \(dx_{c, h, w} = \sum_{k_h, k_w}
-    W_{c,\, k_H - 1 - k_h,\, k_W - 1 - k_w} \cdot
-    dy_{c,\, h + k_h - p,\, w + k_w - p}\).
+  with the per-channel backward
+  \(dx_{c, h_i, w_i} = \sum_{h_o, w_o} [\text{pad-valid}]\;
+    W_{c,\, \hat{k}_h,\, \hat{k}_w} \cdot dy_{c, h_o, w_o}\),
+  \(\hat{k}_h = h_i + p_H - h_o\), \(\hat{k}_w = w_i + p_W - w_o\):
+  Theorem~\ref{ax:conv2dHasVJP3}'s sum without the channel sum. No
+  hypotheses. For odd kernels this is the per-channel reversed-kernel
+  convolution
+  \(\sum_{k_h, k_w} W_{c,\, k_H - 1 - k_h,\, k_W - 1 - k_w} \cdot
+    dy_{c,\, h + k_h - p_H,\, w + k_w - p_W}\)
+  that the emitted backward runs
+  (\texttt{depthwiseFlatBack\_eq\_vjp\_backward}); every depthwise kernel
+  in this book is $3\times3$ or $5\times5$.
 \end{theorem}
 
 \begin{proof}
@@ -7694,17 +7915,19 @@ depthwise has no cross-channel mixing, so the channel of every
     \(\sum_{k_h, k_w} W_{o(\mathrm{idx}), k_h, k_w} \cdot
       (\text{pad-conditional projection of } v)\), where the
     projection reads channel \(o(\mathrm{idx})\) itself.
-    \pf{Unfold (Definition~\ref{ax:depthwiseConv2d}); steps and rules
-    exactly as in Theorem~\ref{ax:conv2dHasVJP3} step 4
-    (Theorems~\ref{ax:pdiv_add}, \ref{ax:pdiv_const},
-    \ref{thm:pdiv_finset_sum} \(\times 2\), \ref{ax:pdiv_mul},
-    \ref{ax:pdiv_reindex}), with a double instead of triple sum.}
+    \pf{Unfold (Definition~\ref{ax:depthwiseConv2d}); the bias-free
+    depthwise convolution is additive and homogeneous in \(v\), so the
+    affine rule (Theorem~\ref{thm:pdiv_of_affine}) reads each Jacobian
+    entry off the convolution of a basis vector, exactly as in
+    Theorem~\ref{ax:conv2dHasVJP3} steps 3--4 with a double instead of
+    triple sum.}
   \item Collapse: the channel component of the indicator forces
     \(c_o = c_i\) (channel mismatch zeroes every other term); per
     \((h_o, w_o)\) the remaining two-conjunct indicator
     (\(k_h + h_o = h_i + p_H\), \(k_w + w_o = w_i + p_W\)) collapses
     the \((k_h, k_w)\) sum.
-    \pf{\texttt{Finset.sum\_eq\_single} on the decoded components.}
+    \pf{One summand survives in each Kronecker sum
+    (\texttt{Finset.sum\_ite\_eq'}) on the decoded components.}
   \item \Qed{}
     \pf{What remains is \(B(x, dy)_{c_i, h_i, w_i}\) (equivalent to
     the reversed-kernel form under
@@ -7716,7 +7939,7 @@ depthwise has no cross-channel mixing, so the channel of every
   \label{ax:depthwiseWeightGradHasVJP3}
   \lean{Proofs.depthwiseWeightGradHasVJP3}
   \leanok
-  \uses{ax:depthwiseConv2d, ax:pdiv, def:hasvjp3}
+  \uses{ax:depthwiseConv2d, ax:pdiv, def:hasvjp3, thm:pdiv_of_affine}
   \texttt{DepthwiseKernel} is definitionally
   \(\mathsf{Tensor3}\), so \(\HasVJPthree\) applies to the kernel
   directly --- no flatten bijection needed, unlike the conv2d weight
@@ -7741,14 +7964,14 @@ depthwise has no cross-channel mixing, so the channel of every
     weight VJP had a packed \(\varphi\)-comparison.
     \pf{At output \((c_o, h_o, w_o)\) the forward is
     \(b_{c_o} + \sum_{k_h, k_w} W_{c_o, k_h, k_w} \cdot
-      x\text{-pad-term}\): affine decomposition and the same
-    foundation-rule sequence as Theorem~\ref{ax:conv2dWeightGradHasVJP}
-    step 4 (sum + constant + finite-sum \(\times 2\) + product +
-    reindex rules).}
+      x\text{-pad-term}\): affine in \(W\) with the bias constant, so
+    the affine rule (Theorem~\ref{thm:pdiv_of_affine}) gives the entry
+    as the convolution with the basis kernel, as in
+    Theorem~\ref{ax:conv2dWeightGradHasVJP} step 4.}
   \item \Qed{}
     \pf{Contract 3 with \(dy\): collapse the channel sum at
-    \(c_o = c\) (\texttt{Finset.sum\_eq\_single}); the spatial sums
-    survive, leaving exactly \(B\); with 2, done.}
+    \(c_o = c\); the spatial sums survive, leaving exactly \(B\); with
+    2, done.}
 \end{enumerate}
 \end{proof}
 
@@ -7756,7 +7979,7 @@ depthwise has no cross-channel mixing, so the channel of every
   \label{ax:depthwiseBiasGradHasVJP}
   \lean{Proofs.depthwiseBiasGradHasVJP}
   \leanok
-  \uses{ax:depthwiseConv2d, ax:pdiv, def:hasvjp}
+  \uses{ax:depthwiseConv2d, ax:pdiv, def:hasvjp, thm:pdiv_of_affine}
   \Prove{} \(\HasVJP\, \bigl(b \mapsto \mathrm{flatten}
     (\mathrm{depthwiseConv2d}(W, b)\, x)\bigr)\), with backward
   \(db_c = \sum_{h_i, w_i} dy_{\mathrm{flat}(c, h_i, w_i)}\).
@@ -7771,14 +7994,14 @@ The same argument as the conv2d bias VJP
   \item As a function of \(b\), the flattened forward is
     \((\text{channel reindex of } b) + (\text{$W\!,x$ term constant in }
     b)\), so \(\pdiv = \delta_{c,\, \mathrm{chan}(\mathrm{idx})}\).
-    \pf{Sum rule (Theorem~\ref{ax:pdiv_add}), reindex Jacobian
-    (Theorem~\ref{ax:pdiv_reindex}), constant rule
-    (Theorem~\ref{ax:pdiv_const}).}
+    \pf{Affine rule (Theorem~\ref{thm:pdiv_of_affine}): the channel
+    broadcast is linear, and \(\basisVec_c\) broadcast is that
+    indicator.}
   \item \Suffices{} \(db_c = \sum_{\mathrm{idx}} \pdiv \cdot
     dy_{\mathrm{idx}}\). \pf{Definition~\ref{def:hasvjp}.}
   \item \Qed{}
     \pf{Contract 1 with \(dy\); the Kronecker keeps channel \(c\)'s
-    spatial positions (\texttt{Finset.sum\_eq\_single}).}
+    spatial positions.}
 \end{enumerate}
 \end{proof}
 
@@ -7792,7 +8015,8 @@ MobileNetV4-Conv-M take each of the six rungs in turn.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:denseHasVJP, thm:identityHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine, thm:rowwiseHasVJPMat,
+      thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{MNV2PosB}]
@@ -7824,8 +8048,8 @@ activation; see \leandocref{Proofs.mobilenetv2ForwardBFullHasVJPAt\_correct}.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:rowwiseHasVJPMat,
-      thm:vjpComp}
+      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item at the activation its stage sees, every ReLU is off its kink; the
@@ -7857,8 +8081,8 @@ graph tie op by op; see
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:pdiv, ax:pdiv_comp, ax:pdiv_reindex, def:hasvjp,
-      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:rowwiseHasVJPMat,
-      thm:vjpComp}
+      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the stem's and the head's BatchNorm, and the
@@ -7896,8 +8120,8 @@ stem's endpoint ties, and each block's backward in its slot; see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:rowwiseHasVJPMat,
-      thm:vjpComp}
+      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the stem's and the two head BatchNorms, and
@@ -7933,7 +8157,8 @@ As for MobileNetV2; see \leandocref{Proofs.mnv4InputGradB\_eq\_mnv4B\_full\_vjp}
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex,
       ax:softmaxCE_grad, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
       thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
-      thm:identityHasVJP, thm:pdiv_finset_sum, thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat,
+      thm:vjpComp}
   \Prove{} each of the 158 emitted parameter gradients of the batched
   MobileNetV2 step (\texttt{mobilenetv2\_adam\_train\_step.mlir} at
   \(N = 32\), \texttt{mobilenetv2in\_rmsdp64} at \(N = 64\)) denotes the
@@ -7966,7 +8191,8 @@ of the four block kinds, the stem and the head; see
       ax:softmaxCE_grad, def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat,
       thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
       thm:denseWeightGrad_correct, thm:hasGradAt_comp, thm:identityHasVJP,
-      thm:mobilenetv2_step_tie, thm:pdiv_finset_sum, thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:mobilenetv2_step_tie, thm:pdiv_finset_sum, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{MNV2PosB}]
@@ -8003,7 +8229,7 @@ backwards (Theorem~\ref{thm:hasGradAt_comp}, once per stage); see
       ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad, def:hasvjp,
       def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
       thm:denseHasVJP, thm:denseWeightGrad_correct, thm:identityHasVJP,
-      thm:pdiv_finset_sum, thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} each of the 233 parameter gradients of the batched
   MobileNetV4-Conv-M step (\texttt{mnv4in\_adamdp64}) denotes the certified
   batch gradient at the chain cotangent of a loss cotangent left as a binder,
@@ -8030,7 +8256,7 @@ of the body, skip and fused stages and the head; see
       def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
       thm:denseHasVJP, thm:denseWeightGrad_correct, thm:hasGradAt_comp,
       thm:identityHasVJP, thm:mobilenetv4_step_tie, thm:pdiv_finset_sum,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item at the activation its stage sees, every ReLU is off its kink; the
@@ -8059,7 +8285,7 @@ As for MobileNetV2; see \leandocref{Proofs.Mnv4TieB.mnv4\_net\_lossGrad}.
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
       thm:denseHasVJP, thm:identityHasVJP, thm:mobilenetv2FullHasVJP,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} at the structural weights \texttt{sealW} and input
   \texttt{sealX}, batch 2, there is a class and a pixel at which the backward
   of the full-width MobileNetV2 is non-zero: the identity of
@@ -8081,7 +8307,7 @@ coordinate; see \leandocref{Proofs.Mnv2FullBSeal.sealX\_backward\_nontrivial}.
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
       thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:mobilenetv4FullHasVJP,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} the same for MobileNetV4-Conv-M, thirty-eight clauses, from a
   grid-constant base.
 \end{theorem}
@@ -8097,7 +8323,7 @@ As for MobileNetV2; see \leandocref{Proofs.Mnv4FullBSeal.sealX\_backward\_nontri
   \leanok
   \uses{ax:conv2d, ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d,
       ax:depthwiseHasVJP3, ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_reindex,
-      def:hasvjp, def:hasvjp3, thm:vjpComp}
+      def:hasvjp, def:hasvjp3, thm:pdiv_of_affine, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(R \ge 1\) replicas of \(N \ge 1\) images each, every BatchNorm
@@ -8131,8 +8357,8 @@ its shard, so its node is the global node's sum over that shard, scaled by
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:rowwiseHasVJPMat,
-      thm:vjpComp}
+      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} the same for MobileNetV4's 233 gradients, instantiated at the
   label-smoothed cross-entropy.
 \end{theorem}
@@ -8234,8 +8460,9 @@ are new:
 import LeanMlir.Verified.NetsCore
 import LeanMlir.Verified.Train
 
--- 1. The network. `slug` names the committed render, `bnChannels`
---    drives BN threading, `NB` means the convs carry no bias.
+-- 1. The network. `slug` names the committed render, `runningBN`
+--    turns on the running-statistics threading (the 52 slots are
+--    read off `layers`), `NB` means the convs carry no bias.
 def mobilenetv2Verified : VerifiedNetSpec where
   name     := "MobileNetV2"
   slug     := "mobilenetv2"
@@ -8244,23 +8471,18 @@ def mobilenetv2Verified : VerifiedNetSpec where
   imageW   := 224
   data     := .imagenette
   layers   := [
-    .convBnNB 3 32 3 2,                   -- stem       224->112
-    .invertedResidualNB  32   32  16 1,   -- stage 1, t=1   @112
-    .invertedResidualNB  16   96  24 2,   -- stage 2    112->56
-    .invertedResidualNB  24  144  24 1,
-    .invertedResidualNB  24  144  32 2,   -- stage 3     56->28
-    .invertedResidualNB  32  192  32 1,   --   x2
-    .invertedResidualNB  32  192  64 2,   -- stage 4     28->14
-    .invertedResidualNB  64  384  64 1,   --   x3
-    .invertedResidualNB  64  384  96 1,   -- stage 5        @14
-    .invertedResidualNB  96  576  96 1,   --   x2
-    .invertedResidualNB  96  576 160 2,   -- stage 6      14->7
-    .invertedResidualNB 160  960 160 1,   --   x2
-    .invertedResidualNB 160  960 320 1,   -- stage 7         @7
-    .convBnNB 320 1280 1 1,               -- head, 1x1 to 1280
+    .convBnNB 3 32 3 2,             -- stem (no conv bias)       224->112
+    .invertedResidualNB 32  32  16 1,                         -- stage 1, t=1
+    .invertedResidualNB 16  96  24 2, .invertedResidualNB 24 144  24 1,            -- 112->56
+    .invertedResidualNB 24 144  32 2, .invertedResidualNB 32 192  32 1, .invertedResidualNB 32 192  32 1,
+    .invertedResidualNB 32 192  64 2, .invertedResidualNB 64 384  64 1, .invertedResidualNB 64 384  64 1, .invertedResidualNB 64 384  64 1,
+    .invertedResidualNB 64 384  96 1, .invertedResidualNB 96 576  96 1, .invertedResidualNB 96 576  96 1,
+    .invertedResidualNB 96 576 160 2, .invertedResidualNB 160 960 160 1, .invertedResidualNB 160 960 160 1,
+    .invertedResidualNB 160 960 320 1,                                                  -- stage 7 @7
+    .convBnNB 320 1280 1 1,         -- head (no conv bias), 1x1 to 1280
     .globalAvgPool,
     .dense 1280 10 ]
-  bnChannels := #[32, 32,16, 96,96,24, ... ]  -- all 52, in order
+  runningBN  := true
 
 -- 2. The schedule. Identical to ResNet-34's, deliberately.
 def mobilenetv2AdamConfig : VerifiedConfig where
@@ -8382,8 +8604,9 @@ suggests. From the log:
   Theorem~\ref{thm:bnHasVJP}.
 
 \item \textbf{Final loss plateaus near 0.50} again. The label-smoothing floor at
-  $\varepsilon = 0.1$ over ten classes is about $0.485$, so this run has
-  essentially converged rather than stalled.
+  $\varepsilon = 0.1$ over ten classes is $0.500$, the entropy of the
+  $0.91 / 0.01$ target, and this run's final $0.517$ sits just above it:
+  converged rather than stalled.
 \end{itemize}
 
 \section{MLIR: Depthwise Convolution}
@@ -8400,45 +8623,51 @@ pointwise convs, BatchNorm, and relu6, and
 
 \medskip\noindent\textbf{The gap and how we close it.} The emitted graph
 is denoted and shown equal to \texttt{depthwiseHasVJP3}'s backward. Here
-is what the printer emits for the depthwise input gradient (two channels,
-$3\times3$):
+is the depthwise input gradient in
+\texttt{verified\_mlir/mobilenetv2\_adam\_train\_step.mlir}, at the last
+inverted-residual block (960 channels at $7\times7$, $3\times3$ kernels,
+batch 32; SSA names the artifact's, lines wrapped):
 
 \begin{verbatim}
-func.func @dw_back(%dy: tensor<1x2x4x4xf32>, %W: tensor<2x3x3xf32>)
-    -> tensor<1x2x4x4xf32> {
-  %We = stablehlo.reshape %W
-          : (tensor<2x3x3xf32>) -> tensor<2x1x3x3xf32>
-  %Wr = stablehlo.reverse %We, dims = [2, 3] : tensor<2x1x3x3xf32>
-  %dx = stablehlo.convolution(%dy, %Wr)
+%v1729 = stablehlo.reverse %b17dW, dims = [2, 3] : tensor<960x1x3x3xf32>
+%v1730 = stablehlo.convolution(%v1728, %v1729)
       dim_numbers = [b, f, 0, 1]x[o, i, 0, 1]->[b, f, 0, 1],
       window = {stride = [1, 1], pad = [[1, 1], [1, 1]],
-                lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
-      {batch_group_count = 1 : i64, feature_group_count = 2 : i64}
-      : (tensor<1x2x4x4xf32>, tensor<2x1x3x3xf32>)
-        -> tensor<1x2x4x4xf32>
-  return %dx : tensor<1x2x4x4xf32>
-}
+      lhs_dilate = [1, 1], rhs_dilate = [1, 1]}
+      {batch_group_count = 1 : i64, feature_group_count = 960 : i64}
+      : (tensor<32x960x7x7xf32>, tensor<960x1x3x3xf32>)
+      -> tensor<32x960x7x7xf32>
 \end{verbatim}
 
-\noindent Read it against Chapter~\ref{chap:cnn}'s \texttt{conv\_back}. That
-one began with a \texttt{transpose \%W, dims = [1, 0, 2, 3]} to swap the in-
-and out-channel axes before reversing, and this one has no transpose.
-The \texttt{reshape} only adds the singleton input-channel axis the grouped
-form expects ($[c,k,k] \to [c,1,k,k]$), the \texttt{reverse} flips the two
-spatial axes, and \texttt{feature\_group\_count = 2}, equal to the channel
-count, tells the convolution to run each channel through its own filter with
-no mixing. That single attribute is the depthwise structure, and the
-bridge theorem is the claim that this graph computes
-\texttt{depthwiseHasVJP3}'s backward.
+\noindent Read it against Chapter~\ref{chap:cnn}'s convolution backward.
+That one swapped the kernel's in- and out-channel axes with a
+\texttt{transpose} before reversing; this one has no transpose. The
+depthwise kernel is stored as $[c, 1, k, k]$, one $3\times3$ filter per
+channel with a singleton input-channel axis, so the \texttt{reverse} at
+\texttt{\%v1729} flips its two spatial axes and nothing else, and
+\texttt{feature\_group\_count = 960}, equal to the channel count, tells
+the \texttt{convolution} at \texttt{\%v1730} to run each channel of the
+cotangent \texttt{\%v1728} through its own filter with no mixing. That
+single attribute is the depthwise structure. The leaf theorem is
+\texttt{depthwiseBackBatched\_faithful}: this node denotes the backward
+of the batched depthwise convolution, which, the operator being linear,
+is the per-example backward applied row by row, and
+\texttt{depthwiseFlatBack\_eq\_vjp\_backward} is that per-example
+backward's identification with \texttt{depthwiseHasVJP3}, for odd
+kernels. Theorem~\ref{thm:mobilenetv2_step_tie} threads it through the
+seventeen blocks.
 
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
-  \item \textbf{The depthwise convolution bridge is unconditional}, because
-    it is linear.
+  \item \textbf{The depthwise convolution bridge holds at every input},
+    because the op is linear; its one hypothesis is an odd kernel
+    (\texttt{depthwiseFlatBack\_eq\_vjp\_backward}), and MobileNetV2's are
+    all $3\times3$.
   \item \textbf{relu6 is a smooth-point bridge.} MobileNetV2's clamp to
     $[0,6]$ has no derivative where a pre-activation sits exactly at $0$ or
     $6$, and the bridge may fail only on that measure-zero set.
-  \item \textbf{Representative scale} (two channels at $4\times4$).
+  \item \textbf{Shape.} The listing is one block of the trained net; the
+    theorem is stated at every channel count and odd kernel size.
 \end{itemize}
 
 \section{ImageNet recipe}
@@ -8501,7 +8730,7 @@ def mobilenetV2ImagenetConfig : TrainConfig where
   labelSmoothing := 0.0             -- the paper names none; TF-slim's default
   bf16           := true
   bf16Conv       := true            -- reaches the inverted-residual blocks
-  f32StemHead    := true            -- classifier head in fp32
+  f32StemHead    := true            -- classifier head in fp32 (after the run below)
   runningBN      := true            -- paper-faithful eval: running BN stats
   bnMomentum     := 0.997           -- TF-slim's BN decay (PyTorch momentum 0.003)
   bnEps          := 1e-3            -- TF-slim's BN epsilon
@@ -9072,7 +9301,8 @@ def mnv4Imagenet256FullVerified : VerifiedNetSpec :=
       imageH        := 256,
       imageW        := 256,
       dropDenom     := 26,              -- tf-models' ramp: UIB i keeps 1 - 0.075 (i+3)/26
-      dropIdxOffset := 3 }
+      dropIdxOffset := 3,
+      ... }                             -- the blurb
 
 #guard mnv4Imagenet256FullVerified.toSpecs == mnv4ImagenetVerified.toSpecs
 \end{verbatim}
@@ -9542,8 +9772,8 @@ gradient and the data-parallel tie; no seal.
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp,
-      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:residualHasVJP,
-      thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:pdiv_of_affine,
+      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\), forty-nine of them
@@ -9575,10 +9805,11 @@ and the head; the graph ties op by op; see
   \label{thm:efficientnet_whole_back}
   \lean{Proofs.efficientnetInputGradBFull_correct}
   \leanok
-  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:depthwiseConv2d,
-      ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:efficientnetFullHasVJP,
-      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
+      ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp,
+      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP,
+      thm:efficientnetFullHasVJP, thm:pdiv_of_affine, thm:residualHasVJP,
+      thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)w}]
@@ -9606,8 +9837,8 @@ Theorem~\ref{thm:efficientnetFullHasVJP} read stage by stage; see
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:denseWeightGrad_correct, thm:identityHasVJP, thm:residualHasVJP,
-      thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+      thm:denseWeightGrad_correct, thm:identityHasVJP, thm:pdiv_of_affine,
+      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
   \Prove{} each of the 213 emitted parameter gradients of the batched
   EfficientNet-B0 step (\texttt{efficientnet\_adam\_train\_step.mlir} and
   the \texttt{efficientnetin\_*} steps) denotes the certified batch
@@ -9641,8 +9872,8 @@ backwards; see \leandocref{Proofs.EnetTieG.efficientnet\_net\_tiedG}.
       ax:pdiv_mul, ax:pdiv_reindex, ax:softmaxCE_grad, def:hasgradat, def:hasvjp,
       def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
       thm:denseHasVJP, thm:denseWeightGrad_correct, thm:efficientnet_step_tie,
-      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum, thm:residualHasVJP,
-      thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine,
+      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)w}]
@@ -9672,7 +9903,8 @@ backwards (Theorem~\ref{thm:hasGradAt_comp}, once per stage); see
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp, def:hasvjp3,
       def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+      thm:pdiv_of_affine, thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP,
+      thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(R \ge 1\) replicas of \(N \ge 1\) images each, all forty-nine
@@ -9988,54 +10220,79 @@ concrete gate (the GAP--dense--swish--dense--sigmoid chain) and
 \texttt{mbconvBodyHasVJP} composes the whole MBConv.
 
 \medskip\noindent\textbf{The gap and how we close it.} The emitted graph
-realizes \texttt{seBlockHasVJP}'s product-rule backward in full. Both
-terms are there, and each piece of the gate carries the swish, sigmoid, and
-dense bridges of the previous chapters. Here is the fan-in, with the excite
-sub-network's internal VJP elided to its one comment line (the SE block runs
-on the MBConv's four mid-channels):
+realizes \texttt{seBlockHasVJP}'s product-rule backward in full, both
+terms, with each piece of the gate carrying the swish, sigmoid and dense
+bridges of the earlier chapters. Here it is in
+\texttt{verified\_mlir/efficientnet\_adam\_train\_step.mlir} at the
+sixteenth MBConv block (1152 mid-channels, 48 in the squeeze,
+$7\times7$, batch 32), with the swish backward between the two dense
+backwards elided (SSA names the artifact's, default \texttt{precision}
+dropped, lines wrapped):
 
 \begin{verbatim}
-// se = x * broadcast(gate(x)); gate = squeeze-excite sub-network
-// %dse = cotangent into the SE block;  %ggb2 = broadcast(gate)
-%gdleft = stablehlo.multiply %ggb2, %dse : tensor<1x4x4x4xf32>
-%gxdse = stablehlo.multiply %d_s4, %dse : tensor<1x4x4x4xf32>
-%gdgate = stablehlo.reduce(%gxdse init: %sc)
-            applies stablehlo.add across dimensions = [2, 3]
-            : (tensor<1x4x4x4xf32>, tensor<f32>) -> tensor<1x4xf32>
-// ... gate VJP through the excite MLP (sigmoid/dense/swish/dense) ...
-%gdgate_sp = stablehlo.broadcast_in_dim %gdsq_d, dims = [0, 1]
-            : (tensor<1x4xf32>) -> tensor<1x4x4x4xf32>
-%gdds = stablehlo.add %gdleft, %gdgate_sp : tensor<1x4x4x4xf32>
+%v1845 = stablehlo.logistic %v1844 : tensor<32x1152xf32>
+%v1847 = stablehlo.broadcast_in_dim %v1845, dims = [0, 1]
+      : (tensor<32x1152xf32>) -> tensor<32x1152x7x7xf32>
+%v1848 = stablehlo.multiply %v1847, %v1846 : tensor<32x1152x7x7xf32>
+%v1849 = stablehlo.multiply %v1832, %v1846 : tensor<32x1152x7x7xf32>
+%v1850 = stablehlo.reduce(%v1849 init: %v1833)
+      applies stablehlo.add across dimensions = [2, 3]
+      : (tensor<32x1152x7x7xf32>, tensor<f32>) -> tensor<32x1152xf32>
+%v1851 = stablehlo.constant dense<1.0> : tensor<32x1152xf32>
+%v1852 = stablehlo.subtract %v1851, %v1845 : tensor<32x1152xf32>
+%v1853 = stablehlo.multiply %v1845, %v1852 : tensor<32x1152xf32>
+%v1854 = stablehlo.multiply %v1850, %v1853 : tensor<32x1152xf32>
+%v1855 = stablehlo.dot_general %v1854, %b16zW2,
+      contracting_dims = [1] x [1] : (tensor<32x1152xf32>,
+      tensor<48x1152xf32>) -> tensor<32x48xf32>
+// ...
+%v1863 = stablehlo.dot_general %v1862, %b16zW1,
+      contracting_dims = [1] x [1] : (tensor<32x48xf32>,
+      tensor<1152x48xf32>) -> tensor<32x1152xf32>
+%v1864 = stablehlo.constant dense<49.0> : tensor<32x1152xf32>
+%v1865 = stablehlo.divide %v1863, %v1864 : tensor<32x1152xf32>
+%v1866 = stablehlo.broadcast_in_dim %v1865, dims = [0, 1]
+      : (tensor<32x1152xf32>) -> tensor<32x1152x7x7xf32>
+%v1867 = stablehlo.add %v1848, %v1866 : tensor<32x1152x7x7xf32>
 \end{verbatim}
 
-\noindent Read it against the product rule:
+\noindent Read it against the product rule, with \texttt{\%v1846} the
+cotangent $dy$ into the block and \texttt{\%v1832} its input $x$:
 
 \begin{itemize}
-  \item \texttt{\%gdleft} is $g(x)\odot dy$, the term a naive generator
-    would stop at.
-  \item \texttt{\%gdgate} reduces $x \odot dy$ over the spatial axes. That
-    reduction is the adjoint of the gate's broadcast, so it is the
-    cotangent on the per-channel gate values, and it flows back through the
-    excite MLP and the global-average-pool to \texttt{\%gdgate\_sp}.
-  \item \texttt{\%gdds = \%gdleft + \%gdgate\_sp} adds the two.
+  \item \texttt{\%v1845} is the gate $g(x)$, the \texttt{logistic} of the
+    excite MLP's output, recomputed; \texttt{\%v1848} is $g(x)\odot dy$
+    after the broadcast \texttt{\%v1847}, the term a naive generator would
+    stop at.
+  \item \texttt{\%v1849} is $x \odot dy$ and \texttt{\%v1850} reduces it
+    over the spatial axes. That reduction is the adjoint of the gate's
+    broadcast, so it is the cotangent on the per-channel gate values.
+    \texttt{\%v1851}--\texttt{\%v1854} multiply by $\sigma(1-\sigma)$, the
+    sigmoid's derivative, \texttt{\%v1855} and \texttt{\%v1863} are the two
+    dense backwards (each contracting the output axis of its weight), and
+    \texttt{\%v1865} divides by $49 = 7 \cdot 7$, the adjoint of the
+    global-average-pool, before \texttt{\%v1866} broadcasts the result back
+    over the map.
+  \item \texttt{\%v1867 = \%v1848 + \%v1866} adds the two.
 \end{itemize}
 
-\noindent That final \texttt{add} is the product rule: the gradient
-that passes straight through the channel, plus the gradient that re-tunes
-the gate, summed.
-
-\medskip\noindent As with attention, the listing shows the new structural
-move (the product-rule fan-in) and elides the work behind it: the
-\texttt{// gate VJP} comment stands for the excite MLP's own backward
-(sigmoid, dense, swish, dense), each carried by this chapter's bridges and
-composed in \texttt{seBlockFullHasVJP}.
+\noindent That final \texttt{add} is the product rule: the gradient that
+passes straight through the channel, plus the gradient that re-tunes the
+gate, summed. The leaf theorem is \texttt{seBackBatched\_faithful}: the
+node denotes \texttt{seBHasVJP}'s backward at the saved activation $x$.
+SE is not linear, so unlike the convolution leaves this one threads each
+example's forward activation through the backward, and the batched
+statement is built from the per-example \texttt{se\_back\_bridge} row by
+row. Theorem~\ref{thm:efficientnet_step_tie} carries it through the
+sixteen blocks.
 
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
   \item \textbf{The SE fan-in carries no kink condition.} Swish and
     sigmoid are smooth everywhere, and the only smooth-point caveats in an
     MBConv come from its BatchNorms ($\epsilon > 0$).
-  \item \textbf{Representative scale} (four mid-channels, two in the squeeze).
+  \item \textbf{Shape.} The listing is one block of the trained net; the
+    theorem is stated at every channel count and squeeze width.
 \end{itemize}
 
 \section{ImageNet recipe}
@@ -10907,33 +11164,27 @@ Figure~\ref{fig:depgraph_layernorm} is the dependency graph of this section.
 
 \begin{proof}
 \leanok
-\emph{Sketch: the template for every elementwise activation with a
-smooth scalar function --- extract one output coordinate, factor it
-through a projection, convert back to the scalar derivative.}
+\emph{Sketch: the elementwise rule (\texttt{pdiv\_elementwise}), the
+template for every activation with a smooth scalar function --- a
+scalar function applied to every coordinate has a diagonal Jacobian
+with the scalar derivative on the diagonal.}
 \begin{enumerate}
-  \item \(\pdiv(\mathrm{gelu})\, x\, i\, j
-          = \fderiv_{\R}\,(y \mapsto \mathrm{gelu}(y)_j)\, x\, (\basisVec_i)\).
-    \pf{Definition~\ref{ax:pdiv} and \texttt{fderiv\_apply};
-    \(\mathrm{gelu}\) is differentiable because
-    \(\mathrm{geluScalar}\) is (tanh is differentiable everywhere,
-    via \(\tanh = \sinh/\cosh\) with \(\cosh > 0\)).}
-  \item \(y \mapsto \mathrm{gelu}(y)_j
-          = \mathrm{geluScalar} \circ \mathrm{proj}_j\), so its
-    derivative is
-    \(\fderiv\,\mathrm{geluScalar}\,(x_j) \circ \mathrm{proj}_j\).
-    \pf{Chain rule (Mathlib's \texttt{fderiv\_comp});
-    \(\mathrm{proj}_j\) is a continuous linear map, its own
-    derivative.}
-  \item Evaluate at \(\basisVec_i\):
-    \(\mathrm{proj}_j(\basisVec_i) = \delta_{ji}\), and the scalar
-    \(\fderiv\) converts to \(\mathrm{deriv}\)
-    (\texttt{fderiv\_eq\_smul\_deriv}), giving
-    \(\delta_{ji} \cdot \mathrm{deriv}\,\mathrm{geluScalar}\,(x_j)\).
+  \item Coordinate \(k\) of \(\mathrm{gelu}\) is
+    \(\mathrm{geluScalar} \circ \mathrm{proj}_k\), whose Fréchet
+    derivative at \(x\) is \(\mathrm{geluScalar}'(x_k) \cdot \mathrm{proj}_k\).
+    \pf{\(\mathrm{geluScalar}\) is differentiable everywhere (tanh is,
+    via \(\tanh = \sinh/\cosh\) with \(\cosh > 0\));
+    \texttt{HasDerivAt.comp\_hasFDerivAt} with the projection, a
+    continuous linear map and its own derivative.}
+  \item The whole map has Fréchet derivative
+    \(\mathrm{pi}\,\bigl(k \mapsto \mathrm{geluScalar}'(x_k) \cdot \mathrm{proj}_k\bigr)\).
+    \pf{\texttt{hasFDerivAt\_pi} assembles the coordinates of 1.}
   \item \Qed{}
-    \pf{Case split on \(i = j\); when they coincide,
-    \(\mathrm{deriv}\,\mathrm{geluScalar}\,(x_i)\) is
-    \(\mathrm{geluScalar}'(x_i)\) by
-    Definition~\ref{ax:geluScalarDeriv}.}
+    \pf{Evaluate 2 at \((\basisVec_i, j)\)
+    (\texttt{pdiv\_eq\_of\_hasFDerivAt}):
+    \(\mathrm{proj}_j(\basisVec_i) = \delta_{ij}\), giving
+    \(\delta_{ij} \cdot \mathrm{geluScalar}'(x_i)\)
+    (Definition~\ref{ax:geluScalarDeriv}).}
 \end{enumerate}
 \end{proof}
 
@@ -11139,7 +11390,8 @@ certified step; each node is the loss's derivative.
       ax:geluScalar, ax:pdiv, ax:pdiv_comp, ax:pdiv_reindex, def:geluForm, def:hasvjp,
       def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:chanLNTensor3HasVJP,
       thm:denseHasVJP, thm:geluHasVJP, thm:identityHasVJP, thm:layerNormVecHasVJP,
-      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:transposeHasVJP, thm:vjpComp}
+      thm:pdiv_of_affine, thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:transposeHasVJP,
+      thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the stem's, the four stages', the three
@@ -11159,7 +11411,14 @@ certified step; each node is the loss's derivative.
 \leanok
 The chain is the composed backward read stage by stage, each stage's VJP
 the block's, the downsample's or the head's; see
-\leandocref{Proofs.convnextInputGradB\_correct}.
+\leandocref{Proofs.convnextInputGradB\_correct}. One wrinkle is ConvNeXt's
+alone among the chapter nets: the $4\times4$ stem and the three $2\times2$
+downsamples are even kernels, and the reversed-kernel convolution of
+Chapter~\ref{chap:cnn} is the adjoint of a convolution shifted by one pixel
+there. The chain therefore takes those four kernels zero-extended to
+$5\times5$ and $3\times3$ (\texttt{padOdd}), which computes the same forward
+(\texttt{conv2d\_padOdd\_eq}) and is exactly the asymmetric pad the emitter
+writes for a strided backward.
 \end{proof}
 
 \begin{theorem}[Emitted train step is the certified step]
@@ -11175,7 +11434,8 @@ the block's, the downsample's or the head's; see
       def:hasvjp3, def:hasvjpmat, thm:biPathHasVJP, thm:bnHasVJP,
       thm:chanLNTensor3HasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
       thm:denseWeightGrad_correct, thm:geluHasVJP, thm:identityHasVJP,
-      thm:layerNormVecHasVJP, thm:residualHasVJP, thm:transposeHasVJP, thm:vjpComp}
+      thm:layerNormVecHasVJP, thm:pdiv_of_affine, thm:residualHasVJP,
+      thm:transposeHasVJP, thm:vjpComp}
   \Prove{} each of the 182 parameter gradients of the batched ConvNeXt-T
   step (\([3, 3, 9, 3]\) blocks, channel-LayerNorm at twenty-two sites,
   per-channel layer scale, GELU at either form) denotes the certified batch gradient at the
@@ -11210,7 +11470,7 @@ downsample and head backwards; see
       thm:biPathHasVJP, thm:bnHasVJP, thm:chanLNTensor3HasVJP, thm:convnext_step_tie,
       thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
       thm:geluHasVJP, thm:hasGradAt_comp, thm:identityHasVJP, thm:layerNormVecHasVJP,
-      thm:pdiv_finset_sum, thm:transposeHasVJP, thm:vjpComp}
+      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:transposeHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the LayerNorms \hfill[\texttt{h\(\varepsilon\)}]
@@ -11506,24 +11766,46 @@ operator in this series. Its Jacobian is diagonal, so it is its own adjoint:
 \texttt{layerScaleHasVJP} proves $\mathrm{back}(x, dy) = \gamma \odot dy$,
 the backward multiplying by the same $\gamma$ the forward did. There is
 nothing to bridge past that identity, so the emitted graph is two
-\texttt{multiply}s against one tensor:
+\texttt{multiply}s against one tensor. Here they are in
+\texttt{verified\_mlir/convnext\_adam\_train\_step.mlir}, at the last
+block of the third stage (\texttt{s3b2}: 768 channels at $7\times7$,
+batch 32; SSA names the artifact's, lines wrapped):
 
 \begin{verbatim}
-// ConvNeXt block tail:  out = x + layerScale(gamma, project(...))
-%ls  = stablehlo.multiply %gls, %pr   : tensor<1x2x4x4xf32> // gamma (*) pr
-%out = stablehlo.add %x, %ls          : tensor<1x2x4x4xf32> // + identity skip
-// backward, cotangent %dOut:  d(pr) = gamma (*) d(out)
-%dpr = stablehlo.multiply %gls, %dOut : tensor<1x2x4x4xf32>
+%v1445 = stablehlo.broadcast_in_dim %s3b2lg, dims = [1]
+      : (tensor<768xf32>) -> tensor<32x768x7x7xf32>
+%v1446 = stablehlo.multiply %v1444, %v1445 : tensor<32x768x7x7xf32>
+// ...
+%v1450 = stablehlo.add %v1448, %v1449 : tensor<32x768x7x7xf32>
+// ...
+%v1561 = stablehlo.broadcast_in_dim %s3b2lg, dims = [1]
+      : (tensor<768xf32>) -> tensor<32x768x7x7xf32>
+%v1562 = stablehlo.multiply %v1560, %v1561 : tensor<32x768x7x7xf32>
 \end{verbatim}
 
-\noindent The forward \texttt{multiply \%gls, \%pr} and the backward
-\texttt{multiply \%gls, \%dOut} are the same op against the same $\gamma$
-tensor: a diagonal map is its own transpose, so its VJP is itself. The identity skip is the residual fan-in (Theorem~\ref{thm:residualHasVJP}). The
-surrounding GELU, LayerNorm, and convolution backwards reuse their bridges.
-Every one is unconditional (the only hypothesis anywhere is LayerNorm's
-$\epsilon > 0$): ConvNeXt has no kinked operator, and neither do
-EfficientNet-B0 and the Vision Transformer, the two other chapter nets whose
-whole-network VJP needs only $\epsilon > 0$. The full block is
+\noindent The forward broadcasts $\gamma$ (\texttt{\%s3b2lg}) along the
+channel axis and multiplies it into the projection's output
+\texttt{\%v1444} (\texttt{\%v1446}); \texttt{\%v1450} is the identity
+skip, the residual fan-in of Theorem~\ref{thm:residualHasVJP}. The
+backward broadcasts the same $\gamma$ again and multiplies it into the
+block's output cotangent \texttt{\%v1560} (\texttt{\%v1562}): a diagonal
+map is its own transpose, so its VJP is itself, and the two
+\texttt{multiply}s are the same operation against the same tensor.
+\texttt{cnxBlockCotInB\_eq\_vjp} is the theorem that the block's
+backward, this multiply and the GELU, LayerNorm and convolution backwards
+below it, denotes the certified block VJP, and
+Theorem~\ref{thm:convnext_step_tie} threads it through the eighteen
+blocks. One honesty note on \texttt{\%v1560}: this is the last block, so
+its output cotangent comes down from the head, and the
+global-average-pool backward there is the one hand-written region of the
+file, declared in the file's own header comment.
+\texttt{cnxHeadDyB\_eq\_vjp} states the value that region must compute;
+that its text does is trusted, as the printer's text is. The GELU,
+LayerNorm, and convolution backwards around the multiply reuse their
+bridges. Every one holds at every input (the only hypothesis anywhere is
+LayerNorm's $\epsilon > 0$): ConvNeXt has no kinked operator, and neither
+do EfficientNet-B0 and the Vision Transformer, the two other chapter nets
+whose whole-network VJP needs only $\epsilon > 0$. The full block is
 $\mathrm{residual}(\mathrm{layerScale} \circ \mathrm{project} \circ
 \mathrm{gelu} \circ \mathrm{expand} \circ \mathrm{LN} \circ
 \mathrm{depthwise})$, composed by \texttt{convNextBlockHasVJP}.
@@ -11593,7 +11875,7 @@ def convNeXtTinyImagenetConfig : TrainConfig where
   labelSmoothing    := 0.1
   bf16              := true
   bf16Conv          := true         -- dw-7x7 + 1x1s; LN/GELU stay fp32
-  f32StemHead       := true         -- classifier head in fp32
+  f32StemHead       := true         -- classifier head in fp32 (after the run below)
   useEMA            := true         -- weight averaging, decay 0.9999
   dropPath          := 0.1          -- stochastic depth (ConvNeXt-T paper value)
 
@@ -12384,8 +12666,9 @@ all of them at once.
   \item Every output coordinate --- hence the whole flat map --- is
     differentiable, so \(\fderiv\) does not fall back to its junk
     default.
-    \pf{Assumption 1 composed with the CLM of step 1
-    (\texttt{differentiableAt\_pi}).}
+    \pf{Assumption 1 composed with the CLM of step 1;
+    \texttt{hasFDerivAt\_pi} assembles the coordinates' derivatives
+    into the whole map's.}
   \item \Qed{}
     \pf{Chain rule through the CLM: the derivative of
     \((y \mapsto g(y)_l) \circ \mathrm{rowProj}_k\) at
@@ -12482,8 +12765,8 @@ sums where the rank-1 proof had single sums.}
     \(i = k \wedge j = l\) by injectivity of the pairing.}
   \item \Qed{}
     \pf{Contract 1 with \(dY\): the two-dimensional Kronecker sum
-    collapses (\texttt{Finset.sum\_eq\_single} twice) to
-    \(dY_{ij}\); Definition~\ref{def:hasvjpmat} closes.}
+    collapses to \(dY_{ij}\) (\texttt{simp} with \texttt{ite\_and});
+    Definition~\ref{def:hasvjpmat} closes.}
 \end{enumerate}
 \end{proof}
 
@@ -12504,10 +12787,10 @@ sums where the rank-1 proof had single sums.}
     \pf{Flatten/unflatten round-trip, pointwise.}
   \item \(\pdiv(v \mapsto s \cdot v) = s \cdot \delta\) at the flat
     indices.
-    \pf{Factor as \((\text{const } s) \cdot (\text{identity})\):
-    product rule (Theorem~\ref{ax:pdiv_mul}), constant rule
-    (Theorem~\ref{ax:pdiv_const}), identity Jacobian
-    (Theorem~\ref{ax:pdiv_id}).}
+    \pf{Scalar-multiple rule (\texttt{pdiv\_const\_smul}: the product
+    rule, Theorem~\ref{ax:pdiv_mul}, at a constant factor whose own
+    Jacobian vanishes, Theorem~\ref{ax:pdiv_const}), then the identity
+    Jacobian (Theorem~\ref{ax:pdiv_id}).}
   \item \Qed{}
     \pf{The flat-index equality decodes to
     \(i = k \wedge j = l\) by injectivity of the pairing.}
@@ -12542,7 +12825,7 @@ sums where the rank-1 proof had single sums.}
   \label{thm:pdivMat_matmul_left_const}
   \lean{Proofs.pdivMat_matmul_left_const}
   \leanok
-  \uses{ax:pdiv}
+  \uses{ax:pdiv, thm:pdiv_of_affine}
   \Prove{} \(\pdivMat(B' \mapsto C \cdot B')\, B\, (i,j)\, (k,l)
     = [l = j] \cdot C_{ki}\).
 \end{theorem}
@@ -12550,20 +12833,21 @@ sums where the rank-1 proof had single sums.}
 \begin{proof}
 \leanok
 \begin{enumerate}
-  \item The flattened map at output index \(\mathrm{idx}\) is
-    \(v \mapsto \sum_s C_{k(\mathrm{idx}), s} \cdot
-      v_{\mathrm{flat}(s,\, l(\mathrm{idx}))}\) --- a finite sum of
-    (constant)\,\(\times\)\,(reindex) terms.
-    \pf{Unfold \(\mathrm{Mat.mul}\)/flatten/unflatten.}
-  \item Per-index Jacobian: finite-sum rule
-    (Theorem~\ref{thm:pdiv_finset_sum}) distributes over \(s\);
-    product rule with the \(C\)-factor constant
-    (Theorems~\ref{ax:pdiv_mul}, \ref{ax:pdiv_const}) and reindex
-    Jacobian (Theorem~\ref{ax:pdiv_reindex}) leave
-    \(\sum_s C_{k, s} \cdot [\mathrm{flat}(i,j) = \mathrm{flat}(s, l)]\).
+  \item The flattened map
+    \(v \mapsto \mathrm{flatten}(C \cdot \mathrm{unflatten}\, v)\) is
+    linear: additive and homogeneous in \(v\).
+    \pf{Unfold \(\mathrm{Mat.mul}\)/flatten/unflatten;
+    \texttt{mul\_add}, \texttt{Finset.sum\_add\_distrib},
+    \texttt{Finset.mul\_sum}.}
+  \item The Jacobian entry at \((i,j) \to (k,l)\) is
+    \((C \cdot E_{ij})_{kl}\), where
+    \(E_{ij} = \mathrm{unflatten}(\basisVec_{\mathrm{flat}(i,j)})\) is
+    the matrix unit.
+    \pf{Linear rule (Theorem~\ref{thm:pdiv_of_affine} at \(c = 0\),
+    \texttt{pdiv\_of\_linear}).}
   \item \Qed{}
-    \pf{The indicator forces \(s = i\) and \(l = j\) (injectivity of
-    the pairing), collapsing the sum to \([l = j] \cdot C_{ki}\).}
+    \pf{\((C \cdot E_{ij})_{kl} = \sum_s C_{ks}\, [s = i \wedge l = j]
+      = [l = j] \cdot C_{ki}\); case split on \(l = j\).}
 \end{enumerate}
 \end{proof}
 
@@ -12571,7 +12855,7 @@ sums where the rank-1 proof had single sums.}
   \label{thm:pdivMat_matmul_right_const}
   \lean{Proofs.pdivMat_matmul_right_const}
   \leanok
-  \uses{ax:pdiv}
+  \uses{ax:pdiv, thm:pdiv_of_affine}
   \Prove{} \(\pdivMat(A' \mapsto A' \cdot D)\, A\, (i,j)\, (k,l)
     = [i = k] \cdot D_{jl}\).
 \end{theorem}
@@ -12579,12 +12863,10 @@ sums where the rank-1 proof had single sums.}
 \begin{proof}
 \leanok
 Mirror image of Theorem~\ref{thm:pdivMat_matmul_left_const}: the
-flattened map at output \(\mathrm{idx}\) is
-\(v \mapsto \sum_s v_{\mathrm{flat}(k(\mathrm{idx}),\, s)} \cdot
-  D_{s,\, l(\mathrm{idx})}\), the same finite-sum-of-reindex-times-constant
-shape with the variable factor on the left; the same three steps
-(finite-sum, product + constant + reindex rules, indicator collapse
-at \(s = j\), \(k = i\)) give \([i = k] \cdot D_{jl}\).
+flattened map \(v \mapsto \mathrm{flatten}(\mathrm{unflatten}\, v \cdot D)\)
+is linear, so by the linear rule (\texttt{pdiv\_of\_linear}) the Jacobian
+entry is \((E_{ij} \cdot D)_{kl} = [i = k] \cdot D_{jl}\); case split on
+\(i = k\).
 \end{proof}
 
 \begin{theorem}[Matmul VJP, left factor fixed]
@@ -12742,7 +13024,7 @@ the dependency graph of this section, in two halves.
     = \fderiv_{\R}\,\bigl(z' \mapsto e^{z'_j} \cdot
       (\textstyle\sum_k e^{z'_k})^{-1}\bigr)\, z\, (\basisVec_i)\).
     \pf{Definition~\ref{ax:pdiv}; extract the \(j\)-th coordinate
-    (\texttt{fderiv\_apply}), differentiable because the denominator
+    (\texttt{pdiv\_eq\_fderiv\_coord}), differentiable because the denominator
     \(S := \sum_k e^{z_k}\) is a sum of positive exponentials, hence
     nonzero.}
   \item Differentiate the product: numerator via
@@ -12786,7 +13068,7 @@ the dependency graph of this section, in two halves.
       = p_i\, dy_i - p_i \sum_j p_j\, dy_j\).
     \pf{Substitute the softmax Jacobian
     (Theorem~\ref{ax:pdiv_softmax}); split the sum, collapse the
-    \(\delta\)-term (\texttt{Finset.sum\_ite}), factor \(p_i\) out
+    \(\delta\)-term (\texttt{Finset.sum\_ite\_eq}), factor \(p_i\) out
     of the second (\texttt{Finset.mul\_sum}).}
   \item \Qed{}
     \pf{The right side of 2 is \(p_i(dy_i - \langle p, dy\rangle)
@@ -12975,7 +13257,7 @@ differentiability. \Qed{}
   \label{ax:patchEmbedFlatHasVJP}
   \lean{Proofs.patchEmbedFlatHasVJP}
   \leanok
-  \uses{ax:pdiv, def:hasvjp}
+  \uses{ax:pdiv, def:hasvjp, thm:pdiv_of_affine}
   The concrete \texttt{def} unfolds to conv-with-stride + CLS prepend +
   positional embed.
   \Prove{} \(\HasVJP\, (\mathrm{patchEmbedFlat})\), with backward
@@ -13000,18 +13282,19 @@ convolution, with one new wrinkle at the collapse: the CLS row.}
   \item \Suffices{} \(B\) matches the \(\pdiv\) contraction.
     \pf{Definition~\ref{def:hasvjp}.}
   \item The forward decomposes as
-    \((\text{constant: bias} + \text{CLS} + \text{pos-embed}) +
-      (\text{img-linear part})\), where the pad guard absorbs the
-    \(n = 0\) (CLS-row) test so the linear part is uniform in
+    \((\text{img-linear part}) +
+      (\text{constant: pos-embed} + (\text{CLS} \mid \text{bias}))\),
+    where the linear part is the pad-guarded patch convolution,
+    identically zero on the CLS row, and is additive and homogeneous in
     \(\mathrm{img}\).
-    \pf{Unfold; definitional.}
-  \item Per-index Jacobian by the conv2d recipe: sum + constant
-    rules drop the constants (Theorems~\ref{ax:pdiv_add},
-    \ref{ax:pdiv_const}); finite-sum rule
-    (Theorem~\ref{thm:pdiv_finset_sum}) \(\times 3\); product rule
-    (Theorem~\ref{ax:pdiv_mul}) with constant \(W^{\mathrm{conv}}\)
-    factor; guarded projection = reindex-or-zero
-    (Theorems~\ref{ax:pdiv_reindex}, \ref{ax:pdiv_const}).
+    \pf{Unfold; case split on the CLS row; the side conditions
+    distribute through the \((c, k_h, k_w)\) sum.}
+  \item Per-index Jacobian: the affine rule
+    (Theorem~\ref{thm:pdiv_of_affine}) with 3 reads the entry off the
+    patch convolution of \(\basisVec_{\mathrm{idx_{in}}}\): \(0\) on the
+    CLS row, and otherwise
+    \(\sum_{c, k_h, k_w} W^{\mathrm{conv}}_{d, c, k_h, k_w} \cdot
+      [\text{in range} \wedge \mathrm{idx_{in}} = \text{encoded position}]\).
   \item Contract with \(dy\) and collapse as in
     Theorem~\ref{ax:conv2dHasVJP3} step 5, with the new wrinkle:
     split the output-row sum over \(\mathrm{Fin}(N{+}1)\) into the
@@ -13065,7 +13348,7 @@ computed independently by the 1D three-term formula. \Qed{}
       ax:geluScalar, ax:mhsaLayer_flat_differentiable, ax:patchEmbedFlatHasVJP,
       ax:patchEmbedFlat_differentiable, ax:pdiv, ax:pdiv_reindex, def:geluForm,
       def:hasvjp, def:hasvjpmat, thm:denseHasVJP, thm:layerNormHasVJP,
-      thm:rowwiseHasVJPMat, thm:vitBodyHasVJPMat, thm:vjpComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vitBodyHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)}]
@@ -13135,16 +13418,15 @@ diagonal both across rows and within a row. \Qed{}
 \begin{enumerate}
   \item \Case{} \(n = 0\): the codomain is \(0\)-dimensional; the map
     is constant. \pf{Trivial.}
-  \item \Case{} \(n \ge 1\): each output coordinate is
-    \(v \mapsto e^{v_{(r, c)}} \cdot
-      \bigl(\sum_j e^{v_{(r, j)}}\bigr)^{-1}\).
-    The denominator is a positive finite sum
-    (\texttt{Real.exp\_pos}, \texttt{Finset.sum\_pos} over the
-    nonempty index set), so \texttt{Differentiable.inv} applies and
-    the product of exponential chains closes.
+  \item \Case{} \(n \ge 1\): each output row is \(\mathrm{softmax}\) of
+    the corresponding input row, and \(\mathrm{softmax}\) is
+    differentiable (\texttt{softmax\_differentiable}: the denominator is
+    a positive finite sum, \texttt{Real.exp\_pos} and
+    \texttt{Finset.sum\_pos}, so the inverse is smooth).
   \item \Qed{}
-    \pf{Differentiability per coordinate gives differentiability of
-    the Pi-valued map (\texttt{differentiable\_pi}).}
+    \pf{Flatten, unflatten and row extraction are continuous linear
+    maps, so the composite is differentiable; \texttt{fun\_prop}
+    discharges it from 2.}
 \end{enumerate}
 \end{proof}
 
@@ -13456,8 +13738,9 @@ batch; see \leandocref{Proofs.vitTinyInputGradB\_eq\_vitTiny\_vjp}.
       def:hasvjpmat, thm:biPathHasVJP, thm:biPathMatHasVJP, thm:bnHasVJP,
       thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
       thm:geluHasVJP, thm:identityHasVJP, thm:identityMatHasVJP, thm:layerNormVecHasVJP,
-      thm:rowwiseHasVJPMat, thm:sdpaBackK_correct, thm:sdpaBackQ_correct,
-      thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat, thm:vjpComp, thm:vjpMatComp}
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:sdpaBackK_correct,
+      thm:sdpaBackQ_correct, thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat,
+      thm:vjpComp, thm:vjpMatComp}
   \Prove{} each of the 200 parameter gradients of the batched ViT-Tiny step
   (three heads of 64, depth 12, \(16 \times 16\) patches) denotes the
   certified batch gradient at the chain cotangent of the label-smoothed
@@ -13491,9 +13774,10 @@ of the lifted block and the head; see
       thm:denseBiasGrad_correct, thm:denseHasVJP, thm:densePerTokenHasVJPMat,
       thm:denseWeightGrad_correct, thm:geluHasVJP, thm:geluPerTokenHasVJPMat,
       thm:hasGradAt_comp, thm:identityHasVJP, thm:identityMatHasVJP,
-      thm:layerNormVecHasVJP, thm:pdiv_finset_sum, thm:rowwiseHasVJPMat,
-      thm:sdpaBackK_correct, thm:sdpaBackQ_correct, thm:sdpaBackV_correct,
-      thm:transformerMlpHasVJPMat, thm:vit_step_tie, thm:vjpComp, thm:vjpMatComp}
+      thm:layerNormVecHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:sdpaBackK_correct, thm:sdpaBackQ_correct,
+      thm:sdpaBackV_correct, thm:transformerMlpHasVJPMat, thm:vit_step_tie, thm:vjpComp,
+      thm:vjpMatComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the LayerNorms \hfill[\texttt{h\(\varepsilon\)}]
@@ -13606,8 +13890,8 @@ def vitVerified : VerifiedNetSpec where
   data     := .imagenette
   layers   := [
     .conv 3 192 16 16,          -- patch embed 16x16/s16, 224 -> 14x14 = 196
-    .param #[192] 2,            -- CLS token
-    .param #[197, 192] 2,       -- positional embedding, 196 + 1
+    .param #[192] 5,            -- CLS token: sigma 0.02 under vitInit
+    .param #[197, 192] 5,       -- positional embedding, 196 + 1, same init
     .transformerBlock 192 768,  -- 12 pre-norm blocks @ dim 192, MLP 768
     .transformerBlock 192 768,  .transformerBlock 192 768,
     .transformerBlock 192 768,  .transformerBlock 192 768,
@@ -13779,52 +14063,91 @@ fan-in, $da = dQ\,W_q^{\!\top} + dK\,W_k^{\!\top} + dV\,W_v^{\!\top}$.
 residual) through \texttt{vjpMatComp}.
 
 \medskip\noindent\textbf{The gap and how we close it.} The softmax backward
-is non-elementwise and the three projections are coupled. The emitted graph
-denotes \texttt{transformerAttnSublayerHasVJPMat}'s backward. Here is
-the three-way fan-in at the input (two tokens, model dimension four, single
-head, with the SDPA backward that produces $dQ,dK,dV$ elided to its comment):
+is non-elementwise and the three projections are coupled, and both are in
+the artifact. Here are the two pieces as
+\texttt{verified\_mlir/vit\_adam\_train\_step.mlir} emits them for the
+last of the twelve blocks (197 tokens, model dimension 192, batch 32):
+first the softmax backward of one of the three heads, then the three-way
+fan-in at the block input, with the chain between them elided (SSA names
+the artifact's, default \texttt{precision} dropped, lines wrapped):
 
 \begin{verbatim}
-// dQ,dK,dV = SDPA.back(dOut . Wo^T)  (softmax-weighted attention grads)
-%daQ = stablehlo.dot_general %dQ, %Wq, contracting_dims = [1] x [1]
-         : (tensor<2x4xf32>, tensor<4x4xf32>) -> tensor<2x4xf32>
-%daK = stablehlo.dot_general %dK, %Wk, contracting_dims = [1] x [1]
-         : (tensor<2x4xf32>, tensor<4x4xf32>) -> tensor<2x4xf32>
-%daV = stablehlo.dot_general %dV, %Wv, contracting_dims = [1] x [1]
-         : (tensor<2x4xf32>, tensor<4x4xf32>) -> tensor<2x4xf32>
-%daQK = stablehlo.add %daQ, %daK : tensor<2x4xf32>
-%da = stablehlo.add %daQK, %daV : tensor<2x4xf32>
-// %dxa = LN.back(%da);  %dx = %dOut + %dxa  (residual skip)
+%v2671 = stablehlo.exponential %v2668 : tensor<32x197x197xf32>
+%v2672 = stablehlo.reduce(%v2671 init: %v2670)
+      applies stablehlo.add across dimensions = [2]
+      : (tensor<32x197x197xf32>, tensor<f32>) -> tensor<32x197xf32>
+%v2673 = stablehlo.broadcast_in_dim %v2672, dims = [0, 1]
+      : (tensor<32x197xf32>) -> tensor<32x197x197xf32>
+%v2674 = stablehlo.divide %v2671, %v2673 : tensor<32x197x197xf32>
+%v2675 = stablehlo.multiply %v2674, %v2669 : tensor<32x197x197xf32>
+%v2676 = stablehlo.reduce(%v2675 init: %v2670)
+      applies stablehlo.add across dimensions = [2]
+      : (tensor<32x197x197xf32>, tensor<f32>) -> tensor<32x197xf32>
+%v2677 = stablehlo.broadcast_in_dim %v2676, dims = [0, 1]
+      : (tensor<32x197xf32>) -> tensor<32x197x197xf32>
+%v2678 = stablehlo.subtract %v2669, %v2677 : tensor<32x197x197xf32>
+%v2679 = stablehlo.multiply %v2674, %v2678 : tensor<32x197x197xf32>
+// ...
+%v2832 = stablehlo.dot_general %v2831, %b11_Wq,
+      contracting_dims = [2] x [1] : (tensor<32x197x192xf32>,
+      tensor<192x192xf32>) -> tensor<32x197x192xf32>
+// ...
+%v2841 = stablehlo.dot_general %v2840, %b11_Wk,
+      contracting_dims = [2] x [1] : (tensor<32x197x192xf32>,
+      tensor<192x192xf32>) -> tensor<32x197x192xf32>
+// ...
+%v2850 = stablehlo.dot_general %v2849, %b11_Wv,
+      contracting_dims = [2] x [1] : (tensor<32x197x192xf32>,
+      tensor<192x192xf32>) -> tensor<32x197x192xf32>
+%v2858 = stablehlo.add %v2833, %v2842 : tensor<32x37824xf32>
+%v2859 = stablehlo.add %v2858, %v2851 : tensor<32x37824xf32>
 \end{verbatim}
 
-\noindent Read it against the fan-in: each \texttt{dot\_general} carries one
-of the attention gradients back through its projection ($dQ$ through $W_q$,
-and so on, contracting the model axis), and the two \texttt{add}s sum the
-three. This is the residual fan-in (Theorem~\ref{thm:residualHasVJP}) with three
-branches instead of one, because attention reads the input thrice, so the
-gradient returns thrice and adds. The softmax-weighted $dQ,dK,dV$ that feed the
-\texttt{dot\_general}s come from the proven \texttt{sdpaBackQ/K/V}, and
-the surrounding LayerNorm and output projection chain through their bridges.
+\noindent Read the first half against Theorem~\ref{thm:softmaxHasVJP}.
+\texttt{\%v2668} is the saved pre-softmax score matrix of one head and
+\texttt{\%v2669} the cotangent $dP$ on its attention weights.
+\texttt{\%v2671}--\texttt{\%v2674} recompute $P = \mathrm{softmax}$ row
+by row (\texttt{exponential}, a \texttt{reduce} across the key axis, a
+\texttt{broadcast}, a \texttt{divide}); \texttt{\%v2675} is $P \odot dP$
+and \texttt{\%v2676}/\texttt{\%v2677} its row sums $\sum_j P_j\,dP_j$;
+\texttt{\%v2678} subtracts them from $dP$ and \texttt{\%v2679} multiplies
+by $P$ again: $dS = P \odot (dP - \sum_j P_j\,dP_j)$, the softmax VJP that
+couples every key position to every other, and the reason attention's
+derivative is not a chain of elementwise steps.
+\texttt{softmaxRowBack\_faithful} is the theorem that this graph denotes
+the proven row-softmax backward, and \texttt{vitCotDQ\_eq\_sdpaBackQ},
+\texttt{vitCotDK\_eq\_sdpaBackK} and \texttt{vitCotDV\_eq\_sdpaBackV}
+identify what the chain makes of $dS$ with the three gradients of
+Theorems~\ref{thm:sdpaBackQ_correct}--\ref{thm:sdpaBackV_correct}.
 
-\medskip\noindent One honesty note: the hard part of attention is in that
-first comment. This listing is the projection fan-in (three linear
-adjoints and two adds), while the softmax backward that couples every token
-to every other (\texttt{softmaxHasVJP}, \S~\ref{sec:attention_proofs}) is
-what \texttt{// SDPA.back} stands in for. We show the fan-in because it is the
-new structural move. The coupled core is carried by the proofs of
-\S~\ref{sec:attention_proofs}.
+Read the second half against the fan-in. Each \texttt{dot\_general} with
+\texttt{contracting\_dims = [2] x [1]} carries one attention gradient
+back through its projection, contracting the model axis: \texttt{\%v2832}
+is $dQ\,W_q^{\!\top}$, \texttt{\%v2841} is $dK\,W_k^{\!\top}$ and
+\texttt{\%v2850} is $dV\,W_v^{\!\top}$, with \texttt{\%v2831},
+\texttt{\%v2840} and \texttt{\%v2849} the three gradients laid out as
+tokens by model width, and the two \texttt{add}s \texttt{\%v2858},
+\texttt{\%v2859} sum the three. This is the residual fan-in
+(Theorem~\ref{thm:residualHasVJP}) with three branches instead of one,
+because attention reads the input thrice, so the gradient returns thrice
+and adds. \texttt{vitBlockCotInB\_eq\_vjp} is the theorem that the
+block's backward, from the output cotangent through this fan-in and the
+LayerNorm below it, denotes the certified block VJP, and
+Theorem~\ref{thm:vit_step_tie} threads it through all twelve blocks.
 
 \medskip\noindent With attention pinned, the verified-codegen thread covers
 every operator in the modern vision stack, and that means dense, convolution,
 BatchNorm, residual, depthwise, squeeze-excite, layer scale and attention.
 Each is emitted as the rendering of a machine-checked derivative, from the
-same three pieces: denoted IR, bridge theorem, printer.
+same three pieces: denoted graph, tie theorem, printer.
 
 \medskip\noindent\textbf{Caveats.}
 \begin{itemize}
-  \item \textbf{The attention bridge is unconditional.} Softmax and the
-    linear projections are smooth everywhere, with no smooth-point clause.
-  \item \textbf{Representative scale} (two tokens, $d = 4$, one head).
+  \item \textbf{The attention bridge has no smooth-point clause.} Softmax and
+    the linear projections are smooth everywhere; the only hypothesis in the
+    block is LayerNorm's $\epsilon > 0$.
+  \item \textbf{Shape.} The listing is one head and one block of the trained
+    net; the theorems are stated at every token count, width and head count.
 \end{itemize}
 
 \section{ImageNet recipe}
@@ -15255,8 +15578,10 @@ Three contributions worth pulling out from v3:
 
 \begin{itemize}
   \item \textbf{Label smoothing}: the cross-entropy target is
-    $0.9$ on the true class and $0.1 / (\mathrm{nClasses} - 1)$
-    elsewhere instead of a hard one-hot. Prevents the softmax from
+    $(1 - \varepsilon)\,\mathrm{onehot} + \varepsilon / K$, which puts
+    $1 - \varepsilon + \varepsilon/K$ on the true class ($0.91$ at
+    $\varepsilon = 0.1$, $K = 10$) and $\varepsilon / K$ elsewhere,
+    instead of a hard one-hot. Prevents the softmax from
     collapsing all probability onto the argmax, which improves
     calibration and ImageNet accuracy. Now standard in every
     modern recipe (DeiT, ConvNeXt, our own
@@ -16781,7 +17106,7 @@ def gpt2Small : NetSpec where
     -- Tied token embedding (also serves as LM head projection)
     .dense 50257 768 .identity,
     -- 12 decoder blocks, pre-norm (mask is attention-time, not a param)
-    .transformerEncoder 768 12 3072 12
+    .transformerEncoder 768 12 3072 12 (causalMask := true)
   ]
 \end{verbatim}
 
@@ -18791,7 +19116,7 @@ lake build Certs             # every certificate CI checks -- the long one
 
 \texttt{ProofsMinimal} is the smallest thing that is still a real result:
 \texttt{LinearFold} (the rendered linear layer denotes the Mathlib
-\texttt{fderiv} math) and \texttt{SgdDescentLinear} (the step decreases the
+\texttt{fderiv} math) and \texttt{SgdDescent.Linear} (the step decreases the
 loss). Start there if you want to see one theorem land before committing to
 the full build.
 
@@ -18806,7 +19131,7 @@ else, and Appendix~\ref{app:verification} is the accounting.
 \texttt{\#print axioms} and \texttt{lake build} both run through Lean's
 elaborator, so they share a trust path with whatever the elaborator did.
 \texttt{tests/comparator/} re-runs Lean's kernel typechecker independently over
-88 theorems, sandboxed, verifying each one's axiom closure statically:
+110 theorems, sandboxed, verifying each one's axiom closure statically:
 
 \begin{verbatim}
 tests/comparator/run.sh
@@ -18831,9 +19156,9 @@ ResNet-34 in scope. Once the \texttt{fderiv} pin and the structural rules are
 checked over Mathlib alone, the architecture theorems are applications of them,
 and what you must additionally trust is the forward functions and nothing else.
 
-The last 35 are \texttt{ChallengeTier.lean}, the layer this book's second
+The last 58 are \texttt{ChallengeTier.lean}, the layer this book's second
 half rests on: the step ties, the codegen faithfulness results, the whole-net
-back-chains, the data-parallel results, the float bridge and the three
+back-chains, the data-parallel results, the float bridge and the four
 certificate theorems. Their statements run to hundreds of lines apiece, so the
 file is printed from each declaration's own type
 (\texttt{scripts/gates/\allowbreak gen\_comparator\_tier.py}) rather than transcribed, and the
@@ -19236,7 +19561,7 @@ backward \(= \sum_j \pdiv f\,x\,i\,j \cdot dy_j\); the
 \textbf{37 step certificates} that tie the emitted programs to them; on
 top of the foundation \(\pdiv\) calculus and the
 differentiability/forward/witness machinery they rest on, plus the
-bestiary's 45 architecture families --- and \textbf{zero project
+bestiary's 46 architecture families --- and \textbf{zero project
 axioms} anywhere in it. That last figure is the one that matters, because
 it is the only one that cannot quietly grow. The axiom audit
 (\texttt{tests/AuditAxioms.lean}) re-checks every theorem in the
@@ -19266,14 +19591,14 @@ the Lean community's trustworthy-judge tool for projects that claim
 zero project axioms. It runs with \texttt{--paranoid}, so besides Lean's own
 kernel five independent checkers must accept every proof:
 \texttt{leanchecker-paranoid}, \texttt{lean4lean}, \texttt{nanoda},
-\texttt{con-leche} and \texttt{con-ron}. It runs 88 theorems (the foundation rules,
+\texttt{con-leche} and \texttt{con-ron}. It runs 110 theorems (the foundation rules,
 every chapter's headline Jacobian, the public
 \texttt{*HasVJP\_correct} wrappers, three smooth-point
 pointwise variants (\texttt{reluHasVJPAt\_correct},
 \texttt{mlpHasVJPAt\_correct},
 \texttt{maxPool2HasVJPAt3\_correct}) whose underlying
 \texttt{.correct} field is a real proof rather than \texttt{rfl},
-and the 35-theorem tie / faithfulness / certificate tier)
+and the 58-theorem tie / faithfulness / certificate tier)
 through Lean's kernel typechecker independently of the elaborator,
 with an axiom-allowlist of exactly \(\{\texttt{propext},
 \texttt{Quot.sound}, \texttt{Classical.choice}\}\). Any project
@@ -19283,10 +19608,10 @@ the run.
 This is what closes the gap between ``the elaborator accepted my
 proofs'' (which \texttt{lake build} confirms) and ``the kernel
 agrees, audited from a separate process'' (which comparator confirms).
-The 87 are not the whole proof suite --- \texttt{tests/AuditAxioms.lean}
-prints the axiom closure of 1{,}751 declarations, and the same allowlist
+The 110 are not the whole proof suite --- \texttt{tests/AuditAxioms.lean}
+prints the axiom closure of every headline declaration, and the same allowlist
 applies to all of them, because every theorem in the project closes the
-same way. What the 87 add is a second, non-elaborator opinion, and they
+same way. What the 110 add is a second, non-elaborator opinion, and they
 include every declaration \texttt{formalization.yaml} puts forward as a
 result, together with the calculus floor those rest on.
 
@@ -19312,25 +19637,30 @@ built from three components:
 \begin{itemize}
   \item \textbf{Denoted IR and a bridge theorem.} The emitted backward (and
     forward) is not a string but a Lean datatype, a small abstract syntax
-    tree (\texttt{Back}, \texttt{Fwd}, \texttt{Back3}), carrying a
+    tree (\texttt{SHlo}, with \texttt{Back} its per-operator ancestor), carrying a
     denotation $[\![\cdot]\!]$ valued in the proofs' own \texttt{Vec} and
     \texttt{Tensor3} types. A \emph{bridge theorem} then proves that this
     denotation equals the proven derivative: $[\![\,\text{emitted
     graph}\,]\!] = (\text{proven VJP}).\mathrm{backward}$. Examples are
-    \texttt{conv\_back\_bridge\_1to2}, \texttt{bn\_back\_bridge}, and
+    \texttt{conv\_back\_bridge}, \texttt{bn\_back\_bridge}, and
     \texttt{relu\_back\_bridge}, and each closes under the same three axioms
     as the rest of the project.
-  \item \textbf{A computable printer.} \texttt{Back} carries real-valued
-    operands and cannot be printed as it is, so \texttt{IRPrint.lean} defines
-    a mirror of it, \texttt{Hlo}: the same node structure, with SSA names and
-    shapes in place of values, printed one \texttt{stablehlo} operation per
-    node: \texttt{dotGeneral}\,$W$ becomes
-    \texttt{stablehlo.dot\_general}, a \texttt{selectPos} node becomes
-    \texttt{compare GT 0} plus \texttt{select}, and so on. That the mirror
-    is built node for node from the bridged graph is a reading of two
-    definitions, not a theorem. The tier where the printed text is the
-    denoted graph's own printout is the verified trainers' StableHLO tier,
-    below.
+  \item \textbf{A printer over the same term.} The renderers
+    (\texttt{StableHLO.Pretty}) print the very \texttt{SHlo} term whose
+    denotation the tie theorems are about: SSA names are annotations the
+    denotation ignores, and \texttt{skel} erases the real values, so the
+    text depends on the graph's shape and names alone, one
+    \texttt{stablehlo} operation per node. The post-order token encoding
+    the printer works from is proved invertible
+    (\texttt{StableHLOParse.roundtrip}); how each token becomes a line of
+    text (\texttt{emitTok}) is trusted, and checked by parsing every
+    committed artifact as StableHLO
+    (\texttt{scripts/gates/parse\_verified\_mlir.py}) and by the trainers
+    executing them. The earlier hand-written printer, \texttt{IRPrint.lean},
+    walked a mirror of \texttt{Back} with names in place of values, and the
+    match between mirror and bridged graph was a reading of two
+    definitions; it is kept as a demonstration that nothing imports, and
+    the per-operator graphs the execution oracle runs are its.
   \item \textbf{An execution oracle.} A Python harness
     (\texttt{LeanMlir/Proofs/check\_ir\_codegen.py}) regenerates the
     \texttt{.mlir} from the printer, compiles it with IREE, runs it, and
@@ -19345,15 +19675,15 @@ and bounded:
 \begin{itemize}
   \item \emph{Proven} (Lean, three axioms): the IR's denotation equals the
     proven derivative.
-  \item \emph{Read, not proved}: that the printed mirror is, node for node,
-    the bridged IR.
+  \item \emph{Re-rendered, not proved}: that the committed file is the
+    printer's current output. CI re-elaborates each renderer and
+    \texttt{git diff}s its artifact, and
+    \texttt{scripts/gates/check\_render\_coverage.py} lists the artifacts
+    it does not; of the nine the ``MLIR'' sections quote, the CIFAR
+    BatchNorm step is the one still on that list.
   \item \emph{Trusted} (validated numerically, not proven): that the
-    StableHLO text faithfully denotes $[\![\cdot]\!]$. One piece of
-    its syntactic half is proved: the postorder token encoding the printer
-    works from is invertible (\texttt{StableHLO.roundtrip}). That is a
-    statement about tokens, not text; how each token becomes a line of text
-    (\texttt{emitTok}) is trusted, and checked by parsing and running the
-    committed artifacts. Beyond it, three things are trusted: a formal
+    StableHLO text faithfully denotes $[\![\cdot]\!]$, which is the
+    per-token text above. Beyond it, three things are trusted: a formal
     StableHLO semantics, which does not yet exist, that the lowerer
     compiles the text correctly, and that the hardware's rounding
     approximates $\mathbb{R}$ within the modelled unit roundoff. The last of those is now a conditional theorem validated on
@@ -19365,7 +19695,7 @@ point, at one replica, in f32 or bf16 --- up to one
 printer, one lowerer, the StableHLO semantics the denotation assumes, and
 floating point. Where a conventional generator leaves
 thousands of lines of string-building linked to the proof by nothing at all,
-the unproven surface here is a single printer, tested end to end, plus
+the unproven surface here is one printer's per-token text, tested end to end, plus
 the hand-written lines each render declares in its own comments (the
 report-only \texttt{\%loss}, for one, and ConvNeXt's GAP-backward block).
 
@@ -19412,9 +19742,13 @@ whole step: the one printer, and that each emitted operation's text denotes
 what $[\![\cdot]\!]$ says it does.
 
 \medskip\noindent\textbf{The one conditional.} For the smooth operators the
-bridge is unconditional, holding at every input, and those are BatchNorm and
+bridge holds at every input, and those are BatchNorm and
 LayerNorm (given $\varepsilon > 0$), GELU, swish, sigmoid, softmax, and
-attention. For the kinked operators, which are ReLU, ReLU6 and max-pool, it
+attention. The convolution bridges hold at every input too, with one
+hypothesis on the kernel rather than the data: $k_H$ and $k_W$ odd, which
+every kernel in Part~1 satisfies except ConvNeXt's $4\times4$ stem and
+$2\times2$ downsamples, and those are tied through the kernel zero-extended
+to odd size (\texttt{padOdd}). For the kinked operators, which are ReLU, ReLU6 and max-pool, it
 holds only at a \emph{smooth point}: no pre-activation exactly on the kink
 (zero for ReLU, $0$ or $6$ for ReLU6), and every $2 \times 2$ pooling
 window's maximum attained at one cell (\texttt{MaxPool2Smooth}). The equality
@@ -19503,8 +19837,10 @@ measure-zero set where the emitted \texttt{compare GT 0} disagrees with the
 true derivative, and the theorem is written to permit failure precisely there
 and nowhere else. The convolution bridge of Chapter~\ref{chap:cnn} is the same
 shape with a harder proof: \texttt{convBackDenote} unfolds to a forward
-\texttt{conv2d} of the reversed-and-transposed kernel, discharged by expansion
-at the concrete tensor shape.
+\texttt{conv2d} of the reversed-and-transposed kernel, and
+\texttt{conv\_back\_bridge} shows it equals the certified input gradient at
+every shape by reindexing the sum, a bijection exactly when the kernel is
+odd.
 
 \medskip\noindent\textbf{Composing the per-operator bridges.} Whole-network
 backwards are assembled by substitution. The function \texttt{Back.subst}
@@ -19527,7 +19863,8 @@ value is the pivot between two arrows. The printer walks it and emits one
 \texttt{stablehlo} operation per constructor (\texttt{dotGeneral} $\mapsto$
 \texttt{stablehlo.dot\_general}, and \texttt{selectPos} $\mapsto$
 \texttt{compare GT 0} plus \texttt{select}), and that arrow is the trusted
-one, producing the text in each chapter's listing. The denotation interprets
+one; the chapter listings are cut from renders built this way at batch
+width. The denotation interprets
 the same value into the proofs' \texttt{Vec} type, and the bridge proves
 the result equals the derivative, so that arrow is machine-checked. Because both arrows start from
 one concrete datatype rather than from a string, ``the emitted code computes
@@ -19622,21 +19959,30 @@ in different orders. Full results are committed to the repo as
 reproducible JSON-Lines traces, in
 \texttt{historical/traces/CROSS\_BACKEND\_RESULTS.md}.
 
-\medskip\noindent\textbf{One asymmetry, stated plainly.} The trainers in this
-book default to XLA, while the oracles above lower the Lean side through IREE.
-That is deliberate, because an oracle that shared a compiler with its own
-reference would not be checking the compiler at all. The consequence is worth
-being clear about: it is IREE's translation of the proven text that these
-oracles exercise directly, so the default training path's lowering carries less
-of this particular kind of evidence than the path the oracles run. Every other
-layer is unaffected, since the proofs, the bridge theorems and the
-rounding budgets are statements about the graph rather than about any
-compiler, and both lowerers consume the identical proven StableHLO.
+\medskip\noindent\textbf{Two asymmetries, stated plainly.} The trainers in
+this book default to XLA, while the oracles above lower the Lean side through
+IREE. That is deliberate, because an oracle that shared a compiler with its own
+reference would not be checking the compiler at all. The second asymmetry is
+the one to hold on to: the Lean side of those oracles is not the proven text.
+The cross-backend traces and the per-operator cases below lower each small net
+at run time through the reference code generator (\texttt{MlirCodegen}, the
+unverified path), so what they check is one hand-written backward against
+another, with autodiff as the judge. The oracle that runs the proven text is
+\texttt{tests/vjp\_oracle/run\_verified.sh}: one SGD step of the committed
+\texttt{linear}, \texttt{mlp} and \texttt{cnn} train steps --- the artifacts
+Theorems~\ref{thm:linear_fold}, \ref{thm:mlp_fold} and~\ref{thm:cnn_fold} are
+about --- through the book's own trainers, against one step of the same nets
+in JAX from the same initial weights on the same batch, compared parameter
+update by parameter update, at tolerances of $10^{-4}$ for the dense nets and
+$10^{-3}$ for the convolutional one. It runs beside the per-operator cases in
+the IREE workflow. Every other layer is unaffected, since the proofs, the
+bridge theorems and the rounding budgets are statements about the graph rather
+than about any compiler, and both lowerers consume the same StableHLO text.
 
-Layered on top of the end-to-end trace diff is a per-axiom
+Layered on top of the end-to-end trace diff is a per-operator
 differential test in \texttt{tests/vjp\_oracle/}, which compares
-each Lean-proved backward pass against JAX's
-\texttt{value\_and\_grad} autodiff on a minimal one-step training
+each hand-derived backward pass of the reference code generator against
+JAX's \texttt{value\_and\_grad} autodiff on a minimal one-step training
 run. Fourteen cases each agree with JAX autodiff on the step-2 loss, to
 between \(2 \times 10^{-7}\) and \(10^{-4}\), the wider ones where a
 max-pool or a depthwise reduction changes the summation order: dense,
@@ -19652,7 +19998,8 @@ flips, wrong contraction axis, swapped indices).
 Two further watchers close the loop. The \textbf{IREE-versus-NumPy
 oracle} (\S~\ref{sec:verified_codegen}) regenerates the per-operator and
 small-network graphs (linear, MLP, CNN, convolution, max-pool, BatchNorm,
-the loss cotangent and a ConvNeXt block) from the printer, compiles them
+the loss cotangent and a ConvNeXt block) from the legacy per-operator
+printer (\texttt{IRPrint.lean}), compiles them
 for CPU, and diffs the result against an independent NumPy reference,
 which is the one check that reaches past the proofs to IREE's lowering
 itself. And the
