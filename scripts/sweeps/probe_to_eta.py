@@ -68,8 +68,10 @@ NET_CONF = {
     ("mnv4", "f32"): "mnv4-default-4gpu",
     ("enetema", "f32"): "enet-default-4gpu",
     ("cnx", "f32"): "cnx-default-4gpu",
-    ("cnxs", "f32"): "cnxs-default-4gpu",
-    ("cnxb", "f32"): "cnxb-default-4gpu",
+    # `cnxs-default-4gpu` / `cnxb-default-4gpu` (the CX-4 f32 confs) were retired 2026-10-19; the
+    # S/B rows are the `cnxs-default-emabf16-4gpu` / `cnxb-default-emabf16-4gpu` accumulation
+    # confs, whose ETAs come from their own smokes (runs/2026-10-12-cnx{s,b}-default-emabf16-4gpu/),
+    # not from this probe's one-shot graphs. A `cnxs` / `cnxb` probe row is printed and left there.
     ("vit", "f32"): "vit-default-4gpu",
     ("vitema", "bf16"): "vit-default-emabf16-4gpu",
     ("vits", "f32"): "vits-default-g512-4gpu",
