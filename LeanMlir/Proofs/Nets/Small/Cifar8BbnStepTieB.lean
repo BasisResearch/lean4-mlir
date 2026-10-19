@@ -8,7 +8,7 @@ public import LeanMlir.Proofs.Foundation.GradNodesBAt
 
 `Cifar8BnTieG.cifar8Bn_train_step_tiedG` ties the per-image renders (`cifar8w_bn_*`, BN over
 `[2,3]`, one `x : Tensor3` at a time). The artifacts `planning/cifar-batch-bn-rerender.md` builds
-— `cifar8wb_bbn_{sgd,mom,adam,bf16…}_train_step.mlir`, from `Proofs/Codegen/CnnBbnRender.lean` —
+— `cifar8wb_bbn_{sgd,mom,adam,bf16…}_train_step.mlir`, from [`Proofs/Codegen/CnnBbnRender.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/LeanMlir/Proofs/Codegen/CnnBbnRender.lean) —
 are the same 38 parameters with every BatchNorm reducing over `[0,2,3]`: the batch is coupled, so
 there is no per-example statement to make. This file states those artifacts' gradient nodes at the
 batched vocabulary ResNet-34's tie uses (`Foundation/GradNodesB`, `GradNodesBAt`,
@@ -40,7 +40,7 @@ that this chain IS the certified whole-net backward — `r34IdCotIn_eq_vjp`'s an
 the batched-BN cifar8 forward's `HasVJPAt` and the per-link `_eq_vjp` lemmas. Each link's `den`
 theorem exists (`den_maxPoolBackB`, `den_convBackBatched_eq_cInB`, `bnInB_eq_bnBackB`, the relu
 mask by `rfl`), so that half is composition work, listed in the planning note. Numerically the
-gap is covered by `tests/TestCifar8BbnGradCheck.lean` and `tests/cifar8_bbn_jax_ref.py`.
+gap is covered by [`tests/TestCifar8BbnGradCheck.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestCifar8BbnGradCheck.lean) and `tests/cifar8_bbn_jax_ref.py`.
 
 **`N` is a binder, `bf16` is a flag.** The bf16 artifacts' conv forward, input-VJP and weight
 gradient are the bf16 kinds; the capstone takes `bf16` and reaches them through `ConvWTiedBAt`
