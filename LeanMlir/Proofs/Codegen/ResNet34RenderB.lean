@@ -627,7 +627,14 @@ def resnet34AdamTrainStepText (B nClasses : Nat) (epsStr : String)
     -- `forceSync`: the sync-BN graph at ONE replica (every collective empty), for the numeric
     -- gate only — it separates "the seven sync ops' text is right" from "the collective composes
     -- them right". Never a committed artifact; `resnet34-syncbn-check` renders it to `.lake/build/`.
-    (forceSync : Bool := false) : String :=
+    (forceSync : Bool := false)
+    -- `wx` = timm `no_weight_decay` / Bag of Tricks §3.1 "no bias decay": every 1-D parameter
+    -- (BN γ/β, the classifier bias) takes `%wdz` where the kernels and the dense weight take
+    -- `%wd`. Threaded exactly as R50 threads it — through `wdNameBy` into `optOne`, through
+    -- `wdzConst` into the constants, and through `r34AdamVariant` into the ENTRY NAME (a flag
+    -- that reaches the emission but not the name is the "entry mismatch" failure below). TRAILING
+    -- and defaulted, so every committed R34 artifact re-renders byte-identically.
+    (wdExclude : Bool := false) : String :=
   let sync : Bool := replicas > 1 || forceSync
   let optLabel : String := match opt with
     | .adamw     => "AdamW"
@@ -768,7 +775,7 @@ here first"
       -- R34 renders no accumulation variant and no EMA one, so the fifth and sixth components
       -- (the accumulator's and the shadow's output names) are always `none` here. Dropping them
       -- rather than threading them is what keeps every committed R34 artifact byte-identical.
-      let (c, nT, nM, nV, _, _) ← optOne opt B replicas g
+      let (c, nT, nM, nV, _, _) ← optOne opt B replicas g (wdNameBy wdExclude g.nm g.ds)
       adamCode := adamCode ++ c
       thetaN := thetaN ++ [nT]
       mNames := mNames ++ [nM]
@@ -799,7 +806,7 @@ here first"
         syncBnBanner "ResNet34SyncTieB.r34_net_syncTiedB"
           "StableHLO.resnet34FwdGraphSyncFull_shard" "ResNet" ++
         (if bf16 then syncBnBf16WgradNote else "")) ++
-      zeroBiasPrelude convBias [64, 128, 256, 512] ++ body ++ optConstsB opt wdStr ++ adamCode ++ lossCode ++
+      zeroBiasPrelude convBias [64, 128, 256, 512] ++ body ++ optConstsB opt wdStr ++ wdzConst wdExclude ++ adamCode ++ lossCode ++
       s!"    return {String.intercalate ", " retVals} : {String.intercalate ", " retTys}\n"
   let sigList : List (String × String) := r34SigList nClasses convBias
   let statSig := String.intercalate ", " (r34StatSigList.map (fun (n, t) => s!"{n}i: {t}"))
@@ -817,7 +824,7 @@ here first"
   -- from the variant, so a flag that reaches the emission but not the name produces an artifact
   -- whose declared entry disagrees with its own path, and the driver refuses the call outright
   -- ("entry mismatch: session holds @…_momdp64_train_step, caller asked …_momdp64bf16_…").
-  let fname := s!"{slug}_{r34AdamVariant B replicas opt (bf16 := bf16) (wdStr := wdStr) (alpha := alpha)}_train_step"
+  let fname := s!"{slug}_{r34AdamVariant B replicas opt (wdExclude := wdExclude) (bf16 := bf16) (wdStr := wdStr) (alpha := alpha)}_train_step"
   "module @m {\n" ++
   s!"  func.func @{fname}({inSig}) -> ({outSig}) " ++ "{\n" ++
   inner ++
@@ -1063,6 +1070,25 @@ end Proofs.StableHLO
 #eval IO.FS.writeFile "verified_mlir/resnet34in_momdp64bf16_train_step.mlir"
   (Proofs.StableHLO.resnet34AdamTrainStepText 64 1000 "1.0e-05" 4
     Proofs.StableHLO.OptRecipe.heavyBall "resnet34in" false true)
+
+-- **The no-bias-decay peer** — `momdp64wxbf16`: the render above with Bag of Tricks §3.1's
+-- "no bias decay" (He et al. 2018; timm's `no_weight_decay`): the 72 1-D parameters — every BN
+-- γ and β, and the classifier bias — take `%wdz` (zero) in the coupled-L2 term, where the 37
+-- kernels and the dense weight take `%wd`. The same rule every later recipe in the book bakes
+-- (RSB's `wx`, ConvNeXt's, DeiT's), which is why the ResNet-34 row takes this one and not the
+-- paper's other rows (NAG, Xavier, the colour pack, 120 epochs). Host-side the same rerun starts
+-- every block's second γ at 0 (`Verified.Spec.idBlk` kind 4 under `zeroGammaInit`) and runs the
+-- 0.9 BN decay (`MainResnet34Imagenet.lean`). `r34-default-bf16-4gpu` trains it; the landed
+-- 74.17 ran the all-params render above. Same graph, same arity, same regions: `wx` needs no
+-- driver predicate.
+#eval IO.FS.writeFile "verified_mlir/resnet34in_momdp64wxbf16_train_step.mlir"
+  (Proofs.StableHLO.resnet34AdamTrainStepText 64 1000 "1.0e-05" 4
+    Proofs.StableHLO.OptRecipe.heavyBall "resnet34in" false true (wdExclude := true))
+#guard Proofs.StableHLO.r34AdamVariant 64 4 Proofs.StableHLO.OptRecipe.heavyBall
+         true false false "" true == "momdp64wxbf16"
+#guard !"momdp64wxbf16".contains "do"
+#guard !"momdp64wxbf16".contains "acc"
+#guard !"momdp64wxbf16".startsWith "ema"
 
 -- **The 2-GPU data-parallel peer**, at `B := 128` PER REPLICA so the global batch is 128×2 = 256 —
 -- the same global batch, the same 5004 steps/epoch and the same recipe as `mom256` and `momdp64`

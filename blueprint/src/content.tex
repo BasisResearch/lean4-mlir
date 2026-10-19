@@ -6802,8 +6802,11 @@ reference first, the verified path second, and then the two side by side.
 
 The recipe in full: SGD with momentum $0.9$ at batch 256, cosine LR with a
 5-epoch warmup from peak $0.1$, label smoothing $0.1$, a random-resized
-crop to $224\times224$ plus a horizontal flip, and $\ell_2$ weight decay
-$10^{-4}$. The crop is where the two halves below part: the verified run
+crop to $224\times224$ plus a horizontal flip, $\ell_2$ weight decay
+$10^{-4}$ on the convolution and dense weights with BatchNorm's $\gamma$,
+$\beta$ and the biases left undecayed, every block's second BatchNorm
+starting its $\gamma$ at $0$, and running statistics that decay at $0.9$.
+The crop is where the two halves below part: the verified run
 trained TensorFlow's \texttt{sample\_distorted\_bounding\_box} ($8$--$100\%$
 of the area at a $\frac{3}{4}$--$\frac{4}{3}$ aspect ratio, at least
 $10\%$ of the image covered, the whole image after ten failed draws), and
@@ -6811,10 +6814,16 @@ the reference, which started after the pipeline moved to torchvision's
 \texttt{RandomResizedCrop} on 2026-10-06, trained that ($8$--$100\%$ of the
 area, the same aspect range, bilinear). The committed verified shim now
 crops with torchvision's too; the marker after Table~\ref{tab:r34_paths}
-names the rerun that closes the gap. SGD with momentum and the weight decay are the original paper's;
-the cosine schedule, the warmup, the label smoothing and the
-random-resized-crop are the ``bag of tricks'' polish that became standard
-after 2018.
+names the rerun that closes the gap. SGD with momentum and the weight
+decay are the original paper's; the cosine schedule, the warmup, the label
+smoothing, the random-resized crop, the undecayed BatchNorm parameters and
+the zero-$\gamma$ are He et al.\ 2018's Bag of Tricks. What the rows do
+not take from that paper, each a training-time change that no later
+chapter's recipe shares either: 120 epochs, Nesterov momentum, Xavier
+initialization, the hue/saturation/brightness jitter with PCA noise, and
+the ResNet-D downsampling blocks --- the networks here are torchvision's,
+ResNet-B. The pair below predates the last three rows of the recipe; the
+marker after Table~\ref{tab:r34_paths} says so.
 
 \prosesection{The reference (JAX)}
 
@@ -7016,6 +7025,9 @@ global batch        & 256 ($4\times64$)        & 256 ($4\times64$) \\
 BN statistic group  & 256 (global)             & 256 (global) \\
 steps/epoch         & 5{,}004                  & 5{,}004 \\
 optimizer           & SGD, momentum $0.9$      & SGD, momentum $0.9$ \\
+weight decay        & $10^{-4}$, every parameter & $10^{-4}$, every parameter \\
+last-BN $\gamma$ at init & $1$                 & $1$ \\
+BN running-stat decay & $0.99$                 & $0.99$ \\
 schedule            & cosine, 5-epoch warmup   & cosine, 5-epoch warmup \\
 \hline
 \textbf{val top-1}  & $\mathbf{74.14\%}$       & $\mathbf{74.17\%}$ \\
@@ -7040,10 +7052,15 @@ The verified half (\texttt{runs/2026-09-22-r34-syncbn-bf16-90ep}) trained
 TensorFlow's \texttt{sample\_distorted\_bounding\_box}; the reference
 (\texttt{runs/2026-10-07-r34-jax-bf16-90ep}) trained torchvision's
 \texttt{RandomResizedCrop}, which every torchvision-side recipe now
-emits. The recipe both rows run is Bag of Tricks. A verified
-rerun on torchvision's crop is owed --- \texttt{r34-default-bf16-4gpu},
-${\sim}21$\,h on the four 3060s --- and its number replaces the verified
-column.]}
+emits. The recipe both rows run is Bag of Tricks, and the pair above
+predates three of its rows: it decayed every parameter, started every
+$\gamma$ at $1$ and ran the BatchNorm statistics at $0.99$, where the row
+now takes no bias decay (the \texttt{wx} render), zero-$\gamma$ on each
+block's second BatchNorm and a decay of $0.9$ --- the three rows the later
+chapters' recipes share. A rerun of both halves is owed ---
+\texttt{r34-default-jax-4gpu} / \texttt{r34-default-bf16-4gpu},
+${\sim}13 + 21$\,h --- and its numbers replace both columns, the crop
+closed with them.]}
 
 \medskip\noindent Both paths normalize over the global $256$: the
 reference's \texttt{@jit} mesh reduces the batch statistics across its
@@ -7251,7 +7268,8 @@ points in their decay; the endpoints are what the $+0.99$ is measured from.
 
 The verified trainer is the ResNet-34 one of \S\ref{sec:r34_pjrt} with the
 bottleneck backbone substituted, and each recipe is its own render:
-\texttt{resnet50in\_momdp64bf16} for 2018, and for A3
+\texttt{resnet50in\_momdp64wxbf16} for 2018 (the landed pair's,
+\texttt{resnet50in\_momdp64bf16}, decays every parameter), and for A3
 \texttt{resnet50in160\_lambaccdp4x128wxclipbcebf16} --- LAMB $\times$
 BCE-with-logits $\times$ accumulation $k=4$ at four replicas of $128$ to
 the recipe's $2048$, train@160 / eval@224. They run with:
@@ -7324,6 +7342,7 @@ accumulation        & none                     & none \\
 BN statistic group  & 256 (global)             & 256 (global) \\
 steps/epoch         & 5{,}004                  & 5{,}004 \\
 optimizer           & SGD, momentum $0.9$      & SGD, momentum $0.9$ \\
+weight decay        & $10^{-4}$, every parameter & $10^{-4}$, every parameter \\
 schedule stepped    & per step                 & per step \\
 train / eval res    & 224 / 224                & 224 / 224 \\
 \textbf{val top-1}  & $\mathbf{76.76\%}$       & $\mathbf{77.09\%}$ \\
@@ -7342,6 +7361,14 @@ train / eval res    & 160 / 224                & 160 / 224 \\
 \hline
 \end{tabular}
 \end{table}
+
+\medskip\noindent\textbf{[TODO: the 2018 pair above decayed every parameter.
+The row now takes Bag of Tricks' no bias decay --- BatchNorm's $\gamma$,
+$\beta$ and the classifier bias undecayed, as RSB, ConvNeXt and DeiT have
+it --- the \texttt{wx} render, \texttt{resnet50in\_momdp64wxbf16}. A rerun
+of both halves is owed --- \texttt{r50-2018-jax-4gpu} /
+\texttt{r50-2018-bf16-4gpu}, ${\sim}22 + 29$\,h --- and its numbers
+replace the 2018 rows.]}
 
 \noindent The BatchNorm statistic group is the setting that changes between the blocks, on both paths at
 once: the 2018 recipe normalizes over

@@ -1201,6 +1201,23 @@ end Proofs.StableHLO
   (Proofs.StableHLO.resnet50TrainStepText 64 1000 "1.0e-05" 4
     Proofs.StableHLO.OptRecipe.heavyBall "resnet50in" (bf16 := true))
 
+-- **The no-bias-decay peer** — `momdp64wxbf16`, the render above with Bag of Tricks §3.1's
+-- "no bias decay" (He et al. 2018; timm's `no_weight_decay`): every 1-D parameter — BN γ/β and
+-- the classifier bias — takes `%wdz` (zero) where the kernels and the dense weight take `%wd`.
+-- The same rule every later recipe in the book already bakes (RSB's `wx`, ConvNeXt's, DeiT's),
+-- which is why the 2018 row takes it (2026-10-19) and not the paper's other rows (NAG, Xavier,
+-- the colour pack, 120 epochs). `r50-2018-bf16-4gpu` trains it; the landed 77.09 ran the
+-- all-params render above. Nothing else moves: same graph, same arity, same regions — `wx`
+-- needs no driver predicate (`r34AdamVariant`'s note).
+#eval IO.FS.writeFile "verified_mlir/resnet50in_momdp64wxbf16_train_step.mlir"
+  (Proofs.StableHLO.resnet50TrainStepText 64 1000 "1.0e-05" 4
+    Proofs.StableHLO.OptRecipe.heavyBall "resnet50in" (bf16 := true) (wdExclude := true))
+#guard Proofs.StableHLO.r34AdamVariant 64 4 Proofs.StableHLO.OptRecipe.heavyBall
+         true false false "" true == "momdp64wxbf16"
+#guard !"momdp64wxbf16".contains "do"
+#guard !"momdp64wxbf16".contains "acc"
+#guard !"momdp64wxbf16".startsWith "ema"
+
 -- The variant spelling, and the wiring that actually breaks. `resnet50TrainStepText`
 -- derives its entry name from `r34AdamVariant`, so `bf16` has to reach THAT call and not merely
 -- the block renderers — otherwise the artifact lands at `…momdp64bf16_train_step.mlir` while

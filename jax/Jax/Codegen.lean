@@ -1973,14 +1973,14 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
       let needsProj := !(ic == oc && fs == 1)
       if needsProj then
         code := code ++ emitConvBnInitCfg cfg s!"ResBlock ↓ conv1 {ic}→{oc}" ic oc 3
-        code := code ++ emitConvBnInitCfg cfg s!"ResBlock ↓ conv2 {oc}→{oc}" oc oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock ↓ conv2 {oc}→{oc}" oc oc 3 (zeroGamma := cfg.zeroGammaInit)
         code := code ++ emitConvBnInitCfg cfg s!"ResBlock ↓ proj {ic}→{oc}" ic oc 1
       else
         code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv1 {oc}→{oc}" oc oc 3
-        code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv2 {oc}→{oc}" oc oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv2 {oc}→{oc}" oc oc 3 (zeroGamma := cfg.zeroGammaInit)
       for _ in List.range (n - 1) do
         code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv1 {oc}→{oc}" oc oc 3
-        code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv2 {oc}→{oc}" oc oc 3
+        code := code ++ emitConvBnInitCfg cfg s!"ResBlock conv2 {oc}→{oc}" oc oc 3 (zeroGamma := cfg.zeroGammaInit)
     | .bottleneckBlock ic oc n fs =>
       let mid := oc / 4
       let needsProj := !(ic == oc && fs == 1)

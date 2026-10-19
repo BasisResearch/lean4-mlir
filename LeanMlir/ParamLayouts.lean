@@ -48,10 +48,13 @@ namespace ResNet34Layout
 -- moves the logits by rel 1e-6 (the same ablation on BN β moves them by 0.79), and the bias-free
 -- render ties the biased one with every forward-only output BIT-EXACT.
 -- `tests/TestConvBiasZero.lean`.
+-- The second BN's γ is init kind 4 (zero-γ: 0 under `zeroGammaInit`, 1 without, so every driver
+-- that does not set the flag is byte-identical to the old kind 1), as `Verified.Spec.idBlk` has it
+-- — `NetsCore` guards the two layouts equal.
 def idBlk (c : Nat) : Array (Array Nat × Nat) :=
-  #[(#[c,c,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],1),(#[c],2)]
+  #[(#[c,c,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],4),(#[c],2)]
 def downBlk (cin c : Nat) : Array (Array Nat × Nat) :=
-  #[(#[c,cin,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],1),(#[c],2),
+  #[(#[c,cin,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],4),(#[c],2),
     (#[c,cin,1,1],0),(#[c],1),(#[c],2)]   -- option-B 1×1 projection
 /-- `(dims, initKind)` for every param, in func-arg order. -/
 def specs : Array (Array Nat × Nat) := Id.run do

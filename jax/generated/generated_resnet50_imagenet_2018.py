@@ -1163,11 +1163,20 @@ def augment_batch(x, rng):
 LR = 0.100000
 MOMENTUM = 0.900000
 WD = 0.000100
+_WD_POS_SHAPE = None
+def _wd_mask(params):
+    # timm no_weight_decay: no decay on 1-D params (biases, LayerNorm γ/β,
+    # CLS token) or the positional embedding (2-D but must not be decayed).
+    def _leaf(p):
+        if p.ndim <= 1: return jnp.zeros_like(p)
+        if p.shape == _WD_POS_SHAPE: return jnp.zeros_like(p)
+        return jnp.ones_like(p)
+    return jax.tree.map(_leaf, params)
 
 @jit
 def train_step(params, velocity, bn, x, y, lr, drop_key=None):
     (loss, _new_bn), grads = value_and_grad(loss_fn, has_aux=True)(params, bn, x, y, drop_key)
-    grads = jax.tree.map(lambda g, p: g + WD * p, grads, params)
+    grads = jax.tree.map(lambda g, p, msk: g + WD * msk * p, grads, params, WD_MASK)
     velocity = jax.tree.map(lambda v, g: MOMENTUM * v + g, velocity, grads)
     params = jax.tree.map(lambda p, v: p - lr * v, params, velocity)
     return params, velocity, _new_bn, loss
@@ -1299,6 +1308,7 @@ if __name__ == "__main__":
     else:
         params = init_params(random.PRNGKey(314159))
     params = jax.device_put(params, replicated_sharding)
+    WD_MASK = _wd_mask(params)  # timm no_weight_decay mask (built once; shape-only, resume-safe)
     velocity = jax.tree.map(jnp.zeros_like, params)
     bn_state = init_bn_state()  # running BN mean/var (gap A), threaded through train/eval
 

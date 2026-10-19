@@ -171,7 +171,7 @@ def max_pool2d(x, size=2, stride=2):
              (1, 1, size, size), (1, 1, stride, stride),
              ((0, 0), (0, 0), (p, p), (p, p)))
 
-def _bn(x, gamma, beta, prev, training, eps=1e-5, momentum=0.99):
+def _bn(x, gamma, beta, prev, training, eps=1e-5, momentum=0.9):
     rm, rv = prev
     if training:
         bm = jnp.mean(x, axis=(0, 2, 3)); bv = jnp.var(x, axis=(0, 2, 3))
@@ -256,7 +256,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 576)
     params.append((random.uniform(k_, (64, 64, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(64), jnp.zeros(64)))
+                   jnp.zeros(64), jnp.zeros(64)))
     # ResBlock conv1 64→64
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 576)
@@ -266,7 +266,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 576)
     params.append((random.uniform(k_, (64, 64, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(64), jnp.zeros(64)))
+                   jnp.zeros(64), jnp.zeros(64)))
     # ResBlock conv1 64→64
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 576)
@@ -276,7 +276,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 576)
     params.append((random.uniform(k_, (64, 64, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(64), jnp.zeros(64)))
+                   jnp.zeros(64), jnp.zeros(64)))
     # ResBlock ↓ conv1 64→128
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 1152)
@@ -286,7 +286,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 1152)
     params.append((random.uniform(k_, (128, 128, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(128), jnp.zeros(128)))
+                   jnp.zeros(128), jnp.zeros(128)))
     # ResBlock ↓ proj 64→128
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 128)
@@ -301,7 +301,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 1152)
     params.append((random.uniform(k_, (128, 128, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(128), jnp.zeros(128)))
+                   jnp.zeros(128), jnp.zeros(128)))
     # ResBlock conv1 128→128
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 1152)
@@ -311,7 +311,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 1152)
     params.append((random.uniform(k_, (128, 128, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(128), jnp.zeros(128)))
+                   jnp.zeros(128), jnp.zeros(128)))
     # ResBlock conv1 128→128
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 1152)
@@ -321,7 +321,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 1152)
     params.append((random.uniform(k_, (128, 128, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(128), jnp.zeros(128)))
+                   jnp.zeros(128), jnp.zeros(128)))
     # ResBlock ↓ conv1 128→256
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
@@ -331,7 +331,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
     params.append((random.uniform(k_, (256, 256, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(256), jnp.zeros(256)))
+                   jnp.zeros(256), jnp.zeros(256)))
     # ResBlock ↓ proj 128→256
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 256)
@@ -346,7 +346,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
     params.append((random.uniform(k_, (256, 256, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(256), jnp.zeros(256)))
+                   jnp.zeros(256), jnp.zeros(256)))
     # ResBlock conv1 256→256
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
@@ -356,7 +356,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
     params.append((random.uniform(k_, (256, 256, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(256), jnp.zeros(256)))
+                   jnp.zeros(256), jnp.zeros(256)))
     # ResBlock conv1 256→256
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
@@ -366,7 +366,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
     params.append((random.uniform(k_, (256, 256, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(256), jnp.zeros(256)))
+                   jnp.zeros(256), jnp.zeros(256)))
     # ResBlock conv1 256→256
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
@@ -376,7 +376,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
     params.append((random.uniform(k_, (256, 256, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(256), jnp.zeros(256)))
+                   jnp.zeros(256), jnp.zeros(256)))
     # ResBlock conv1 256→256
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
@@ -386,7 +386,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 2304)
     params.append((random.uniform(k_, (256, 256, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(256), jnp.zeros(256)))
+                   jnp.zeros(256), jnp.zeros(256)))
     # ResBlock ↓ conv1 256→512
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 4608)
@@ -396,7 +396,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 4608)
     params.append((random.uniform(k_, (512, 512, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(512), jnp.zeros(512)))
+                   jnp.zeros(512), jnp.zeros(512)))
     # ResBlock ↓ proj 256→512
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 512)
@@ -411,7 +411,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 4608)
     params.append((random.uniform(k_, (512, 512, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(512), jnp.zeros(512)))
+                   jnp.zeros(512), jnp.zeros(512)))
     # ResBlock conv1 512→512
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 4608)
@@ -421,7 +421,7 @@ def init_params(key):
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 4608)
     params.append((random.uniform(k_, (512, 512, 3, 3), minval=-scale, maxval=scale),
-                   jnp.ones(512), jnp.zeros(512)))
+                   jnp.zeros(512), jnp.zeros(512)))
     # Dense 512→1000
     key, k_ = random.split(key)
     scale = jnp.sqrt(6.0 / 1512)
@@ -886,11 +886,20 @@ def augment_batch(x, rng):
 LR = 0.100000
 MOMENTUM = 0.900000
 WD = 0.000100
+_WD_POS_SHAPE = None
+def _wd_mask(params):
+    # timm no_weight_decay: no decay on 1-D params (biases, LayerNorm γ/β,
+    # CLS token) or the positional embedding (2-D but must not be decayed).
+    def _leaf(p):
+        if p.ndim <= 1: return jnp.zeros_like(p)
+        if p.shape == _WD_POS_SHAPE: return jnp.zeros_like(p)
+        return jnp.ones_like(p)
+    return jax.tree.map(_leaf, params)
 
 @jit
 def train_step(params, velocity, bn, x, y, lr, drop_key=None):
     (loss, _new_bn), grads = value_and_grad(loss_fn, has_aux=True)(params, bn, x, y, drop_key)
-    grads = jax.tree.map(lambda g, p: g + WD * p, grads, params)
+    grads = jax.tree.map(lambda g, p, msk: g + WD * msk * p, grads, params, WD_MASK)
     velocity = jax.tree.map(lambda v, g: MOMENTUM * v + g, velocity, grads)
     params = jax.tree.map(lambda p, v: p - lr * v, params, velocity)
     return params, velocity, _new_bn, loss
@@ -1022,6 +1031,7 @@ if __name__ == "__main__":
     else:
         params = init_params(random.PRNGKey(314159))
     params = jax.device_put(params, replicated_sharding)
+    WD_MASK = _wd_mask(params)  # timm no_weight_decay mask (built once; shape-only, resume-safe)
     velocity = jax.tree.map(jnp.zeros_like, params)
     bn_state = init_bn_state()  # running BN mean/var (gap A), threaded through train/eval
 

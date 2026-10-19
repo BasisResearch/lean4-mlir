@@ -564,7 +564,9 @@ lean_exe «vit-verified-adam» where
 /-- **ResNet-34 on full 1000-class ImageNet** — the scale/reference tier. Same certified renderer at
     `nClasses := 1000, B := 256`, heavy-ball + coupled L2 (the `jax/MainResnetImagenet.lean` recipe),
     fed by the generated tfds shim so both paths see identical augmented batches. The Ch. 5 row,
-    `r34-default-bf16-4gpu`, runs `momdp64bf16`: four replicas of 64, the same global 256.
+    `r34-default-bf16-4gpu`, runs `momdp64wxbf16`: four replicas of 64, the same global 256, with
+    Bag of Tricks' no bias decay baked (`wx`); the landed 74.17 ran `momdp64bf16`, every parameter
+    decayed. Zero-γ and the 0.9 BN decay are host-side, in `MainResnet34Imagenet.lean`.
 
     Needs this net's OWN shim emitted first: `scripts/gen_shims.sh` (every ImageNet net's shim,
     this one included). Not `lake exe resnet34-imagenet default --shim` — that is R34's, and every
@@ -576,8 +578,9 @@ lean_exe «resnet34-imagenet-verified» where
 
 /-- **ResNet-50 on full 1000-class ImageNet** — R50 phase 3. The bottleneck renderer
     (`ResNet50RenderB`) at `nClasses := 1000`; the optimizer follows the variant. One exe, two
-    recipes in the book's Ch. 5 rows: `r50-2018-bf16-4gpu` trains `momdp64bf16` (the 2018 recipe,
-    SGD + momentum at 4 × 64 = 256) and `r50-a3-wxclip4x128-bf16-4gpu` trains
+    recipes in the book's Ch. 5 rows: `r50-2018-bf16-4gpu` trains `momdp64wxbf16` (the 2018 recipe,
+    SGD + momentum at 4 × 64 = 256, no bias decay; the landed 77.09 ran `momdp64bf16`) and
+    `r50-a3-wxclip4x128-bf16-4gpu` trains
     `lambaccdp4x128wxclipbcebf16` on the `resnet50in160` renders (RSB-A3: LAMB, BCE, the effective
     2048 as four accumulated micro-batches of 4 × 128). The A2/A1 side quests are the
     `lambaccdp4x128wxclipdropbce…bf16` renders at 224. No incumbent render to tie against, so name

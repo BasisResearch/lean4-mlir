@@ -267,6 +267,93 @@ Planning (mark done what is done):
 - [ ] `recipe_prep.md:274–275` still says /25.
 - [ ] `global_bn_verified.md` §3.5 names retired MNv2/B0 variants.
 
+## Where things stand — 2026-10-19, end of day
+
+### R34 / R50-2018 against Bag of Tricks (He et al. 2018), row by row
+
+The rows run the recipe's shape exactly — batch 256 at lr 0.1 (the paper's 1024 at 0.4 by its own
+linear scaling), 5-epoch linear warmup from 0, cosine to 0, label smoothing 0.1, RandomResizedCrop
+(8–100 %, 3/4–4/3) + hflip, resize-256 / centre-224 eval, half precision. These rows differ. Every
+one is a training-time change, so "faithful" means a rerun of both halves, not an edit:
+
+| | paper | our R34 | our R50-2018 | where it is in code |
+|---|---|---|---|---|
+| epochs | 120 | 90 | 90 | `epochs := 90` in both apps and JAX configs |
+| optimizer | NAG (Nesterov) momentum 0.9 | heavy-ball 0.9 | heavy-ball 0.9 | `generated_resnet34_imagenet.py:893` `v = μ·v + g; p -= lr·v` |
+| weight decay | 1e-4 on conv + FC weights only (no bias decay) | 1e-4 on every param, coupled | 1e-4 on every param | `wdExcludeNormBias` default false; `g + WD·p` on every leaf |
+| zero-γ | yes, last BN of every block | **no** (γ = 1 everywhere) | yes | R50 app `zeroGammaInit := true`; R34 app/JAX never set it |
+| init | Xavier | He uniform, √(6/fan_in) | He uniform | `init_params` "Xavier/Kaiming uniform" docstring; the bound is Kaiming's |
+| colour aug | HSB jitter U[0.6, 1.4] + PCA noise N(0, 0.1) | none | none | shim: crop + flip only |
+| BN running decay | 0.9 (MXNet) | **0.99** | 0.9 | `_bn(… momentum=0.99)` in the R34 trainer; R50 `bnMomentum := 0.9` |
+| network | ResNet-50-D (the refined rows); plain ResNet-50 for the efficient rows | ResNet-34 — not in the paper | ResNet-B (torchvision v1.5, stride on the 3×3) | — |
+| mixup / distillation | in the 79.29 headline | no | no | — |
+
+Nearest paper rows for scale: plain ResNet-50, BS 256, warmup + zero-γ + no-bias-decay, step decay,
+120 ep: 76.16 / 92.97 (Table 4). ResNet-50-D + cosine + label smoothing, 120 ep: 78.31 / 94.09
+(Table 6). Our R50-2018 at 90 ep cosine + smoothing: 76.76 / 77.09.
+
+**Decided (the user, 2026-10-19 evening): take the three rows that REDUCE drift against the later
+chapters** — no-bias-decay (RSB, ConvNeXt and DeiT all skip norm/bias), zero-γ on R34 (R50 has
+it), BN decay 0.9 on R34 (R50 and timm are at 0.9) — and disclose the rest (NAG, Xavier, the colour
+pack, 120 epochs, ResNet-D), which no later net shares and which would lengthen every diff table.
+Built as item 7 below; both pairs rerun, both halves, when the user launches.
+
+### 7. Bag of Tricks, the three drift-reducing rows — ✅ built 2026-10-19 (reruns prepared, not launched)
+
+What moved, both paths, each a training-time change (so the landed R34 and R50-2018 pairs stay
+printed with their old rows, and the markers say the reruns are owed):
+
+| row | JAX reference | verified path |
+|---|---|---|
+| no bias decay | `wdExcludeNormBias := true` on `resnet34ImagenetConfig` and `resnet50ImagenetConfig2018` → `WD_MASK` / `_wd_mask` in the emitted trainers (the SGD branch already masked the coupled L2) | new renders `resnet34in_momdp64wxbf16` / `resnet50in_momdp64wxbf16`: `wx` threaded through `resnet34AdamTrainStepText` (new trailing `wdExclude`, as R50's already had) → `wdNameBy` into `optOne`, `wdzConst`, and `r34AdamVariant` for the entry name; `#guard`s pin the spelling; CI's proofs.yml lists both |
+| zero-γ on R34 | new `TrainConfig.zeroGammaInit` (default false); the `.residualBlock` emitter passes it to the block's conv2 BN (the bottleneck's was always on) | `Verified.Spec.idBlk` / `downBlk`: the second BN's γ is init kind 4 (0 under `zeroGammaInit`, 1 without — byte-identical for every driver that does not set it); `MainResnet34Imagenet.lean` sets it. `ParamLayouts.ResNet34Layout` carries the same kind, because `NetsCore` guards the two layouts equal (the first build caught it) |
+| BN decay 0.9 on R34 | `bnMomentum := 0.9` | `bnMomentum := 0.9` (host-side EMA, eval-only) |
+
+Confs: `r34-default-bf16-4gpu` → `VARIANT=momdp64wxbf16`, `CKPT_TAG=bot`, prechecks for `%wdz` in
+the render and the two host-side flags in the app; `r50-2018-bf16-4gpu` → the same variant and tag;
+`r34-default-jax-4gpu` / `r50-2018-jax-4gpu` → fresh `CKPT_BASE` (`…_bot_jax/`), prechecks for
+`WD_MASK`, `momentum=0.9` and (R34) the 16 zero-γ inits. Book: ch 5's recipe prose carries the
+full recipe and the disclosed non-rows; `tab:r34_paths` and `tab:r50_paths` print the landed
+pairs' rows (every parameter decayed; R34 γ = 1, decay 0.99); the R34 marker and a new 2018 marker
+after `tab:r50_paths` say both halves rerun.
+
+- [x] Code, renders, confs, book, planning (this item).
+- [x] `lake build` the two RenderB modules (writes the two renders), `regen_verified_mlir.sh check`
+      clean apart from the two new files; `regen_jax_generated.sh write` moves only the R34 and
+      R50-2018 trainers (+ any shim that carries `bnMomentum`), `check` clean after. — 2026-10-19 on
+      atlas: two new renders (75 / 109 `%wdz` operands), no committed render moved; of 68 re-emitted
+      trainers only `generated_resnet34_imagenet{,_short}.py` (BN 0.9, 16 zero-γ inits, `WD_MASK`)
+      and `generated_resnet50_imagenet_2018.py` (`WD_MASK` alone) moved; both checks clean; full
+      `lake build` + `TestVariantPredicates` green.
+- [ ] `lake build resnet34-imagenet-verified resnet50-imagenet-verified` on the GPU box before launch
+      (the prechecks refuse a binary older than the app files). Built on atlas 2026-10-19; the GPU
+      box builds its own.
+- [ ] Launch, the user's word: `r34-default-jax-4gpu` + `r34-default-bf16-4gpu` (~13 + 21 h),
+      `r50-2018-jax-4gpu` + `r50-2018-bf16-4gpu` (~22 + 29 h). Fresh RUNDIRs. Then both pairs' rows
+      and numbers in ch 5 move together.
+
+### Every ImageNet row, as of tonight
+
+| row | pair printed (reference / verified) | recipe the row runs | status |
+|---|---|---|---|
+| R34 | 74.14 / 74.17 | Bag of Tricks (deviations above, less the three rows of item 7) | crop + the three rows: **rerun of both halves prepared, not launched** (items 2, 7) |
+| R50-2018 | 76.76 / 77.09 | Bag of Tricks (deviations above, less no-bias-decay) | no-bias-decay: **rerun of both halves prepared, not launched** (item 7) |
+| R50-A3 | 77.61 / 78.08 at 236 | RSB-A3 + F6 | reference rescored at 235 → 77.58 / 93.66; **verified rescore owed**, parked for a PJRT box (atlas can't score it); book keeps 77.61 / 78.08 + marker |
+| R50-A2 / A1 | — | RSB | side quest, not run; RASampler (F3) still index-level-less |
+| MNv2 | 71.63 / 71.12 | TF-slim README, 420 ep | pair predates recipe; **rerun of both halves launched 2026-10-19** (the user) |
+| MNv4-Conv-M 100 ep | 77.35 headline | tf-models yaml, 100 ep | landed; D18 timm-protocol rescore open |
+| MNv4-Conv-M 500 ep | — | tf-models yaml, 500 ep | not run; the row |
+| B0 | 77.15 / 76.88 | TF EfficientNet, every row | pair predates recipe; **rerun of both halves launched 2026-10-19** (the user) |
+| ConvNeXt-T | 81.53 / 81.30 | official (EMA, 4096 by k16) since item 1 | pair is the one-shot job; official pair **queued behind MNv2 and B0** |
+| ConvNeXt-S / B | — | official | not run; `smx`-style smoke not needed; bf16-vs-fp32 question parked |
+| ViT-Ti | 71.61 headline (EMA) | DeiT, 4 × 256 | landed (04c72553); EMA-vs-live headline and patch-embed bias parked |
+| ViT-S / B | — | DeiT | not run; smoke the `smx` renders first; ViT-B EMA-per-step check |
+
+Book and planning, today: markers carry what each pair owes and nothing about the queue
+(64fe5437); DAWNBench pinned and the ResNet rows named Bag of Tricks (443bdd7e); bestiary ResNet
+entry current; intro rewritten (e26d2d45). Items 1, 2, 3, 4, 5 (bar the verified A3 rescore) and 6
+(087ff789) done. Still open from the audit: the Parked list below, D18, F3, the manifest + gate build.
+
 ## Parked: found by the audit, not yet approved (ask before doing)
 
 **Launch hazards**, cheap to fix:

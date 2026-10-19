@@ -53,6 +53,15 @@ trusted lowerer `$LEAN_MLIR_LOWERER` selects -- XLA/PJRT by default, IREE with
 def resnet34ImagenetConfig : VerifiedConfig where
   epochs    := 90
   batchSize := 256
+  -- Bag of Tricks §3.1, the two host-side rows (2026-10-19; the third, no-bias-decay, is the
+  -- `wx` render). Both match `jax/MainResnetImagenet.lean`, and the landed 74.17 ran without
+  -- them (γ = 1, decay 0.99): the rerun under `r34-default-bf16-4gpu` carries them.
+  -- Zero-γ: kind-4 init on every block's second BN γ (`Verified.Spec.idBlk` / `downBlk`), the
+  -- 16 residual-closing BNs; `LEAN_MLIR_ZERO_GAMMA=0` reproduces the landed run's init.
+  zeroGammaInit := true
+  -- BN running-stat decay 0.9 (torchvision / timm `momentum=0.1`), host-side EMA, EVAL-ONLY;
+  -- R50's config carries the per-net table. Was the driver's 0.99 default.
+  bnMomentum := 0.9
 
 /-- Entry point. Defaults to the `mom256` variant — the ImageNet artifact — rather than `adam`,
     since that is the only render this spec's slug has; `LEAN_MLIR_VARIANT` still overrides. -/

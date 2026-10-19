@@ -180,7 +180,7 @@ def resnet50ImagenetConfigShort : TrainConfig :=
     accident. `resnet50ImagenetConfig` is RSB-A2, so the deltas are large and each one is a
     row of that table: SGD+momentum 0.9 (not LAMB), bs 256 (not 2048-effective), lr 0.1 (not
     0.008@2048), 90 epochs (not 300), softmax CE (not BCE), label smoothing 0.1 (not 0.0),
-    wd 1e-4 on ALL params (not 0.02 skipping norm/bias), no Mixup, no CutMix, no RandAugment,
+    wd 1e-4 skipping norm/bias as A2 does (not 0.02), no Mixup, no CutMix, no RandAugment,
     no repeated aug, no stochastic depth, no EMA, and train/eval both at 224 (not 160/224).
 
     **The 224 train resolution is the wall-clock story.** A3 trains at 160, so it is
@@ -193,7 +193,11 @@ def resnet50ImagenetConfig2018 : TrainConfig :=
       learningRate   := 0.1      -- the 2018 peak LR at batch 256
       batchSize      := 256
       epochs         := 90
-      weightDecay    := 0.0001   -- 1e-4 on ALL params (no skip-list)
+      weightDecay    := 0.0001   -- 1e-4; Bag of Tricks' no-bias-decay below (2026-10-19)
+      -- Bag of Tricks §3.1 "no bias decay", the row every later recipe in the book shares
+      -- (timm no_weight_decay). The landed 76.76 / 77.09 pair decayed every parameter; the
+      -- rerun of both halves carries this. Zero-γ and BN decay 0.9 the base already sets.
+      wdExcludeNormBias := true
       -- BACK TO 0, because the base above turned it on for timm's **Lamb** default and this
       -- recipe is SGD+momentum. torchvision's 2018 reference clips nothing, so inheriting the clip
       -- would make the A3-vs-2018 comparison a two-variable one.

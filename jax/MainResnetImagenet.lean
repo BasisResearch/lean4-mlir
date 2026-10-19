@@ -24,9 +24,14 @@ def resnet34Imagenet : NetSpec where
     .dense 512 1000 .identity
   ]
 
-/-- Paper-flavored 90-epoch recipe: SGD + momentum 0.9, base lr 0.1 at
-    batch 256, 5-epoch warmup, cosine decay, weight decay 1e-4, label
-    smoothing 0.1, random-crop + horizontal flip. The batch is sized to
+/-- The Bag of Tricks recipe (He et al. 2018) at 90 epochs: SGD + momentum 0.9, base lr 0.1 at
+    batch 256, 5-epoch warmup, cosine decay, weight decay 1e-4 on the conv and dense weights
+    only (BN γ/β and the biases are not decayed, `wdExcludeNormBias`), label smoothing 0.1,
+    random-resized-crop + horizontal flip, zero-γ on every block's second BN, BN running-stat
+    decay 0.9. The three rows after the smoothing landed 2026-10-19 (the user's call: the rows
+    that the later chapters' recipes share); the pair the book prints predates them (every
+    parameter decayed, γ = 1, decay 0.99). Still not the paper's: 120 epochs, NAG, Xavier init,
+    the HSB jitter + PCA noise, and the net itself (the paper trains ResNet-50-D). The batch is sized to
     divide evenly across 6 NVIDIA GPUs (256 → BATCH_SIZE round-down per
     device * n_devices). Override via env if you want shorter validation
     runs (this is phase-2 codegen — you can just edit the spec). -/
@@ -44,6 +49,11 @@ def resnet34ImagenetConfig : TrainConfig where
   cropTorchvision := true   -- torchvision RandomResizedCrop (PyTorch examples), not TF's sampler
   trainResize    := .bilinear -- RandomResizedCrop's default interpolation
   labelSmoothing := 0.1
+  -- Bag of Tricks §3.1, the three rows RSB / ConvNeXt / DeiT share (2026-10-19). Each is a
+  -- training-time change: the landed 74.14 pair ran without them.
+  wdExcludeNormBias := true  -- no bias decay: BN γ/β + biases take `%wdz` / the `_wd_mask` zero
+  zeroGammaInit  := true     -- every block's second BN γ starts at 0 (timm `zero_init_last`)
+  bnMomentum     := 0.9      -- torchvision / timm `BatchNorm2d(momentum=0.1)`; was the 0.99 default
   -- bf16 mixed precision (incl. bf16 conv): a CUDA/cuDNN recipe, faster than fp32
   -- on the 4060 Ti box. Its full-50k-val result is the note heading
   -- jax/runs/r34_imagenet_bf16_90ep/RESULTS.md and the book's ResNet-34 chapter;

@@ -1111,6 +1111,14 @@ structure TrainConfig where
       (`Verified.Train`'s `bnMom`). Under gradient accumulation both sides
       compensate to `bnMomentum^(1/K)` per micro-batch. -/
   bnMomentum : Float := 0.99
+  /-- **Zero-γ on the basic residual block** (He et al. 2018, "Bag of Tricks" §3.1; timm's
+      `zero_init_last`): the second BN of every `.residualBlock` starts its γ at 0, so each block
+      is the identity at step 0. The `.bottleneckBlock` emitter ALWAYS does this (its third BN;
+      `emitConvBnInit … (zeroGamma := true)`), so this flag reaches the basic block only. Default
+      off: every basic-block trainer that does not set it re-emits byte-identically. The verified
+      peer is `VerifiedConfig.zeroGammaInit` over `Verified.Spec`'s init kind 4, which the basic
+      block's second γ now carries too. Set on `resnet34ImagenetConfig` (2026-10-19). -/
+  zeroGammaInit : Bool := false
   /-- BatchNorm ε — `_bn`'s `eps`, on the running-BN path (`runningBN`). 1e-5 is PyTorch's and
       timm's default; the TF papers (MobileNetV2 in slim, EfficientNet) use 1e-3. The default
       keeps the emitted `eps=1e-5` literal, so every net that does not set it is byte-identical.

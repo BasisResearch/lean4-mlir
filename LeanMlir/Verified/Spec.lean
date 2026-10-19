@@ -179,13 +179,17 @@ def convBnSpec (ic oc k : Nat) : Array (Array Nat × Nat) :=
 /-- conv → per-channel BN → relu, **no conv bias**: `{W=[oc,ic,k,k], γ=[oc], β=[oc]}`. -/
 def convBnNBSpec (ic oc k : Nat) : Array (Array Nat × Nat) :=
   #[(#[oc,ic,k,k],0),(#[oc],1),(#[oc],2)]
-/-- identity basic block @ `c`: two conv→BN→relu units, no projection. -/
+/-- identity basic block @ `c`: two conv→BN→relu units, no projection. The second BN's γ is
+    init kind 4 (zero-γ): it closes the residual branch, 0 under `zeroGammaInit` (Bag of Tricks
+    §3.1, the JAX `.residualBlock` emitter under its `zeroGammaInit`) and 1 without, so every
+    driver that does not set the flag initializes byte-identically to the old kind 1. -/
 def idBlk (c : Nat) : Array (Array Nat × Nat) :=
-  #[(#[c,c,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],1),(#[c],2)]
+  #[(#[c,c,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],4),(#[c],2)]
 /-- downsampling basic block `cin→c`: two conv→BN→relu + the **1×1** option-B projection
-    shortcut (He et al. §3.3). -/
+    shortcut (He et al. §3.3). The second BN's γ is kind 4 as in `idBlk`; the projection's is not
+    (it is the shortcut, not the branch). -/
 def downBlk (cin c : Nat) : Array (Array Nat × Nat) :=
-  #[(#[c,cin,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],1),(#[c],2),
+  #[(#[c,cin,3,3],0),(#[c],1),(#[c],2), (#[c,c,3,3],0),(#[c],4),(#[c],2),
     (#[c,cin,1,1],0),(#[c],1),(#[c],2)]   -- option-B 1×1 projection
 def stageSpec (ic oc count stride : Nat) : Array (Array Nat × Nat) := Id.run do
   let mut a : Array (Array Nat × Nat) :=
@@ -220,7 +224,8 @@ def bottleneckStageSpec (ic oc count stride : Nat) : Array (Array Nat × Nat) :=
     (`initKind`: 0 = random weight (`mkParam`: conv He fan-out, dense Glorot, with the ConvNeXt
     and ViT overrides), 1 = ones (γ), 2 = zeros (β / bias), 3 = 1e-6 (layer scale γ, the ConvNeXt
     paper's value and the JAX reference's `emitLayerScaleInit`), 4 = zero-γ (the residual-closing
-    BN of a bottleneck: 0 under `zeroGammaInit`, else ones; only `bottleneckStage` emits it),
+    BN of a bottleneck or of a basic block: 0 under `zeroGammaInit`, else ones; `bottleneckStage`
+    and `residualStage` emit it),
     5 = embedding (ViT CLS / pos: σ = 0.02 under `vitInit`, else zeros; only `param` emits it),
     7 = squeeze-excite FC (`[in,out]`, standing for the reference's 1×1 conv: var 2/out under
     `seFanOutInit`, else kind 0's Glorot; only `mbConvSE` / `mbConvSENB` emit it)). -/
