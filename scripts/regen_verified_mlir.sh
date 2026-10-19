@@ -196,6 +196,9 @@ check_adam_prefix() {
 import sys
 
 PAIRS = [("resnet34_fwd.mlir",     "resnet34_adam_train_step.mlir"),
+         # The batch-statistics cifar8 BN net: one chain, three optimizers, so the same forward
+         # is a prefix of the AdamW step too (check_fwd_prefix pairs it with the SGD one).
+         ("cifar8wb_bbn_fwd.mlir", "cifar8wb_bbn_adam_train_step.mlir"),
          ("resnet50_fwd.mlir",     "resnet50_adam_train_step.mlir"),
          ("mobilenetv2_fwd.mlir",  "mobilenetv2_adam_train_step.mlir"),
          ("efficientnet_fwd.mlir", "efficientnet_adam_train_step.mlir"),
@@ -423,6 +426,12 @@ import sys
 # what chapter 5's optimizer ladder runs. Both this pairing and `check_adam_prefix`'s now hold,
 # which is exactly what "one chain per net" buys — the same forward is a prefix of BOTH.
 PAIRS = [("resnet34_fwd.mlir",     "resnet34_sgd_train_step.mlir"),
+         # The cifar8 BN net at BATCH statistics (2026-10-19, planning/cifar-batch-bn-rerender.md):
+         # `cifar8wb_bbn_fwd` is `cifar8BbnFwdChainB` and a return, the chain every
+         # `cifar8wb_bbn_*_train_step` differentiates — the first cifar8 artifact with a running-stat
+         # eval forward, so the first whose training forward has something to drift from. The
+         # per-image cifar8 forwards are per-example renders of a different world and stay unpaired.
+         ("cifar8wb_bbn_fwd.mlir", "cifar8wb_bbn_sgd_train_step.mlir"),
          ("convnext_fwd.mlir",     "convnext_train_step.mlir"),
          ("efficientnet_fwd.mlir", "efficientnet_train_step.mlir"),
          # ⛔ MobileNetV2 has NO entry here since 2026-09-06 (4c leg 2). Its partner was the

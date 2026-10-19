@@ -1315,7 +1315,14 @@ def TrainConfig.lossKindFor (cfg : TrainConfig) (ds : DatasetKind) : LossKind :=
 def ireeCompileArgs (mlirPath outPath : String) : IO (Array String) := do
   let backend ← (IO.getEnv "IREE_BACKEND").map (·.getD "cuda")
   let baseArgs := #[mlirPath, s!"--iree-hal-target-backends={backend}"]
-  let chipArgs ← if backend == "llvm-cpu" then
+  -- `vmvx` is IREE's reference VM backend: slow, but an independent lowering of the same text.
+  -- It is what the CPU gradient gates run on, because llvm-cpu MISCOMPILES the cifar8 batched
+  -- train steps (IREE 3.11: the `select_and_scatter` max-pool backward is lowered with an
+  -- uninitialised running-max accumulator — the compile warns "reads uninitialized values from an
+  -- operand produced by a tensor.empty op" — and the gradient below the stage-3 pool comes out
+  -- wrong in cosine, differently per compile; tests/TestCifar8BbnGradCheck.lean has the
+  -- evidence and the JAX reference). Neither target takes a chip flag.
+  let chipArgs ← if backend == "llvm-cpu" || backend == "vmvx" then
     pure #[]
   else
     let defaultChip := if backend == "rocm" then "gfx1100" else "sm_86"

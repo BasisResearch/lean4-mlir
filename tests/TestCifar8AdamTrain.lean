@@ -562,6 +562,13 @@ def main : IO Unit := do
       tryCompile s!"verified_mlir/{slug}_{k}_train_step.mlir" s!"/tmp/{slug}_{k}_ts.vmfb" s!"{slug} {k}"
   tryCompile "verified_mlir/cifar8w_fwd.mlir" "/tmp/cifar8w_fwd.vmfb" "cifar8w fwd"
   tryCompile "verified_mlir/cifar8w_bn_fwd.mlir" "/tmp/cifar8w_bn_fwd.vmfb" "cifar8w_bn fwd"
+  -- The batch-statistics BN net (`CnnBbnRender.lean`): six train steps carrying the 16
+  -- running-stat passthrough slots and 16 batch-statistic outputs, the batch-BN training forward
+  -- and the frozen-stat eval forward.
+  for k in ["sgd", "mom", "adam", "bf16sgd", "bf16mom", "bf16adam"] do
+    tryCompile s!"verified_mlir/cifar8wb_bbn_{k}_train_step.mlir" s!"/tmp/cifar8wb_bbn_{k}_ts.vmfb" s!"cifar8wb_bbn {k}"
+  tryCompile "verified_mlir/cifar8wb_bbn_fwd.mlir" "/tmp/cifar8wb_bbn_fwd.vmfb" "cifar8wb_bbn fwd"
+  tryCompile "verified_mlir/cifar8wb_bbn_fwd_eval.mlir" "/tmp/cifar8wb_bbn_fwd_eval.vmfb" "cifar8wb_bbn fwd_eval"
   -- ── FC-head width sweep (conv backbone @ [16,16,32,32] fixed) ──
   -- Render adamw train-step + forward for each dense-head width d, func-slugged so the
   -- `cifar8-bn-grid` driver trains each via `trainAdamSched "adam"` (eval through @<slug>_fwd,

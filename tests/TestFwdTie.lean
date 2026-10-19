@@ -52,9 +52,13 @@ def netBySlug (slug : String) : IO VerifiedNetSpec :=
   | "cifar8_bn"    => pure cifar8BnVerified
   | "cifar8w"      => pure cifar8wVerified
   | "cifar8w_bn"   => pure cifar8wBnVerified
+  -- The batch-statistics BN net: `cifar8w_bn` on the batched family at `[0,2,3]`, with running
+  -- statistics, so `--eval` ties `@cifar8wb_bbn_fwd_eval` (16 stat inputs) and the bare form ties
+  -- the batch-BN training forward `@cifar8wb_bbn_fwd`.
+  | "cifar8wb_bbn" => pure cifar8wbBbnVerified
   | _ => throw (IO.userError
       s!"unknown net slug '{slug}' — expected convnext | efficientnet | mobilenetv2 | resnet34 \
-| cifar8 | cifar8_bn | cifar8w | cifar8w_bn")
+| cifar8 | cifar8_bn | cifar8w | cifar8w_bn | cifar8wb_bbn")
 
 def main (args : List String) : IO Unit := do
   let isEval := args.contains "--eval"
@@ -63,15 +67,16 @@ def main (args : List String) : IO Unit := do
     | s :: ps => pure (s, ps)
     | [] => throw (IO.userError
         ("usage: fwd-tie <slug> [--eval] [<pathA> [<pathB>]]\n" ++
-         "  slug ∈ convnext | efficientnet | mobilenetv2 | resnet34 | cifar8[w][_bn]"))
+         "  slug ∈ convnext | efficientnet | mobilenetv2 | resnet34 | cifar8[w][_bn] | cifar8wb_bbn"))
   if isEval && slug == "convnext" then
     throw (IO.userError
       "convnext has no @convnext_fwd_eval — LayerNorm makes its forward class-batch-independent, \
        so train == eval and the frozen-stats peer would be the SAME graph. Drop --eval.")
-  if isEval && slug.startsWith "cifar8" then
+  if isEval && slug.startsWith "cifar8" && slug != "cifar8wb_bbn" then
     throw (IO.userError
-      "the cifar8 family has no @<slug>_fwd_eval — its BatchNorm is PER-CHANNEL PER-EXAMPLE, so it \
-       keeps no running statistics (`bnChannels` is empty) and train == eval. Drop --eval.")
+      "the per-image cifar8 family has no @<slug>_fwd_eval — its BatchNorm is PER-CHANNEL \
+       PER-EXAMPLE, so it keeps no running statistics (`bnChannels` is empty) and train == eval. \
+       Drop --eval, or tie `cifar8wb_bbn`, the batch-statistics net, which has one.")
   let fn    := if isEval then s!"{slug}_fwd_eval" else s!"{slug}_fwd"
   let dflt  := s!"verified_mlir/{fn}.mlir"
   let (pathA, pathB) := match paths with

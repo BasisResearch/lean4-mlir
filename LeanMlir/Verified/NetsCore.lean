@@ -389,6 +389,31 @@ def cifar8wbBnVerified : VerifiedNetSpec :=
     blurb := "Wide-head CIFAR-10 CNN + per-channel BatchNorm (8 convs, BATCHED op family, d1=512) via the VERIFIED renderer → %LOWERER% → GPU" }
 #guard cifar8wbBnVerified.toSpecs == cifar8wBnVerified.toSpecs
 
+/-- `cifar8wBnVerified` on the batched op family **at BATCH statistics**. Slug `cifar8wb_bbn`.
+
+    The layer the chapter is named after. `cifar8w_bn` / `cifar8wb_bn` normalise each example by
+    its own statistics (reduce over `[2,3]`: per image, per channel, over the 32×32 cells —
+    InstanceNorm with affine, train = eval, no running statistics). This spec is the same 38
+    parameters and the same layer list with every BN reducing over `[0,2,3]` — Ioffe & Szegedy's
+    layer, the one Chapter 5's ResNet-34 trains — so `runningBN := true`: the derived `bnChannels`
+    is the 8 per-layer widths `[16,16,16,16,32,32,32,32]`, the train step hands back each BN's batch
+    μ/var, `trainAdamSched` EMAs them (`bnMomentum`), and eval scores through
+    `@cifar8wb_bbn_fwd_eval` with the frozen statistics. Renders:
+    [`LeanMlir/Proofs/Codegen/CnnBbnRender.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/LeanMlir/Proofs/Codegen/CnnBbnRender.lean)
+    (`cifar8BbnTrainStepBText`, `cifar8BbnFwdText`, `cifar8BbnFwdEvalText`); the per-image
+    specs and their artifacts are untouched, so the chapter's existing numbers stay reproducible
+    under their own slugs. -/
+def cifar8wbBbnVerified : VerifiedNetSpec :=
+  { cifar8wBnVerified with
+    name      := "CIFAR-CNN8-wide-BN-batchstat"
+    slug      := "cifar8wb_bbn"
+    runningBN := true
+    blurb     := "Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → %LOWERER% → GPU" }
+#guard cifar8wbBbnVerified.toSpecs == cifar8wBnVerified.toSpecs
+-- 8 BN layers ⇒ 16 running-stat slots, in forward order — the layout the train step returns,
+-- the driver EMAs, and `@cifar8wb_bbn_fwd_eval` reads.
+#guard cifar8wbBbnVerified.bnChannels == #[16, 16, 16, 16, 32, 32, 32, 32]
+
 /-- Chapter 5 **ResNet-34** on Imagenette 224²: 7×7-s2 stem → BN → relu → maxpool →
     [3,4,6,3] basic-block stages (per-channel BN, strided downsample at the first block of
     stages 2–4) → GAP → dense. **110 param tensors** (no conv biases: every conv is BN-followed).

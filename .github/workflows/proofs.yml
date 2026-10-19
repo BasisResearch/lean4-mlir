@@ -205,10 +205,18 @@ jobs:
               verified_mlir/cifar8wb_bn_bf16sgd_train_step.mlir \
               verified_mlir/cifar8wb_bn_bf16mom_train_step.mlir \
               verified_mlir/cifar8wb_bn_bf16adam_train_step.mlir \
+              verified_mlir/cifar8wb_bbn_sgd_train_step.mlir \
+              verified_mlir/cifar8wb_bbn_mom_train_step.mlir \
+              verified_mlir/cifar8wb_bbn_adam_train_step.mlir \
+              verified_mlir/cifar8wb_bbn_bf16sgd_train_step.mlir \
+              verified_mlir/cifar8wb_bbn_bf16mom_train_step.mlir \
+              verified_mlir/cifar8wb_bbn_bf16adam_train_step.mlir \
               verified_mlir/cifar8_bf16_fwd.mlir \
               verified_mlir/cifar8b_fwd.mlir \
               verified_mlir/cifar8wb_fwd.mlir \
               verified_mlir/cifar8wb_bn_fwd.mlir \
+              verified_mlir/cifar8wb_bbn_fwd.mlir \
+              verified_mlir/cifar8wb_bbn_fwd_eval.mlir \
             || { echo "::error::committed verified_mlir/{cnn,cifar,cifar8,cifar8_bn,cifar8_bf16*,cifar8b*,cifar8wb*}_train_step.mlir drifted (regen: lake env lean LeanMlir/Proofs/Codegen/CnnArtifacts.lean)"; exit 1; }
           # ⭐ Both ResNet-34 forwards used to come from `ResNet34Render.lean`, and were baselined
           # while the train step beside them was guarded — so `resnet34_fwd` could drift away from

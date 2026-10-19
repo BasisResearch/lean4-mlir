@@ -239,6 +239,7 @@ lean_lib «Certs» where
              `LeanMlir.Proofs.Nets.Small.Cifar8BnStepTie,
              `LeanMlir.Proofs.Nets.Small.Cifar8StepTieG,
              `LeanMlir.Proofs.Nets.Small.Cifar8BnStepTieG,
+             `LeanMlir.Proofs.Nets.Small.Cifar8BbnStepTieB,
              `LeanMlir.Proofs.Nets.Small.SmallParamGrad,
              `LeanMlir.Proofs.Nets.Small.LinearParamGrad,
              `LeanMlir.Proofs.Nets.Small.MlpParamGrad,
@@ -896,6 +897,14 @@ lean_exe «resnet34-ablation» where
     three optimizers each. -/
 lean_exe «cifar8wb-bn-ablation» where
   root := `apps.ablation.MainCifar8WideBnBf16Ablation
+  moreLinkArgs := lowererLink
+
+/-- The BN net at BATCH statistics (`cifar8wb_bbn`): the same six arms as `cifar8wb-bn-ablation`
+    with every BatchNorm reducing over `[0,2,3]`, running-stat eval through
+    `@cifar8wb_bbn_fwd_eval`. One arm per invocation (`data <arm>`), or `all`. See
+    `planning/cifar-batch-bn-rerender.md`. -/
+lean_exe «cifar8wb-bbn-ablation» where
+  root := `apps.cifar.MainCifar8WideBbnAblation
   moreLinkArgs := lowererLink
 
 -- ─── apps/mnist/ — MNIST robustness (PGD / spectral / smoothing), grids and low precision ───
@@ -1699,6 +1708,16 @@ lean_exe «r34-dp-shard» where
 lean_exe «r50-gradcheck» where
   root := `tests.TestR50GradCheck
   moreLinkArgs := lowererLink
+
+/-- `cifar8-bbn-gradcheck` — the gate on the batch-statistics cifar8 BN step's backward
+    (`tests/TestCifar8BbnGradCheck.lean`): `r50-gradcheck`'s two tiers on the committed
+    `cifar8wb_bbn_adam_train_step.mlir` — the `(W, b)` homogeneity identity at the 8 BN-followed
+    convs and the adjoint finite-difference probe per layer. Seconds on XLA; on a CPU-only box
+    run it at `LEAN_MLIR_LOWERER=iree IREE_BACKEND=vmvx` (slow but sound) — NOT llvm-cpu, which
+    miscompiles this step's max-pool backward (the test's header has the evidence).
+    `C8BBN_GC_SLUG=cifar8wb_bn` runs it on the per-image sibling as a control. -/
+lean_exe «cifar8-bbn-gradcheck» where
+  root := `tests.TestCifar8BbnGradCheck
 
 /-- `r50-accum-tie` — **gradient accumulation, numerically certified.** The `.adamwAccum` render
     carries a FOURTH parameter region `G` and two runtime scalars deciding, per micro-batch,

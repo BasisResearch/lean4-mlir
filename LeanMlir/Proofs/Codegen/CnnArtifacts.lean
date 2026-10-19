@@ -1,7 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Codegen.CnnRender
-meta import LeanMlir.Proofs.Codegen.CnnRender
+public import LeanMlir.Proofs.Codegen.CnnBbnRender
+meta import LeanMlir.Proofs.Codegen.CnnBbnRender
 meta import Mathlib.Basic.Real.Basic
 
 @[expose] public section
@@ -384,3 +384,41 @@ private def c8wbBnPacked (opt : Proofs.StableHLO.CifarOpt) (bf16 : Bool) (entry 
 #eval do
   let fwd ← IO.FS.readFile "verified_mlir/cifar8w_bn_fwd.mlir"
   IO.FS.writeFile "verified_mlir/cifar8wb_bn_fwd.mlir" (fwd.replace "@cifar8w_bn_fwd" "@cifar8wb_bn_fwd")
+
+-- ── the cifar8-WIDE BN family at BATCH statistics — slug `cifar8wb_bbn` ──────────────────────
+-- The layer the chapter is named after (`planning/cifar-batch-bn-rerender.md`): the same net as
+-- `cifar8wb_bn_*` with every BN reducing over `[0,2,3]`, handing its batch μ/var back to the host
+-- for the running-statistics EMA, and scoring through a frozen-stat eval forward. Eight artifacts
+-- from `CnnBbnRender.lean`: three optimizers × {f32, bf16} train steps, the batch-BN training
+-- forward (a byte prefix of each train step — `regen_verified_mlir.sh check` pairs it with the
+-- SGD step) and the eval forward. Hyperparameters are `c8wbBnPacked`'s exactly: B=128, ε=1e-5,
+-- 1/B, β₁=.9, β₂=.999, Adam ε=1e-8, wd=1e-4; the entry is `@cifar8wb_bbn_<variant>_train_step`,
+-- the driver's convention, derived from the same two strings as the path.
+private def c8wbBbnPacked (opt : Proofs.StableHLO.CifarOpt) (bf16 : Bool) (variant : String) : String :=
+  Proofs.StableHLO.cifar8BbnTrainStepBText 128 3 16 16 32 32 2 2 512 10 3 3
+    "1.0e-05" "0.0078125" "0.9" "0.1" "0.999" "0.001" "1.0e-8" "0.0001"
+    "cifar8wb_bbn" variant 1 opt bf16
+
+#eval IO.FS.writeFile "verified_mlir/cifar8wb_bbn_adam_train_step.mlir"
+  (c8wbBbnPacked .adamw    false "adam")
+#eval IO.FS.writeFile "verified_mlir/cifar8wb_bbn_mom_train_step.mlir"
+  (c8wbBbnPacked .nesterov false "mom")
+#eval IO.FS.writeFile "verified_mlir/cifar8wb_bbn_sgd_train_step.mlir"
+  (c8wbBbnPacked .sgd      false "sgd")
+#eval IO.FS.writeFile "verified_mlir/cifar8wb_bbn_bf16adam_train_step.mlir"
+  (c8wbBbnPacked .adamw    true  "bf16adam")
+#eval IO.FS.writeFile "verified_mlir/cifar8wb_bbn_bf16mom_train_step.mlir"
+  (c8wbBbnPacked .nesterov true  "bf16mom")
+#eval IO.FS.writeFile "verified_mlir/cifar8wb_bbn_bf16sgd_train_step.mlir"
+  (c8wbBbnPacked .sgd      true  "bf16sgd")
+
+-- The batch-BN TRAINING forward: the chain every train step above differentiates, and a return.
+-- What `LEAN_MLIR_EVAL_BATCHSTATS` reads; the BN-world check in `trainAdamSched` compares it with
+-- the train step (both reduce over `[0, 2, 3]`).
+#eval IO.FS.writeFile "verified_mlir/cifar8wb_bbn_fwd.mlir"
+  (Proofs.StableHLO.cifar8BbnFwdText 128 3 16 16 32 32 2 2 512 10 3 3 "1.0e-05" "cifar8wb_bbn")
+
+-- The EVAL forward: frozen running statistics at every BN site, 16 stat inputs after the 38
+-- parameters. The artifact `trainAdamSched` scores through (`bnChannels` non-empty ⇒ `_fwd_eval`).
+#eval IO.FS.writeFile "verified_mlir/cifar8wb_bbn_fwd_eval.mlir"
+  (Proofs.StableHLO.cifar8BbnFwdEvalText 128 3 16 16 32 32 2 2 512 10 3 3 "1.0e-05" "cifar8wb_bbn")

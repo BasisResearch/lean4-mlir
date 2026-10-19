@@ -12,6 +12,8 @@
 #   12 -> 40 -> 80 standardised 2026-08-31).
 # SUITE=bnprec — Chapter 4's Lever 3 on the normalized net: `cifar8wb-bn-ablation`, six arms
 #   (SGD/Nesterov/AdamW x f32/bf16) at 40 epochs. planning/archive/bf16_batchnorm.md.
+# SUITE=bbn — the same six arms on the BATCH-statistics BN net (`cifar8wb-bbn-ablation`, slug
+#   `cifar8wb_bbn`, running-stat eval). planning/cifar-batch-bn-rerender.md.
 #
 # ⭐ CIFAR is the WIDE head (`cifar8w-{,bn-}ablation`, d1=512), not the narrow `cifar-{,bn-}verified`
 #   this suite first pointed at. Chapter 4 quotes the wide net — §4.1's 75.94% listing
@@ -93,7 +95,18 @@ case "$SUITE" in
     NETS=(cifar8wb_bn)
     EXE=( [cifar8wb_bn]=cifar8wb-bn-ablation )
     EPOCHS=( [cifar8wb_bn]=40 ) ;;
-  *) echo "⛔ unknown SUITE=$SUITE (imagenette|small|bnprec)"; exit 1 ;;
+  bbn)
+    # The BN net at BATCH statistics (planning/cifar-batch-bn-rerender.md): `cifar8wb-bbn-ablation`
+    # with no arm argument runs all SIX arms in sequence (SGD/Nesterov/AdamW x f32/bf16, 40 ep),
+    # so one job per seed yields six final-epoch lines, like bnprec. Eval is through
+    # `@cifar8wb_bbn_fwd_eval` with the EMA'd running statistics, so unlike every other CIFAR
+    # suite here train != eval and the val curve carries the running-stat momentum's noise.
+    # ~25 min/seed on a 4060 Ti (the per-image BN binary measured 6.3 s/epoch; batch BN adds the
+    # stat outputs and the eval forward).
+    NETS=(cifar8wb_bbn)
+    EXE=( [cifar8wb_bbn]=cifar8wb-bbn-ablation )
+    EPOCHS=( [cifar8wb_bbn]=40 ) ;;
+  *) echo "⛔ unknown SUITE=$SUITE (imagenette|small|bnprec|bbn)"; exit 1 ;;
 esac
 
 JOBS=()
