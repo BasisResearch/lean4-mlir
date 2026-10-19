@@ -246,35 +246,25 @@ jobs:
           lake build Apps
           echo "✅ **All apps/ + demos/ entry points elaborate** (\`lake build Apps\`)" >> $GITHUB_STEP_SUMMARY
 
-      - name: "#guard scripts (lake env lean tests/…)"
-        # tests/ files that are `#guard` / `#guard_msgs` / `#eval` gates rather than lake exes, each named as the
-        # authority by a docstring, the lakefile or a gate script: the `#audit_axioms` negative control, the variant-predicate table
-        # (gen_mlir_manifest.py reads it), the drop-path ramp, the batched-emit text tie, R50's
-        # layout contract, and the XLA-SAME pad known answers. A failing `#guard`, or a `throw`
-        # under `#eval`, is an elaboration error, so `lake env lean` exits non-zero.
+      - name: "#guard scripts (lake test)"
+        # tests/ files that are `#guard` / `#guard_msgs` / `#eval` gates rather than lake exes, each
+        # named as the authority by a docstring, the lakefile or a gate script: the `#audit_axioms`
+        # negative control, the variant-predicate table (gen_mlir_manifest.py reads it), the
+        # drop-path ramp, the batched-emit text tie, R50's layout contract, and the XLA-SAME pad
+        # known answers. The list is `guardScripts` in lakefile.lean; `lake test` builds what they
+        # import, runs each by `lake env lean`, and exits 1 if any fails to elaborate.
         # TestXlaPadOps also writes probe modules under .lake/build for the manual IREE check
         # (scripts/gates/xla_pad_op_check.py); only its guards are gated here.
         run: |
-          lake build tests.AxiomAudit LeanMlir LeanMlir.Verified.Train LeanMlir.Verified.NetsCore \
-            LeanMlir.Proofs.Codegen.StableHLO.Pretty LeanMlir.Proofs.Codegen.ResNet50RenderB \
-            LeanMlir.Proofs.Codegen.EfficientNetRender.Basic LeanMlir.Proofs.Codegen.ConvNeXtRenderB \
-            LeanMlir.Proofs.Codegen.ViTRenderB
+          set -o pipefail
+          rc=0
+          lake test 2>&1 | tee /tmp/lake-test.log || rc=$?
           {
             echo ""
             echo "## \`#guard\` scripts"
             echo ""
+            sed -n 's/^✓ lake env lean \(tests\/[^ ]*\).*/✅ `\1`/p; s/^✗ lake env lean \(tests\/[^ ]*\).*/❌ `\1`/p' /tmp/lake-test.log
           } >> $GITHUB_STEP_SUMMARY
-          rc=0
-          for t in TestAxiomAudit TestVariantPredicates TestDropPathRamp TestBatchedEmitTie TestSmallNetsBatchedEmit TestR50Contract TestXlaPadOps; do
-            if lake env lean tests/$t.lean > /tmp/$t.log 2>&1; then
-              echo "✅ \`tests/$t.lean\`" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "::error::tests/$t.lean failed"
-              grep -m20 -E "error" /tmp/$t.log || tail -20 /tmp/$t.log
-              echo "❌ \`tests/$t.lean\`" >> $GITHUB_STEP_SUMMARY
-              rc=1
-            fi
-          done
           exit $rc
 
       - name: No implied imports (import_audit.py implied)

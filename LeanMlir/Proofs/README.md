@@ -438,6 +438,7 @@ axiom in the closure would fail the run. See
 lake build Proofs        # the engine slice (default target) — minutes
 lake build Certs         # the full certificate corpus (subsumes Proofs)
 lake env lean tests/AuditAxioms.lean   # the three-axiom closure audit
+lake test -- --audit     # the same audit, plus the tests/ #guard scripts
 ```
 
 `Certs`'s roots subsume the `Proofs` slice, so `lake build Certs`

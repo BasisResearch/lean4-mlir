@@ -4,6 +4,9 @@ open Lake DSL
 package «lean4-mlir» where
   version := v!"0.7.2"
   buildType := .release
+  -- `lake test` and `lake lint`: the scripts of those names at the end of this file.
+  testDriver := "test"
+  lintDriver := "lint"
 
 -- doc-gen4 is a conditional dependency only activated when the CI
 -- (or a local user) passes `-Kenv=dev`. Without that flag, this
@@ -3261,3 +3264,72 @@ script «benchmark-xla» do
   --   4060 Ti (CUDA) or a 7900 XTX (ROCm) the factors read ~1.00 and the table is the measurement.
   let be ← match ← IO.getEnv "IREE_BACKEND" with | some b => pure b | none => detectBackend
   runBenchmark (if be == "cuda" then xlaRefCuda else xlaRefRocm)
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- `lake test` and `lake lint` — the package's test and lint drivers
+-- ═══════════════════════════════════════════════════════════════════════
+
+/-- Run each command, print `✓`/`✗` per command, and return 1 if any failed. A failed command's
+    output is replayed in full; a passing one prints only its last line. -/
+private def runChecks (checks : List (String × Array String)) : IO UInt32 := do
+  let mut failed : Array String := #[]
+  for (cmd, args) in checks do
+    let what := " ".intercalate (cmd :: args.toList)
+    let out ← IO.Process.output { cmd, args }
+    if out.exitCode == 0 then
+      let last := (((out.stdout ++ out.stderr).splitOn "\n").filter (· != "")).getLast?.getD ""
+      IO.println s!"✓ {what}   {last}"
+    else
+      IO.println s!"✗ {what} (exit {out.exitCode})"
+      IO.println (out.stdout ++ out.stderr)
+      failed := failed.push what
+  if failed.isEmpty then return 0
+  IO.eprintln s!"\n{failed.size} of {checks.length} failed: {", ".intercalate failed.toList}"
+  return 1
+
+/-- The `tests/` files that are `#guard` / `#guard_msgs` / `#eval` gates rather than lake exes:
+    each fails by failing to elaborate, so `lake env lean` exiting 0 is the pass. `certs.yml` runs
+    this list through `lake test`; it is the one statement of it. -/
+def guardScripts : List String :=
+  ["TestAxiomAudit", "TestVariantPredicates", "TestDropPathRamp", "TestBatchedEmitTie",
+   "TestSmallNetsBatchedEmit", "TestR50Contract", "TestXlaPadOps"]
+
+/-- **`lake test`** — the `#guard` scripts above, after building the modules they import.
+    `lake test -- --audit` also builds `Certs` and runs the three-axiom closure audit
+    (`tests/AuditAxioms.lean`), which is cheap once `Certs` is built and hours on a cold tree.
+
+    Not here: the `Test*` lake exes, most of which need IREE, a GPU or a dataset (`tests/README.md`),
+    and `AuditAxiomsHeavy`, which needs `CertsHeavy` (certs-heavy.yml). -/
+script test (args) do
+  let audit := args.contains "--audit"
+  let deps := #["build", "tests.AxiomAudit", "LeanMlir", "LeanMlir.Verified.Train",
+    "LeanMlir.Verified.NetsCore", "LeanMlir.Proofs.Codegen.StableHLO.Pretty",
+    "LeanMlir.Proofs.Codegen.ResNet50RenderB", "LeanMlir.Proofs.Codegen.EfficientNetRender.Basic",
+    "LeanMlir.Proofs.Codegen.ConvNeXtRenderB", "LeanMlir.Proofs.Codegen.ViTRenderB"]
+  let deps := if audit then deps.push "Certs" else deps
+  IO.println s!"━━━ lake {" ".intercalate deps.toList} ━━━"
+  if (← (← IO.Process.spawn { cmd := "lake", args := deps }).wait) != 0 then
+    IO.eprintln "build failed"
+    return 1
+  let files := guardScripts.map (s!"tests/{·}.lean") ++
+    (if audit then ["tests/AuditAxioms.lean"] else [])
+  runChecks (files.map fun f => ("lake", #["env", "lean", f]))
+
+/-- **`lake lint`** — the source-only gates: no Lean build, about a minute. They are the
+    checks targets.yml and the Python steps of proofs.yml and certs.yml run before any build, so
+    a push that would fail them can be caught locally first. (CI calls the scripts directly:
+    targets.yml has no Lean toolchain.) `import_audit.py implied` reads Mathlib's sources from
+    `.lake/packages`, so it needs a fetched workspace. -/
+script lint do
+  runChecks [
+    ("bash",    #["scripts/gates/check_target_names.sh"]),
+    ("python3", #["scripts/gates/name_lint.py"]),
+    ("python3", #["scripts/gates/comment_numbers.py"]),
+    ("python3", #["scripts/gates/module_refs.py"]),
+    ("python3", #["scripts/gates/gen_mlir_manifest.py", "--check"]),
+    ("python3", #["scripts/gates/repo_shape.py"]),
+    ("python3", #["scripts/gates/check_audit_coverage.py"]),
+    ("python3", #["scripts/gates/check_render_coverage.py"]),
+    ("python3", #["scripts/gates/train_step_arity.py"]),
+    ("python3", #["scripts/gates/import_audit.py", "implied"])]
