@@ -69,33 +69,38 @@ from step 0, `G2_STEPS=4992`. The book's own TODO (~`content.tex:11837`) already
 - [x] The conf header (`r34-default-bf16-4gpu.conf:17–30`) still calls `r34-default-4gpu` the
       `imagenetRows` row and cites the retired fp32 74.14 / 91.86 pair. Update both.
 
-### 3. R34 / R50-2018: the recipe is DAWNBench's, and the book says so
+### 3. R34 / R50-2018: the recipe is Bag of Tricks; DAWNBench is the lineage — ✅ 2026-10-19 (prose)
 
-The user's call: the recipe these two rows emulate is the **2018 DAWNBench** recipe. The book's intro
-(`content.tex:253`) says the user was on the winning team. "Bag of Tricks" (He et al. 2018) is a copy
-of it, not its source. Today the book credits Bag of Tricks for the cosine, warmup, label smoothing
-and crop (`content.tex:6566–6569`, and the "Popularized by … Bag of Tricks" at ~`:6323`).
-`imagenet_parity.md:635` names "torchvision reference recipe" as the source of truth for these rows.
-**It is not that either:** torchvision's legacy recipe is step decay ×0.1 every 30 epochs, no warmup,
-no smoothing.
+Pinned 2026-10-19 from the entries themselves (`stanford-futuredata/dawn-bench-entries`, the user's
+`fastai/imagenet-fast` commit `1bc5aeec`, `imagenet_nv/main.py` at `c4b22555`):
 
-- [ ] Write the DAWNBench values down as the source of truth, in `imagenet_parity.md` §10.1's table
-      (replacing "torchvision reference recipe"). Get the exact values from the user, or from the
-      fast.ai DAWNBench write-up and code the book already links (`content.tex:6318`).
-- [ ] Diff the two rows against those values and list what differs:
-  - **Progressive resizing:** the book says it was part of the winning recipe; neither row does it.
-  - **BN decay:** 0.99 on R34 on both paths (`jax/MainResnetImagenet.lean:33` never sets
-    `bnMomentum`), against R50-2018's 0.9.
-  - **Warmup length:** the book says 3 epochs at ~`:6330` and 5 at `:6563`.
-  - **Zero-γ:** on R50.
-  - **Train crop.**
-  Each one either matches or gets disclosed. Anything that would need a rerun comes back to the user
-  as a question, not a launch.
-- [ ] Book: re-attribute in the prose at `:6318–6325` and `:6563–6569` (DAWNBench first, Bag of Tricks
-      as the later write-up). Put the differences in the R34 TODO marker from item 2.
-- [ ] `MainResnet34Imagenet.lean:38` says "He et al.'s own schedule"; correct it. Sweep the R34/R50
-      app and conf headers for "torchvision recipe" / "2018 recipe" wording that should now say
-      DAWNBench.
+| | CIFAR-10 entry (the user's, 2018-04-19) | ImageNet entry (2018-04-20) |
+|---|---|---|
+| net / epochs | WRN-22, fp16, 40 | ResNet-50, 45 |
+| schedule | 1cycle (`use_clr_beta=(50, 12.5, 0.95, 0.85)`): lr/50 → 2.0 over 17.5 ep, back down over 17.5, anneal to lr/5000 over the last 5; momentum 0.95 ↔ 0.85 | warmup 0.1 → 0.4 over 4 ep, then ×0.1 at epochs 20, 34, 42 |
+| wd / batch | 2e-4 / 128 per process, 8 V100 | 1e-4 / 128 per GPU, 1024 global |
+| resizing | 32 px | progressive: 128 to ep 18, 224 to 41, 288 for the last 4 at batch 128 |
+| augmentation | pad 4 + random crop, ColorJitter 0.25, rotate 2°, hflip | RandomResizedCrop (0.08, 1), hflip; val ×1.14 resize, centre crop |
+| label smoothing | no | no |
+
+Neither entry has cosine or label smoothing. The rows run cosine + 5-epoch warmup + smoothing 0.1 +
+wd 1e-4 at batch 256 for 90 epochs, fixed 224: that is Bag of Tricks (He et al. 2018), exactly. So
+the rows' recipe is Bag of Tricks and DAWNBench is the lineage (warmup-then-anneal first won at
+scale there, in two forms on two datasets). The earlier call — "the recipe these rows emulate is
+DAWNBench's" — would have needed step decay + progressive resizing (a rerun) or a label the code
+does not support; the user chose the honest label.
+
+- [x] Book: the cosine paragraph (`content.tex:~6547`) now says DAWNBench's two entries ran 1cycle
+      (CIFAR-10) and warmup + step decay + progressive resizing (ImageNet), links both entries, and
+      names Bag of Tricks as the cosine form the chapter's ImageNet rows run. The intro (`:254`)
+      says "won the CIFAR-10 track … and trained ImageNet in 3 hours for $25". The R34 marker says
+      "the recipe both rows run is Bag of Tricks".
+- [x] `imagenet_parity.md` §10.1's R34 / R50-2018 row: source of truth is Bag of Tricks; disclosed
+      deviations BN decay 0.99 on R34 and zero-γ on R50 only.
+- [x] `MainResnet34Imagenet.lean:38` "He et al.'s own schedule" is correct as it stands; the conf
+      headers' "the 2018 recipe" stay.
+- The "3 for ResNet-34" at `content.tex:~6560` is the Imagenette recipe's warmup (AdamW, 3 ep,
+  `:6342`); the ImageNet rows' 5 is a different recipe. Not a conflict.
 
 ### 4. Pairs the book publishes that predate their row's conf
 

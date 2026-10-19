@@ -251,8 +251,9 @@ referee.
 
 \section*{Let's go}
 
-In 2018 I was on a small team that won Stanford's DAWNBench competition,
-training ImageNet in 3 hours for \$25 on commodity hardware. The lesson
+In 2018 I was on a small team that won the CIFAR-10 track of Stanford's
+DAWNBench competition and trained ImageNet in 3 hours for \$25 on
+commodity hardware. The lesson
 from that experience was simple. Most of the apparent difficulty in
 modern deep learning isn't fundamental. It's accumulated folklore,
 missing tools, and a culture that takes the math on faith.
@@ -6544,15 +6545,19 @@ forgiving of learning-rate choice.
 After warmup, the learning rate decays from its peak to near-zero
 following $\mathrm{lr}(t) = \mathrm{lr}_{\max} \cdot \tfrac{1}{2}(1 +
 \cos(\pi t / T))$. Smoother than step schedules, and consistently produces
-slightly better final losses in practice. Paired with warmup and
+slightly better final losses in practice. Warmup-then-anneal first won
+at scale at Stanford's DAWNBench in 2018, in two forms: the
+\href{https://github.com/stanford-futuredata/dawn-bench-entries/blob/master/CIFAR10/train/fastai_pytorch.json}{CIFAR-10
+entry} ran Smith's 1cycle, a linear triangle with a short anneal, and the
+\href{https://github.com/stanford-futuredata/dawn-bench-entries/blob/master/ImageNet/train/fastai_pytorch.json}{ImageNet
+entry} a four-epoch warmup into step decay, with
 \href{https://www.fast.ai/posts/2018-04-30-dawnbench-fastai.html}{progressive
-resizing} (Howard et al., 2018), this was the winning recipe at
-Stanford's DAWNBench in 2018. The lineage traces back to Leslie
+resizing} (Howard et al., 2018) on top. The lineage traces back to Leslie
 Smith's cyclical learning rates (Smith 2015,
-\href{https://arxiv.org/abs/1506.01186}{arXiv:1506.01186}).
-Popularized for ImageNet-scale training by He et al.\ 2018's
-``Bag of Tricks''
-(\href{https://arxiv.org/abs/1812.01187}{arXiv:1812.01187}).
+\href{https://arxiv.org/abs/1506.01186}{arXiv:1506.01186}). The cosine
+form, with warmup and label smoothing, is He et al.\ 2018's ``Bag of
+Tricks'' (\href{https://arxiv.org/abs/1812.01187}{arXiv:1812.01187}),
+and that is the recipe this chapter's ImageNet rows run.
 
 \textbf{Warmup} (Goyal et al., 2017,
 \href{https://arxiv.org/abs/1706.02677}{arXiv:1706.02677}). Linearly
@@ -7032,7 +7037,7 @@ The verified half (\texttt{runs/2026-09-22-r34-syncbn-bf16-90ep}) trained
 TensorFlow's \texttt{sample\_distorted\_bounding\_box}; the reference
 (\texttt{runs/2026-10-07-r34-jax-bf16-90ep}) trained torchvision's
 \texttt{RandomResizedCrop}, which every torchvision-side recipe now
-emits. The recipe both rows emulate is the 2018 DAWNBench one. A verified
+emits. The recipe both rows run is Bag of Tricks. A verified
 rerun on torchvision's crop is owed --- \texttt{r34-default-bf16-4gpu},
 ${\sim}21$\,h on the four 3060s --- and its number replaces the verified
 column.]}
@@ -14811,8 +14816,7 @@ primary-sequence toolbox.
     that's just product rule + additive fan-in from Ch 1). The
     architecture is conceptually a free read.
   \item \emph{One new primitive} means one bundled architectural
-    idiom that wasn't in Part 1 --- \texttt{.bottleneckBlock} for
-    deeper ResNets, \texttt{.fireModule} for SqueezeNet,
+    idiom that wasn't in Part 1 --- \texttt{.fireModule} for SqueezeNet,
     \texttt{.mambaBlock} for Mamba, etc. The primitive is bundled
     at the right abstraction level (a whole Mamba block, a stage of
     Swin attention) so reading it is one chunk, not twenty
@@ -15411,9 +15415,10 @@ parameters. ResNet won by simplifying away $T$, but the underlying
 calculus is identical --- product + additive fan-in either way.
 
 \subsubsection*{ResNet (\texttt{Bestiary/ResNet.lean})}
-\emph{One} new primitive (\texttt{.bottleneckBlock}). Chapter
-\ref{chap:residual} walks through the basic-block variant
-ResNet-34 in detail; this entry catalogs the standard ResNet
+\emph{Zero} new primitives: Chapter~\ref{chap:residual} proves and
+trains both block forms, the basic block as ResNet-34 and the bottleneck
+as ResNet-50, so \texttt{.bottleneckBlock} is a chapter net's primitive
+rather than the bestiary's. This entry catalogs the standard ResNet
 family (He et al.\ 2015,
 \href{https://arxiv.org/abs/1512.03385}{arXiv:1512.03385}). The
 basic-block variants (R18, R34) stack two $3\times 3$ convs per
@@ -15441,10 +15446,12 @@ ResNet-152 & bottleneck & (3, 8, 36, 3) & 60.2M (paper 60.2M) \\
 \end{tabular}
 \end{table}
 
-All three share the same stem ($7\times 7$ stride-2 conv +
-$3\times 3$ stride-2 max pool), the same 4-stage layout (channels
-$256 \to 512 \to 1024 \to 2048$), and the same GAP + single-FC
-head. They differ only in stage block-counts.
+All five share the same stem ($7\times 7$ stride-2 conv +
+$3\times 3$ stride-2 max pool), the same 4-stage layout and the same
+GAP + single-FC head; the basic variants run the stages at
+$64 \to 128 \to 256 \to 512$ channels, the bottleneck ones at
+$256 \to 512 \to 1024 \to 2048$. They differ only in block type and
+stage block-counts.
 
 \begin{verbatim}
 def resnet50Imagenet : NetSpec where
@@ -15465,21 +15472,12 @@ def resnet50Imagenet : NetSpec where
 \end{verbatim}
 
 The residual chain rule (Theorem~\ref{thm:residualHasVJP}) applies to
-bottleneck-block ResNets too ---
-the bottleneck just composes three convolutions instead of two
-inside the residual branch. No new math.
-
-The modern ResNet-50 baseline is timm's ``ResNet Strikes Back'' A2
-recipe (Wightman et al.\ 2021,
-\href{https://arxiv.org/abs/2110.00476}{arXiv:2110.00476}) --- LAMB,
-BCE loss, repeated augmentation --- which trains this exact network
-to ${\sim}79.8\%$ top-1. The JAX reference trainer
-(\texttt{jax/MainResnet50Imagenet.lean}) wires that recipe: running
-the cheaper 100-epoch A3 tier end-to-end through the
-Lean~$\to$~StableHLO~$\to$~JAX pipeline reaches \textbf{77.61\% top-1
-/ 93.61\% top-5} on ImageNet-1k, $0.49$ under the A3 paper's $78.1\%$;
-the verified path's render of the same recipe scores $78.08\%$, on the
-paper's number.
+the bottleneck too --- it composes three convolutions instead of two
+inside the branch --- and Chapter~\ref{chap:residual} carries it to the
+full network: Theorem~\ref{thm:resnet50FullHasVJP} is the backward of
+this exact ResNet-50, with its step tie, seal and data-parallel tie
+(Theorems~\ref{thm:resnet50_step_tie}, \ref{thm:resnet50_seal}
+and~\ref{thm:resnet50_sync_tie}) beside ResNet-34's.
 
 \subsubsection*{WRN (Wide ResNet) (\texttt{Bestiary/WRN.lean})}
 \emph{Zero} new primitives --- the residual block of
@@ -16045,7 +16043,7 @@ def yolo : NetSpec where
 \end{verbatim}
 
 \subsubsection*{Mask R-CNN (\texttt{Bestiary/MaskRCNN.lean})}
-\emph{Two} new primitives (\texttt{.bottleneckBlock} + \S~\ref{layer:fpnModule}). The canonical two-stage detector +
+\emph{One} new primitive (\S~\ref{layer:fpnModule}); the \texttt{.bottleneckBlock} backbone is Chapter~\ref{chap:residual}'s ResNet-50. The canonical two-stage detector +
 instance segmentation reference (He et al.\ 2017,
 \href{https://arxiv.org/abs/1703.06870}{arXiv:1703.06870}). Five architectural
 pieces: ResNet-FPN backbone, RPN for anchor-box proposals, ROI-Align
