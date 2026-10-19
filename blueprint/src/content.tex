@@ -7031,11 +7031,11 @@ between them.
 The verified half (\texttt{runs/2026-09-22-r34-syncbn-bf16-90ep}) trained
 TensorFlow's \texttt{sample\_distorted\_bounding\_box}; the reference
 (\texttt{runs/2026-10-07-r34-jax-bf16-90ep}) trained torchvision's
-\texttt{RandomResizedCrop}, which every torchvision-side recipe has emitted
-since 2026-10-06. The recipe both rows emulate is the 2018 DAWNBench one.
-A verified rerun on torchvision's crop is owed ---
-\texttt{r34-default-bf16-4gpu} under its own checkpoint tag, ${\sim}21$\,h
-on the four 3060s --- and its number replaces the verified column.]}
+\texttt{RandomResizedCrop}, which every torchvision-side recipe now
+emits. The recipe both rows emulate is the 2018 DAWNBench one. A verified
+rerun on torchvision's crop is owed --- \texttt{r34-default-bf16-4gpu},
+${\sim}21$\,h on the four 3060s --- and its number replaces the verified
+column.]}
 
 \medskip\noindent Both paths normalize over the global $256$: the
 reference's \texttt{@jit} mesh reduces the batch statistics across its
@@ -7354,7 +7354,7 @@ and $10^{-6}$ moves nothing).
 eval resize's short side at $236$, where \texttt{timm} takes
 $\lfloor 224 / 0.95 \rfloor = 235$, and the long side rounded where
 torchvision truncates it. The emitter now matches \texttt{timm} and
-torchvision (2026-10-19); the reference checkpoint rescored under it reads
+torchvision; the reference checkpoint rescored under it reads
 $77.58$ / $93.66$ ($-13$ images on top-1, $+24$ on top-5,
 \texttt{runs/2026-10-12-r50-a3-jax/rescore\_f6.sh}). The verified
 checkpoint's rescore is owed, and the pair moves together: the column and
@@ -9011,7 +9011,7 @@ weights scored       & raw, epoch 350           & raw, epoch 350 \\
 \noindent The BatchNorm group is held equal too: the reference normalizes over the global $256$ under its mesh, and the
 verified render all-reduces to the same $256$. \textbf{[TODO: TF-slim's own
 reproduction command (\texttt{research/slim/nets/mobilenet/README.md}),
-on both paths, in code since 2026-10-12: $0.045$ per $96$
+on both paths: $0.045$ per $96$
 images, so $0.12$ at $256$, stepped $\times0.98$ every $2.5$ epochs rather
 than every epoch; RMSProp's learning rate inside the momentum term; weight
 decay off the depthwise kernels; slim's truncated-normal initialization
@@ -9024,9 +9024,8 @@ verified path, the suspect for the $-0.51$ above. One rerun of both halves
 takes all of it --- \texttt{mnv2-full-jax-4gpu} /
 \texttt{mnv2-default-4gpu}, ${\sim}49 + 63$\,h. The pair published above
 predates that recipe: it is the 350-epoch job in its older RMSProp form,
-with the depthwise kernels decayed. The rerun of both halves launched
-2026-10-19, and the pair moves when it lands. The sixteen asynchronous
-workers of $96$ stay four replicas of $64$.]}
+with the depthwise kernels decayed. The sixteen asynchronous workers of
+$96$ stay four replicas of $64$.]}
 
 \medskip\noindent\textbf{The two paths differ by $0.51$ points on top-1
 and $0.42$ on top-5}, outside the 95\% Wilson interval ($\pm0.40$ at
@@ -9513,10 +9512,9 @@ $\Delta$              & $+2.40$ & $+0.54$ & $0.00$ & $-0.52$ & $-0.23$ & $+0.16$
 
 \medskip\noindent \textbf{[TODO: the schedule, and what the pair above
 still owes the paper's own code. The same two jobs at $500$ epochs,
-\texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, dry-run and not run,
-${\sim}112 + 78$\,h on the 4060~Ti box, this pair times five. In code since
-2026-10-17 and not yet run, so the $100$-epoch pair above predates them on
-both paths: the stochastic-depth ramp over tf-models' $26$-entry block list
+\texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, ${\sim}112 + 78$\,h
+on the 4060~Ti box, this pair times five, are owed. The $100$-epoch pair
+above predates two rows of that recipe, on both paths: the stochastic-depth ramp over tf-models' $26$-entry block list
 (the \texttt{gpooling} row counts; the pair ran $/25$), and tf-models' centre-crop
 fallback where the crop sampler returns the whole image (the pair fell back to
 the whole image). Still out, disclosed on both paths: the initialization
@@ -9525,9 +9523,8 @@ the whole image). Still out, disclosed on both paths: the initialization
 $U(\pm 0.05)$; ours is \texttt{timm}'s), weight decay reaching the classifier
 bias (the yaml exempts BatchNorm alone; ours exempts every bias), and the
 BatchNorm group (per TPU core there, the $512$-image micro-batch here).
-What the pair does \emph{not} owe: the head order, which the 2026-10-12 reading
-had down as a difference, is tf-models' too (its block list pools before the
-$1280$ convolution).]}
+What the pair does \emph{not} owe: the head order is tf-models' too (its
+block list pools before the $1280$ convolution).]}
 
 \section{Recap}
 
@@ -10650,14 +10647,13 @@ verified render emits the odd-phase strided depthwise at its four sites
 (\texttt{depthwiseStride2FlatXla}, the stem's convention: a symmetric
 stride-one convolution read at the odd positions), with the block, step and
 data-parallel ties restated on that form; the gate now pins
-\texttt{tf\_efficientnet\_b0} itself and shows the old hybrid red. The
-rerun carries it. A smaller difference was also the same
+\texttt{tf\_efficientnet\_b0} itself and shows the old hybrid red. A
+smaller difference was also the same
 on both paths for the pair above: the learning rate multiplied the
 momentum buffer on its way into the weights, where TensorFlow's RMSProp
 folds it into the buffer, so the two parted while the rate moved --- through
 the warmup, and for a few steps after each drop of the staircase. Both
-paths have taken TensorFlow's form since 2026-10-12, and the rerun
-carries that too.
+now fold it as TensorFlow does.
 
 \medskip\noindent\textbf{The activation agrees on both sides.} The verified
 render is swish throughout --- $178$ \texttt{stablehlo.logistic} and not one
@@ -10721,13 +10717,12 @@ fallback and TF~1's bicubic resize at train and eval, the fp32 classifier
 head and an fp32 evaluation forward, synchronised BatchNorm, TensorFlow's
 classifier init $U(\pm 1/\sqrt{1000})$ with the depthwise and
 squeeze-excite fan inits, RMSProp's learning rate inside the momentum term,
-and SAME padding on the strided depthwise convolutions; in code since
-2026-10-12. The pair published above predates that recipe: it trained
+and SAME padding on the strided depthwise convolutions. The pair
+published above predates that recipe: it trained
 before the TensorFlow form of the staircase, the decay set and the
-momentum term entered the code. The rerun of both halves ---
-\texttt{enet-full-jax-4gpu} / \texttt{enet-default-4gpu},
-${\sim}49 + 67$\,h --- launched 2026-10-19, and the pair moves when it
-lands.]}
+momentum term entered the code. One rerun of both halves takes all of
+it --- \texttt{enet-full-jax-4gpu} / \texttt{enet-default-4gpu},
+${\sim}49 + 67$\,h.]}
 
 \medskip\noindent\textbf{$-0.27$ points, and the gap persists.} One
 evaluation at $-0.27$ is not a result: the verified final's 95\%
@@ -12190,12 +12185,10 @@ from step $0$, an fp32 evaluation forward, and scoring at
 \texttt{timm}'s $288$ / $1.0$. The pair published above predates that
 recipe: it is the one-shot job \texttt{cnx-default-4gpu} at global batch
 $256$ and $2.5\mathrm{e}{-4}$, with a global-norm clip and the tanh GELU.
-Since 2026-10-19 the chapter's row runs the official recipe,
-\texttt{cnx-default-emabf16-4gpu}, in code since 2026-10-12, and the pair
-on it, both halves --- \texttt{cnx-default-jax-4gpu} /
-\texttt{cnx-default-emabf16-4gpu}, ${\sim}76 + 109$\,h --- is queued
-behind the MobileNetV2 and EfficientNet-B0 reruns; the pair moves when it
-lands.]}
+The chapter's row runs the official recipe,
+\texttt{cnx-default-emabf16-4gpu}, and the pair on it is owed, both halves
+--- \texttt{cnx-default-jax-4gpu} / \texttt{cnx-default-emabf16-4gpu},
+${\sim}76 + 109$\,h.]}
 
 \medskip\noindent\textbf{The two paths agree to $0.21$ points on top-1
 and $0.11$ on top-5}, inside the 95\% Wilson interval ($\pm0.34$ at $81\%$ on $50{,}000$ images), at one seed each. This is
@@ -19362,15 +19355,9 @@ name.
 \end{tabular}
 \end{table}
 
-\noindent Every row has run, and most are the run behind their chapter's
-numbers. Three are not, yet: the MobileNetV2, EfficientNet-B0 and
-ConvNeXt-T rows now train the faithful recipes their chapters' markers
-describe (TF-slim's, TensorFlow's, the official ConvNeXt one), while the
-pairs those chapters print came from the earlier confs --- the 350-epoch
-MobileNetV2 job, the pre-TensorFlow-form B0 job and the one-shot
-\texttt{cnx-default-4gpu}. The MobileNetV2 and B0 reruns launched
-2026-10-19 and ConvNeXt-T's is queued behind them; each pair moves when
-its rerun lands.
+\noindent Every row has run. Three chapters print a pair from an earlier
+conf than the row trains today --- MobileNetV2, EfficientNet-B0 and
+ConvNeXt-T --- and each chapter's marker names it.
 \texttt{scripts/jobs/} also carries axis siblings that this table does not
 list --- an fp32 peer of each of the ResNet-34, ResNet-50 2018, RSB-A3 and
 ViT rows, and RSB-A3 at $8\times64$ --- which differ from their row in
