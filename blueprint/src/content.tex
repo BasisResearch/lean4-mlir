@@ -7407,7 +7407,7 @@ Figure~\ref{fig:r50_paths_curves} every epoch.
 
 \begin{table}[H]
 \centering
-\caption{ResNet-50 validation top-1 at selected epochs, both recipes on both paths.}
+\caption{ResNet-50 validation top-1 at selected epochs, both recipes on both paths. These are the in-training reads, as are the curves below; the 2018 reference's headline $76.76$ is the fp32 rescore of the same epoch-90 checkpoint, read in training as $76.80$.}
 \label{tab:r50_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r r@{}}
 \hline
@@ -9011,7 +9011,7 @@ weights scored       & raw, epoch 350           & raw, epoch 350 \\
 \noindent The BatchNorm group is held equal too: the reference normalizes over the global $256$ under its mesh, and the
 verified render all-reduces to the same $256$. \textbf{[TODO: TF-slim's own
 reproduction command (\texttt{research/slim/nets/mobilenet/README.md}),
-on both paths, in code since 2026-10-12 and not yet run: $0.045$ per $96$
+on both paths, in code since 2026-10-12: $0.045$ per $96$
 images, so $0.12$ at $256$, stepped $\times0.98$ every $2.5$ epochs rather
 than every epoch; RMSProp's learning rate inside the momentum term; weight
 decay off the depthwise kernels; slim's truncated-normal initialization
@@ -9022,7 +9022,10 @@ validation crop ($0.875$ of both sides, then $224^2$) and $(x-0.5)\times 2$
 inputs; about $420$ epochs; and the depthwise fan-in init ($2/k^2$) on the
 verified path, the suspect for the $-0.51$ above. One rerun of both halves
 takes all of it --- \texttt{mnv2-full-jax-4gpu} /
-\texttt{mnv2-default-4gpu}, ${\sim}49 + 63$\,h. The sixteen asynchronous
+\texttt{mnv2-default-4gpu}, ${\sim}49 + 63$\,h. The pair published above
+predates that recipe: it is the 350-epoch job in its older RMSProp form,
+with the depthwise kernels decayed. The rerun of both halves launched
+2026-10-19, and the pair moves when it lands. The sixteen asynchronous
 workers of $96$ stay four replicas of $64$.]}
 
 \medskip\noindent\textbf{The two paths differ by $0.51$ points on top-1
@@ -10648,11 +10651,13 @@ verified render emits the odd-phase strided depthwise at its four sites
 stride-one convolution read at the odd positions), with the block, step and
 data-parallel ties restated on that form; the gate now pins
 \texttt{tf\_efficientnet\_b0} itself and shows the old hybrid red. The
-rerun carries it. A smaller difference is also the same
-on both paths: the learning rate multiplies the
+rerun carries it. A smaller difference was also the same
+on both paths for the pair above: the learning rate multiplied the
 momentum buffer on its way into the weights, where TensorFlow's RMSProp
-folds it into the buffer, so the two part while the rate moves --- through
-the warmup, and for a few steps after each drop of the staircase.
+folds it into the buffer, so the two parted while the rate moved --- through
+the warmup, and for a few steps after each drop of the staircase. Both
+paths have taken TensorFlow's form since 2026-10-12, and the rerun
+carries that too.
 
 \medskip\noindent\textbf{The activation agrees on both sides.} The verified
 render is swish throughout --- $178$ \texttt{stablehlo.logistic} and not one
@@ -10717,8 +10722,12 @@ head and an fp32 evaluation forward, synchronised BatchNorm, TensorFlow's
 classifier init $U(\pm 1/\sqrt{1000})$ with the depthwise and
 squeeze-excite fan inits, RMSProp's learning rate inside the momentum term,
 and SAME padding on the strided depthwise convolutions; in code since
-2026-10-12 and not yet run --- \texttt{enet-full-jax-4gpu} /
-\texttt{enet-default-4gpu}, ${\sim}49 + 67$\,h.]}
+2026-10-12. The pair published above predates that recipe: it trained
+before the TensorFlow form of the staircase, the decay set and the
+momentum term entered the code. The rerun of both halves ---
+\texttt{enet-full-jax-4gpu} / \texttt{enet-default-4gpu},
+${\sim}49 + 67$\,h --- launched 2026-10-19, and the pair moves when it
+lands.]}
 
 \medskip\noindent\textbf{$-0.27$ points, and the gap persists.} One
 evaluation at $-0.27$ is not a result: the verified final's 95\%
@@ -12182,10 +12191,11 @@ from step $0$, an fp32 evaluation forward, and scoring at
 recipe: it is the one-shot job \texttt{cnx-default-4gpu} at global batch
 $256$ and $2.5\mathrm{e}{-4}$, with a global-norm clip and the tanh GELU.
 Since 2026-10-19 the chapter's row runs the official recipe,
-\texttt{cnx-default-emabf16-4gpu}, in code since 2026-10-12 and not yet
-run, and the pair on it is owed, both halves ---
-\texttt{cnx-default-jax-4gpu} / \texttt{cnx-default-emabf16-4gpu},
-${\sim}76 + 109$\,h.]}
+\texttt{cnx-default-emabf16-4gpu}, in code since 2026-10-12, and the pair
+on it, both halves --- \texttt{cnx-default-jax-4gpu} /
+\texttt{cnx-default-emabf16-4gpu}, ${\sim}76 + 109$\,h --- is queued
+behind the MobileNetV2 and EfficientNet-B0 reruns; the pair moves when it
+lands.]}
 
 \medskip\noindent\textbf{The two paths agree to $0.21$ points on top-1
 and $0.11$ on top-5}, inside the 95\% Wilson interval ($\pm0.34$ at $81\%$ on $50{,}000$ images), at one seed each. This is
@@ -19352,7 +19362,15 @@ name.
 \end{tabular}
 \end{table}
 
-\noindent Every row has run and is the one behind its chapter's numbers.
+\noindent Every row has run, and most are the run behind their chapter's
+numbers. Three are not, yet: the MobileNetV2, EfficientNet-B0 and
+ConvNeXt-T rows now train the faithful recipes their chapters' markers
+describe (TF-slim's, TensorFlow's, the official ConvNeXt one), while the
+pairs those chapters print came from the earlier confs --- the 350-epoch
+MobileNetV2 job, the pre-TensorFlow-form B0 job and the one-shot
+\texttt{cnx-default-4gpu}. The MobileNetV2 and B0 reruns launched
+2026-10-19 and ConvNeXt-T's is queued behind them; each pair moves when
+its rerun lands.
 \texttt{scripts/jobs/} also carries axis siblings that this table does not
 list --- an fp32 peer of each of the ResNet-34, ResNet-50 2018, RSB-A3 and
 ViT rows, and RSB-A3 at $8\times64$ --- which differ from their row in
@@ -19418,7 +19436,8 @@ lake run imagenet start          # the rows in order, each resuming from its che
 
 \noindent \texttt{lake run imagenet} is the tier itself, the fourth of the four.
 Bare, it only plans, because its fourteen rows --- Table~\ref{tab:track4_runners}
-and the side quests of Table~\ref{tab:track4_side_quests} --- are weeks of four-card time; \texttt{start} is the confirmation.
+and the side quests of Table~\ref{tab:track4_side_quests}, less the 100-epoch
+MobileNetV4 job, which is that pair's own and not a row --- are weeks of four-card time; \texttt{start} is the confirmation.
 
 Data parallelism needs both replica knobs, and setting only one fails with a
 confusing ``compiled for N replicas'' error. \texttt{PJRT\_REPLICAS} configures

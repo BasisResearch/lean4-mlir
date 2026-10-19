@@ -108,18 +108,26 @@ the run behind the book's number:
 | B0 `enet-default-4gpu` | 76.88 / 77.15, `09-12` / `jax/runs/enet_b0_imagenet_bf16_350ep` | pre-D3/D6/D13 | TF's code row for row (`emarmstf…`, SAME padding) |
 | ConvNeXt-T (after item 1) | 81.30 / 81.53, `09-18` | one-shot 256, clip, tanh GELU | the official 4096 recipe |
 
-- [ ] Fix the `:18963` sentence. Each row either has run on its current recipe, or has a pair on an
-      earlier recipe, named.
-- [ ] Each of the three chapters' TODO markers (MNv2 `:8730`, B0 `:10399`, ConvNeXt `:11837`) should
-      say plainly that the published pair predates the faithful recipe. Check each one does.
-- [ ] Also: the B0 sentence at ~`content.tex:10340–10344` says, in the present tense, that the rate
+- [x] Fix the `:18963` sentence. Each row either has run on its current recipe, or has a pair on an
+      earlier recipe, named. — 2026-10-19: names the three, their earlier confs, and that the MNv2
+      and B0 reruns launched 2026-10-19 with ConvNeXt-T queued behind them (the user's launch).
+- [x] Each of the three chapters' TODO markers (MNv2 `:8730`, B0 `:10399`, ConvNeXt `:11837`) should
+      say plainly that the published pair predates the faithful recipe. Check each one does. —
+      MNv2 and B0 said "not yet run" and nothing about the pair; both now say the pair predates the
+      recipe and the rerun launched. ConvNeXt's (item 1) says the pair is queued.
+- [x] Also: the B0 sentence at ~`content.tex:10340–10344` says, in the present tense, that the rate
       multiplies the momentum buffer on both paths. D13 changed that, so put it in the past tense
-      for the landed pair.
-- [ ] The row count: the book says "fourteen" but its side-quest table has 8 rows, 15 in all,
-      including `mnv4-full-e100`. `imagenetRows` has 14. Make the book match.
-- [ ] Two small book fixes:
-  - The R50-2018 curve ends at 76.80, the pre-rescore number; the table says 77.09.
-  - README:57 still quotes ViT-Ti 72.42 and MNv4 76.68. The book has 71.61 and 77.35.
+      for the landed pair. — Done; it also says both paths took TF's form on 2026-10-12.
+- [x] The row count: the book says "fourteen" but its side-quest table has 8 rows, 15 in all,
+      including `mnv4-full-e100`. `imagenetRows` has 14. Make the book match. — The sentence now
+      excepts the 100-epoch MNv4 job ("that pair's own and not a row"); 7 + 8 − 1 = 14.
+- [x] Two small book fixes:
+  - The R50-2018 curve ends at 76.80, the pre-rescore number; the table says 77.09. — Not a
+    conflict: 77.09 is the verified column; the reference's 76.80 is the in-training bf16 read and
+    76.76 its f32 rescore (`runs/2026-10-11-resnet-jax-f32-rescore`). `tab:r50_paths_epochs`'s
+    caption now says so for the table and the curves.
+  - README:57 still quotes ViT-Ti 72.42 and MNv4 76.68. The book has 71.61 and 77.35. — Already
+    71.61 and 77.35 at HEAD; nothing to do.
 
 ### 5. F6: `floor`, not `round`, in the timm-protocol eval resize
 
