@@ -4,7 +4,9 @@
 Both trainers start from the same raw f32 init (the verified trainer's `LEAN_MLIR_INIT_DUMP`,
 loaded by the JAX script's `init_params_from_file`) and take one step on the same batch. Each
 dumps its parameters afterwards in the same on-disk layout (the render's argument order; dense
-`[in, out]` then bias, conv `[oc, ic, k, k]` then bias). This compares the two UPDATES
+`[in, out]` then bias, conv `[oc, ic, k, k]` then bias; the Lean dump of a `lossSlot` render — mlp,
+cnn — carries one trailing scalar, the slot the trainer re-appends after reading the parameter
+prefix back, and it is stripped here). This compares the two UPDATES
 `Δ = θ₁ − θ₀`, not the parameters — the init cancels, so the number is about the gradient and
 nothing else.
 
@@ -27,10 +29,17 @@ SHAPES = {
 }
 
 
-def load(path, n):
+# Renders with `VerifiedNet.lossSlot`: their train step takes and returns a trailing scalar, and
+# `LEAN_MLIR_DUMP_PARAMS` writes the packed blob with it (Verified/Train.lean, the Gate G2 dump).
+LOSS_SLOT = {'mlp', 'cnn'}
+
+
+def load(path, n, slot=0):
     buf = np.fromfile(path, dtype=np.float32)
+    if slot and buf.size == n + slot:
+        return buf[:n]
     if buf.size != n:
-        print(f"FAIL  {path}: {buf.size} floats, expected {n}")
+        print(f"FAIL  {path}: {buf.size} floats, expected {n}" + (f" (or {n + slot} with the loss slot)" if slot else ""))
         sys.exit(2)
     return buf
 
@@ -44,7 +53,8 @@ def main():
         print(f"FAIL  unknown net {net!r}; known: {sorted(SHAPES)}"); sys.exit(2)
     shapes = SHAPES[net]
     n = sum(int(np.prod(s)) for _, s in shapes)
-    th0, thL, thJ = load(init_p, n), load(lean_p, n), load(jax_p, n)
+    slot = 1 if net in LOSS_SLOT else 0
+    th0, thL, thJ = load(init_p, n, slot), load(lean_p, n, slot), load(jax_p, n)
     dL, dJ = thL - th0, thJ - th0
     ok = True; worst = 0.0; idx = 0
     for name, shape in shapes:
