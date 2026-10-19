@@ -1,7 +1,7 @@
 """Retire a group of declarations by their elaborated declaration ranges.
 
     python3 scripts/audit_census/retire.py groups.json            # dry run: the cut set + citations
-    python3 scripts/audit_census/retire.py groups.json --apply    # cut, and drop their #print axioms lines
+    python3 scripts/audit_census/retire.py groups.json --apply    # cut, and drop their #audit_axioms lines
 
 groups.json is size.py's input ({"name": {"seed": [...], "follow": [...], "keep": [...]}}); the cut set is size.py's
 fixed point over all groups at once, so ranges come from the current $CENSUS_DIR graph (re-run
@@ -110,13 +110,13 @@ def main():
     ap = REPO / "tests/AuditAxioms.lean"
     out, n_rm = [], 0
     for l in ap.read_text(encoding="utf-8").split("\n"):
-        m = re.match(r"#print axioms\s+(\S+)\s*$", l)
+        m = re.match(r"#audit_axioms\s+(\S+)\s*$", l)
         if m and (m.group(1) in pins or "Proofs." + m.group(1) in pins):
             n_rm += 1
             continue
         out.append(l)
     ap.write_text("\n".join(out), encoding="utf-8")
-    print(f"applied: {len(by_file)} files; {n_rm} #print axioms lines removed")
+    print(f"applied: {len(by_file)} files; {n_rm} #audit_axioms lines removed")
 
 if __name__ == "__main__":
     main()

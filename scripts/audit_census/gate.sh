@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The full gate for a retirement batch (planning/audit_census.md):
-#   Certs -> default build -> the LeanMlir lib root -> AuditAxioms (every #print line has a verdict,
+#   Certs -> default build -> the LeanMlir lib root -> AuditAxioms (every #audit_axioms line has a verdict,
 #   all within {propext, Classical.choice, Quot.sound}) -> docstring-checkrefs -> both coverage
 #   scripts -> verified_mlir/ byte-identical. Logs in $GATE_LOG. Ends with GATE: PASS or FAIL.
 # ⚠ The default target is the Proofs lib, which does not include LeanMlir.lean: without the
@@ -26,8 +26,8 @@ v=re.findall(r"depends on axioms: \[([^\]]*)\]",t2)
 nodeps=len(re.findall(r"does not depend on any axioms",t2))
 ok={"propext","Classical.choice","Quot.sound"}
 bad=[x for x in v if not {a.strip() for a in x.split(',')} <= ok]
-pins=len(re.findall(r'^#print axioms',open('tests/AuditAxioms.lean').read(),re.M))
-print(f"audit: {len(v)+nodeps} verdicts / {pins} #print lines, {len(bad)} bad, {len(errs)} error lines")
+pins=len(re.findall(r'^#audit_axioms',open('tests/AuditAxioms.lean').read(),re.M))
+print(f"audit: {len(v)+nodeps} verdicts / {pins} #audit_axioms lines, {len(bad)} bad, {len(errs)} error lines")
 sys.exit(0 if (len(v)+nodeps==pins and not bad and not errs) else 1)
 PY
 echo "  (audit $((SECONDS-t0))s, exit $rc)"

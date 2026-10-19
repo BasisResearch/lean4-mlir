@@ -208,7 +208,7 @@ def build():
 def load_pins(consts):
     pins, unresolved = [], []
     for ln, line in enumerate((REPO / "tests/AuditAxioms.lean").read_text().splitlines(), 1):
-        m = re.match(r"#print axioms\s+(\S+)", line)
+        m = re.match(r"#audit_axioms\s+(\S+)", line)
         if not m: continue
         raw = m.group(1)
         cands = [raw, "Proofs." + raw]

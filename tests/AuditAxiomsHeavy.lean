@@ -1,3 +1,4 @@
+import tests.AxiomAudit
 import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFull
 -- (LipschitzCertScorecardSDPFull{,Uncon} imports DISABLED with their lib membership — the
 -- linarith PSD witnesses OOM the free-tier runners. Their prints below are commented out
@@ -38,33 +39,33 @@ audit. -/
 -- (core, audited in AuditAxioms) Proofs.dotZ_comm
 -- (core, audited in AuditAxioms) Proofs.sum_getD_mul
 -- (core, audited in AuditAxioms) Proofs.sum_getD_div
-#print axioms Proofs.Robustness.gSF_0_15
-#print axioms Proofs.Robustness.G1SF_eq
-#print axioms Proofs.Robustness.H1SF_eq
-#print axioms Proofs.Robustness.W1SF_lip
-#print axioms Proofs.Robustness.W2SF_lip
-#print axioms Proofs.Robustness.mlpSF_lip
-#print axioms Proofs.Robustness.G1TF_eq
-#print axioms Proofs.Robustness.W1TF_lip
-#print axioms Proofs.Robustness.mlpTF_lip
-#print axioms Proofs.Robustness.hpreSF0_eval
-#print axioms Proofs.Robustness.marginSF0
-#print axioms Proofs.Robustness.certSF10_0
-#print axioms Proofs.Robustness.certSF10_4
-#print axioms Proofs.Robustness.certSF10_7
-#print axioms Proofs.Robustness.certSF30_0
-#print axioms Proofs.Robustness.certSF30_4
-#print axioms Proofs.Robustness.certSF30_7
-#print axioms Proofs.Robustness.certTF10_0
-#print axioms Proofs.Robustness.certTF10_5
-#print axioms Proofs.Robustness.certTF10_9
-#print axioms Proofs.Robustness.certTF30_25
-#print axioms Proofs.Robustness.certTF30_71
-#print axioms Proofs.Robustness.cappedFullCerts10_certified
-#print axioms Proofs.Robustness.cappedFullCerts30_certified
-#print axioms Proofs.Robustness.unconFullCerts10_certified
-#print axioms Proofs.Robustness.unconFullCerts30_certified
-#print axioms Proofs.Robustness.scorecardFull
+#audit_axioms Proofs.Robustness.gSF_0_15
+#audit_axioms Proofs.Robustness.G1SF_eq
+#audit_axioms Proofs.Robustness.H1SF_eq
+#audit_axioms Proofs.Robustness.W1SF_lip
+#audit_axioms Proofs.Robustness.W2SF_lip
+#audit_axioms Proofs.Robustness.mlpSF_lip
+#audit_axioms Proofs.Robustness.G1TF_eq
+#audit_axioms Proofs.Robustness.W1TF_lip
+#audit_axioms Proofs.Robustness.mlpTF_lip
+#audit_axioms Proofs.Robustness.hpreSF0_eval
+#audit_axioms Proofs.Robustness.marginSF0
+#audit_axioms Proofs.Robustness.certSF10_0
+#audit_axioms Proofs.Robustness.certSF10_4
+#audit_axioms Proofs.Robustness.certSF10_7
+#audit_axioms Proofs.Robustness.certSF30_0
+#audit_axioms Proofs.Robustness.certSF30_4
+#audit_axioms Proofs.Robustness.certSF30_7
+#audit_axioms Proofs.Robustness.certTF10_0
+#audit_axioms Proofs.Robustness.certTF10_5
+#audit_axioms Proofs.Robustness.certTF10_9
+#audit_axioms Proofs.Robustness.certTF30_25
+#audit_axioms Proofs.Robustness.certTF30_71
+#audit_axioms Proofs.Robustness.cappedFullCerts10_certified
+#audit_axioms Proofs.Robustness.cappedFullCerts30_certified
+#audit_axioms Proofs.Robustness.unconFullCerts10_certified
+#audit_axioms Proofs.Robustness.unconFullCerts30_certified
+#audit_axioms Proofs.Robustness.scorecardFull
 
 -- Per-pair LipSDP on the FULL-INPUT nets (LipschitzCertScorecardSDPFull{,Uncon}.lean):
 -- the tighter-constant pass at 784-dim input, both radii (measured counts against the PGD
@@ -76,20 +77,20 @@ audit. -/
 -- aggregates state only those.
 -- Spot-check: one pair chain (slack + squared bound), a reverse-order wrapper,
 -- first/middle/last per-image certs at both radii, and the aggregates.
--- #print axioms Proofs.Robustness.hS01SF  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.pairSqSF_0_1  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.pairSqSF_1_0  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.certifiedSSF10_0  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.certifiedSSF30_3  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.certifiedSSF10_7  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.certifiedSTF10_3  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.certifiedSTF30_7  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.sdpCappedFullCerts10_certified  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.sdpCappedFullCerts30_certified  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.sdpUnconFullCerts10_certified  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.sdpUnconFullCerts30_certified  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.scorecard_sdp_full  -- CI-disabled with the SDP lib membership
--- #print axioms Proofs.Robustness.scorecard_sdp_full_uncon  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.hS01SF  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.pairSqSF_0_1  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.pairSqSF_1_0  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.certifiedSSF10_0  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.certifiedSSF30_3  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.certifiedSSF10_7  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.certifiedSTF10_3  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.certifiedSTF30_7  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.sdpCappedFullCerts10_certified  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.sdpCappedFullCerts30_certified  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.sdpUnconFullCerts10_certified  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.sdpUnconFullCerts30_certified  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.scorecard_sdp_full  -- CI-disabled with the SDP lib membership
+-- #audit_axioms Proofs.Robustness.scorecard_sdp_full_uncon  -- CI-disabled with the SDP lib membership
 
 -- IBP L∞ scorecard (IntervalBound.lean + LipschitzCertScorecardIBP{,Uncon}.lean):
 -- the third certificate axis — exact interval bound propagation, pixel-L∞
@@ -111,12 +112,12 @@ audit. -/
 -- (azSF0 and the other raw absSumZ kernel facts are propext-ONLY — stricter
 -- than the triple but they'd trip the exact-triple grep; audited transitively
 -- via absrowSF below.)
-#print axioms Proofs.Robustness.absrowSF
-#print axioms Proofs.Robustness.hbSFe1_0
-#print axioms Proofs.Robustness.certIBPSFe1_0
-#print axioms Proofs.Robustness.certIBPSFe8_0
-#print axioms Proofs.Robustness.ibpCappedCertse1_certified
-#print axioms Proofs.Robustness.ibpCappedCertse8_certified
+#audit_axioms Proofs.Robustness.absrowSF
+#audit_axioms Proofs.Robustness.hbSFe1_0
+#audit_axioms Proofs.Robustness.certIBPSFe1_0
+#audit_axioms Proofs.Robustness.certIBPSFe8_0
+#audit_axioms Proofs.Robustness.ibpCappedCertse1_certified
+#audit_axioms Proofs.Robustness.ibpCappedCertse8_certified
 
 -- CROWN, the SAME nets/subset/ε grid as the IBP tier above — a new COLUMN in
 -- that table (measured counts: the generated header). Each emitted image is proved at the
@@ -126,19 +127,19 @@ audit. -/
 -- `absSumZ (combZ …)` kernel facts are propext-ONLY (stricter than the triple,
 -- but they would trip the exact-triple grep); they are audited transitively via
 -- the `hl1*` wrappers and the certificates below.
-#print axioms Proofs.Robustness.hWSF
-#print axioms Proofs.Robustness.hl1SFe8_0_0
-#print axioms Proofs.Robustness.hrelSFe8_0
-#print axioms Proofs.Robustness.hcertSFe8_0
-#print axioms Proofs.Robustness.certCRSFe8_0
-#print axioms Proofs.Robustness.certCRSFe1_0
-#print axioms Proofs.Robustness.certCRSFe8_7
-#print axioms Proofs.Robustness.crownCappedCertse1_certified
-#print axioms Proofs.Robustness.crownCappedCertse8_certified
-#print axioms Proofs.Robustness.scorecard_crown
-#print axioms Proofs.Robustness.scorecard_crown_uncon
-#print axioms Proofs.Robustness.scorecard_ibp
-#print axioms Proofs.Robustness.scorecard_ibp_uncon
+#audit_axioms Proofs.Robustness.hWSF
+#audit_axioms Proofs.Robustness.hl1SFe8_0_0
+#audit_axioms Proofs.Robustness.hrelSFe8_0
+#audit_axioms Proofs.Robustness.hcertSFe8_0
+#audit_axioms Proofs.Robustness.certCRSFe8_0
+#audit_axioms Proofs.Robustness.certCRSFe1_0
+#audit_axioms Proofs.Robustness.certCRSFe8_7
+#audit_axioms Proofs.Robustness.crownCappedCertse1_certified
+#audit_axioms Proofs.Robustness.crownCappedCertse8_certified
+#audit_axioms Proofs.Robustness.scorecard_crown
+#audit_axioms Proofs.Robustness.scorecard_crown_uncon
+#audit_axioms Proofs.Robustness.scorecard_ibp
+#audit_axioms Proofs.Robustness.scorecard_ibp_uncon
 
 -- CONVOLUTIONAL IBP instance (Certificates/IbpConvScorecard/Basic.lean, engine
 -- Proofs.Certificates.IntervalBoundConv.Basic): the first certificate in the repo covering a
@@ -150,11 +151,11 @@ audit. -/
 -- exact-ℚ checker (Proofs.Certificates.IntervalBoundConv.Q); the smaller radii are
 -- `CertifiedAtLinf3.mono` corollaries. Spot-check: the net's box-soundness chain, the
 -- checker's soundness and its instance, and the four aggregates.
-#print axioms Proofs.IBP.ConvNet.net_boxSound
-#print axioms Proofs.IBP.convNetCheckQ_sound
-#print axioms Proofs.IBP.ConvNet.net_certified_of_check
-#print axioms Proofs.IBP.ConvNet.certsE1_certified
-#print axioms Proofs.IBP.ConvNet.certsE2_certified
-#print axioms Proofs.IBP.ConvNet.certsE4_certified
-#print axioms Proofs.IBP.ConvNet.certsE8_certified
-#print axioms Proofs.IBP.ConvNet.scorecard_ibp_conv
+#audit_axioms Proofs.IBP.ConvNet.net_boxSound
+#audit_axioms Proofs.IBP.convNetCheckQ_sound
+#audit_axioms Proofs.IBP.ConvNet.net_certified_of_check
+#audit_axioms Proofs.IBP.ConvNet.certsE1_certified
+#audit_axioms Proofs.IBP.ConvNet.certsE2_certified
+#audit_axioms Proofs.IBP.ConvNet.certsE4_certified
+#audit_axioms Proofs.IBP.ConvNet.certsE8_certified
+#audit_axioms Proofs.IBP.ConvNet.scorecard_ibp_conv

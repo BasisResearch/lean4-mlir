@@ -7,8 +7,8 @@
 # scorecard files they import, or their generator (`lipschitz_cert_pair_sdp_full.py`).
 #
 # It builds the two modules ONE AT A TIME (~3 min and ~15 GB peak each, measured 2026-09-26),
-# then prints `#print axioms` for every public theorem in both files and fails unless each rests
-# on a subset of {propext, Classical.choice, Quot.sound}. Needs ~16 GB free; not for a laptop.
+# then runs `#audit_axioms` (tests/AxiomAudit.lean) on every public theorem in both files, which
+# fails unless each rests on a subset of {propext, Classical.choice, Quot.sound}. Needs ~16 GB free; not for a laptop.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 D=LeanMlir/Proofs/Certificates/LipschitzCert
@@ -20,6 +20,7 @@ done
 tmp=$(mktemp --suffix=.lean)
 trap 'rm -f "$tmp"' EXIT
 {
+  echo "import tests.AxiomAudit"
   echo "import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardSDPFullUncon"
   for f in "$D/ScorecardSDPFull.lean" "$D/ScorecardSDPFullUncon.lean"; do
     python3 - "$f" <<'EOF'
@@ -31,12 +32,16 @@ for line in open(sys.argv[1]):
     elif (m := re.match(r"^end (\S+)", line)) and ns and ns[-1] == m.group(1):
         ns.pop()
     elif m := re.match(r"^theorem (\S+)", line):
-        print(f"#print axioms {'.'.join(ns + [m.group(1)])}")
+        print(f"#audit_axioms {'.'.join(ns + [m.group(1)])}")
 EOF
   done
 } > "$tmp"
-n=$(grep -c '^#print' "$tmp")
-out=$(lake env lean "$tmp" 2>&1 | sed ':a;N;$!ba;s/,\n /, /g')
+n=$(grep -c '^#audit_axioms' "$tmp")
+if ! out=$(lake env lean "$tmp" 2>&1 | sed ':a;N;$!ba;s/,\n /, /g'); then
+  echo "$out" | grep -E 'error' | head -20
+  echo "✗ SDPFull axiom audit: the errors above (an axiom outside the three, or an unresolved name)" >&2
+  exit 1
+fi
 bad=$(echo "$out" | grep -E 'depends on axioms|error|sorry' \
       | grep -vE "depends on axioms: \[(propext|Classical\.choice|Quot\.sound)(, (propext|Classical\.choice|Quot\.sound))*\]" || true)
 if [ -n "$bad" ]; then

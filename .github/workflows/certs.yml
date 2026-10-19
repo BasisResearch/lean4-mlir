@@ -16,6 +16,7 @@ on:
       - 'LeanMlir/Proofs/**'
       - 'LeanMlir.lean'   # the root module: every lib imports it, `LeanMlir/**` does not match it
       - 'tests/AuditAxioms.lean'
+      - 'tests/AxiomAudit.lean'
       - 'lakefile.lean'
       - 'lean-toolchain'
       - 'lake-manifest.json'
@@ -44,6 +45,7 @@ on:
       - 'Bestiary/**'
       - 'LeanMlir/Spec.lean'
       # The `#guard` scripts step below runs these by `lake env lean`.
+      - 'tests/TestAxiomAudit.lean'
       - 'tests/TestVariantPredicates.lean'
       - 'tests/TestDropPathRamp.lean'
       - 'tests/TestBatchedEmitTie.lean'
@@ -55,6 +57,7 @@ on:
       - 'LeanMlir/Proofs/**'
       - 'LeanMlir.lean'   # the root module: every lib imports it, `LeanMlir/**` does not match it
       - 'tests/AuditAxioms.lean'
+      - 'tests/AxiomAudit.lean'
       - 'lakefile.lean'
       - 'lean-toolchain'
       - 'lake-manifest.json'
@@ -80,6 +83,7 @@ on:
       - 'Bestiary/**'
       - 'LeanMlir/Spec.lean'
       # The `#guard` scripts step below runs these by `lake env lean`.
+      - 'tests/TestAxiomAudit.lean'
       - 'tests/TestVariantPredicates.lean'
       - 'tests/TestDropPathRamp.lean'
       - 'tests/TestBatchedEmitTie.lean'
@@ -160,61 +164,23 @@ jobs:
       - name: Three-axiom closure check
         run: |
           set -e
-          # The sed join collapses Lean's wrapped (multi-line) axiom lists back to one
-          # line first — long theorem names otherwise break the per-line grep.
-          # ⚠⚠ `pipefail` is LOAD-BEARING, and its absence was a silent false green.
-          # `lake env lean` exits 1 when a `#print axioms` names a constant that does not
-          # exist, but a pipeline reports only the LAST command's status — `sed`'s, always
-          # 0 — so the failure was swallowed whole. The counting below could not see it
-          # either: an elaboration error emits no "depends on axioms:" line, so the decl
-          # simply vanished from the audit and `total` still equalled `ok`.
-          # `Proofs.dw_sum_pair` was audited against a constant that never existed from
-          # 2026-08-24 and this workflow reported success for eight days.
+          # `#audit_axioms` (tests/AxiomAudit.lean) is `#print axioms` that ERRORS outside
+          # {propext, Classical.choice, Quot.sound} and on a name that does not resolve, so the exit
+          # code of `lake env lean` is the whole gate. (Before it, this step grepped `#print axioms`
+          # output, and a pipeline that dropped the exit code reported `Proofs.dw_sum_pair`, a
+          # constant that never existed, green for eight days from 2026-08-24.)
+          # The sed join collapses Lean's wrapped axiom lists to one line, for the counts below
+          # and the scorecard's `faithful` lookups.
+          lake build tests.AxiomAudit
           set -o pipefail
           if ! out=$(lake env lean tests/AuditAxioms.lean 2>&1 | sed ':a;N;$!ba;s/,\n /, /g'); then
-            echo "::error::tests/AuditAxioms.lean failed to elaborate — a #print axioms almost certainly names a constant that does not exist:"
-            echo "$out" | grep -iE "error|unknown" | head -20
+            echo "::error::tests/AuditAxioms.lean failed — a decl leaves the three-axiom closure, or an #audit_axioms names a constant that does not exist:"
+            echo "$out" | grep -E "error" | head -20
             exit 1
           fi
-          # SUBSET of the three, any order — not the exact string: a toolchain bump
-          # can constructivize a dependency and shrink a decl's list (Lean 4.32
-          # dropped Classical.choice from dotZ_comm), which is cleaner, not a leak.
           AX3='(propext|Classical\.choice|Quot\.sound)'
-          OK_RE="depends on axioms: \[$AX3(, $AX3)*\]\$"
-          total=$(echo "$out" | grep -c "depends on axioms:" || true)
-          ok=$(echo "$out" | grep -cE "$OK_RE" || true)
-
-          echo "Total #print axioms lines:        $total"
-          echo "Lines matching {propext, Classical.choice, Quot.sound}: $ok"
-
-          # Second belt, independent of the exit code: every `#print axioms` directive must
-          # produce a verdict. Self-maintaining — the expected count is read from the file,
-          # so adding a theorem needs no edit here, while a directive that elaborates to
-          # nothing is caught even if Lean somehow exits 0.
-          # ⚠ Count BOTH verdicts. Lean prints "does not depend on any axioms" for a decl
-          # that is axiom-FREE — a stronger result than the three, and two decls in this
-          # corpus are — and that line does not contain "depends on axioms:". Counting only
-          # the latter makes this gate fail on the good case.
-          emitted=$(echo "$out" | grep -cE "^'.*' (depends on axioms:|does not depend on any axioms)" || true)
-          expected=$(grep -c '^#print axioms' tests/AuditAxioms.lean)
-          if [ "$emitted" -ne "$expected" ]; then
-            echo "::error::tests/AuditAxioms.lean has $expected #print axioms directives but only $emitted produced a verdict — some elaborated to nothing:"
-            echo "$out" | grep -iE "error|unknown" | head -20
-            exit 1
-          fi
-
-          if [ "$total" -eq 0 ]; then
-            echo "::error::tests/AuditAxioms.lean produced no #print axioms output"
-            echo "$out"
-            exit 1
-          fi
-
-          if [ "$total" -ne "$ok" ]; then
-            echo "::error::Some theorems depend on axioms outside [propext, Classical.choice, Quot.sound]:"
-            echo "$out" | grep "depends on axioms:" \
-              | grep -vE "$OK_RE" || true
-            exit 1
-          fi
+          total=$(echo "$out" | grep -cE "^'.*' (depends on axioms:|does not depend on any axioms)" || true)
+          echo "#audit_axioms verdicts: $total"
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Three-Axiom Closure" >> $GITHUB_STEP_SUMMARY
@@ -281,15 +247,15 @@ jobs:
           echo "✅ **All apps/ + demos/ entry points elaborate** (\`lake build Apps\`)" >> $GITHUB_STEP_SUMMARY
 
       - name: "#guard scripts (lake env lean tests/…)"
-        # tests/ files that are `#guard` / `#eval` gates rather than lake exes, each named as the
-        # authority by a docstring, the lakefile or a gate script: the variant-predicate table
+        # tests/ files that are `#guard` / `#guard_msgs` / `#eval` gates rather than lake exes, each named as the
+        # authority by a docstring, the lakefile or a gate script: the `#audit_axioms` negative control, the variant-predicate table
         # (gen_mlir_manifest.py reads it), the drop-path ramp, the batched-emit text tie, R50's
         # layout contract, and the XLA-SAME pad known answers. A failing `#guard`, or a `throw`
         # under `#eval`, is an elaboration error, so `lake env lean` exits non-zero.
         # TestXlaPadOps also writes probe modules under .lake/build for the manual IREE check
         # (scripts/gates/xla_pad_op_check.py); only its guards are gated here.
         run: |
-          lake build LeanMlir LeanMlir.Verified.Train LeanMlir.Verified.NetsCore \
+          lake build tests.AxiomAudit LeanMlir LeanMlir.Verified.Train LeanMlir.Verified.NetsCore \
             LeanMlir.Proofs.Codegen.StableHLO.Pretty LeanMlir.Proofs.Codegen.ResNet50RenderB \
             LeanMlir.Proofs.Codegen.EfficientNetRender.Basic LeanMlir.Proofs.Codegen.ConvNeXtRenderB \
             LeanMlir.Proofs.Codegen.ViTRenderB
@@ -299,7 +265,7 @@ jobs:
             echo ""
           } >> $GITHUB_STEP_SUMMARY
           rc=0
-          for t in TestVariantPredicates TestDropPathRamp TestBatchedEmitTie TestSmallNetsBatchedEmit TestR50Contract TestXlaPadOps; do
+          for t in TestAxiomAudit TestVariantPredicates TestDropPathRamp TestBatchedEmitTie TestSmallNetsBatchedEmit TestR50Contract TestXlaPadOps; do
             if lake env lean tests/$t.lean > /tmp/$t.log 2>&1; then
               echo "✅ \`tests/$t.lean\`" >> $GITHUB_STEP_SUMMARY
             else

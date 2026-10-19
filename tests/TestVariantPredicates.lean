@@ -704,13 +704,10 @@ private def erfSpellings : List String :=
 
 -- THE GELU-FORM WORLD CHECK, run on the committed artifacts. For every ImageNet ViT / ConvNeXt
 -- train step, at both forms, the forward the driver resolves (the variant's own, else `fwdStem`)
--- exists and `checkGeluWorld` accepts the pair; and the three mixed readings are refused: an exact
--- train step scored through the tanh forward, a tanh train step through the exact forward, and an
--- `erf` name on a tanh train step.
+-- exists and `checkGeluWorld` accepts the pair. The three mixed readings it must refuse follow,
+-- each pinned to its refusal by `#guard_msgs`.
 #eval show IO Unit from do
   let dir := "verified_mlir"
-  let refused (act : IO Unit) : IO Bool := do
-    try act; pure false catch _ => pure true
   let mut pairs := 0
   let mut erfs := 0
   for slug in ["vitin", "vitsin", "vitbin", "convnextin", "convnextsin", "convnextbin"] do
@@ -726,19 +723,37 @@ private def erfSpellings : List String :=
         checkGeluWorld variant s!"{dir}/{f}" fwd
         pairs := pairs + 1
         if erfOn variant then erfs := erfs + 1
-  let ts (v : String) := s!"{dir}/convnextin_{v}_train_step.mlir"
-  let mixed ← [
-      checkGeluWorld "emadpwxclipdroperfbf16" (ts "emadpwxclipdroperfbf16") s!"{dir}/convnextin_fwd.mlir",
-      checkGeluWorld "emadpwxclipdropbf16" (ts "emadpwxclipdropbf16") s!"{dir}/convnextin_erf_fwd.mlir",
-      checkGeluWorld "emadpwxclipdroperfbf16" (ts "emadpwxclipdropbf16") s!"{dir}/convnextin_erf_fwd.mlir"
-    ].mapM refused
-  unless mixed.all id do
-    throw <| IO.userError s!"checkGeluWorld accepted a mixed pair: refusals {mixed}"
   -- 59 at each form since ViT-S's and ViT-B's max-shifted-softmax pairs
   -- (`vit{s,b}in_…eps0000001smx{erf,}bf16`, 2026-10-14), after Ti's 57 (the same day), after ConvNeXt's official-batch pairs' 56 (2026-10-12), the ViT-S / ViT-B
   -- DeiT-recipe pairs' 53 (2026-10-11) and Ti's 51; a new ImageNet ViT / ConvNeXt render lands with
   -- its twin, so the two counts stay equal.
   unless pairs == 118 && erfs == 59 do
     throw <| IO.userError s!"{pairs} train steps paired ({erfs} erf, {pairs - erfs} tanh), expected 118 (59 at each form)"
-  IO.println s!"✓ checkGeluWorld: {pairs} train steps ({erfs} erf, {pairs - erfs} tanh) score through a forward at their own form; \
-3 mixed pairs refused"
+  IO.println s!"✓ checkGeluWorld: {pairs} train steps ({erfs} erf, {pairs - erfs} tanh) score through a forward at their own form"
+
+-- The three mixed pairs, each refused, and refused by the artifact that is wrong. (A Bool
+-- `try … catch _ => true` counted ANY throw as the refusal; these pin which reading disagreed.)
+-- An exact train step scored through the tanh forward:
+/-- error: GELU-FORM MISMATCH — refusing to train or score a different net.
+variant    emadpwxclipdroperfbf16 : `erf` marker, the exact GELU
+forward    verified_mlir/convnextin_fwd.mlir : no exact GELU
+An `…erf…` variant scores through `<slug>_<variant>_fwd.mlir` or `<slug>_erf_fwd.mlir`; any other through `<slug>_<variant>_fwd.mlir` or `<slug>_fwd.mlir`. -/
+#guard_msgs in
+#eval checkGeluWorld "emadpwxclipdroperfbf16"
+  "verified_mlir/convnextin_emadpwxclipdroperfbf16_train_step.mlir" "verified_mlir/convnextin_fwd.mlir"
+-- a tanh train step through the exact forward:
+/-- error: GELU-FORM MISMATCH — refusing to train or score a different net.
+variant    emadpwxclipdropbf16 : no `erf` marker, not the exact GELU
+forward    verified_mlir/convnextin_erf_fwd.mlir : the exact GELU (chlo.erfc)
+An `…erf…` variant scores through `<slug>_<variant>_fwd.mlir` or `<slug>_erf_fwd.mlir`; any other through `<slug>_<variant>_fwd.mlir` or `<slug>_fwd.mlir`. -/
+#guard_msgs in
+#eval checkGeluWorld "emadpwxclipdropbf16"
+  "verified_mlir/convnextin_emadpwxclipdropbf16_train_step.mlir" "verified_mlir/convnextin_erf_fwd.mlir"
+-- and an `erf` name on a tanh train step, refused at the TRAIN STEP before the (exact) forward:
+/-- error: GELU-FORM MISMATCH — refusing to train or score a different net.
+variant    emadpwxclipdroperfbf16 : `erf` marker, the exact GELU
+train step verified_mlir/convnextin_emadpwxclipdropbf16_train_step.mlir : no exact GELU
+An `…erf…` variant scores through `<slug>_<variant>_fwd.mlir` or `<slug>_erf_fwd.mlir`; any other through `<slug>_<variant>_fwd.mlir` or `<slug>_fwd.mlir`. -/
+#guard_msgs in
+#eval checkGeluWorld "emadpwxclipdroperfbf16"
+  "verified_mlir/convnextin_emadpwxclipdropbf16_train_step.mlir" "verified_mlir/convnextin_erf_fwd.mlir"

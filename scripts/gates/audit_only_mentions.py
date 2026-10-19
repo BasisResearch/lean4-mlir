@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Report the declarations whose only consumer is the axiom audit.
 
-`tests/AuditAxioms.lean` (and `AuditAxiomsHeavy.lean`) `#print axioms` a declaration, which keeps
+`tests/AuditAxioms.lean` (and `AuditAxiomsHeavy.lean`) `#audit_axioms` a declaration, which keeps
 it compiled and axiom-clean but is not a use: a theorem nothing cites, that is absent from the
 book, `formalization.yaml`, the comparator and the READMEs, can sit there indefinitely. This
 lists every audited declaration whose only mention outside its defining file is an AuditAxioms
@@ -45,7 +45,7 @@ DECL = re.compile(
     r"(?:theorem|lemma|def|abbrev|instance|structure|inductive|class|opaque|axiom)\s+"
     r"([^\s:({\[]+)", re.M)
 IDENT = re.compile(r"[\w'!?.]+")
-PRINT = re.compile(r"^#print\s+axioms\s+(\S+)", re.M)
+PRINT = re.compile(r"^#audit_axioms\s+(\S+)", re.M)
 
 
 def tracked() -> list[str]:
@@ -58,7 +58,7 @@ def last(name: str) -> str:
     return name.rstrip(".").split(".")[-1].lstrip("«").rstrip("»")
 
 
-ROOTCMD = re.compile(r"^(?:#guard|#eval|#check|#print|#reduce|example\b|run_cmd|run_meta)", re.M)
+ROOTCMD = re.compile(r"^(?:#guard|#eval|#check|#print|#audit_axioms|#reduce|example\b|run_cmd|run_meta)", re.M)
 
 
 def idents(text: str) -> set[str]:

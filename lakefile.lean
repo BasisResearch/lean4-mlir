@@ -364,7 +364,7 @@ lean_lib «Apps» where
     numeric reference. Build it before running those scripts. -/
 lean_lib «TestSupport» where
   srcDir := "."
-  roots := #[`tests.ViTRender]
+  roots := #[`tests.ViTRender, `tests.AxiomAudit]
 
 /-- **`lake comparator --config tests/comparator/<config>.json`** — the three challenge/solution
     pairs (`tests/comparator/README.md`). They live in the ROOT package, not a nested one:
