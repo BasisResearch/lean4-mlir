@@ -325,10 +325,11 @@ after `tab:r50_paths` say both halves rerun.
       trainers only `generated_resnet34_imagenet{,_short}.py` (BN 0.9, 16 zero-γ inits, `WD_MASK`)
       and `generated_resnet50_imagenet_2018.py` (`WD_MASK` alone) moved; both checks clean; full
       `lake build` + `TestVariantPredicates` green.
-- [ ] `lake build resnet34-imagenet-verified resnet50-imagenet-verified` on the GPU box before launch
-      (the prechecks refuse a binary older than the app files). Built on atlas 2026-10-19; the GPU
-      box builds its own.
-- [ ] Launch, the user's word: `r34-default-jax-4gpu` + `r34-default-bf16-4gpu` (~13 + 21 h),
+- [x] R34 on ares, 2026-10-20: `resnet34-imagenet-verified` built, both DRY_RUN prechecks green, 50-step
+      smokes on both halves (`runs/2026-10-20-r34-bot-{verified,jax}-smoke/`); the verified conf moved
+      to Arm B (respawn every 10 epochs, the user's call). R50-2018's exe still to build.
+- [ ] Launch, the user's word: `r34-default-jax-4gpu` + `r34-default-bf16-4gpu` (~13 + 21 h) — R34
+      LAUNCHED 2026-10-20 on ares (the user), JAX then verified, `runs/2026-10-20-r34-bot-jax/queue.sh`;
       `r50-2018-jax-4gpu` + `r50-2018-bf16-4gpu` (~22 + 29 h). Fresh RUNDIRs. Then both pairs' rows
       and numbers in ch 5 move together.
 

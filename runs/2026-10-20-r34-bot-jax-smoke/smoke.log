@@ -1,0 +1,17 @@
+ResNet-34 (ImageNet) · Lean 4 → JAX
+  Conv(3→64,7x7/2)+BN → Pool(3x3) → Res3(64→64,s1) → Res4(64→128,s2) → Res6(128→256,s2) → Res3(256→512,s2) → GAP → 512→1000
+
+ImageNet (1000-class) — tfds streaming pipeline
+lr=0.100000  batch_size=256 (4 devices x 64)  epochs=1  params=21797672
+steps_per_epoch=50  total_steps=50
+backend=gpu  devices=[CudaDevice(id=0), CudaDevice(id=1), CudaDevice(id=2), CudaDevice(id=3)]
+Starting training...
+E1020 18:21:05.400554 2300314 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1020 18:21:06.066562 2300314 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+  Running validation ...
+[Epoch 1] lr=0.02 loss(train_avg)=6.958 val_top1=87/50000 (0.0017) val_top5=0.0077 val_loss=6.9473  [21.7s train, 15.8s val]
+saved 37 param-groups to /home/skoonce/r34_bot_smoke/resnet34_imagenet.bin (87190688 bytes)
+  saved full train state -> /home/skoonce/r34_bot_smoke/resnet34_imagenet.state.npz (292 arrays, step=50)
+
+Done. Total time: 37.8s
+exit 0

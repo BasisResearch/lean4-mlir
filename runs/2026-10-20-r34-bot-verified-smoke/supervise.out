@@ -1,0 +1,131 @@
+box=ares plugin=.venv/lib/python3.12/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so python=.venv/bin/python3
+⚠ other resnet34in checkpoints present — they must NOT be resumed into this run:
+   .lake/build/resnet34in_mom256_ckpt_xla_q1.bin
+   .lake/build/resnet34in_mom256_ckpt_xla_q3.bin
+   .lake/build/resnet34in_mom256_ckpt_xla_q4.bin
+   .lake/build/resnet34in_mom256_ckpt_xla_r1.bin
+   .lake/build/resnet34in_mom256_ckpt_xla_r2.bin
+   .lake/build/resnet34in_momdp64_ckpt_xla.bin
+   .lake/build/resnet34in_momdp64_ckpt_xla_q9.bin
+[sup] 2026-10-20 18:18:59 START job=r34-default-bf16-4gpu devs=0,1,2,3 epochs=90 rest_after=[none] temp_max=78 stall=1800s logs=/home/skoonce/lean/klawd_max_power/lean4-jax-mlir/runs/2026-10-20-r34-bot-verified-smoke
+[sup] 2026-10-20 18:18:59 cmd: .lake/build/bin/resnet34-imagenet-verified data
+[sup] 2026-10-20 18:18:59 eta: bf16 ~21.4 h on 4x 3060 (163 ms/step mean at SHIM_WORKERS=4, no stall tail; +~5% eval/ckpt; 90 ep)
+[sup] 2026-10-20 18:18:59 ONCE — one foreground run, no restart policy
+I1020 18:19:00.412420 2296167 service.cc:154] XLA service 0x70a3680517d0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1020 18:19:00.412476 2296167 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 18:19:00.412492 2296167 service.cc:170]   StreamExecutor [1]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 18:19:00.412499 2296167 service.cc:170]   StreamExecutor [2]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 18:19:00.412510 2296167 service.cc:170]   StreamExecutor [3]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 18:19:00.415188 2296167 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1020 18:19:00.415230 2296167 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 0 for BFCAllocator.
+I1020 18:19:00.415278 2296167 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 1 for BFCAllocator.
+I1020 18:19:00.415297 2296167 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 2 for BFCAllocator.
+I1020 18:19:00.415318 2296167 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 3 for BFCAllocator.
+I1020 18:19:00.425193 2296167 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 4 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+E1020 18:19:04.265402 2296231 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+I1020 18:19:04.381094 2296228 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 4 bytes spill stores, 4 bytes spill loads
+
+E1020 18:19:04.939477 2296231 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1020 18:19:06.165320 2296231 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+I1020 18:19:07.671645 2296229 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 800 bytes spill stores, 800 bytes spill loads
+
+I1020 18:19:07.731854 2296237 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_6', 132 bytes spill stores, 72 bytes spill loads
+
+I1020 18:19:07.835750 2296231 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_6', 8 bytes spill stores, 8 bytes spill loads
+
+I1020 18:19:08.538556 2296234 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 44 bytes spill stores, 44 bytes spill loads
+
+I1020 18:19:14.378735 2296215 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'input_convert_reduce_fusion_13', 10 bytes spill stores, 8 bytes spill loads
+
+I1020 18:19:14.407117 2296222 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'input_convert_reduce_fusion_5', 28 bytes spill stores, 20 bytes spill loads
+
+I1020 18:19:14.437318 2296213 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'input_reduce_select_fusion_11', 32 bytes spill stores, 16 bytes spill loads
+
+I1020 18:19:14.437454 2296229 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'input_convert_reduce_fusion_9', 20 bytes spill stores, 12 bytes spill loads
+
+I1020 18:19:14.470049 2296226 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'input_reduce_select_fusion_10', 28 bytes spill stores, 12 bytes spill loads
+
+[pjrt_ffi] compiled verified_mlir/resnet34in_momdp64wxbf16_train_step.mlir (@resnet34in_momdp64wxbf16_train_step, 405 outputs, 4 replicas) in 14243 ms
+I1020 18:19:15.303036 2296223 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_1', 48 bytes spill stores, 48 bytes spill loads
+
+I1020 18:19:15.574178 2296239 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_1', 832 bytes spill stores, 832 bytes spill loads
+
+[pjrt_ffi] compiled verified_mlir/resnet34in_fwd.mlir (@resnet34in_fwd, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 5056 ms
+[pjrt_ffi] compiled verified_mlir/resnet34in_fwd_eval.mlir (@resnet34in_fwd_eval, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 229 ms
+ResNet-34 on full 1000-class ImageNet via the VERIFIED renderer → XLA/PJRT → GPU, with the tfds batch shim supplying the same augmentation the Lean→JAX reference trainer uses
+  xla/pjrt verified_mlir/resnet34in_momdp64wxbf16_train_step.mlir
+  xla/pjrt verified_mlir/resnet34in_fwd.mlir  (eval, SHARDED over 4 replicas)
+  xla/pjrt verified_mlir/resnet34in_fwd_eval.mlir  (eval, SHARDED over 4 replicas)
+  imagenet: val streams per pass (50,000 images at eval width 150528) — nothing is held
+  train 1281167, test 50000; bs 64, ResNet-34 (ImageNet-1k) momdp64wxbf16 (cosine+warmup 5ep, baseLR 0.100000), He init
+  eval batch 256 (the batch @resnet34in_fwd_eval was RENDERED at) != train batch 64 — sound because eval is class-batch-independent
+  running-stats BN: 36 layers, 17024 stat floats → eval via @resnet34in_fwd_eval
+     decay 0.900000 (TF sense; = PyTorch/timm momentum 0.100000), new-batch weight 0.100000
+  DATA-PARALLEL: 4 replicas x bs 64 = global batch 256, 50 steps/epoch
+  EVAL SHARDED: 4 replicas x 256 = 1024 test images per invoke, 49 invokes, last one 848 real + 176 pad
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792520360.698031 2297482 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792520362.881117 2297621 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792520363.554795 2297627 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792520366.009935 2297838 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792520366.672748 2297840 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792520369.084693 2298118 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792520369.737788 2298132 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792520372.190455 2298350 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @resnet34in_momdp64wxbf16_train_step holds 330 parameter tensors (249.5 MB) on 4 devices; they stop crossing PCIe from here
+I1020 18:19:34.267969 2296201 cuda_dnn.cc:440] Loaded cuDNN version 92302
+I1020 18:19:34.268064 2296207 cuda_dnn.cc:440] Loaded cuDNN version 92302
+I1020 18:19:34.268113 2296204 cuda_dnn.cc:440] Loaded cuDNN version 92302
+  ▸ INIT: zero-γ on 16 residual-closing BNs (the JAX reference's zero_init_last)
+  imagenet shim: jax/.lake/build/generated_resnet34_imagenet_shim.py — train split, batch 256, 150528 floats/img (seed 1)
+  imagenet shim: jax/.lake/build/generated_resnet34_imagenet_shim.py — train split, batch 256, 150528 floats/img (seed 2)
+  imagenet shim: jax/.lake/build/generated_resnet34_imagenet_shim.py — train split, batch 256, 150528 floats/img (seed 3)
+  imagenet shim: jax/.lake/build/generated_resnet34_imagenet_shim.py — train split, batch 256, 150528 floats/img (seed 4)
+  imagenet shim: 4 sharded producers (round-robin over batches)
+  ▸ SHIM PREFETCH: ON (depth 4 over 4 producer handle(s) — each step's read is issued before the previous step's invoke, one in flight PER HANDLE, so every producer drains during compute instead of blocking in write()). Measured 377 → 224 ms/step on R34/ImageNet 4×bs64 for depth 1. Batch buffers are allocated and freed on the main thread; the pool only fills them.
+  step 0/50: loss=6.931895
+  step 1/50: loss=6.978157
+  step 2/50: loss=6.988138
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792520383.067533 2298896 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792520385.074887 2299039 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792520385.660763 2299114 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792520387.720029 2299262 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @resnet34in_fwd_eval holds 182 parameter tensors (83.2 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 1/90: loss=6.959228 lr=0.020000
+  imagenet shim: jax/.lake/build/generated_resnet34_imagenet_shim.py — validation split, batch 256, 150528 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_resnet34_imagenet_shim.py — validation split, batch 256, 150528 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 1: test_acc = 113/50000 = 0.226000%  top5 = 416/50000 = 0.832000%  [95% CI 0.19–0.27]
+    BN companion -> .lake/build/resnet34in_momdp64wxbf16_ckpt_xla_bot.bin.bn (17024 floats x 2, hash 5495550215409797397)
+  step 0/50: loss=6.866488
+  step 1/50: loss=6.905240
+  step 2/50: loss=6.898229
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792520429.529214 2299410 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792520431.520575 2299551 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792520432.210230 2299626 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792520434.213881 2299767 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @resnet34in_fwd_eval holds 182 parameter tensors (83.2 MB) on 4 devices; they stop crossing PCIe from here
+supervisor exit 143
+-rw-rw-r-- 1 skoonce skoonce 261572064 Oct 20 18:20 /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/resnet34in_momdp64wxbf16_ckpt_xla_bot.bin
+-rw-rw-r-- 1 skoonce skoonce    136192 Oct 20 18:20 /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/resnet34in_momdp64wxbf16_ckpt_xla_bot.bin.bn
+-rw-rw-r-- 1 skoonce skoonce         1 Oct 20 18:20 /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.lake/build/resnet34in_momdp64wxbf16_ckpt_xla_bot.bin.epoch
