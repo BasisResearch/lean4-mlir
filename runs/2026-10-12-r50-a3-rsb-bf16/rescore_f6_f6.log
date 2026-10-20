@@ -1,0 +1,42 @@
+ResNet-50 on full 1000-class ImageNet at RSB-A3's 160² train resolution, via the VERIFIED renderer.
+  SCORING A CHECKPOINT — no training. ResNet-50 (ImageNet-1k, 160² train) lambaccdp4x128wxclipbcebf16, .lake/build/resnet50in160_lambaccdp4x128wxclipbcebf16_ckpt_xla_2611.bin
+  ▸ EVAL RES SPLIT: net d0 76800, eval d0 150528 (batch 256) — read off verified_mlir/resnet50in160_fwd_eval.mlir
+  region 0 of 4 (the live weights), 25557032 params
+  BN: 53 layers from .lake/build/resnet50in160_lambaccdp4x128wxclipbcebf16_ckpt_xla_2611.bin.bn — the running stats
+I1020 12:42:06.430192 2174444 service.cc:154] XLA service 0x73bf6c02ed50 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1020 12:42:06.430239 2174444 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 12:42:06.430247 2174444 service.cc:170]   StreamExecutor [1]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 12:42:06.430266 2174444 service.cc:170]   StreamExecutor [2]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 12:42:06.430270 2174444 service.cc:170]   StreamExecutor [3]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 12:42:06.433081 2174444 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1020 12:42:06.433109 2174444 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 0 for BFCAllocator.
+I1020 12:42:06.433149 2174444 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 1 for BFCAllocator.
+I1020 12:42:06.433163 2174444 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 2 for BFCAllocator.
+I1020 12:42:06.433174 2174444 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 3 for BFCAllocator.
+I1020 12:42:06.443051 2174444 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 4 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1020 12:42:07.898583 2174517 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 56 bytes spill stores, 56 bytes spill loads
+
+I1020 12:42:08.135400 2174504 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 832 bytes spill stores, 832 bytes spill loads
+
+[pjrt_ffi] compiled verified_mlir/resnet50in160_fwd_eval.mlir (@resnet50in160_fwd_eval, 1 outputs, 1 replica) in 14334 ms
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792500141.139418 2175279 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792500143.306203 2175426 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792500143.868684 2175429 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792500146.072548 2175646 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @resnet50in160_fwd_eval holds 267 parameter tensors (97.7 MB) on 1 device; they stop crossing PCIe from here
+  xla/pjrt verified_mlir/resnet50in160_fwd_eval.mlir
+  imagenet: val streams per pass (50,000 images at eval width 150528) — nothing is held
+  imagenet shim: jax/.lake/build/generated_resnet50_imagenet_short_shim.py — validation split, batch 256, 150528 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_resnet50_imagenet_short_shim.py — validation split, batch 256, 150528 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  checkpoint: acc = 39025/50000 = 78.050000%  top5 = 46983/50000 = 93.966000%  [95% CI 77.69–78.41]
+    per-example top-1 bitmap -> runs/2026-10-12-r50-a3-rsb-bf16/bitmaps/a3_f6_f6.bin (50000 bytes) — pair two of these with scripts/demos/mcnemar.py

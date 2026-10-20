@@ -18,6 +18,11 @@
 # shim python with tensorflow + tensorflow_datasets + jax (SHIM_PYTHON, or the platform's PLATFORM_SHIMPY;
 # the plugin-only .venv of the ROCm fast path is NOT one — a CPU jax is fine for the shim).
 #
+# As run 2026-10-20 on ares (four 4060 Ti, the CUDA plugin, LEAN_MLIR_REPLICAS unset = 1), ~78 s a mode:
+# `pre` 39,038 / 46,923 (78.08 / 93.85, one image off the in-training 39,039), `f6` 39,025 / 46,983
+# (78.05 / 93.97); rescore_f6_pre.log and rescore_f6_f6.log. `pre` leaves the pre-F6 shim in the live
+# jax/.lake/build — run `f6` (or `scripts/regen_jax_generated.sh sync`) after it.
+#
 # ⛔ NOT atlas's CPU through IREE (tried 2026-10-19): `IREE_BACKEND=llvm-cpu` with `IREE_DEVICE=local-task`
 # segfaults in the first invoke of this eval forward (generic and `--iree-llvmcpu-target-cpu=host` codegen
 # alike), and `local-sync` had not finished one 256-image batch in seven minutes.
@@ -25,7 +30,7 @@ set -u
 cd "$(dirname "$0")/../.." || exit 1
 MODE="${1:?pre | f6}"
 R=runs/2026-10-12-r50-a3-rsb-bf16
-SHIM=.lake/build/generated_resnet50_imagenet_short_shim.py
+SHIM=jax/.lake/build/generated_resnet50_imagenet_short_shim.py   # the copy score-checkpoint reads
 case "$MODE" in
   pre) git show 0b465f53~1:jax/generated/generated_resnet50_imagenet_short_shim.py > "$SHIM" || exit 1
        grep -q 'tf.round(_IMG_SIZE / _CROP_PCT)' "$SHIM" || { echo "⛔ $SHIM is not the pre-F6 shim"; exit 1; } ;;
@@ -39,7 +44,7 @@ CKPT="${CKPT:-.lake/build/resnet50in160_lambaccdp4x128wxclipbcebf16_ckpt_xla_261
 [ -f "$CKPT" ] && [ -f "$CKPT.bn" ] || { echo "⛔ $CKPT (+ .bn) missing — set CKPT=<path to the 2611 .bin>"; exit 1; }
 [ -x .lake/build/bin/score-checkpoint ] || { echo "⛔ lake build score-checkpoint first"; exit 1; }
 REPLICAS="${LEAN_MLIR_REPLICAS:-1}"
-PJRT_PLUGIN="${PJRT_PLUGIN:-$PLATFORM_PLUGIN}" ${PLATFORM_SHIMPY[@]+"${PLATFORM_SHIMPY[@]}"} \
+env PJRT_PLUGIN="${PJRT_PLUGIN:-$PLATFORM_PLUGIN}" ${PLATFORM_SHIMPY[@]+"${PLATFORM_SHIMPY[@]}"} \
 PJRT_REPLICAS="$REPLICAS" LEAN_MLIR_REPLICAS="$REPLICAS" \
 TFDS_DATA_DIR="${TFDS_DATA_DIR:-$HOME/tensorflow_datasets}" \
 LEAN_MLIR_VARIANT=lambaccdp4x128wxclipbcebf16 LEAN_MLIR_RES=160 LEAN_MLIR_CKPT="$CKPT" \
