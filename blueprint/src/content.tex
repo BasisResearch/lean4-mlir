@@ -336,8 +336,8 @@ groups carry a demo trained on a dataset from that field; a closing section on
 game theory trains three games --- Pong, Leduc poker, tic-tac-toe --- against their
 exact solutions, with the AlphaGo family and Deep CFR as its catalogue.
 
-\textbf{Appendices.} Toolchain setup (A), the complete proof framework as
-a reference (B), and data availability (C).
+\textbf{Appendices.} Toolchain setup (A), how every claim is checked
+(B), the ImageNet tier (C), and data availability (D).
 
 \subsection*{Theorem and definition budget per chapter}
 
@@ -19078,14 +19078,16 @@ how far up it you want to go, and the steps are not evenly spaced.
 \hline \\[-6pt]
 Read and check the proofs      & Lean. No GPU.                    & 1 \\
 MNIST / CIFAR / Imagenette     & Lean + one plugin file.          & 2, 3 \\
-Full ImageNet-1k               & the above, plus Python + tfds.   & 4 \\
+Full ImageNet-1k               & the above, plus Python + tfds.   & 4, Appendix~\ref{app:imagenet_tier} \\
 \end{tabular}
 \end{table}
 
-Everything in Part 1 of this book is the middle row. It needs no Python at
-run time and no compiler: you download one shared library and run a Lean
-binary. Only the ImageNet tier (Track 4) needs an interpreter, and only to
-stream data.
+Everything in Part 1 of this book is the middle row. Nothing runs through an
+interpreter at training time: you download one shared library and run a Lean
+binary. Python appears twice before that, as the \texttt{pip} that fetches
+the plugin wheel and in the Imagenette download script, which resizes with
+Pillow; the shim is one \texttt{gcc} line. Only the ImageNet tier streams its
+data through Python, and it has Appendix~\ref{app:imagenet_tier} to itself.
 
 \section*{Track 1: Proofs only (no GPU needed)}
 
@@ -19099,15 +19101,16 @@ less than the last.
 \begin{verbatim}
 lake exe cache get           # Mathlib oleans, ~30 s (vs ~45 min from source)
 lake build ProofsMinimal     # two files: the faithfulness fold + SGD descent
-lake build Proofs            # the whole suite
-lake build Certs             # every certificate CI checks -- the long one
+lake build Proofs            # the proof suite
+lake build Certs             # the certificates CI checks; subsumes Proofs -- the long one
 \end{verbatim}
 
 \texttt{ProofsMinimal} is the smallest thing that is still a real result:
 \texttt{LinearFold} (the rendered linear layer denotes the Mathlib
 \texttt{fderiv} math) and \texttt{SgdDescent.Linear} (the step decreases the
 loss). Start there if you want to see one theorem land before committing to
-the full build.
+the full build. The Lipschitz and IBP scorecards are a separate target,
+\texttt{CertsHeavy}.
 
 \prosesection{Level 2: check the axioms}
 
@@ -19119,42 +19122,17 @@ else, and Appendix~\ref{app:verification} is the accounting.
 
 \texttt{\#print axioms} and \texttt{lake build} both run through Lean's
 elaborator, so they share a trust path with whatever the elaborator did.
-\texttt{tests/comparator/} re-runs Lean's kernel typechecker independently over
-110 theorems, sandboxed, verifying each one's axiom closure statically:
 
 \begin{verbatim}
 tests/comparator/run.sh
 \end{verbatim}
 
-It splits in three. \texttt{Challenge.lean}
-\textbf{imports Mathlib and nothing else}. It carries the 13
-architecture-free theorems (Chapter~\ref{chap:tensor}'s \texttt{pdiv} calculus
-rules and Chapter~\ref{chap:attention}'s matrix-level ones), with the handful of
-definitions they need copied inline, and \texttt{chk\_pdiv\_is\_fderiv} pinning
-\texttt{pdiv} to Mathlib's \texttt{fderiv} by \texttt{rfl}. A reviewer can read
-that one file and know what is claimed without reading a line of this project.
-Copying the definitions is safe here in a way copying an
-architecture would not be: comparator compares the challenge and solution
-statements bit-identically, so a copy that drifted would fail the run rather
-than quietly prove something weaker.
-
-Thirty-nine more live in \texttt{ChallengeArch.lean} and do import the project,
-because each is a statement about a specific network, and ``ResNet-34's
-rendered backward equals its Fréchet derivative'' cannot be phrased without
-ResNet-34 in scope. Once the \texttt{fderiv} pin and the structural rules are
-checked over Mathlib alone, the architecture theorems are applications of them,
-and what you must additionally trust is the forward functions and nothing else.
-
-The last 58 are \texttt{ChallengeTier.lean}, the layer this book's second
-half rests on: the step ties, the codegen faithfulness results, the whole-net
-back-chains, the data-parallel results, the float bridge and the four
-certificate theorems. Their statements run to hundreds of lines apiece, so the
-file is printed from each declaration's own type
-(\texttt{scripts/gates/\allowbreak gen\_comparator\_tier.py}) rather than transcribed, and the
-solution proves each one with the project theorem itself. With the four that
-\texttt{ChallengeArch.lean} already holds, these are exactly the declarations
-\texttt{formalization.yaml} puts forward, so the coverage is checkable by
-diffing two lists.
+\noindent re-runs Lean's kernel typechecker, and five independent checkers
+beside it, over 110 theorems, sandboxed, with an axiom allowlist of exactly
+the three. It needs a built \texttt{Certs} and \texttt{bwrap}. Which 110,
+why thirteen of them are stated in a file that imports nothing but Mathlib,
+and what the run adds to \texttt{\#print axioms} is \S\ref{sec:comparator}
+in Appendix~\ref{app:verification}.
 
 \section*{Track 2: Native install (XLA/PJRT)}
 
@@ -19176,12 +19154,14 @@ curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
     directly through the PJRT C API, so no interpreter runs at training time.
 \begin{verbatim}
 python3 -m venv .venv && . .venv/bin/activate
-pip install jax-cuda12-pjrt     # NVIDIA -- the PJRT plugin ONLY
-pip install jax-rocm7-pjrt      # AMD    -- no jax, no jaxlib
+pip install jax-cuda12-pjrt     # NVIDIA, CUDA 12 -- the PJRT plugin ONLY
+pip install jax-rocm7-pjrt      # AMD            -- no jax, no jaxlib
 \end{verbatim}
     The shim looks under
-    \texttt{.venv/lib/python3.*/site-packages/jax\_plugins/}, which is where
-    that command puts it, and \texttt{\$PJRT\_PLUGIN} points elsewhere. The
+    \texttt{.venv/lib/python3.12/site-packages/jax\_plugins/}, which is where
+    that command puts it on a Python 3.12 venv. On any other Python, or for
+    a plugin anywhere else (a CUDA 13 card's \texttt{jax-cuda13-pjrt}, for
+    one), \texttt{\$PJRT\_PLUGIN} names the \texttt{.so} and always wins. The
     plugin is version-matched to your CUDA/ROCm install: a 500\,MB download,
     not a build.
 
@@ -19198,19 +19178,22 @@ gcc -fPIC -O2 -shared ffi/pjrt_ffi.c -ldl -o ffi/libpjrt_ffi.so
 \end{verbatim}
 
   \item \textbf{Build and run a trainer.} No backend selection: XLA finds
-    the device.
+    the device. The linear MNIST classifier of Chapter~\ref{chap:tensor}
+    trains in seconds:
 \begin{verbatim}
-lake build resnet34-verified-adam
-.lake/build/bin/resnet34-verified-adam data
+lake build mnist-linear-verified
+.lake/build/bin/mnist-linear-verified data
 \end{verbatim}
-    Parameters stay on the device between steps by default; every
-    transcript in this book ran that way, and the tiers below are timed
-    that way. \texttt{PJRT\_FFI\_RESIDENT=0} forces the copying path, which
-    the residency gate uses as its control: the same run is slower ---
-    1.3--2$\times$ on the Imagenette nets, about 5$\times$ on MNIST and
-    CIFAR --- and its numerics are unchanged. Use
-    \texttt{CUDA\_VISIBLE\_DEVICES} / \texttt{HIP\_VISIBLE\_DEVICES} to
-    pick a card, as with any GPU program.
+    The trainers take the data root as their one argument and default to
+    \texttt{data}. The Imagenette nets build the same way
+    (\texttt{lake build resnet34-verified-adam}) and run for the better part
+    of an hour each; Track 3 bundles them. Parameters stay on the device
+    between steps by default, and the tiers below are timed that way.
+    \texttt{PJRT\_FFI\_RESIDENT=0} forces the copying path, which the
+    residency gate uses as its control: the same run is 1.3--3$\times$
+    slower and its numerics are unchanged. Pick a card with
+    \texttt{CUDA\_VISIBLE\_DEVICES}, \texttt{HIP\_VISIBLE\_DEVICES} or, on
+    the Arc, \texttt{ZE\_AFFINITY\_MASK}, as with any GPU program.
 \end{enumerate}
 
 \section*{Track 3: One-command demo tiers}
@@ -19220,20 +19203,20 @@ With Track 2 in place, one command builds and runs a time-budgeted group of
 verified trainers.
 
 \begin{verbatim}
-lake run mnist        # verified MNIST: linear, MLP, CNN              (~30 s)
-lake run cifar        # ch.4 cifar8w: SGD/momentum/Adam x bn/no-bn   (~5 min)
+lake run mnist        # verified MNIST: linear, MLP, CNN              (~1 min)
+lake run cifar        # ch.4 cifar8w: SGD/momentum/AdamW x bn/no-bn  (~6 min)
 lake run imagenette   # the Part-I nets at 224^2, 80-epoch AdamW      (~6 h)
-lake run imagenet     # ImageNet-1k on 4 GPUs: bare plans, `start` runs (Track 4)
+lake run imagenet     # ImageNet-1k on 4 GPUs: plans; `start` runs it (Appendix C)
 \end{verbatim}
 
 The three times are XLA wall-clocks on one RTX 4060 Ti, resident; the fourth
-tier is weeks of four-card time and has Track 4 to itself. The Imagenette
-figure is the five chapter nets at their chapters' times, about 3.7 hours
-between them, plus ResNet-50 (about an hour and a half) and MobileNetV4
-(under an hour), which ride in the same tier. Each trainer's transcript is
-teed to \texttt{runs/<date>-<trainer>/}. Each tier also has an
-\texttt{-iree} twin --- see \emph{The second lowerer} at the end. The tiers
-bundle these targets, and any one builds on its own:
+tier is weeks of four-card time and has Appendix~\ref{app:imagenet_tier} to
+itself. The Imagenette figure is the five chapter nets at their chapters'
+times, about 3.7 hours between them, plus ResNet-50 (about an hour and a
+half) and MobileNetV4 (under an hour), which ride in the same tier. Each
+trainer's transcript is teed to \texttt{runs/<date>-<trainer>/}. Each tier
+also has an \texttt{-iree} twin --- see \emph{The second lowerer} at the
+end. The tiers bundle these targets, and any one builds on its own:
 
 \begin{itemize}
   \item \texttt{mnist}: \texttt{mnist-linear-verified},
@@ -19247,140 +19230,6 @@ bundle these targets, and any one builds on its own:
     \texttt{mobilenetv4-verified-adam}, \texttt{efficientnet-verified-adam},
     \texttt{convnext-verified-adam}, \texttt{vit-verified-adam}\par\endgroup
 \end{itemize}
-
-\section*{Track 4: ImageNet-1k runners}
-\label{sec:getting_started_track4}
-
-The scale tier. Six networks train on full ImageNet-1k off the same certified
-renderer as their Imagenette counterparts, in the chapter order Track 3
-uses. A row is a (network, recipe) pair rather than a network --- ResNet-50 has
-a row per recipe --- and the recipe is the middle field of the job's own
-name.
-
-\begin{table}[H]
-\centering
-\caption{The Track~4 ImageNet-1k targets, their recipes and their job configs.}
-\label{tab:track4_runners}
-\begin{tabular}{@{}lll@{}}
-\textbf{Target} & \textbf{Recipe} & \textbf{Job config} \\[2pt]
-\hline \\[-6pt]
-\texttt{resnet34-imagenet-verified}     & \texttt{default} (the 2018 recipe) & \texttt{r34-default-bf16-4gpu} \\
-\texttt{resnet50-imagenet-verified}     & \texttt{2018}                      & \texttt{r50-2018-bf16-4gpu} \\
-\texttt{resnet50-imagenet-verified}     & \texttt{a3} (RSB-A3, train@$160$)  & \texttt{r50-a3-wxclip4x128-bf16-4gpu} \\
-\texttt{mobilenetv2-imagenet-verified}  & \texttt{default}                   & \texttt{mnv2-default-4gpu} \\
-\texttt{efficientnet-imagenet-verified} & \texttt{default}                   & \texttt{enet-default-4gpu} \\
-\texttt{convnext-imagenet-verified}     & \texttt{default} (the official recipe) & \texttt{cnx-default-emabf16-4gpu} \\
-\texttt{vit-imagenet-verified}          & \texttt{default} (DeiT-Ti)         & \texttt{vit-default-emabf16-4gpu} \\
-\end{tabular}
-\end{table}
-
-\noindent Every row has run. Three chapters print a pair from an earlier
-conf than the row trains today --- MobileNetV2, EfficientNet-B0 and
-ConvNeXt-T --- and each chapter's marker names it.
-\texttt{scripts/jobs/} also carries axis siblings that this table does not
-list --- an fp32 peer of each of the ResNet-34, ResNet-50 2018, RSB-A3 and
-ViT rows, and RSB-A3 at $8\times64$ --- which differ from their row in
-precision or in accumulation shape, never in the recipe, plus
-\texttt{selftest}, which exercises the supervisor without a GPU. Each
-config's header says which it is.
-
-\prosesection{This tier needs Python}
-
-ImageNet data does not sit in a directory the way MNIST and Imagenette do. It
-is streamed from tfds through a generated per-net shim, a Python
-script emitted from that net's own reference \texttt{TrainConfig}, so the
-augmentation the verified trainer consumes is provably the augmentation its
-JAX reference trains on. Generate them before the first run:
-
-\begin{verbatim}
-scripts/gen_shims.sh
-\end{verbatim}
-
-Each net names its own shim, and the driver refuses to start if the named file
-is absent rather than falling back to another net's, because an earlier
-fallback silently gave every net ResNet-34's augmentation.
-
-\prosesection{Running one}
-
-Single device, on the driver's own defaults:
-
-\begin{verbatim}
-LEAN_MLIR_MEM_FRACTION=0.97 .lake/build/bin/resnet34-imagenet-verified data
-\end{verbatim}
-
-The defaults are the recipe: the \texttt{mom256} render at batch $256$, a
-peak learning rate of $0.1$, $90$ epochs. The one knob is the allocator's.
-At batch $256$ the fp32 step peaks above the $11.68$\,GiB the PJRT shim
-reserves by default on a 16\,GB card, and $0.97$ reserves $15.11$. Three
-more knobs override the defaults. \texttt{LEAN\_MLIR\_VARIANT} names another
-render, and \texttt{LEAN\_MLIR\_BATCH} must match the batch that variant was
-rendered at: the batch is baked into the graph, not a runtime dimension, so
-a mismatch is a shape error at the first invoke.
-\texttt{LEAN\_MLIR\_BASE\_LR\_U} is the base learning rate in millionths
-(\texttt{100000} = 0.1), integer-encoded because this toolchain has no
-\texttt{String.toFloat?}. ResNet-50's driver defaults to the AdamW rate
-$0.001$ and its 2018 render is heavy-ball, so left unset there it
-under-steps by $\sim$100$\times$, which looks like a broken render rather
-than a wrong knob. That is the one-card shape: $695$\,ms a step, about $87$
-hours for the schedule on one RTX 4060 Ti. The four-card one, with every
-knob taken from the job's own config, is \texttt{lake run
-r34-default-bf16-4gpu once} --- the next section.
-
-\prosesection{Running one for a day and a half}
-
-These are multi-day runs, so they go through a supervisor
-(\texttt{scripts/supervise.sh}) that owns the device list, the epoch budget and
-the restart policy, and the job's own name is the command:
-
-\begin{verbatim}
-lake run r34-default-bf16-4gpu        # supervised: resumes, restarts on AER / heat / stall
-lake run r34-default-bf16-4gpu plan   # the precheck and the wall-clock on file; runs nothing
-lake run r34-default-bf16-4gpu once   # one foreground run with the job's env, no restarts
-lake run imagenet                # every row's plan, in chapter order; runs nothing
-lake run imagenet start          # the rows in order, each resuming from its checkpoint
-\end{verbatim}
-
-\noindent \texttt{lake run imagenet} is the tier itself, the fourth of the four.
-Bare, it only plans, because its fourteen rows --- Table~\ref{tab:track4_runners}
-and the side quests of Table~\ref{tab:track4_side_quests}, less the 100-epoch
-MobileNetV4 job, which is that pair's own and not a row --- are weeks of four-card time; \texttt{start} is the confirmation.
-
-Data parallelism needs both replica knobs, and setting only one fails with a
-confusing ``compiled for N replicas'' error. \texttt{PJRT\_REPLICAS} configures
-the shim's client and compile options, and \texttt{LEAN\_MLIR\_REPLICAS} makes
-the Lean driver call the data-parallel invoke. The job configs set
-both. Collectives exist only on the PJRT path, so the data-parallel runs are
-XLA-only.
-
-\prosesection{Side quests}
-
-Several chapters end in a variant that is rendered but is not a Track-4 runner,
-and the section heading says which of three kinds it is: a second recipe, a
-wider or deeper size, or an architecture the book reaches for once. They are
-collected here rather than in Table~\ref{tab:track4_runners} because they are
-side quests,
-not because they cannot start. All eight have job configs, launch like
-any Track-4 row and ride in \texttt{lake run imagenet} right after their
-chapter's row. Each row's section says where it stands.
-
-\begin{table}[H]
-\centering
-\caption{The side-quest renders: target, variant, job and section.}
-\label{tab:track4_side_quests}
-\small
-\begin{tabular}{@{}llll@{}}
-\textbf{Target} & \textbf{Variant} & \textbf{Job} & \textbf{Section} \\[2pt]
-\hline \\[-6pt]
-\texttt{resnet50-imagenet-verified}    & \texttt{a2} & \texttt{r50-a2-bf16-4gpu} & \S\ref{sec:r50_a2_a1_cost} \\
-\texttt{resnet50-imagenet-verified}    & \texttt{a1} & \texttt{r50-a1-bf16-4gpu} & \S\ref{sec:r50_a2_a1_cost} \\
-\texttt{mobilenetv4-imagenet-verified} & \texttt{full}, 100 ep & \texttt{mnv4-full-e100-4gpu} & \S\ref{sec:mnv4_side_quest} \\
-\texttt{mobilenetv4-imagenet-verified} & \texttt{full}, 500 ep & \texttt{mnv4-full-4gpu} & \S\ref{sec:mnv4_side_quest} \\
-\texttt{convnext-s-imagenet-verified}  & --- & \texttt{cnxs-default-emabf16-4gpu} & \S\ref{sec:convnext_sb} \\
-\texttt{convnext-b-imagenet-verified}  & --- & \texttt{cnxb-default-emabf16-4gpu} & \S\ref{sec:convnext_sb} \\
-\texttt{vit-s-imagenet-verified}       & --- & \texttt{vits-default-emabf16-4gpu} & \S\ref{sec:vit_sb} \\
-\texttt{vit-b-imagenet-verified}       & --- & \texttt{vitb-default-emabf16-4gpu} & \S\ref{sec:vit_sb} \\
-\end{tabular}
-\end{table}
 
 \section*{Platforms}
 \label{sec:getting_started_platforms}
@@ -19399,49 +19248,52 @@ variable away from the same Lean binaries, the plugin pinned per platform.
 \textbf{Platform} & \textbf{Plugin, pinned} & \textbf{Where it stands} \\[2pt]
 \hline \\[-6pt]
 \cellleft NVIDIA, CUDA 12 & \cellleft \texttt{jax-cuda12-pjrt} 0.11.0 (CUDA 12.9, cuDNN 9.23) & \cellleft the book's numbers; Tracks 1--4 \\[4pt]
-\cellleft NVIDIA, CUDA 13 & \cellleft \texttt{jax-cuda13-pjrt} 0.11 (CUDA 13.3, cuDNN 9.24) & \cellleft Track 4 on record: the four-card ImageNet runs \\[4pt]
+\cellleft NVIDIA, CUDA 13 & \cellleft \texttt{jax-cuda13-pjrt} 0.11.1 (CUDA 13.3, cuDNN 9.24) & \cellleft Track 4 on record: the four-card ImageNet runs \\[4pt]
 \cellleft AMD, ROCm 7.2 & \cellleft \texttt{jax-rocm7-pjrt} 0.11.0 (Track 2's second line) & \cellleft in the code (\texttt{HIP\_VISIBLE\_DEVICES}, the suite's \texttt{--backend rocm}) \\[4pt]
-\cellleft Jetson Orin Nano 8\,GB, JetPack 6.2 & \cellleft jax 0.11.1 built for sm\_87 against cuDNN 9.12, per \texttt{deploy/ORIN.md} & \cellleft Tracks 1--3 on record; \texttt{lake run imagenette-orin} is the Imagenette tier at the board's memory \\[4pt]
-\cellleft Apple Silicon, Metal (M1 MacBook Air, 16\,GB, macOS 26) & \cellleft \texttt{jax-graft} 0.0.5 (\texttt{metal-pjrt-core}, platform \texttt{mtl}: jaxlib 0.11.2's XLA with a Metal backend), per \texttt{deploy/MAC.md} & \cellleft Track 2 and the MNIST tier of Track 3 on record, matching CUDA (92.10 / 97.79 / 98.71\%); CIFAR and ResNet-34 train, their full runs to come \\[4pt]
+\cellleft Jetson Orin Nano 8\,GB, JetPack 6.2 & \cellleft jax 0.11.1 built for sm\_87 against cuDNN 9.12, per \texttt{deploy/ORIN.md} & \cellleft Track 2 on record, and of Track 3 the MNIST CNN, the CIFAR tier and ViT-Tiny over 80 epochs; \texttt{lake run imagenette-orin}, the six-row Imagenette tier at the board's memory, is the next run \\[4pt]
+\cellleft Apple Silicon, Metal (M1 MacBook Air, 16\,GB, macOS 26) & \cellleft \texttt{jax-graft} 0.0.5 (\texttt{metal-pjrt-core}, platform \texttt{mtl}: jaxlib 0.11.2's XLA with a Metal backend), per \texttt{deploy/MAC.md} & \cellleft Track 2 and the MNIST tier of Track 3 on record in \texttt{deploy/MAC.md} (92.10 / 97.79 / 98.71\%, against CUDA's medians 92.10 / 97.78 / 98.78); CIFAR and ResNet-34 train, their full runs to come \\[4pt]
 \cellleft Intel Arc Pro B50, oneAPI (16\,GB, Battlemage, kernel 7.0) & \cellleft \texttt{jax-oneapi-pjrt} 0.11.2 (Intel's OpenXLA plugin, platform \texttt{oneapi}, its oneAPI runtime as wheels), per \texttt{deploy/ARC\_B50.md} & \cellleft Track 2 and the MNIST and CIFAR tiers of Track 3 on record, matching CUDA (92.10 / 97.83 / 98.74\%; CIFAR 76.77\%), bf16 included; all seven Imagenette nets train, their full runs to come \\
 \end{tabular}
 \end{table}
 
-The CUDA 12 and ROCm pins are the lock files under \texttt{jax/}; the Orin's
-is its build script, the Mac's and the Arc's their setup scripts. Three notes. ImageNet (Track 4) wants 16\,GB cards: every row trains on four
-of them, and a 12\,GB card runs all but ConvNeXt-B and ViT-B, whose steps
-peak above it. The Orin is there so that the core sequence runs on a
-commodity computer rather than a training box --- the board, a plugin built
-for it and the tier's memory recipe, nothing else --- and
-\texttt{deploy/ORIN.md} is its runbook. The Mac is the same point on a
-laptop: Metal through a PJRT plugin, unified memory (nothing is staged to
-the device), float32 only (the MNIST renders use no float64), and
-\texttt{deploy/MAC.md} is its runbook. The Arc is the third vendor's
-desktop card through the same seam, Intel's PJRT plugin and nothing else from
-this side, with one shim workaround for a race in Intel's SYCL runtime, and
-\texttt{deploy/ARC\_B50.md} is its runbook. A new box is admitted by
-\texttt{scripts/\allowbreak platform/\allowbreak check.sh}: the plugin loads,
-the shim's guards hold and the committed artifacts match XLA:CPU goldens, in
-minutes and without Lean; \texttt{PLATFORMS.md} is the record of every
-platform's last run of every tier.
+The CUDA 12 and ROCm pins are the lock files under \texttt{jax/}; the CUDA
+13 box's is \texttt{scripts/jobs/\_box.sh}, the Orin's its build script, the
+Mac's and the Arc's their setup scripts. Three of the six are there to make
+a point. The Orin is the core sequence on a commodity computer rather than a
+training box --- the board, a plugin built for it and the tier's memory
+recipe, nothing else --- and \texttt{deploy/ORIN.md} is its runbook. The Mac
+is the same point on a laptop: Metal through a PJRT plugin, unified memory
+(nothing is staged to the device), float32 only (the MNIST renders use no
+float64), and \texttt{deploy/MAC.md} is its runbook. The Arc is the third
+vendor's desktop card through the same seam, Intel's PJRT plugin and nothing
+else from this side, with one shim workaround for a race in Intel's SYCL
+runtime, and \texttt{deploy/ARC\_B50.md} is its runbook. A new box is
+admitted by \texttt{scripts/\allowbreak platform/\allowbreak check.sh}: the
+plugin loads, the shim's guards hold and the committed artifacts match
+XLA:CPU goldens, in minutes and without Lean. \texttt{PLATFORMS.md} is the
+support matrix, the last run of each tier on each box; where a cell is
+empty, as the Mac's are, the runbook is the record.
 
 \section*{Common troubleshooting}
 
 \begin{itemize}
   \item \textbf{\texttt{no lowerer shim could be loaded}.} No
     \texttt{ffi/libpjrt\_ffi.so}. Build it with the \texttt{gcc} line in
-    Track 2, which needs nothing but libc. (The same error names
-    \texttt{libiree\_ffi.so} when you have asked for that lowerer.)
+    Track 2, which needs nothing but libc. (Under
+    \texttt{LEAN\_MLIR\_LOWERER=iree} the same message says
+    \texttt{wanted: iree}, and the shim it wants is
+    \texttt{libiree\_ffi.so}.)
   \item \textbf{\texttt{\$PJRT\_PLUGIN is set but did not load}}, or no plugin
     found. The XLA plugin is missing or is built for a different CUDA/ROCm
     version than the one installed. Installing the plugin wheel into the repo's
-    own \texttt{.venv}, as in Track 2, puts it where the shim looks by default.
+    own \texttt{.venv} on Python 3.12, as in Track 2, puts it where the shim
+    looks by default; anywhere else, set \texttt{\$PJRT\_PLUGIN}.
   \item \textbf{\texttt{lake build} fails with Mathlib cache errors.} Run
     \texttt{lake exe cache get} to populate the local cache. Without it the
     first build compiles all of Mathlib from source ($\sim$45 min), and with it
     oleans download in $\sim$30 seconds.
   \item \textbf{A run refuses to start over a missing shim} (ImageNet tier).
-    Run \texttt{scripts/gen\_shims.sh}.
+    Run \texttt{scripts/gen\_shims.sh}; Appendix~\ref{app:imagenet_tier}.
   \item \textbf{\texttt{lake run <job> plan} refuses with ``OLDER than the render''}
     (ImageNet tier). The job's precheck compares the binary's timestamp with its
     render's, and a regenerated render trips it. \texttt{lake build <exe>}
@@ -19477,11 +19329,13 @@ place, including the asymmetry it leaves behind.
 
 \medskip\noindent Selecting it is \texttt{LEAN\_MLIR\_LOWERER=iree}, and every
 Track 3 tier has an \texttt{-iree} twin that does so (\texttt{lake run}
-\texttt{mnist-iree}, and so on). It additionally needs \texttt{iree-compile}
-on \texttt{\$PATH}, the runtime built per
+\texttt{mnist-iree}, and so on); the Imagenette twin runs five of the seven
+nets, since ResNet-50 and MobileNetV4 have no IREE driver. It additionally
+needs \texttt{iree-compile} on \texttt{\$PATH}, the runtime built per
 \texttt{historical/\allowbreak IREE\_BUILD.md}, and
 \texttt{ffi/\allowbreak libiree\_ffi.so}. Data-parallel runs are XLA-only --- collectives
-exist only on the PJRT path --- so Track 4 is not available on it.
+exist only on the PJRT path --- so the ImageNet tier is not available on it.
+
 
 \chapter{On Verification}
 \label{app:verification}
@@ -19504,12 +19358,13 @@ against three core axioms, each operator's gradient is its exact
 reverse-mode derivative. \textbf{By construction} (structural): the
 StableHLO the GPU runs is not written but printed from the same
 datatype the proofs reason about, with a bridge theorem pinning it to the
-proven formula, so the code cannot drift from the math.
+proven formula, so the printed text and the proven formula start from one
+term rather than from a comment.
 \textbf{Cross-checked} (empirical): what cannot be proven is watched by
 independent oracles that must agree before the hardware is believed, and
 that means the lowerer's translation of the proven text into machine code,
 the GPU transcendentals, and finite-precision rounding beyond its theorem
-layer (\S~\ref{sec:precision}). Each kind catches what the others structurally
+layer (\S\ref{sec:precision}). Each kind catches what the others structurally
 cannot. This appendix walks the mechanisms, grouped by kind.
 
 One property makes the whole edifice auditable: \textbf{every chapter is
@@ -19543,7 +19398,7 @@ Two mechanisms make the deductive layer trustworthy: the proofs
 themselves, and an independent re-check that the kernel, not
 just the elaborator, accepts them with no project axioms.
 
-\subsection{Trust kernel}
+\subsection{The axiom audit}
 
 The Verified VJP Proofs suite proves the \textbf{44 VJP contracts and
 9 witnesses} of the table in \emph{How this book is organized}, their
@@ -19552,22 +19407,22 @@ two smooth-point forms that global theorems superseded, each asserting
 backward \(= \sum_j \pdiv f\,x\,i\,j \cdot dy_j\); the
 \textbf{37 step certificates} that tie the emitted programs to them; on
 top of the foundation \(\pdiv\) calculus and the
-differentiability/forward/witness machinery they rest on, plus the
-bestiary's 46 architecture families --- and \textbf{zero project
-axioms} anywhere in it. That last figure is the one that matters, because
-it is the only one that cannot quietly grow. The axiom audit
-(\texttt{tests/AuditAxioms.lean}) re-checks every theorem in the
-suite (the VJP contracts plus the forward-graph faithfulness, render,
-cotangent-chain, backward-tie, and finite-precision results,
-\S~\ref{sec:precision}) --- that file is the live count, quoted here
-deliberately as a property rather than a number --- and every one closes
-under the same three core axioms: \(\texttt{\#print axioms vitFullHasVJP}\) shows only
-Lean core (\texttt{propext}, \texttt{Classical.choice},
-\texttt{Quot.sound}), nothing project-level beneath those. (Earlier
-drafts axiomatized shortcuts for the operators with corners, and every one has
-since been proved or become a \texttt{noncomputable def} over the
-canonical \(\fderiv\)-derived witness. The smooth-point caveats in
-the chapters are all that remains of them.)
+differentiability/forward/witness machinery they rest on --- and
+\textbf{zero project axioms} anywhere in it. (The bestiary's 46 architecture families are \texttt{NetSpec} values the
+proofs do not touch; nothing there is a theorem.) That last figure is the one that
+matters, because it is the only one that cannot quietly grow. The axiom
+audit (\texttt{tests/AuditAxioms.lean}) prints the axiom closure of every
+headline declaration in the suite --- the VJP contracts plus the
+forward-graph faithfulness, render, cotangent-chain, backward-tie, and
+finite-precision results (\S\ref{sec:precision}) --- and every one
+closes under the same three core axioms: \(\texttt{\#print axioms
+vitFullHasVJP}\) shows only Lean core (\texttt{propext},
+\texttt{Classical.choice}, \texttt{Quot.sound}), nothing project-level
+beneath those. That file is the live count, quoted here deliberately as
+a property rather than a number. Nothing is axiomatized to get past an
+operator with a corner: ReLU, ReLU6 and max-pool are
+\texttt{noncomputable def}s over the canonical \(\fderiv\)-derived
+witness, and the smooth-point caveats in the chapters are the price.
 
 What type-checking alone cannot catch: prose narrating a different
 formula than the theorem states (Lean only verifies its own statement),
@@ -19575,27 +19430,58 @@ and anything past the elaborator, which is what the next mechanism
 and the empirical layer are for.
 
 \subsection{Independent kernel re-check (comparator)}
+\label{sec:comparator}
 
 \texttt{tests/comparator/} wires the project up to
 \href{https://github.com/leanprover/comparator}{leanprover/comparator}
 (\texttt{lake comparator}, bundled with Lean since 4.35),
 the Lean community's trustworthy-judge tool for projects that claim
-zero project axioms. It runs with \texttt{--paranoid}, so besides Lean's own
-kernel five independent checkers must accept every proof:
+zero project axioms. It re-runs Lean's kernel typechecker over each
+theorem's statement and proof in a \texttt{bwrap} sandbox, independently
+of the elaborator, and verifies the transitive axiom closure statically
+against an allowlist of exactly \(\{\texttt{propext}, \texttt{Quot.sound},
+\texttt{Classical.choice}\}\). With \texttt{--paranoid}, the default in
+\texttt{run.sh}, five further checkers must accept every proof:
 \texttt{leanchecker-paranoid}, \texttt{lean4lean}, \texttt{nanoda},
-\texttt{con-leche} and \texttt{con-ron}. It runs 110 theorems (the foundation rules,
-every chapter's headline Jacobian, the public
-\texttt{*HasVJP\_correct} wrappers, three smooth-point
-pointwise variants (\texttt{reluHasVJPAt\_correct},
-\texttt{mlpHasVJPAt\_correct},
-\texttt{maxPool2HasVJPAt3\_correct}) whose underlying
-\texttt{.correct} field is a real proof rather than \texttt{rfl},
-and the 58-theorem tie / faithfulness / certificate tier)
-through Lean's kernel typechecker independently of the elaborator,
-with an axiom-allowlist of exactly \(\{\texttt{propext},
-\texttt{Quot.sound}, \texttt{Classical.choice}\}\). Any project
-axiom in the transitive closure of any verified theorem would fail
-the run.
+\texttt{con-leche} and \texttt{con-ron}. Any project axiom in the closure
+of any listed theorem fails the run.
+
+The 110 theorems split across three files, and the split is the point.
+\texttt{Challenge.lean} \textbf{imports Mathlib and nothing else}. It
+carries the 13 architecture-free theorems (Chapter~\ref{chap:tensor}'s
+\texttt{pdiv} calculus rules and Chapter~\ref{chap:attention}'s
+matrix-level ones), with the handful of definitions they need copied
+inline, and \texttt{chk\_pdiv\_is\_fderiv} pinning \texttt{pdiv} to
+Mathlib's \texttt{fderiv} by \texttt{rfl}. A reviewer can read that one
+file and know what is claimed without reading a line of this project.
+Copying the definitions is safe here in a way copying an architecture
+would not be: comparator compares the challenge and solution statements
+bit-identically, so a copy that drifted would fail the run rather than
+quietly prove something weaker.
+
+Thirty-nine more live in \texttt{ChallengeArch.lean} and do import the
+project, because each is a statement about a specific network, and
+``ResNet-34's rendered backward equals its Fréchet derivative'' cannot be
+phrased without ResNet-34 in scope: every chapter's headline Jacobian,
+the public \texttt{*HasVJP\_correct} wrappers, and three smooth-point
+pointwise variants (\texttt{reluHasVJPAt\_\allowbreak correct},
+\texttt{mlpHasVJPAt\_\allowbreak correct}, \texttt{maxPool2HasVJPAt3\_\allowbreak correct}) whose
+underlying \texttt{.correct} field is a real proof rather than
+\texttt{rfl}. Once the \texttt{fderiv} pin and the structural rules are
+checked over Mathlib alone, the architecture theorems are applications
+of them, and what you must additionally trust is the forward functions
+and nothing else.
+
+The last 58 are \texttt{ChallengeTier.lean}, the layer this book's second
+half rests on: the step ties, the codegen faithfulness results, the
+whole-net back-chains, the data-parallel results, the float bridge and
+the four certificate theorems. Their statements run to hundreds of lines
+apiece, so the file is printed from each declaration's own type
+(\texttt{scripts/gates/\allowbreak gen\_comparator\_tier.py}) rather than
+transcribed, and the solution proves each one with the project theorem
+itself. With the four that \texttt{ChallengeArch.lean} already holds,
+these are exactly the declarations \texttt{formalization.yaml} puts
+forward, so the coverage is checkable by diffing two lists.
 
 This is what closes the gap between ``the elaborator accepted my
 proofs'' (which \texttt{lake build} confirms) and ``the kernel
@@ -19655,9 +19541,10 @@ built from three components:
     the per-operator graphs the execution oracle runs are its.
   \item \textbf{An execution oracle.} A Python harness
     (\texttt{LeanMlir/Proofs/check\_ir\_codegen.py}) regenerates the
-    \texttt{.mlir} from the printer, compiles it with IREE, runs it, and
+    \texttt{.mlir} from that printer, compiles it with IREE, runs it, and
     diffs the result against an independent NumPy reference. The CPU run
-    (\texttt{llvm-cpu}) is the correctness gate; the GPU leg is ROCm-only
+    (\texttt{llvm-cpu}) is the correctness gate, with one caveat
+    \S\ref{sec:exec_oracle} records; the GPU leg is ROCm-only
     and best-effort, and where it has run (a Radeon RX 7900 XTX, gfx1100)
     the proof-backed graph matched the reference to roughly $10^{-6}$.
 \end{itemize}
@@ -19669,17 +19556,18 @@ and bounded:
     proven derivative.
   \item \emph{Re-rendered, not proved}: that the committed file is the
     printer's current output. CI re-elaborates each renderer and
-    \texttt{git diff}s its artifact, and
-    \texttt{scripts/gates/check\_render\_coverage.py} lists the artifacts
-    it does not; of the nine the ``MLIR'' sections quote, the CIFAR
-    BatchNorm step is the one still on that list.
+    \texttt{git diff}s its artifact;
+    \texttt{scripts/gates/check\_render\_coverage.py} reports the ones it
+    cannot, baselined in \texttt{scripts/gates/render\_guard\_baseline.txt},
+    and of the artifacts the ``MLIR'' sections quote, the CIFAR BatchNorm
+    step is the one on that list, with the other CIFAR-8 train steps.
   \item \emph{Trusted} (validated numerically, not proven): that the
     StableHLO text faithfully denotes $[\![\cdot]\!]$, which is the
     per-token text above. Beyond it, three things are trusted: a formal
     StableHLO semantics, which does not yet exist, that the lowerer
     compiles the text correctly, and that the hardware's rounding
-    approximates $\mathbb{R}$ within the modelled unit roundoff. The last of those is now a conditional theorem validated on
-    real silicon (\S~\ref{sec:precision}) rather than a bare assumption.
+    approximates $\mathbb{R}$ within the modelled unit roundoff. The last of those is a conditional theorem validated on
+    a measured run (\S\ref{sec:precision}) rather than a bare assumption.
 \end{itemize}
 So the gradient the GPU computes is, by a machine-checked theorem, the
 network's exact reverse-mode derivative over $\mathbb{R}$ --- at a smooth
@@ -19720,11 +19608,12 @@ over a free cotangent. All thirteen chapter networks are tied this way, from the
 linear classifier to depth-12 ViT-Tiny, and each deep net's chain cotangent
 is pinned to its block's certified VJP
 (\texttt{r34IdCotIn\_eq\_vjp}, \texttt{vitBlockCotInB\_eq\_vjp} and their peers).
-For the seven ImageNet networks one more theorem composes the two halves: at
+For each of the thirteen one more theorem composes the two halves: at
 the tie's own cotangent, every parameter gradient node is
 $\partial L/\partial\theta$ of the whole network, for any loss $L$ with a
-gradient at the logits and in particular for the label-smoothed cross-entropy
-the artifacts emit (\texttt{r34\_net\_lossGrad} and its peers; one replica,
+gradient at the logits and in particular for the cross-entropy
+the artifacts emit, label-smoothed on the ImageNet nets
+(\texttt{r34\_net\_lossGrad} and its peers; one replica,
 either precision). The axiom
 audit re-derives every tie under the same three axioms, and CI prints a green
 cell for a network only when its tie capstone is in that closure, so the
@@ -19850,15 +19739,16 @@ proved by induction over the graph, the IR-level analogue of the
 \texttt{vjpComp} that builds whole-network VJPs from per-layer ones. So the
 per-operator bridges compose into a whole-network bridge the same way the VJP
 theorems compose into a whole-network VJP: the MLP's
-\texttt{mlp\_whole\_bridge} is this one substitution, chaining its five
-per-operator bridges.
+\texttt{mlp\_whole\_bridge} is four of these substitutions, closed by
+unfolding and \texttt{rfl}.
 
 \medskip\noindent\textbf{Why the datatype is the point.} The \texttt{Back}
-value is the pivot between two arrows. The printer walks it and emits one
+value is the pivot between two arrows. A printer walks it with names in
+place of its values and emits one
 \texttt{stablehlo} operation per constructor (\texttt{dotGeneral} $\mapsto$
 \texttt{stablehlo.dot\_general}, and \texttt{selectPos} $\mapsto$
 \texttt{compare GT 0} plus \texttt{select}), and that arrow is the trusted
-one; the chapter listings are cut from renders built this way at batch
+one; the chapter listings are committed renders built this way at batch
 width. The denotation interprets
 the same value into the proofs' \texttt{Vec} type, and the bridge proves
 the result equals the derivative, so that arrow is machine-checked. Because both arrows start from
@@ -19866,14 +19756,42 @@ one concrete datatype rather than from a string, ``the emitted code computes
 the proven gradient'' is a theorem about a value, not a hope about a comment.
 
 \section{Cross-checked}
+\label{sec:cross_checked}
 
 Neither lowerer can itself be proven, and GPU transcendentals have no
 IEEE specification, so the last stretch from proven math to executed
 kernel is covered by independent oracles that must agree before the
-hardware is believed. Each watches a different failure mode.
+hardware is believed. Each watches a different failure mode, and the
+first thing to know about any of them is which Lean text it runs, because
+three generators produce StableHLO in this project.
+\texttt{StableHLO.Pretty} prints the committed \texttt{verified\_mlir/}
+artifacts the trainers load and the theorems are about.
+\texttt{IRPrint.lean} is the legacy per-operator printer, trusted and
+imported by nothing. \texttt{MlirCodegen} is the reference path, which
+lowers a \texttt{NetSpec} to MLIR at run time, hand-written and
+unverified. Table~\ref{tab:oracles} is the roster, and only one row runs
+the first.
 
-\medskip\noindent\textbf{The property that makes this work is that the two
-sides do not share a compiler.} The Lean-side pipeline of the oracles below
+\begin{table}[H]
+\centering
+\caption{The oracles: what each runs on the Lean side, what it compares against, and what a disagreement would mean.}
+\label{tab:oracles}
+\small
+\begin{tabular}{@{}p{0.2\textwidth}p{0.24\textwidth}p{0.18\textwidth}p{0.3\textwidth}@{}}
+\textbf{Oracle} & \textbf{Lean side} & \textbf{Against} & \textbf{A disagreement means} \\[2pt]
+\hline \\[-6pt]
+\cellleft Finite differences, \texttt{check\_\allowbreak jacobians.py} (CI) & \cellleft the Jacobian formulas transcribed to NumPy, float64 & \cellleft centred differences & \cellleft a closed form that is not its forward's derivative \\[4pt]
+\cellleft IREE vs NumPy, \texttt{check\_ir\_\allowbreak codegen.py} & \cellleft \texttt{IRPrint} graphs through IREE \texttt{llvm-cpu} & \cellleft a NumPy reference & \cellleft a printer or a lowerer mis-emitting one operator \\[4pt]
+\cellleft Cross-backend traces, \texttt{historical/traces/} & \cellleft \texttt{MlirCodegen} through IREE, ROCm and CUDA & \cellleft JAX on XLA, CPU and CUDA & \cellleft a hand-written backward against autodiff, across two vendors \\[4pt]
+\cellleft VJP oracle, 14 cases, \texttt{tests/\allowbreak vjp\_oracle/\allowbreak run.sh} (CI) & \cellleft \texttt{MlirCodegen} through IREE \texttt{llvm-cpu} & \cellleft JAX \texttt{value\_and\_grad}, one step & \cellleft a hand-written backward against autodiff, per layer family \\[4pt]
+\cellleft Verified-path oracle, \texttt{run\_\allowbreak verified.sh} (CI) & \cellleft the committed linear, MLP and CNN train steps, through the book's trainers on IREE \texttt{llvm-cpu} & \cellleft JAX, one SGD step, update by update & \cellleft the proven text, lowered and executed, is not the step JAX takes \\[4pt]
+\cellleft Platform suite, \texttt{scripts/\allowbreak platform/\allowbreak check.sh} & \cellleft the committed artifacts through the box's plugin & \cellleft XLA:CPU goldens & \cellleft a plugin or a card disagreeing with XLA on a CPU \\[4pt]
+\cellleft Margin probe, \texttt{margin\_probe.py} & \cellleft a NumPy f32 twin of the MNIST MLP & \cellleft its f64 twin & \cellleft a run outside the float theorems' hypotheses \\
+\end{tabular}
+\end{table}
+
+\medskip\noindent\textbf{The property that makes the middle rows work is that
+the two sides do not share a compiler.} The Lean side of those oracles
 lowers through IREE, and the reference pipeline is JAX, which lowers through XLA.
 Different code generation, different runtime, different kernels, and different
 authors. Agreement between them is evidence precisely because a bug would have
@@ -19885,7 +19803,8 @@ kept because it is small. It is kept because it is not XLA.
 \subsection{Finite-difference gradient checks}
 
 The script \texttt{LeanMlir/Proofs/check\_jacobians.py} runs 30
-finite-difference gradient checks. For each, it perturbs the input by
+finite-difference gradient checks (its 31st is the identity rule, which
+needs none). For each, it perturbs the input by
 \(\varepsilon\), compares the claimed VJP against the centered
 difference
 \((f(x + \varepsilon) - f(x - \varepsilon)) / 2\varepsilon\), and
@@ -19911,12 +19830,12 @@ input VJP, the full-network MLP composition, and bestiary
 spot-checks (bilinear upsample, channel concat, per-pixel
 softmax cross-entropy, U-Net skip plumbing).
 
-What the FD pass catches that the symbolic proof can't: typos
-between the proof and the prose that uses the same Jacobian.
-If a chapter narrates one formula but the Lean theorem states
-another, the proof still type-checks (Lean only verifies its
-own statement), but the FD test runs against the formula the
-prose published and would diverge.
+What the FD pass checks is the formula as transcribed into NumPy: that
+the closed form a theorem states is in fact the derivative of the
+forward it is claimed for. It reads neither the prose nor the Lean
+statement, so a chapter that narrates a different formula than its
+theorem states is caught by neither tool; Lean verifies its own
+statement, and the transcription is by hand.
 
 FD is cheap, easy to reason about, and tight enough for
 spot-checking formulas, but it can't probe what the
@@ -19929,9 +19848,9 @@ those gaps and for end-to-end pipeline verification, the next oracle takes over.
 \label{sec:jax_pipeline}
 
 A separate Lean \(\to\) JAX \(\to\) XLA pipeline
-(\texttt{jax/Jax/Codegen.lean}, \(\sim 3700\) lines) produces an
+(\texttt{jax/Jax/Codegen.lean}, \(\sim 4400\) lines) produces an
 idiomatic JAX training script from the same \texttt{NetSpec} the
-Lean \(\to\) StableHLO MLIR pipeline consumes. XLA is the compiler
+reference Lean \(\to\) StableHLO MLIR pipeline consumes. XLA is the compiler
 JAX uses to produce GPU code, the same backend that powers
 TensorFlow and other frameworks. For this comparison the Lean side
 is lowered by IREE, so the two stacks are independent end to end,
@@ -19942,23 +19861,27 @@ identical batches gives us a pair of trace files, one per stack,
 that should agree modulo float32 rounding if both pipelines compute
 the same math.
 
-The agreement is very tight. For the MNIST MLP, step-1 losses agree
-to \(\sim 2 \times 10^{-7}\), which is float32 ULP, across the
-JAX-CPU-vs-IREE-ROCm comparison, and the IREE output is
-\textbf{bit-identical across AMD and NVIDIA hardware} at step 1.
-For the MNIST CNN with batch norm, step-1 agrees to
-\(\sim 10^{-4}\), looser because variance reductions over
-\(\sim 100\)k-element tensors amplify cross-compiler reduction-tree
-differences. Both pipelines do correct math, they just sum it
-in different orders. Full results are committed to the repo as
-reproducible JSON-Lines traces, in
+Step 1 is forward-only, and it is tight: for the MNIST MLP the step-1
+losses agree to \(2 \times 10^{-7}\), float32 ULP, between JAX on CPU
+and IREE on ROCm, and IREE's own output is \textbf{bit-identical across
+AMD and NVIDIA hardware} at step 1. Step 2 is the first loss that
+depends on a backward pass, and it agrees to \(2.5 \times 10^{-5}\)
+against JAX on CPU and \(1.3 \times 10^{-4}\) against JAX on CUDA. For
+the MNIST CNN with batch norm, step 2 agrees to \(1.4 \times 10^{-4}\)
+against JAX on CUDA and only \(7 \times 10^{-3}\) against JAX on CPU,
+looser because variance reductions over \(\sim 100\)k-element tensors
+amplify cross-compiler reduction-tree differences; JAX on CPU and JAX on
+CUDA disagree with each other by the same \(7 \times 10^{-3}\) at that
+step, so the gap is the reduction order's, not the backward's. Both
+pipelines do correct math, they just sum it in different orders. Full
+results are committed to the repo as reproducible JSON-Lines traces, in
 \texttt{historical/traces/CROSS\_BACKEND\_RESULTS.md}.
 
 \medskip\noindent\textbf{Two asymmetries, stated plainly.} The trainers in
 this book default to XLA, while the oracles above lower the Lean side through
 IREE. That is deliberate, because an oracle that shared a compiler with its own
 reference would not be checking the compiler at all. The second asymmetry is
-the one to hold on to: the Lean side of those oracles is not the proven text.
+the one to hold on to, and Table~\ref{tab:oracles} already shows it: the Lean side of those oracles is not the proven text.
 The cross-backend traces and the per-operator cases below lower each small net
 at run time through the reference code generator (\texttt{MlirCodegen}, the
 unverified path), so what they check is one hand-written backward against
@@ -19982,7 +19905,8 @@ each hand-derived backward pass of the reference code generator against
 JAX's \texttt{value\_and\_grad} autodiff on a minimal one-step training
 run. Fourteen cases each agree with JAX autodiff on the step-2 loss, to
 between \(2 \times 10^{-7}\) and \(10^{-4}\), the wider ones where a
-max-pool or a depthwise reduction changes the summation order: dense,
+max-pool's argmax tie-breaks on MNIST's zero pixels or a BatchNorm variance's
+reduction order differ between the compilers: dense,
 dense+ReLU, conv, conv+BN, conv+max-pool, residual, depthwise, global
 average pool, attention, and the SE-gated MBConv, bottleneck, MBConv-V3,
 fused-MBConv and UIB blocks. Any future hand-derived VJP added to
@@ -19991,21 +19915,29 @@ against JAX, catching algebraic errors that FD would miss (sign
 flips, wrong contraction axis, swapped indices).
 
 \subsection{The execution oracle and the margin probe}
+\label{sec:exec_oracle}
 
 Two further watchers close the loop. The \textbf{IREE-versus-NumPy
-oracle} (\S~\ref{sec:verified_codegen}) regenerates the per-operator and
+oracle} (\S\ref{sec:verified_codegen}) regenerates the per-operator and
 small-network graphs (linear, MLP, CNN, convolution, max-pool, BatchNorm,
 the loss cotangent and a ConvNeXt block) from the legacy per-operator
 printer (\texttt{IRPrint.lean}), compiles them
 for CPU, and diffs the result against an independent NumPy reference,
 which is the one check that reaches past the proofs to IREE's lowering
-itself. And the
-\textbf{margin probe} (\texttt{scripts/certs/\allowbreak margin\_probe.py}) re-runs a real
-training trajectory in coupled \texttt{f32}/\texttt{f64} and checks that
-the run stays inside the float theorems' hypotheses, with no flipped ReLU
-mask and no logit drift past \(\delta\) (\S~\ref{sec:precision}). It is
-what keeps the conditional theorems honest about actual training rather
-than hypothetical nets.
+itself. Its CPU target is \texttt{llvm-cpu}, and that target has a fault
+worth keeping in view: IREE 3.11's \texttt{llvm-cpu} miscompiles the
+\texttt{select\_and\_scatter} of the batched CIFAR-8 train steps, so the
+CPU gradient gate for those nets
+(\texttt{tests/TestCifar8BbnGradCheck.lean}) runs on IREE's
+\texttt{vmvx} backend instead, and an \texttt{llvm-cpu} mismatch on a
+pooled net means check the lowerer before the render. The GPU runs use
+XLA and are unaffected. And the
+\textbf{margin probe} (\texttt{scripts/certs/\allowbreak margin\_probe.py})
+trains a NumPy twin of the MNIST MLP in coupled \texttt{f32}/\texttt{f64}
+and checks that the run stays inside the float theorems' hypotheses,
+with no flipped ReLU mask and no logit drift past \(\delta\)
+(\S\ref{sec:precision}). It is what keeps the conditional theorems
+honest about training as it happens rather than hypothetical nets.
 
 \bigskip
 
@@ -20022,19 +19954,26 @@ budgets are deductive, its interface constants (\(u\), \(e_{\exp}\),
 \label{sec:precision}
 
 Every theorem in this book is over exact reals, and the GPU computes in
-finite precision. Until recently that gap lived entirely in the empirical
-layer, where the oracles agree to float32 precision. It is now a theorem layer, and
-it has two halves of different reach. Keeping them apart is the honest
-part --- as is keeping the layer's generality apart from its
-usefulness, which \S~\ref{par:precision_reach} below returns to.
+finite precision. The empirical layer closes that gap to float32
+precision, where the oracles agree. A theorem layer closes part of it
+exactly, and it has two halves of different reach. Keeping them apart is
+the honest part --- as is keeping the layer's generality apart from its
+usefulness, which \S\ref{par:precision_reach} below returns to.
 The \emph{closeness} half
 (\(|\,\text{float op} - \text{real op}\,| \le\) budget) is
-per-operator: \texttt{FloatBridge.lean} budgets every operator the
-networks are built from, and the certified backward ties say each net's
-hand-written gradient chain is the certified one. The
+per-operator: the files under \texttt{LeanMlir/Proofs/Float/} budget
+dense, ReLU and its mask, convolution and depthwise convolution (plain
+and mixed-precision), max-pool, global average pool, the residual sum,
+BatchNorm, and the softmax cross-entropy head. GELU, LayerNorm, swish,
+sigmoid, squeeze-and-excitation and attention have no float budget, so
+the EfficientNet, ConvNeXt and ViT chapters are covered only through the
+operators they share with the rest. The certified backward ties say each
+net's hand-written gradient chain is the certified one. The
 \emph{descent} half (a rounded step provably decreases the loss)
 closes only for the shallow nets
-(\texttt{SgdDescent\{Linear,Mlp,Cnn,CnnFloat,Cifar\}.lean}). The way the chain avoids
+(\texttt{LeanMlir/Proofs/Training/SgdDescent/}, one file each for the
+linear net, the MLP and its biases, the CNN over \(\mathbb{R}\) and in
+float, and CIFAR). The way the chain avoids
 new axioms is the part worth explaining.
 
 \paragraph{The model is a hypothesis.}
@@ -20048,23 +19987,25 @@ inhabited and collapses every budget to zero. Nothing about IEEE-754 is
 postulated, and the theorems are conditional on the standard model, the
 same way the ReLU theorems are conditional on being off the corner, and
 the axiom audit is untouched. Two further design choices are forced by
-the hardware: the dot-product budgets are stated in the classical
-compounded form valid for every summation association, because
-IREE tiles and reorders reductions freely (the price is a fan-in factor
-\(n\cdot u\), and the tree-reduction bound below recovers
-\(\log_2 n\cdot u\) under a named balance hypothesis). And \(\exp\) enters
-as a hypothesis (\(|\widehat{\exp}(t) - e^t| \le e_{\exp}\, e^t\))
+the hardware. The dot-product budgets are proved for the left-fold
+association: the classical compounded bound holds for every summation
+order, and only that fold is formalized, so a backend that reassociates
+a reduction, as IREE does when it tiles, is outside the statement as
+proved. The price either way is a fan-in factor \(n\cdot u\). And
+\(\exp\) enters as a hypothesis
+(\(|\widehat{\exp}(t) - e^t| \le e_{\exp}\, e^t\))
 because GPU transcendentals have no IEEE specification.
-\(e_{\exp}\) is precisely the constant the margin probe pins on the
-device at 1--2 ULP (\emph{Measured against proven}, below), so the
-deductive and empirical layers meet at a named interface instead of a
-hand-wave.
+\(e_{\exp}\) is a named constant: the numeric instances below assume
+\(e_{\exp} \le 10^{-6}\), and nothing in the repository measures it, so
+the deductive and empirical layers meet at a named interface rather than
+a hand-wave, with that one constant still owed to a measurement.
 
 \paragraph{How far the model reaches, and where it stops being useful.}
 \label{par:precision_reach}
 Because \(u\) is a parameter, nothing in the chain is
 \texttt{float32}-specific. \texttt{Binary32Instance.lean} constructs the
-rounding operator as round-to-nearest on the \(p\)-bit-significand grid
+rounding operator as round-to-nearest on the grid with \(p\) fraction
+bits, a \((p+1)\)-bit significand,
 and instantiates it twice: \texttt{binary32} at \(p = 23\),
 \(u_{32} = 2^{-24}\), and \texttt{fp8E4M3} at \(p = 3\),
 \(u_{\mathrm{e4m3}} = 2^{-4}\). Every bridge quantifies over
@@ -20125,7 +20066,7 @@ one, from coordinatewise magnitude bounds alone. \emph{Backward}:
 every rounded SGD parameter entry against \(\theta -
 \mathrm{lr}\cdot(a_i c_j)\), entry for entry, and the
 \texttt{emitWeightGrad} quantities the render closes
-(\S~\ref{sec:verified_codegen}) prove equal to the
+(\S\ref{sec:verified_codegen}) prove equal to the
 \(\pdiv\)-Jacobian contractions, so the float step chains to the
 proven gradient. \emph{The loss head}:
 \texttt{softmax\_ce\_cot\_close} budgets the rounded
@@ -20139,16 +20080,20 @@ ratio sandwich that powers the float budgets turns out to be the Lipschitz
 engine too. With the float budget fused in, so that the step's
 \(\eta\) is the proven binary32 gradient accuracy rather than an
 assumed parameter, this closes for the linear classifier
-(\texttt{linear\_float\_sgd\_descends}), the entire MLP
-(\texttt{mlp\_\{output,hidden,input\}\_float\_sgd\_descends}), and the
-entire Chapter-3 CNN, both conv weights and biases
-(\texttt{cnn\_conv\{1,2\}\_float\_sgd\_descends}). What is rounded in
-those statements is the gradient and nothing else: each is one example,
-the update \(\theta - \alpha\,\tilde g\) is taken in \(\mathbb{R}\), the
-loss it decreases is the real one, and the \(\exp\) inside the softmax
-enters through an accuracy hypothesis that the trained-weight instance
-(\texttt{trained\_linear\_sgd\_descends\_concrete}) discharges at the
-exact \(\exp\). The \(\mathbb{R}\)-side
+(\texttt{linear\_float\_sgd\_descends}); for each of the MLP's three
+weight matrices with the rest of the net held fixed
+(\texttt{mlp\_\{output,hidden,input\}\_\allowbreak float\_sgd\_descends}; the MLP's
+biases descend over \(\mathbb{R}\) only, in \texttt{MlpBias.lean}); and
+for the Chapter-3 CNN's two convolutions, weights and biases
+(\texttt{cnn\_conv\{1,2\}\_\allowbreak float\_sgd\_descends},
+\texttt{cnn\_conv\{1,2\}\_bias\_\allowbreak float\_sgd\_descends}; its dense head has
+no float descent). Each statement moves one parameter group. What is
+rounded in those statements is the gradient and nothing else: each is
+one example, the update \(\theta - \alpha\,\tilde g\) is taken in
+\(\mathbb{R}\), the loss it decreases is the real one, and the \(\exp\)
+inside the softmax enters through an accuracy hypothesis that the
+trained-weight instance (\texttt{trained\_linear\_\allowbreak sgd\_descends\_\allowbreak concrete})
+discharges at the exact \(\exp\). The \(\mathbb{R}\)-side
 argument reaches one layer further:
 \texttt{cifar8\_lastConv\_sgd\_descends} is the first non-MNIST descent. It is
 CIFAR-8's last conv, proved as an instance of the CNN lemma at its
@@ -20173,13 +20118,14 @@ The numeric capstones are instantiated at the trained magnitudes
 of a real 12-epoch, 97.8\% GPU run (\(|W| \le 3/5\), covering the
 measured \(0.52\), and He initialization already exceeds prettier bounds
 in its tails). An \texttt{f32}/\texttt{f64} twin of that run
-(\texttt{scripts/certs/\allowbreak margin\_probe.py}, per-step coupled to match the
-single-step theorems) measures what the theorems bound. Table~\ref{tab:float_measured}
-is the two side by side.
+(\texttt{scripts/certs/\allowbreak margin\_probe.py}: a NumPy
+re-implementation from the same seed, coupled per step to match the
+single-step theorems) measures what the theorems bound.
+Table~\ref{tab:float_measured} is the two side by side.
 
 \begin{table}[H]
 \centering
-\caption{The worst-case float bounds against the values measured on a real run.}
+\caption{The worst-case float bounds against the values measured on the NumPy twin of a real run.}
 \label{tab:float_measured}
 \begin{tabular}{lll}
 quantity & worst-case theorem & measured \\
@@ -20187,16 +20133,167 @@ quantity & worst-case theorem & measured \\
 logit drift & \(\le 5100\) \;(\texttt{mnist\_mlp\_float\_budget}) & \(1.6\cdot 10^{-5}\) \\
 cotangent & \(\le 21/1000\) \;(\texttt{mnist\_cot\_budget}) & \(2.2\cdot 10^{-6}\) \\
 \(W_2\) SGD step & \(\le 5/4\) \;(\texttt{mnist\_w2\_step\_float\_budget}) & \(7.5\cdot 10^{-9}\) \\
-ReLU mask flips & \(0\) under margins & \(\mathbf{0}\,/\,29.5\mathrm{M}\) \\
+ReLU mask flips & \(0\) under margins & \(\mathbf{0}\,/\,29.5\mathrm{M}\) per layer \\
 \end{tabular}
 \end{table}
 
 The worst-case bounds hold
 with up to \(10^{8}\) to spare because worst-case composition
 compounds magnitude bounds the way no real activation pattern does. And the
-flip count is zero across 29.5 million measured pre-activations. The
+flip count is zero across 29.5 million measured pre-activations in each
+of the two hidden layers. The
 margin hypotheses are not a technicality the proofs hide behind. They
 are what training actually looks like.
+
+
+\chapter{The ImageNet tier}
+\label{app:imagenet_tier}
+\label{sec:getting_started_track4}
+
+Track 4 of Table~\ref{tab:getting_started_tracks}, the scale tier. Six
+networks train on full ImageNet-1k off the same certified renderer as their
+Imagenette counterparts, in the chapter order Track 3 uses. Every row trains
+on four 16\,GB cards; a 12\,GB card runs all but ConvNeXt-B and ViT-B, whose
+steps peak above it. A row is a (network, recipe) pair rather than a network
+--- ResNet-50 has a row per recipe --- and the recipe is the middle field of
+the job's own name.
+
+\begin{table}[H]
+\centering
+\caption{The Track~4 ImageNet-1k targets, their recipes and their job configs.}
+\label{tab:track4_runners}
+\begin{tabular}{@{}lll@{}}
+\textbf{Target} & \textbf{Recipe} & \textbf{Job config} \\[2pt]
+\hline \\[-6pt]
+\texttt{resnet34-imagenet-verified}     & \texttt{default} (the 2018 recipe) & \texttt{r34-default-bf16-4gpu} \\
+\texttt{resnet50-imagenet-verified}     & \texttt{2018}                      & \texttt{r50-2018-bf16-4gpu} \\
+\texttt{resnet50-imagenet-verified}     & \texttt{a3} (RSB-A3, train@$160$)  & \texttt{r50-a3-wxclip4x128-bf16-4gpu} \\
+\texttt{mobilenetv2-imagenet-verified}  & \texttt{default}                   & \texttt{mnv2-default-4gpu} \\
+\texttt{efficientnet-imagenet-verified} & \texttt{default}                   & \texttt{enet-default-4gpu} \\
+\texttt{convnext-imagenet-verified}     & \texttt{default} (the official recipe) & \texttt{cnx-default-emabf16-4gpu} \\
+\texttt{vit-imagenet-verified}          & \texttt{default} (DeiT-Ti)         & \texttt{vit-default-emabf16-4gpu} \\
+\end{tabular}
+\end{table}
+
+\noindent Every row has run. Three chapters print a pair from an earlier
+conf than the row trains today --- MobileNetV2, EfficientNet-B0 and
+ConvNeXt-T --- and each chapter's marker names it.
+\texttt{scripts/jobs/} also carries axis siblings that this table does not
+list --- an fp32 peer of each of the ResNet-34, ResNet-50 2018, RSB-A3 and
+ViT rows, and RSB-A3 at $8\times64$ --- which differ from their row in
+precision or in accumulation shape, never in the recipe, plus
+\texttt{selftest}, which exercises the supervisor without a GPU. Each
+config's header says which it is.
+
+\section*{This tier needs Python}
+
+ImageNet data does not sit in a directory the way MNIST and Imagenette do. It
+is streamed from tfds through a generated per-net shim, a Python
+script emitted from that net's own reference \texttt{TrainConfig}, so the
+augmentation the verified trainer consumes is the augmentation its
+JAX reference trains on by construction, and
+\texttt{scripts/shim\_wiring\_gate.py} checks the pairing. Generate them
+before the first run:
+
+\begin{verbatim}
+scripts/gen_shims.sh
+\end{verbatim}
+
+Each net names its own shim, and the driver refuses to start if the named file
+is absent rather than falling back to another net's, because an earlier
+fallback silently gave every net ResNet-34's augmentation.
+
+\section*{Running one}
+
+Single device, on the driver's own defaults:
+
+\begin{verbatim}
+LEAN_MLIR_MEM_FRACTION=0.97 .lake/build/bin/resnet34-imagenet-verified data
+\end{verbatim}
+
+The defaults are the recipe: the \texttt{mom256} render at batch $256$, a
+peak learning rate of $0.1$, $90$ epochs. The one knob a single card needs
+is the allocator's: at batch $256$ the fp32 step peaks above the
+$11.68$\,GiB the PJRT shim reserves by default on a 16\,GB card, and
+$0.97$ reserves $15.11$. Table~\ref{tab:imagenet_knobs} is the rest.
+
+\begin{table}[H]
+\centering
+\caption{The ImageNet drivers' environment knobs.}
+\label{tab:imagenet_knobs}
+\small
+\begin{tabular}{@{}p{0.3\textwidth}p{0.3\textwidth}p{0.34\textwidth}@{}}
+\textbf{Variable} & \textbf{Sets} & \textbf{Note} \\[2pt]
+\hline \\[-6pt]
+\cellleft \texttt{LEAN\_MLIR\_MEM\_FRACTION} & \cellleft the device memory the shim reserves & \cellleft $0.97$ on a 16\,GB card at batch 256 \\[4pt]
+\cellleft \texttt{LEAN\_MLIR\_VARIANT} & \cellleft which render the driver loads & \cellleft the batch is baked into the graph, not a runtime dimension \\[4pt]
+\cellleft \texttt{LEAN\_MLIR\_BATCH} & \cellleft the batch that variant was rendered at & \cellleft a mismatch is a shape error at the first invoke \\[4pt]
+\cellleft \texttt{LEAN\_MLIR\_BASE\_LR\_U} & \cellleft the base learning rate, in millionths & \cellleft \texttt{100000} = 0.1; an integer because this toolchain has no \texttt{String.toFloat?} \\[4pt]
+\cellleft \texttt{LEAN\_MLIR\_EPOCHS} & \cellleft the schedule's length & \cellleft \texttt{LEAN\_MLIR\_MAX\_EPOCHS} only caps a longer schedule, for a checkpointed prefix \\[4pt]
+\cellleft \texttt{PJRT\_REPLICAS} and \texttt{LEAN\_MLIR\_REPLICAS} & \cellleft data parallelism: the shim's client and compile options, and the driver's data-parallel invoke & \cellleft set only one and the run fails with ``compiled for $N$ replicas''; the job configs set both \\[4pt]
+\cellleft \texttt{LEAN\_MLIR\_LOWERER} & \cellleft \texttt{xla} or \texttt{iree} & \cellleft collectives exist only on the PJRT path, so this tier is XLA-only \\
+\end{tabular}
+\end{table}
+
+\noindent ResNet-50's driver defaults to the AdamW rate $0.001$ and its 2018
+render is heavy-ball, so left unset there it under-steps by
+$\sim$100$\times$, which looks like a broken render rather than a wrong
+knob. One card is the shape for a smoke test, not for the schedule. The
+four-card one, with every knob taken from the job's own config, is
+\texttt{lake run r34-default-bf16-4gpu once}, and \texttt{plan} prints the
+wall-clock on file --- the next section.
+
+\section*{Running one for a day and a half}
+
+These are multi-day runs, so they go through a supervisor
+(\texttt{scripts/supervise.sh}) that owns the device list, the epoch budget and
+the restart policy, and the job's own name is the command:
+
+\begin{verbatim}
+lake run r34-default-bf16-4gpu        # supervised: resumes, restarts on AER / heat / stall
+lake run r34-default-bf16-4gpu plan   # the precheck and the wall-clock on file; runs nothing
+lake run r34-default-bf16-4gpu once   # one foreground run with the job's env, no restarts
+lake run imagenet                # every row's plan, in chapter order; runs nothing
+lake run imagenet start          # the rows in order, each resuming from its checkpoint
+\end{verbatim}
+
+\noindent \texttt{lake run imagenet} is the tier itself, the fourth of the four.
+Bare, it only plans, because its fourteen rows --- the seven of
+Table~\ref{tab:track4_runners} and seven of the eight side quests of
+Table~\ref{tab:track4_side_quests} --- are weeks of four-card time;
+\texttt{start} is the confirmation.
+
+\section*{Side quests}
+
+Several chapters end in a variant that is rendered but is not a Track-4 runner,
+and the section heading says which of three kinds it is: a second recipe, a
+wider or deeper size, or an architecture the book reaches for once. They are
+collected here rather than in Table~\ref{tab:track4_runners} because they are
+side quests, not because they cannot start. All eight have job configs and
+launch like any Track-4 row. Seven ride in \texttt{lake run imagenet} right
+after their chapter's row; the 100-epoch MobileNetV4 job has no lake script
+of its own and launches as \texttt{scripts/supervise.sh mnv4-full-e100-4gpu}.
+Each row's section says where it stands.
+
+\begin{table}[H]
+\centering
+\caption{The side-quest renders: target, variant, job and section.}
+\label{tab:track4_side_quests}
+\small
+\begin{tabular}{@{}llll@{}}
+\textbf{Target} & \textbf{Variant} & \textbf{Job} & \textbf{Section} \\[2pt]
+\hline \\[-6pt]
+\texttt{resnet50-imagenet-verified}    & \texttt{a2} & \texttt{r50-a2-bf16-4gpu} & \S\ref{sec:r50_a2_a1_cost} \\
+\texttt{resnet50-imagenet-verified}    & \texttt{a1} & \texttt{r50-a1-bf16-4gpu} & \S\ref{sec:r50_a2_a1_cost} \\
+\texttt{mobilenetv4-imagenet-verified} & \texttt{full}, 100 ep & \texttt{mnv4-full-e100-4gpu} & \S\ref{sec:mnv4_side_quest} \\
+\texttt{mobilenetv4-imagenet-verified} & \texttt{full}, 500 ep & \texttt{mnv4-full-4gpu} & \S\ref{sec:mnv4_side_quest} \\
+\texttt{convnext-s-imagenet-verified}  & --- & \texttt{cnxs-default-emabf16-4gpu} & \S\ref{sec:convnext_sb} \\
+\texttt{convnext-b-imagenet-verified}  & --- & \texttt{cnxb-default-emabf16-4gpu} & \S\ref{sec:convnext_sb} \\
+\texttt{vit-s-imagenet-verified}       & --- & \texttt{vits-default-emabf16-4gpu} & \S\ref{sec:vit_sb} \\
+\texttt{vit-b-imagenet-verified}       & --- & \texttt{vitb-default-emabf16-4gpu} & \S\ref{sec:vit_sb} \\
+\end{tabular}
+\end{table}
+
 
 \chapter{Data availability}
 \label{app:data}

@@ -8,7 +8,7 @@ Each check is one sentence pattern in blueprint/src/content.tex and the thing it
   * bestiary files            "Forty-six further architectures", "bestiary's 46 architecture families"
                               against the number of Bestiary/*.lean files;
   * demo groups               "twelve of the groups carry a demo" against the `--- demo:` subsections;
-  * comparator                "re-runs ... over N theorems", "It runs N theorems", "The N are not the whole
+  * comparator                "re-runs ... over N theorems", "The N theorems split across three files", "The N are not the whole
                               proof suite", "What the N add" against the three tests/comparator/config*.json
                               name lists; "The last N are ChallengeTier.lean" and "the N-theorem tie"
                               against config-tier.json;
@@ -52,11 +52,10 @@ def main():
     cfg = {c: len(json.load(open(f'tests/comparator/{c}.json'))['theorem_names']) for c in ('config', 'config-arch', 'config-tier')}
     total = sum(cfg.values()); tier = cfg['config-tier']
     expect(r'over\s+(\d+) theorems, sandboxed', total, 'comparator total (Level 3)')
-    expect(r'It runs (\d+) theorems \(the foundation rules', total, 'comparator total (appendix)')
+    expect(r'The (\d+) theorems split across three files', total, 'comparator total (appendix)')
     expect(r'The (\d+) are not the whole proof suite', total, 'comparator total (appendix, "are not the whole")')
     expect(r'What the (\d+) add is a second', total, 'comparator total (appendix, "what the N add")')
     expect(r'The last (\d+) are \\texttt\{ChallengeTier\.lean\}', tier, 'comparator tier')
-    expect(r'the (\d+)-theorem tie / faithfulness / certificate tier', tier, 'comparator tier (appendix)')
 
     m = re.search(r'\\label\{tab:theorem_budget\}(.*?)\\end\{tabular\}', tex, re.S)
     if not m:
