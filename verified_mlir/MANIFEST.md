@@ -449,7 +449,7 @@ and `gen_mlir_manifest.py --selftest` replays those collisions through this deco
 | file | kind | variant | decoded | MB | writer | runs |
 |---|---|---|---|---|---|---|
 | `resnet50in160_fwd.mlir` | fwd | `—` | — | 0.2 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 10 |
-| `resnet50in160_fwd_eval.mlir` | fwd_eval | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 10 |
+| `resnet50in160_fwd_eval.mlir` | fwd_eval | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 12 |
 | `resnet50in160_lamb64bce_train_step.mlir` | train_step | `lamb64bce` | LAMB, BCE loss, batch 64 | 1.3 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | — |
 | `resnet50in160_lambacc4x64bce_train_step.mlir` | train_step | `lambacc4x64bce` | LAMB, grad-accum ×4, BCE loss, micro-batch 64 | 1.3 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 1 |
 | `resnet50in160_lambacc8x64bce_train_step.mlir` | train_step | `lambacc8x64bce` | LAMB, grad-accum ×8, BCE loss, micro-batch 64 | 1.3 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | — |
