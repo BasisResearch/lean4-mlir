@@ -109,7 +109,7 @@ the run behind the book's number:
 
 | row | book's pair (verified / JAX) | ran | the row now trains |
 |---|---|---|---|
-| MNv2 `mnv2-default-4gpu` | 71.12 / 71.63, `runs/2026-09-27-*` | 350 ep, old RMSProp form, depthwise decayed | the TF-slim README's 420 ep (`emarmstf…`) |
+| MNv2 `mnv2-default-4gpu` | ~~71.12 / 71.63, `runs/2026-09-27-*`~~ → **71.69 / 71.84**, `runs/2026-10-17-mnv2-default-verified` / `2026-10-15-mnv2-full-jax` (landed 2026-10-20, McNemar p = 0.30) | the TF-slim README's 420 ep (`emarmstf…`) | ✅ the book's pair since 2026-10-20 |
 | B0 `enet-default-4gpu` | 76.88 / 77.15, `09-12` / `jax/runs/enet_b0_imagenet_bf16_350ep` | pre-D3/D6/D13 | TF's code row for row (`emarmstf…`, SAME padding) |
 | ConvNeXt-T (after item 1) | 81.30 / 81.53, `09-18` | one-shot 256, clip, tanh GELU | the official 4096 recipe |
 
@@ -340,7 +340,7 @@ after `tab:r50_paths` say both halves rerun.
 | R50-2018 | 76.76 / 77.09 | Bag of Tricks (deviations above, less no-bias-decay) | no-bias-decay: **rerun of both halves prepared, not launched** (item 7) |
 | R50-A3 | 77.58 / 78.05 at 235 | RSB-A3 + F6 | both halves rescored at timm's 235 (verified on ares 2026-10-20); book moved with them, marker gone |
 | R50-A2 / A1 | — | RSB | side quest, not run; RASampler (F3) still index-level-less |
-| MNv2 | 71.63 / 71.12 | TF-slim README, 420 ep | pair predates recipe; **rerun of both halves launched 2026-10-19** (the user) |
+| MNv2 | 71.84 / 71.69 | TF-slim README, 420 ep | ✅ landed 2026-10-20 (JAX 48.7 h, verified 63.7 h on ares), McNemar p = 0.30; book moved 2026-10-20, marker gone |
 | MNv4-Conv-M 100 ep | 77.35 headline | tf-models yaml, 100 ep | landed; D18 timm-protocol rescore open |
 | MNv4-Conv-M 500 ep | — | tf-models yaml, 500 ep | not run; the row |
 | B0 | 77.15 / 76.88 | TF EfficientNet, every row | pair predates recipe; **rerun of both halves launched 2026-10-19** (the user) |
@@ -403,7 +403,7 @@ entry current; intro rewritten (e26d2d45). Items 1, 2, 3, 4, 5 and 6
 
 | pair | JAX conf | verified conf | box-hours |
 |---|---|---|---|
-| MNv2, 420 ep | `mnv2-full-jax-4gpu` | `mnv2-default-4gpu` | 49 + 63 |
+| ~~MNv2, 420 ep~~ landed 2026-10-20 | `mnv2-full-jax-4gpu` | `mnv2-default-4gpu` | 48.7 + 63.7, measured |
 | B0, TF 350 ep | `enet-full-jax-4gpu` | `enet-default-4gpu` | 49 + 67 |
 | ConvNeXt-T | `cnx-default-jax-4gpu` | `cnx-default-emabf16-4gpu` | 76 + 109 |
 | ConvNeXt-S | `cnxs-default-jax-4gpu` | `cnxs-default-emabf16-4gpu` | 106 + 144 |

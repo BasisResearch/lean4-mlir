@@ -73,10 +73,10 @@ def mobilenetV2Imagenet : NetSpec where
     * Length — "about 700K steps" on 8 clones of 96: 700,000 × 768 / 1,281,167 ≈ 420 epochs.
     * The reference number is scored through an f32 forward (`evalF32`), F8.
 
-    Disclosed, not reproduced: slim's eval (`central_crop(0.875)` on both sides, then a
-    non-aspect-preserving bilinear resize to 224) — the in-training and post-hoc scores use timm's
-    224 / 0.875 protocol, as every pair in the book; and the sixteen asynchronous workers of 96,
-    which are four synchronous replicas of 64 here. -/
+    Disclosed, not reproduced: the sixteen asynchronous workers of 96, which are four synchronous
+    replicas of 64 here. Slim's eval (`central_crop(0.875)` of both sides, then TF 1's bilinear to
+    224²) is reproduced since D23 (`evalCropSlim`); timm's 224 / 0.875 is kept beside it as the
+    post-hoc second score, as every pair in the book. -/
 def mobilenetV2ImagenetConfig : TrainConfig where
   learningRate   := 0.12    -- README: learning_rate 0.045*NUM_GPUS on batch_size 96*NUM_GPUS, so 0.045 per 96 images: 0.12 at 256
   batchSize      := 256
