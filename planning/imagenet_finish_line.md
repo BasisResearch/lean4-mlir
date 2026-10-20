@@ -170,11 +170,11 @@ the run behind the book's number:
 - [x] Update the confs whose prechecks grep the eval resize line. — None does: the prechecks grep
       `_CROP_PCT = 0.875`, the `_timm` function name and TF-slim's `oy = tf.cast(…)` line, none of
       which moved (`grep -n 'tf.round\|_CROP_PCT\|decode_center_crop' scripts/jobs/*.conf`).
-- [~] **The landed A3 pair** (78.08 / 77.60) was scored at 236:
+- [x] **The landed A3 pair** (78.08 / 77.60) was scored at 236 — both halves rescored at 235 (JAX 2026-10-19, verified 2026-10-20 on ares: 78.05 / 93.97, McNemar at the headline bitmaps 1,891 / 2,126, p = 0.0002); the book's A3 pair is 77.58 / 78.05 since 2026-10-20:
   - Rescore both checkpoints at 235 on atlas's CPU; `runs/2026-10-12-r50-a3-jax/rescore.sh` is the
     template. — JAX half done (`rescore_f6.sh`, 2026-10-19): **77.58 / 93.66** at 235 against
-    77.61 / 93.61 at 236, −13 images top-1, +24 top-5. The verified half: **owed**, with the
-    pair's book numbers to move together or not at all. Its checkpoint (2611 `.bin` / `.bn` /
+    77.61 / 93.61 at 236, −13 images top-1, +24 top-5. The verified half: **done 2026-10-20** on ares
+    (`rescore_f6.sh pre|f6`: 78.08 / 93.85 control, 78.05 / 93.97 at F6), the pair moved together. Its checkpoint (2611 `.bin` / `.bn` /
     `.epoch`) is on atlas at `~/lean/incoming/` since 2026-10-19, but atlas cannot score it:
     `score-checkpoint` through IREE `llvm-cpu` segfaults in the first invoke on `local-task` and
     runs single-threaded for hours on `local-sync` (noted in
@@ -338,7 +338,7 @@ after `tab:r50_paths` say both halves rerun.
 |---|---|---|---|
 | R34 | 74.14 / 74.17 | Bag of Tricks (deviations above, less the three rows of item 7) | crop + the three rows: **rerun of both halves prepared, not launched** (items 2, 7) |
 | R50-2018 | 76.76 / 77.09 | Bag of Tricks (deviations above, less no-bias-decay) | no-bias-decay: **rerun of both halves prepared, not launched** (item 7) |
-| R50-A3 | 77.61 / 78.08 at 236 | RSB-A3 + F6 | reference rescored at 235 → 77.58 / 93.66; **verified rescore owed**, parked for a PJRT box (atlas can't score it); book keeps 77.61 / 78.08 + marker |
+| R50-A3 | 77.58 / 78.05 at 235 | RSB-A3 + F6 | both halves rescored at timm's 235 (verified on ares 2026-10-20); book moved with them, marker gone |
 | R50-A2 / A1 | — | RSB | side quest, not run; RASampler (F3) still index-level-less |
 | MNv2 | 71.63 / 71.12 | TF-slim README, 420 ep | pair predates recipe; **rerun of both halves launched 2026-10-19** (the user) |
 | MNv4-Conv-M 100 ep | 77.35 headline | tf-models yaml, 100 ep | landed; D18 timm-protocol rescore open |
@@ -351,7 +351,7 @@ after `tab:r50_paths` say both halves rerun.
 
 Book and planning, today: markers carry what each pair owes and nothing about the queue
 (64fe5437); DAWNBench pinned and the ResNet rows named Bag of Tricks (443bdd7e); bestiary ResNet
-entry current; intro rewritten (e26d2d45). Items 1, 2, 3, 4, 5 (bar the verified A3 rescore) and 6
+entry current; intro rewritten (e26d2d45). Items 1, 2, 3, 4, 5 and 6
 (087ff789) done. Still open from the audit: the Parked list below, D18, F3, the manifest + gate build.
 
 ## Parked: found by the audit, not yet approved (ask before doing)

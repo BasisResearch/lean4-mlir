@@ -76,3 +76,24 @@ bitmaps, the JAX trainer does not.
   atlas's CPU, 38,803 set) against this run's e100 bitmap (39,039): both right 36,902, both wrong 9,060,
   only JAX 1,901, only verified 2,137 — 4,038 discordant (8.1 %), net +236, McNemar exact p = **0.0002**.
   These two checkpoints are separable; the 10-07/09 pair's were not (p = 0.20).
+
+## The eval resize at timm's integers — `rescore_f6.sh`, 2026-10-20
+
+F6 (`planning/imagenet_parity.md` §9.3), the JAX half's `rescore_f6.sh` section has the protocol: the
+short side at `floor(224 / 0.95) = 235`, not 236, and the long side truncated, not rounded.
+`rescore_f6.sh` ran on ares (4× 4060 Ti, ~78 s a mode) over the 2611 checkpoint:
+
+| mode | protocol | top-1 | top-5 |
+|---|---|---|---|
+| `pre` | 236, rounded long side (the control; in-training 39,039) | 78.076 (39,038) / **78.08** | 93.846 / **93.85** |
+| `f6`  | 235, truncated long side | 78.050 (39,025) / **78.05** | 93.966 / **93.97** |
+
+−13 images on top-1 (the JAX half moved the same −13), +60 on top-5. **The pairing at F6** —
+`scripts/demos/mcnemar.py` over `../2026-10-12-r50-a3-jax/bitmaps/r50-a3_jax_f32_f6.bin` (the headline's
+own CPU rescore, 38,790) and this run's `bitmaps/a3_f6_f6.bin` (39,025; copied from ares): both right
+36,899, both wrong 9,084, only JAX 1,891, only verified 2,126 — 4,017 discordant (8.0 %), net +235,
+McNemar exact p = **0.0002** (pre-F6: 4,038 / 1,901 / 2,137 / +236, p = 0.0002). The ares session's
+first pairing used the JAX checkpoint rescored on ares's own GPUs instead (38,794, a 4-image card gap):
+1,889 / 2,120, p = 0.00028 — the same answer. Logs: `rescore_f6_pre.log` / `rescore_f6_f6.log`. Both
+bitmaps are `runs/**/*.bin`, git-ignored; they live on atlas (and the verified one on ares).
+**The book's A3 pair is 77.58 / 78.05 at 235 from 2026-10-20**, top-5 93.66 / 93.97.

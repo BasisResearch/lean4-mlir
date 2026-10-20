@@ -7185,7 +7185,7 @@ Table~\ref{tab:r50_jax} is both runs.
 
 \begin{table}[H]
 \centering
-\caption{ResNet-50 on ImageNet-1k under the 2018 and RSB-A3 recipes, reference trainer (JAX): both rows the final checkpoints scored over all $50{,}000$ validation images through an fp32 forward.}
+\caption{ResNet-50 on ImageNet-1k under the 2018 and RSB-A3 recipes, reference trainer (JAX): both rows the final checkpoints scored over all $50{,}000$ validation images through an fp32 forward, A3 at \texttt{timm}'s eval resize (short side $\lfloor 224/0.95 \rfloor = 235$, long side truncated as torchvision does).}
 \label{tab:r50_jax}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{l l l r r r r r}
@@ -7193,7 +7193,7 @@ Table~\ref{tab:r50_jax} is both runs.
 GPU & Recipe & BN group & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
 4$\times$ 3060 (bf16) & 2018   & 256 (global)   & $\sim$17.2 min & 90  & $\sim$25.8 hr & $\mathbf{76.76\%}$ & $\mathbf{93.39\%}$ \\
-4$\times$ 4060 Ti (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$8.0 min  & 100 & $\sim$13.4 hr & $\mathbf{77.61\%}$ & $\mathbf{93.61\%}$ \\
+4$\times$ 4060 Ti (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$8.0 min  & 100 & $\sim$13.4 hr & $\mathbf{77.58\%}$ & $\mathbf{93.66\%}$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -7210,8 +7210,8 @@ as a side effect of accumulation rather than a choice, and the A3 render
 below reproduces it by accumulating the same way. The
 architecture lever: against ResNet-34's $74.14\%$ on the same
 recipe, the bottleneck is worth $+2.62$ points. The recipe lever: A3 adds
-$+0.85$ on the same network, in less wall clock, because it trains at
-$160^2$. It lands $0.49$ under the paper's $78.1\%$ and $0.44$ under the
+$+0.82$ on the same network, in less wall clock, because it trains at
+$160^2$. It lands $0.52$ under the paper's $78.1\%$ and $0.47$ under the
 $78.05\%$ that \texttt{timm}'s own \texttt{resnet50.a3\_in1k} weights
 score under this protocol, a tenth of a point past one run's $\pm0.37$;
 the verified render of the same recipe, Table~\ref{tab:r50_pjrt}, lands on
@@ -7261,7 +7261,7 @@ outright only from epoch~89. At the matched epoch~90 it leads by $0.31$
 ($77.11$ against $76.80$), and its last ten epochs of anneal add the rest.
 The schedules are different lengths, so at a shared epoch the two cosines
 are at different
-points in their decay; the endpoints are what the $+0.99$ is measured from.
+points in their decay; the endpoints are what the $+0.96$ is measured from.
 
 \prosesection{The verified path (PJRT)}
 \label{sec:r50_pjrt}
@@ -7281,7 +7281,7 @@ lake run r50-a3-wxclip4x128-bf16-4gpu
 
 \begin{table}[H]
 \centering
-\caption{ResNet-50 on ImageNet-1k under the 2018 and RSB-A3 recipes, verified path (PJRT), scored over the same $50{,}000$ images.}
+\caption{ResNet-50 on ImageNet-1k under the 2018 and RSB-A3 recipes, verified path (PJRT), scored over the same $50{,}000$ images under the same protocols: the 2018 row the final in-training read, the A3 row the final checkpoint rescored at \texttt{timm}'s $235$.}
 \label{tab:r50_pjrt}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{l l l r r r r r}
@@ -7289,7 +7289,7 @@ lake run r50-a3-wxclip4x128-bf16-4gpu
 GPU & Recipe & BN group & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
 4$\times$ 3060 (bf16) & 2018   & 256 (global)   & $\sim$21.1 min & 90  & $\sim$31.6 hr & $\mathbf{77.09\%}$ & $\mathbf{93.36\%}$ \\
-4$\times$ 4060 Ti (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$13.1 min & 100 & $\sim$21.9 hr & $\mathbf{78.08\%}$ & $\mathbf{93.84\%}$ \\
+4$\times$ 4060 Ti (bf16) & RSB-A3 & 512 (Ghost-BN) & $\sim$13.1 min & 100 & $\sim$21.9 hr & $\mathbf{78.05\%}$ & $\mathbf{93.97\%}$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -7356,8 +7356,8 @@ steps/epoch         & 625                      & 625 \\
 optimizer           & LAMB                     & LAMB \\
 schedule stepped    & per epoch (\texttt{timm}) & per epoch (\texttt{timm}) \\
 train / eval res    & 160 / 224                & 160 / 224 \\
-\textbf{val top-1}  & $\mathbf{77.61\%}$       & $\mathbf{78.08\%}$ \\
-\textbf{val top-5}  & $\mathbf{93.61\%}$       & $\mathbf{93.84\%}$ \\
+\textbf{val top-1}  & $\mathbf{77.58\%}$       & $\mathbf{78.05\%}$ \\
+\textbf{val top-5}  & $\mathbf{93.66\%}$       & $\mathbf{93.97\%}$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -7385,34 +7385,33 @@ box). Not taken, on either path: \texttt{timm}'s then-default
 \texttt{cooldown\_epochs 10} at the floor (the paper counts 100 epochs,
 and $10^{-6}$ moves nothing).
 
-\medskip\noindent\textbf{[TODO: both A3 numbers above were scored with the
-eval resize's short side at $236$, where \texttt{timm} takes
-$\lfloor 224 / 0.95 \rfloor = 235$, and the long side rounded where
-torchvision truncates it. The emitter now matches \texttt{timm} and
-torchvision; the reference checkpoint rescored under it reads
-$77.58$ / $93.66$ ($-13$ images on top-1, $+24$ on top-5,
-\texttt{runs/2026-10-12-r50-a3-jax/rescore\_f6.sh}). The verified
-checkpoint's rescore is owed, and the pair moves together: the column and
-the paired test above are the $236$ scoring of both halves until then.]}
+\medskip\noindent Both A3 numbers are the final checkpoints rescored
+at \texttt{timm}'s eval resize, the short side at
+$\lfloor 224 / 0.95 \rfloor = 235$ and the long side truncated as
+torchvision's \texttt{Resize} does. The trainers scored them at $236$
+with the long side rounded, $77.61$ / $78.08$; the move is $-13$ and
+$-14$ images on top-1 and $+24$ and $+60$ on top-5, a rounding-sized
+protocol difference, and the pair keeps its order and its gap under
+either.
 
 \medskip\noindent\textbf{The verified path lands ahead on both recipes}, by
-$0.33$ points on 2018 and $0.47$ on A3 on top-1 ($-0.03$ and $+0.23$ on
+$0.33$ points on 2018 and $0.47$ on A3 on top-1 ($-0.03$ and $+0.31$ on
 top-5) --- 2018's inside the 95\% Wilson interval, $\pm0.37$ at $77\%$ on
 $50{,}000$ images, A3's a tenth of a point past it, at one seed per cell.
 Paired on the same images, both read the same way. On 2018 the two
 checkpoints disagree on $4{,}622$, $2{,}228$ against $2{,}394$, and
 McNemar's exact test puts $p = 0.015$ on the $166$-image lead; on A3 they
-disagree on $4{,}038$, $1{,}901$ against $2{,}137$, and the $236$-image
-lead is $p = 0.0002$ (each bitmap is from the same fp32 scoring of the
-final checkpoint as its headline). The verified checkpoint is ahead on this validation
+disagree on $4{,}017$, $1{,}891$ against $2{,}126$, and the $235$-image
+lead is $p = 0.0002$ (each bitmap is from the same scoring of the final
+checkpoint as its headline). The verified checkpoint is ahead on this validation
 set on both recipes. With one seed per arm a paired lead is a statement
 about two trained models, not about the two paths --- the eight to nine
 percent of images the two disagree on is what two runs of one recipe
 produce, whichever is ahead --- and whether the verified path is ahead by
 construction needs seeds per arm; that it has landed ahead on all three
 ResNet pairs ($+0.03$, $+0.33$, $+0.47$) is the pattern seeds would test.
-\textbf{And the recipe delta replicates}: A3 beats 2018 by $+0.85$ on the
-reference and $+0.99$ on the verified path. Agreement at a
+\textbf{And the recipe delta replicates}: A3 beats 2018 by $+0.82$ on the
+reference and $+0.96$ on the verified path. Agreement at a
 single configuration can be a coincidence of that configuration; a
 difference that reproduces across two independent implementations is harder
 to arrange by accident, and it is what a one-row comparison cannot show. One
@@ -7442,7 +7441,7 @@ Figure~\ref{fig:r50_paths_curves} every epoch.
 
 \begin{table}[H]
 \centering
-\caption{ResNet-50 validation top-1 at selected epochs, both recipes on both paths. These are the in-training reads, as are the curves below; the 2018 reference's headline $76.76$ is the fp32 rescore of the same epoch-90 checkpoint, read in training as $76.80$.}
+\caption{ResNet-50 validation top-1 at selected epochs, both recipes on both paths. These are the in-training reads, as are the curves below; the 2018 reference's headline $76.76$ is the fp32 rescore of the same epoch-90 checkpoint, read in training as $76.80$, and the A3 headlines $77.58$ / $78.05$ are the epoch-100 checkpoints rescored at \texttt{timm}'s $235$, read in training as $77.60$ / $78.08$.}
 \label{tab:r50_paths_epochs}
 \begin{tabular}{@{}l r r r r r r r r@{}}
 \hline
@@ -7590,7 +7589,7 @@ three tiers.
 \hline
 tier & epochs & train res & verified render & top-1 \\
 \hline
-A3 (\texttt{rsb-faithful}) & 100 & $160$ & shipped, and run (\S\ref{sec:r50_pjrt}) & $\mathbf{78.08\%}$ \\
+A3 (\texttt{rsb-faithful}) & 100 & $160$ & shipped, and run (\S\ref{sec:r50_pjrt}) & $\mathbf{78.05\%}$ \\
 A2 (\texttt{a2})           & 300 & $224$ & rendered, sd $0.05$, no EMA & $79.8\%$ (paper) \\
 A1 (\texttt{a1})           & 600 & $224$ & rendered, sd $0.05$, no EMA & $80.4\%$ (paper) \\
 \hline
@@ -12035,7 +12034,7 @@ The full 300-epoch tier (\texttt{convnext-tiny-imagenet full},
 \texttt{convNeXtTinyImagenetConfigFull}) reached $\mathbf{81.53\%}$ top-1
 and $\mathbf{95.50\%}$ top-5 on the held-out validation pass. That is the
 strongest result in this book's sweep by a wide margin, ahead of
-ResNet-50 RSB-A3 ($77.61\%$), EfficientNet-B0 ($77.15\%$) and ResNet-34
+ResNet-50 RSB-A3 ($77.58\%$), EfficientNet-B0 ($77.15\%$) and ResNet-34
 ($74.14\%$), and it lands within
 $\sim$0.6\% of ConvNeXt-T's $82.1\%$ paper headline from a from-scratch
 Lean$\to$JAX-codegen reimplementation. Two candidate explanations for
