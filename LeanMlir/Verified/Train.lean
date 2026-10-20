@@ -65,7 +65,8 @@ structure VerifiedNet where
       `initKind`: 0 = random weight (conv: He fan-out; dense: Glorot; see `mkParam`), 1 = ones (γ),
       2 = zeros (β / bias), 3 = 1e-6 (layer scale), 4 = zero-γ (0 under `zeroGammaInit`, else 1),
       5 = embedding (σ 0.02 under `vitInit`, else 0), 7 = SE FC (var 2/out under `seFanOutInit`,
-      else Glorot). -/
+      else Glorot), 8 = the patch-embed bias (PyTorch's `Conv2d` default `U(±1/√fan_in)` under
+      `patchEmbedBiasTorch`, else 0). -/
   specs    : Array (Array Nat × Nat)
   /-- Per-example flattened input width (e.g. `3 * 224 * 224`). -/
   d0       : Nat
@@ -204,6 +205,17 @@ structure VerifiedConfig where
       Host-side, no re-render. Off by default, so every other driver and every gate that inits
       through `mkParam` is byte-identical; `LEAN_MLIR_ZERO_GAMMA=0|1` overrides it at launch. -/
   zeroGammaInit : Bool := false
+  /-- **The patch-embed bias at PyTorch's `Conv2d` default — DeiT's init, the verified peer of
+      `TrainConfig.initPatchEmbedBiasTorch`.** timm's `init_weights_vit_timm` and DeiT's
+      `_init_weights` re-initialize `nn.Linear` only, so the patch conv keeps
+      `kaiming_uniform_(a=√5)` for weight and bias alike: `U(±1/√fan_in)`, `fan_in = 3·16·16 = 768`,
+      ±0.036 at every ViT width. `vitInit` already draws the WEIGHT there; this flag moves the one
+      bias tensor (init kind 8, `VLayer.patchEmbed`) from 0 to the same rule, variance-matched
+      through `mkParam`'s Bates-3 draw as every init here is (σ = 1/√(3·768) = 0.02083). Host-side,
+      no re-render. Off by default: the Imagenette ViT driver and the landed ViT-Ti pair started it
+      at 0 (`planning/recipe_prep.md` R4, disclosed in the book); the ViT-S and ViT-B ImageNet
+      drivers set it. `LEAN_MLIR_PATCH_BIAS_TORCH=0|1` overrides it at launch. -/
+  patchEmbedBiasTorch : Bool := false
   /-- **Squeeze-excite FCs at the reference's fan — EfficientNet's init.** The verified net carries
       each SE squeeze/excite as a rank-2 dense `[in,out]` (init kind 7, `VLayer.mbConvSE`); the
       JAX reference emits them as 1×1 convs under TF's `variance_scaling(2, fan_out)`, i.e.
@@ -540,11 +552,20 @@ def mkParam (seed : Nat) (dims : Array Nat) (kind : Nat)
     (vitInit : Bool := false) (biasSigma : Option Float := none)
     (heFanIn : Bool := false) (cnxInit : Bool := false) (dwFanK2 : Bool := false)
     (zeroGamma : Bool := false) (seFanOut : Bool := false) (truncNormal : Float := 0.0)
-    (headTfUniform : Bool := false) :
+    (headTfUniform : Bool := false) (patchBiasFanIn : Nat := 0) :
     IO ByteArray := do
   let n := dims.foldl (· * ·) 1
   match kind with
   | 1 => F32.const n.toUSize 1.0
+  -- **Kind 8 = the patch-embed conv bias.** PyTorch's `Conv2d` default `U(±1/√fan_in)` when the
+  -- caller passes the conv's fan-in (`VerifiedConfig.patchEmbedBiasTorch`; the trainer reads it
+  -- off the preceding weight spec, `ic·k·k`), variance-matched as the `vitInit` weight rule below
+  -- is: σ = 1/√(3·fan_in). 0, kind 2's value, without it, so every caller that does not pass the
+  -- fan-in — the gates, the Imagenette driver, the landed ViT-Ti pair — is byte-identical.
+  | 8 =>
+    if patchBiasFanIn > 0 then
+      F32.heInit seed.toUSize n.toUSize (1.0 / Float.sqrt (3.0 * patchBiasFanIn.toFloat))
+    else F32.const n.toUSize 0.0
   -- **Kind 4 = zero-γ**, the residual-closing BN of a ResNet bottleneck. 0 under `zeroGamma`
   -- (`VerifiedConfig.zeroGammaInit`), the JAX reference's `jnp.zeros`; 1, kind 1's value, without
   -- it, so every caller that does not pass the flag is byte-identical to the old kind-1 spec.
@@ -2269,11 +2290,23 @@ new-batch weight {bnMomShown}{if accOn then s!" = 1 − {cfg.bnMomentum}^(1/{acc
   if headTfUniform then
     let heads := net.specs.filter (fun s => s.2 == 0 && s.1.size == 2)
     IO.println s!"  ▸ INIT: classifier U(±1/√out) on {heads.size} dense (TF EfficientNet's dense_kernel_initializer: variance 1/(3·{(heads.map (·.1[1]!)).toList}), not Glorot"
+  let patchBiasTorch := match (← IO.getEnv "LEAN_MLIR_PATCH_BIAS_TORCH") with
+    | some "1" => true
+    | some "0" => false
+    | _        => cfg.patchEmbedBiasTorch
+  if patchBiasTorch && net.specs.any (·.2 == 8) then
+    IO.println "  ▸ INIT: patch-embed bias on PyTorch's Conv2d default U(±1/√fan_in) (DeiT leaves it there), not 0"
+  -- Kind 8 needs the conv's fan-in, which is the PRECEDING spec's `ic·k·k`: `VLayer.patchEmbed`
+  -- emits `(W=[oc,ic,k,k], 0)` then `(b=[oc], 8)`, so `prev` is always that weight.
+  let mut prev : Array Nat := #[]
   for spec in net.specs do
+    let fanIn := if spec.2 == 8 && patchBiasTorch && prev.size == 4
+      then prev[1]! * prev[2]! * prev[3]! else 0
     parts := parts.push (← mkParam seed spec.1 spec.2 cfg.vitInit (cnxInit := cfg.cnxInit)
       (dwFanK2 := dwFanK2) (zeroGamma := zeroGamma) (seFanOut := seFanOut)
-      (truncNormal := truncNormal) (headTfUniform := headTfUniform))
+      (truncNormal := truncNormal) (headTfUniform := headTfUniform) (patchBiasFanIn := fanIn))
     seed := seed + 1
+    prev := spec.1
   -- LEAN_MLIR_PERTURB_R: displace the initial parameters along a random unit vector of exact L2
   -- norm r, before any training. This is the CONDITIONING probe for gate G2: if an r that is
   -- f32-epsilon-sized relative to ||theta|| moves the resulting gradient about as much as the

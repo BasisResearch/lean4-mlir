@@ -440,11 +440,13 @@ noncomputable def vitForwardTiny (gf : GeluForm) (w : ViTTinyWeights) : Vec (3 *
     w.Wc w.bc w.cls w.pos w.ε w.blocks w.γF w.βF w.Wcls w.bcls
 
 /-- Math denotation of the committed ViT-Tiny spec: the 17-entry layer list (12 untied
-    `.transformerBlock`s, per-channel `[192]` LN, 1D CLS) denotes to `vitForwardTiny`. -/
+    `.transformerBlock`s, per-channel `[192]` LN, 1D CLS) denotes to `vitForwardTiny`. The stem
+    is `.patchEmbed 3 192 16` — a `conv 3 192 16 16` whose bias carries init kind 8; the
+    denotation is the same conv, the kind is `mkParam`'s business. -/
 noncomputable def denoteVitTiny (gf : GeluForm) (layers : List VLayer) (w : ViTTinyWeights) :
     Vec (3 * 224 * 224) → Vec 10 :=
   match layers with
-  | [.conv 3 192 16 16,
+  | [.patchEmbed 3 192 16,
      .param #[192] 5, .param #[197, 192] 5,
      .transformerBlock 192 768, .transformerBlock 192 768, .transformerBlock 192 768,
      .transformerBlock 192 768, .transformerBlock 192 768, .transformerBlock 192 768,

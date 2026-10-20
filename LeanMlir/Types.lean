@@ -1173,6 +1173,14 @@ structure TrainConfig where
       ViT-Ti, while the patch embed is ~6× too NARROW (it divides by the
       output fan `dim·p·p` rather than the input fan `ic·p·p`). -/
   vitInit : Bool := false
+  /-- The patch-embed conv BIAS at PyTorch's `nn.Conv2d` default too: `U(±1/sqrt(fan_in))`,
+      `fan_in = ic·p·p = 768`, ±0.036 at every ViT width. `vitInit` draws the weight there but
+      left the bias at 0, which timm/DeiT do not (`init_weights_vit_timm` and `_init_weights`
+      touch `nn.Linear` only; `planning/recipe_prep.md` R4). One extra key split, under the flag
+      only, so a trainer without it is byte-identical — the landed ViT-Ti pair keeps its 0
+      (disclosed); ViT-S and ViT-B set it. The verified peer is
+      `VerifiedConfig.patchEmbedBiasTorch` (init kind 8). -/
+  initPatchEmbedBiasTorch : Bool := false
   /-- ConvNeXt paper weight init, replacing the generic Xavier-uniform for the
       ConvNeXt-shaped nets. Off by default; turn it on per-recipe.
 

@@ -37,6 +37,8 @@ def vitBImagenet : NetSpec where
     is a finding about the recipe at this width, not a reason to clip. -/
 def vitBImagenetConfig : TrainConfig where
   vitInit        := true            -- timm/DeiT trunc_normal(0.02) init, not the emitter's Xavier-uniform
+  initPatchEmbedBiasTorch := true   -- and the patch-embed BIAS on PyTorch's Conv2d default, as DeiT
+                                    -- leaves it (recipe_prep R4); the landed Ti pair started it at 0
   learningRate   := 0.001           -- DeiT's 5e-4 · 1024/512, as ViT-Ti
   batchSize      := 1024            -- DeiT-B's batch (8 × 128 there); the `accum` recipe below runs it
   epochs         := 300

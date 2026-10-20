@@ -1222,7 +1222,7 @@ def vitVerified : VerifiedNetSpec where
   imageW   := 224
   data     := .imagenette
   layers   := [
-    .conv 3 192 16 16,            -- patch embed 16×16/s16 (3→192)   224→14×14=196
+    .patchEmbed 3 192 16,         -- patch embed 16×16/s16 (3→192)   224→14×14=196; bias kind 8
     .param #[192] 5,              -- CLS token  [192] (1D — matches the proof-tied render's `cls : Vec 192`)
     .param #[197, 192] 5,         -- positional embedding  [197,192]
     .transformerBlock 192 768,    -- 12 pre-norm blocks @ dim 192, MLP 768
@@ -1289,7 +1289,7 @@ def vitImagenetVerified : VerifiedNetSpec where
   -- that a per-image comparison would not have shown.
   shimScript := "generated_vit_tiny_imagenet_shim.py"
   layers   := [
-    .conv 3 192 16 16,            -- patch embed 16×16/s16 (3→192)   224→14×14=196
+    .patchEmbed 3 192 16,         -- patch embed 16×16/s16 (3→192)   224→14×14=196; bias kind 8
     .param #[192] 5,              -- CLS token  [192]
     .param #[197, 192] 5,         -- positional embedding  [197,192]
     .transformerBlock 192 768,    -- 12 pre-norm blocks @ dim 192, MLP 768
@@ -1338,7 +1338,7 @@ def vitSImagenetVerified : VerifiedNetSpec where
   data     := .imagenet
   shimScript := "generated_vit_tiny_imagenet_shim.py"
   layers   := [
-    .conv 3 384 16 16,            -- patch embed 16×16/s16 (3→384)   224→14×14=196
+    .patchEmbed 3 384 16,         -- patch embed 16×16/s16 (3→384)   224→14×14=196; bias kind 8
     .param #[384] 5,              -- CLS token  [384]
     .param #[197, 384] 5,         -- positional embedding  [197,384]
     .transformerBlock 384 1536,
@@ -1389,7 +1389,7 @@ def vitBImagenetVerified : VerifiedNetSpec where
   data     := .imagenet
   shimScript := "generated_vit_tiny_imagenet_shim.py"
   layers   := [
-    .conv 3 768 16 16,
+    .patchEmbed 3 768 16,         -- patch embed 16×16/s16 (3→768); bias kind 8
     .param #[768] 5,
     .param #[197, 768] 5,
     .transformerBlock 768 3072,
@@ -1424,6 +1424,15 @@ def vitBImagenetVerified : VerifiedNetSpec where
 #guard vitImagenetVerified.toSpecs.size == vitVerified.toSpecs.size
 #guard vitImagenetVerified.toSpecs.pop.pop == vitVerified.toSpecs.pop.pop
 #guard vitImagenetVerified.toSpecs.back! == (#[1000], 2)
+
+-- The patch-embed bias is init kind 8 (`VLayer.patchEmbed`) on every ViT, right after its weight,
+-- so `patchEmbedBiasTorch` reaches exactly one tensor per net and the trainer's fan-in read
+-- (`prev[1]·prev[2]·prev[3]` = 3·16·16 = 768) sees the conv weight. Nothing else is kind 8.
+#guard vitVerified.toSpecs[0]!          == (#[192,3,16,16], 0)
+#guard vitVerified.toSpecs[1]!          == (#[192], 8)
+#guard vitSImagenetVerified.toSpecs[1]! == (#[384], 8)
+#guard vitBImagenetVerified.toSpecs[1]! == (#[768], 8)
+#guard (vitBImagenetVerified.toSpecs.filter (·.2 == 8)).size == 1
 
 /-! ### MobileNetV4-Conv-M — the Universal Inverted Bottleneck -/
 

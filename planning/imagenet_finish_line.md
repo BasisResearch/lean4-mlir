@@ -246,8 +246,8 @@ Confs:
 
 Book:
 
-- [ ] ViT patch-embed bias, `content.tex:13858`, is backwards. DeiT leaves the conv bias at PyTorch's
-      default, U(±1/√768). Ours is 0.
+- [x] ViT patch-embed bias: the §9.6 sentence reads the right way round (0 here, DeiT's default
+      U(±1/√768)); S/B start it at the default since 2026-10-20 (R4) and §9.7 says so.
 - [ ] RSB, `tab:r50_a2_a1_time` (~`:7330`): the step times are 10-05's. The confs now say 476 ms per
       micro-batch (~99 h) verified and 1,440 ms per step JAX.
 - [ ] The TODO at ~`:7362` says "A3's three [repeats] … ran on A3". A3 has no repeated augmentation.
@@ -346,8 +346,8 @@ after `tab:r50_paths` say both halves rerun.
 | B0 | 77.15 / 76.88 | TF EfficientNet, every row | pair predates recipe; **rerun of both halves launched 2026-10-19** (the user) |
 | ConvNeXt-T | 81.53 / 81.30 | official (EMA, 4096 by k16) since item 1 | pair is the one-shot job; official pair **queued behind MNv2 and B0** |
 | ConvNeXt-S / B | — | official | not run; `smx`-style smoke not needed; bf16-vs-fp32 question parked |
-| ViT-Ti | 71.61 headline (EMA) | DeiT, 4 × 256 | landed (04c72553); EMA-vs-live headline and patch-embed bias parked |
-| ViT-S / B | — | DeiT | not run; smoke the `smx` renders first; ViT-B EMA-per-step check |
+| ViT-Ti | 71.61 headline (EMA) | DeiT, 4 × 256 | landed (04c72553); EMA-vs-live headline parked; patch-embed bias stays 0, disclosed (S/B take it, R4) |
+| ViT-S / B | — | DeiT | not run; patch-embed bias at PyTorch's default on both paths (R4, 2026-10-20); smoke the `smx` renders first; ViT-B EMA-per-step check |
 
 Book and planning, today: markers carry what each pair owes and nothing about the queue
 (64fe5437); DAWNBench pinned and the ResNet rows named Bag of Tricks (443bdd7e); bestiary ResNet
@@ -381,8 +381,8 @@ entry current; intro rewritten (e26d2d45). Items 1, 2, 3, 4, 5 (bar the verified
 - **ConvNeXt precision.** Upstream `main.py` defaults to `--use_amp False`, and TRAINING.md's commands
   don't pass it, so the official runs look fp32. Every ConvNeXt conf here is bf16, and the book says
   bf16 "carries over unchanged" (`content.tex:11981`). Confirm upstream, then disclose it.
-- **ViT patch-embed bias, R4.** A ~1–2 h build (`recipe_prep.md:621`). Decide before ViT-S/B launch:
-  build it (S/B then leave Ti's recipe), or keep disclosing it.
+- ~~**ViT patch-embed bias, R4.**~~ ✅ 2026-10-20: built; S/B carry it on both paths, Ti's pair stays
+  disclosed (`recipe_prep.md` R4).
 - **ViT headline.** It is the EMA shadow, but DeiT's `main.py` scores the live model. The book has
   both numbers; this is a judgement call on which to headline.
 - **B0's BN statistic group.** TF's real group size is unread (`utils.TpuBatchNormalization`), so

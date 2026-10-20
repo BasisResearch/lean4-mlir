@@ -544,8 +544,9 @@ def init_params(key):
     # Patch embedding conv 3→768, 16x16  (PyTorch Conv2d default: U(±1/sqrt(fan_in)))
     key, k_ = random.split(key)
     scale = 1.0 / jnp.sqrt(768.0)
+    key, kb_ = random.split(key)
     params.append((random.uniform(k_, (768, 3, 16, 16), minval=-scale, maxval=scale),
-                   jnp.zeros(768)))
+                   random.uniform(kb_, (768,), minval=-scale, maxval=scale)))  # patch-embed bias: PyTorch Conv2d default, not 0 (initPatchEmbedBiasTorch)
     # CLS token
     key, k_ = random.split(key)
     params.append((random.normal(k_, (768,)) * 0.02,))

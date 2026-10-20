@@ -78,6 +78,10 @@ def vitSImagenetConfig : VerifiedConfig where
   -- ViT base config since VT-1). Without it every transformer Linear is Glorot. Host-side, so no
   -- re-render.
   vitInit   := true
+  -- The patch-embed BIAS on PyTorch's Conv2d default U(±1/√768) as well, where DeiT leaves it
+  -- (`planning/recipe_prep.md` R4; init kind 8). The landed Ti pair started it at 0, disclosed in
+  -- the book; this driver and the JAX reference (`initPatchEmbedBiasTorch`) take it. Host-side.
+  patchEmbedBiasTorch := true
 
 /-- Entry point. Defaults to the FOUR-REPLICA variant, unlike every other ImageNet driver here,
     because it is the only one rendered for this net. A plain invocation therefore needs

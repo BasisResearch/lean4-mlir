@@ -34,6 +34,8 @@ def vitSImagenet : NetSpec where
     the note on each line). The clip-off decision (D2) was probed at Ti, not here. -/
 def vitSImagenetConfig : TrainConfig where
   vitInit        := true            -- timm/DeiT trunc_normal(0.02) init, not the emitter's Xavier-uniform
+  initPatchEmbedBiasTorch := true   -- and the patch-embed BIAS on PyTorch's Conv2d default, as DeiT
+                                    -- leaves it (recipe_prep R4); the landed Ti pair started it at 0
   learningRate   := 0.001           -- DeiT's 5e-4 · 1024/512, as ViT-Ti
   batchSize      := 1024            -- DeiT-S's batch (8 × 128 there; 4 × 256 one-shot on the verified path, which
                                     -- fits: runs/2026-10-11-vits-default-emabf16-4gpu/; this trainer runs it as the

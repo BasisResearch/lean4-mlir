@@ -199,7 +199,8 @@ namespace ViTLayout
     `Proofs.StableHLO.vitParamSig` (Proofs/Codegen/ViTRender.lean). `initKind`: 0 = random
     weight (`mkParam`: conv He fan-out, dense Glorot, or timm's σ = 0.02 under its ViT flag),
     1 = ones (LN γ), 2 = zeros (LN β / bias), 5 = embedding (CLS / pos: σ = 0.02 under the ViT
-    flag, zeros without it). -/
+    flag, zeros without it), 8 = the patch-embed bias (PyTorch's `Conv2d` default `U(±1/√768)`
+    under `patchEmbedBiasTorch`, zeros without it — `VLayer.patchEmbed`). -/
 def D : Nat := 192
 def M : Nat := 768
 def S : Nat := 16
@@ -214,7 +215,7 @@ def blockSpec : Array (Array Nat × Nat) :=
 /-- `(dims, initKind)` for every param, in `@vit_train_step` func-arg order. -/
 def specs : Array (Array Nat × Nat) := Id.run do
   let mut a : Array (Array Nat × Nat) :=
-    #[(#[D,3,S,S],0),(#[D],2),(#[D],5),(#[nTok,D],5)]   -- patch W,b ; CLS [192] (1D) ; pos
+    #[(#[D,3,S,S],0),(#[D],8),(#[D],5),(#[nTok,D],5)]   -- patch W,b (kind 8) ; CLS [192] (1D) ; pos
   for _ in [0:depth] do a := a ++ blockSpec
   a := a ++ #[(#[D],1),(#[D],2),(#[D,nCls],0),(#[nCls],2)]   -- final LN γ,β ; head W,b
   return a

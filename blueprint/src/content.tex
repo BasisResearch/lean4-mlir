@@ -13987,7 +13987,7 @@ def vitVerified : VerifiedNetSpec where
   imageW   := 224
   data     := .imagenette
   layers   := [
-    .conv 3 192 16 16,          -- patch embed 16x16/s16, 224 -> 14x14 = 196
+    .patchEmbed 3 192 16,       -- patch embed 16x16/s16, 224 -> 14x14 = 196
     .param #[192] 5,            -- CLS token: sigma 0.02 under vitInit
     .param #[197, 192] 5,       -- positional embedding, 196 + 1, same init
     .transformerBlock 192 768,  -- 12 pre-norm blocks @ dim 192, MLP 768
@@ -14036,13 +14036,15 @@ def main (argv : List String) : IO Unit := runViTAdam argv
 \end{verbatim}
 
 \noindent The body is a patch embedding, twelve blocks and a head. The
-patch embed is spelled \texttt{.conv 3 192 16 16}, a $16 \times 16$
+patch embed is spelled \texttt{.patchEmbed 3 192 16}, which is
+\texttt{.conv 3 192 16 16}: a $16 \times 16$
 kernel at stride 16, which chops the $224 \times 224 \times 3$ image
 into $14 \times 14 = 196$ non-overlapping patches and projects each to
 192 dimensions. That it is a convolution rather than a distinct
 primitive is the point: a patch embedding is a strided
 convolution whose kernel equals its stride, so it reuses the conv2d backward (Theorem~\ref{ax:conv2dHasVJP3}) and needs
-nothing new.
+nothing new. The separate name only marks its bias for the initializer
+(\S\ref{sec:vit_sb}); the denotation is the same convolution.
 
 \textbf{The CLS token and the positional embedding are
 \texttt{.param} entries.} They are learned weights that no layer
@@ -14283,7 +14285,8 @@ $\varepsilon = 10^{-6}$; the exact erf GELU; torchvision's crop; and an
 fp32 evaluation forward, with bf16 under an fp32 patch embedding and head
 on both paths. One thing is out, disclosed on both paths: the
 patch-embedding bias starts at zero here, where DeiT leaves it at
-PyTorch's \texttt{Conv2d} default, $U(\pm 1/\sqrt{768})$. Both
+PyTorch's \texttt{Conv2d} default, $U(\pm 1/\sqrt{768})$ (ViT-S and B
+start it there, \S\ref{sec:vit_sb}). Both
 halves of the pair ran on the same four RTX 3060 cards.
 
 \prosesection{The reference (JAX)}
@@ -14742,7 +14745,9 @@ under LayerNorm --- Tiny's recipe as \S\ref{sec:vit_imagenet} ran it:
 \texttt{vitInit}, LayerNorm $\varepsilon = 10^{-6}$, the $10^{-5}$
 learning-rate floor, EMA at $0.99996$ constant from step $0$, no clip, the
 exact erf GELU, the softmax max-shifted, bf16 under an fp32 patch embedding
-and head --- and their references are
+and head, plus the one row Tiny's pair ran without: the patch-embedding
+bias starts at PyTorch's \texttt{Conv2d} default, $U(\pm 1/\sqrt{768})$,
+on both paths --- and their references are
 \texttt{vits-accum-jax-4gpu} and \texttt{vitb-accum-jax-4gpu}, both
 accumulating $2\times512$ to the same $1024$ (the JAX ViT-S step does not
 fit the arena in one shot where the verified render does). ViT-S's render

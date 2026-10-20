@@ -92,6 +92,12 @@ inductive VLayer where
   | relu
   /-- plain conv (`oc←ic`, `k×k`, `stride`) + bias, NO batch-norm. Params `{W,b}`. -/
   | conv (ic oc k stride : Nat)
+  /-- ViT's patch embedding: `conv ic oc k k` whose BIAS is init kind 8 — PyTorch's `nn.Conv2d`
+      default `U(±1/√fan_in)`, `fan_in = ic·k·k`, under `VerifiedConfig.patchEmbedBiasTorch`, and
+      0 (kind 2's value) without it. timm's `init_weights_vit_timm` and DeiT's `_init_weights`
+      re-initialize `nn.Linear` only, so the patch conv keeps the default for its weight AND its
+      bias (`planning/recipe_prep.md` R4). The weight is kind 0 as in `conv`. -/
+  | patchEmbed (ic oc k : Nat)
   /-- flatten `[C,H,W]` → vector. No params (a reshape). -/
   | flatten
   /-- scalar-global BatchNorm (the proven `bnForward`): normalize over the whole
@@ -228,7 +234,9 @@ def bottleneckStageSpec (ic oc count stride : Nat) : Array (Array Nat × Nat) :=
     and `residualStage` emit it),
     5 = embedding (ViT CLS / pos: σ = 0.02 under `vitInit`, else zeros; only `param` emits it),
     7 = squeeze-excite FC (`[in,out]`, standing for the reference's 1×1 conv: var 2/out under
-    `seFanOutInit`, else kind 0's Glorot; only `mbConvSE` / `mbConvSENB` emit it)). -/
+    `seFanOutInit`, else kind 0's Glorot; only `mbConvSE` / `mbConvSENB` emit it),
+    8 = the patch-embed conv bias (PyTorch's `Conv2d` default `U(±1/√fan_in)` under
+    `patchEmbedBiasTorch`, else zeros; only `patchEmbed` emits it)). -/
 def toSpecs : VLayer → Array (Array Nat × Nat)
   | convBn ic oc k _        => convBnSpec ic oc k
   | convBnNB ic oc k _      => convBnNBSpec ic oc k
@@ -239,6 +247,7 @@ def toSpecs : VLayer → Array (Array Nat × Nat)
   | dense ic oc             => #[(#[ic,oc],0),(#[oc],2)]
   | relu                    => #[]
   | conv ic oc k _          => #[(#[oc,ic,k,k],0),(#[oc],2)]
+  | patchEmbed ic oc k      => #[(#[oc,ic,k,k],0),(#[oc],8)]
   | flatten                 => #[]
   | bn                      => #[(#[],1),(#[],2)]   -- scalar γ (ones), β (zeros)
   | bnPerChannel oc         => #[(#[oc],1),(#[oc],2)] -- per-channel γ:[oc] (ones), β:[oc] (zeros)

@@ -2131,9 +2131,18 @@ private def emitInitParams (spec : NetSpec) (cfg : TrainConfig) : String := Id.r
         (if cfg.vitInit
          then "    scale = 1.0 / jnp.sqrt(" ++ toString fanIn ++ ".0)\n"
          else "    scale = jnp.sqrt(6.0 / " ++ toString fanOut ++ ")\n") ++
-        "    params.append((random.uniform(k_, (" ++ toString dim ++ ", " ++ toString ic ++ ", " ++
-          toString p ++ ", " ++ toString p ++ "), minval=-scale, maxval=scale),\n" ++
-        "                   jnp.zeros(" ++ toString dim ++ ")))\n"
+        (if cfg.initPatchEmbedBiasTorch then
+          -- The bias on the same default (PyTorch's `kaiming_uniform_(a=√5)` bound is
+          -- 1/√fan_in for the bias as for the weight). Its own key, split AFTER the weight's,
+          -- so the weight's draw is the one the flag-off trainer makes.
+          "    key, kb_ = random.split(key)\n" ++
+          "    params.append((random.uniform(k_, (" ++ toString dim ++ ", " ++ toString ic ++ ", " ++
+            toString p ++ ", " ++ toString p ++ "), minval=-scale, maxval=scale),\n" ++
+          "                   random.uniform(kb_, (" ++ toString dim ++ ",), minval=-scale, maxval=scale)))  # patch-embed bias: PyTorch Conv2d default, not 0 (initPatchEmbedBiasTorch)\n"
+         else
+          "    params.append((random.uniform(k_, (" ++ toString dim ++ ", " ++ toString ic ++ ", " ++
+            toString p ++ ", " ++ toString p ++ "), minval=-scale, maxval=scale),\n" ++
+          "                   jnp.zeros(" ++ toString dim ++ ")))\n")
       -- CLS token
       code := code ++
         "    # CLS token\n" ++
