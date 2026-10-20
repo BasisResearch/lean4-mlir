@@ -1,0 +1,21 @@
+[sup] 2026-10-15 18:29:18 START job=mnv2-full-jax-4gpu devs=0,1,2,3 epochs=420 rest_after=[none] temp_max=0 stall=1800s logs=runs/2026-10-15-mnv2-full-jax
+[sup] 2026-10-15 18:29:18 cmd: bash -c 
+  set -u
+  base=/home/skoonce/mnv2_full_jax_2612/mobilenet_v2_imagenet_full
+  last=""; n=0
+  for f in "${base}"_e*.state.npz; do
+    [ -e "$f" ] || continue
+    k="${f##*_e}"; k="${k%.state.npz}"
+    [ "$k" -gt "$n" ] && { n="$k"; last="$f"; }
+  done
+  resume=()
+  if [ -n "$last" ]; then echo "[jax] resuming from epoch $n ($last)"; resume=(LEAN_MLIR_RESUME="$last")
+  else echo "[jax] fresh start"; fi
+  cd jax || exit 1
+  exec env JAX_COMPILATION_CACHE_DIR=/home/skoonce/.jax_cache \
+    LEAN_MLIR_PARAMS_OUT="$base" LEAN_MLIR_CKPT_EVERY=1 \
+    TFDS_DATA_DIR="${TFDS_DATA_DIR:-/home/skoonce/tensorflow_datasets}" \
+    "${resume[@]}" ../.venv/bin/python -u .lake/build/generated_mobilenet_v2_imagenet_full.py
+
+[sup] 2026-10-15 18:29:18 eta: ~49 h for 420 ep on 4x 4060 Ti (2026-10-12 smoke, runs/2026-10-12-mnv2-jax-smoke/: 81 ms a 256-row step at the default arena, compile excluded — feed-bound, the retired run's pace; 5,004 steps + ~15 s the f32 validation every epoch)
+[sup] 2026-10-15 18:29:18 DRY_RUN — nothing launched

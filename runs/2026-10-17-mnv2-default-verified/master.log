@@ -1,0 +1,12 @@
+[sup] 2026-10-17 19:13:08 START job=mnv2-default-4gpu devs=0,1,2,3 epochs=420 rest_after=[none] temp_max=78 stall=1800s logs=runs/2026-10-17-mnv2-default-verified
+[sup] 2026-10-17 19:13:08 cmd: .lake/build/bin/mobilenetv2-imagenet-verified data
+[sup] 2026-10-17 19:13:08 eta: ~63 h for 420 ep on 4x 4060 Ti (2026-10-12 smoke, runs/2026-10-12-mnv2-default-4gpu/: med 96 / min 90 / p90 102 ms per 256-row step at w4, starvation 6 ms; 5,004 steps + ~60 s the f32 validation and checkpoint every epoch; the retired arm read 123 ms on 2026-09-25 under timm's bicubic feed)
+[sup] 2026-10-17 19:13:08 attempt 1: resuming at epoch 0/420 (next rest: 999)
+[sup] 2026-10-17 19:13:08   launched PID=939294 PGID=939294
+[sup] 2026-10-19 17:41:52   !!! PCIe AER — killing PID=939294
+[sup]   last line:   step 2800/5004: loss=2.195696
+[sup] 2026-10-19 17:41:54   ended (aer) at epoch 307; 15s then retry
+[sup] 2026-10-19 17:42:09 attempt 2: resuming at epoch 307/420 (next rest: 999)
+[sup] 2026-10-19 17:42:09   launched PID=1825983 PGID=1825983
+[sup]   last line: done (trained MobileNetV2 (ImageNet-1k) emarmstfdp64wxdwdoeps0001bf16 + exp x0.980000/2.500000ep staircase/warmup via packed threading).
+[sup] 2026-10-20 10:54:20 ✅ COMPLETE — 420/420 epochs
