@@ -47,6 +47,12 @@ def vitImagenetConfig : VerifiedConfig where
   -- timm's fixed 0.02, and the CLS token is 5× wider — the one axis §9.6 credits for reaching
   -- the paper's number. Init is host-side, so this needs no re-render.
   vitInit   := true
+  -- `patchEmbedBiasTorch` is DELIBERATELY not set: the landed pair (runs/2026-10-14-vit-deit-
+  -- verified-smx-bf16-300ep, 71.61) started the patch-embed bias at 0, and this config is what
+  -- reproduces it from its seed. DeiT leaves that bias at PyTorch's Conv2d default, and the ViT-S
+  -- and ViT-B drivers set the flag (recipe_prep R4); the book discloses Ti's 0 in §9.6. Set it
+  -- here only with a rerun of both halves — not worth a run on its own, so it rides along with
+  -- whatever next reruns the pair. The job conf refuses if this line changes without that.
 
 /-- Entry point. Defaults to the **single-device** `adam128erf` variant rather than the four-replica
     one, matching `runResnet34Imagenet`: a DP default would make a plain invocation fail at the

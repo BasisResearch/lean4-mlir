@@ -2253,7 +2253,7 @@ new-batch weight {bnMomShown}{if accOn then s!" = 1 − {cfg.bnMomentum}^(1/{acc
   let mut parts : Array ByteArray := #[]
   let mut seed := ((← IO.getEnv "LEAN_MLIR_SEED").bind (·.toNat?)).getD 1
   if cfg.vitInit then
-    IO.println "  ▸ INIT: timm/DeiT (σ=0.02 weights + CLS/pos-embed, patch-embed on PyTorch Conv2d default)"
+    IO.println "  ▸ INIT: timm/DeiT (σ=0.02 weights + CLS/pos-embed, patch-embed WEIGHT on PyTorch Conv2d default; its bias 0 unless the kind-8 line below)"
   -- ANNOUNCED, because an init is otherwise invisible in the log. The banner line further down
   -- says "He init" unconditionally, which is false whenever either flag is set, so each says so
   -- here.

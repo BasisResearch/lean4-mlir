@@ -32,6 +32,10 @@ def vitTinyImagenet : NetSpec where
     ~72% DeiT-Ti headline (no distillation). -/
 def vitTinyImagenetConfig : TrainConfig where
   vitInit        := true            -- timm/DeiT trunc_normal(0.02) init, not the emitter's Xavier-uniform
+                                    -- `initPatchEmbedBiasTorch` DELIBERATELY unset: the landed pair
+                                    -- (runs/2026-10-11-vit-deit-jax-bf16-300ep, 71.64) started the
+                                    -- patch-embed bias at 0 and this config reproduces it; S/B set it
+                                    -- (recipe_prep R4), §9.6 discloses Ti's 0. Flip it only with a rerun.
   learningRate   := 0.001           -- DeiT's 5e-4 · 1024/512: its `lr = 5e-4 · B/512` at ITS batch
   batchSize      := 1024            -- DeiT-Ti's batch (8 × 128 there; 4 × 256 here, exact under LayerNorm)
   epochs         := 300             -- full DeiT-Ti schedule

@@ -346,7 +346,7 @@ after `tab:r50_paths` say both halves rerun.
 | B0 | 77.15 / 76.88 | TF EfficientNet, every row | pair predates recipe; **rerun of both halves launched 2026-10-19** (the user) |
 | ConvNeXt-T | 81.53 / 81.30 | official (EMA, 4096 by k16) since item 1 | pair is the one-shot job; official pair **queued behind MNv2 and B0** |
 | ConvNeXt-S / B | — | official | not run; `smx`-style smoke not needed; bf16-vs-fp32 question parked |
-| ViT-Ti | 71.61 headline (EMA) | DeiT, 4 × 256 | landed (04c72553); EMA-vs-live headline parked; patch-embed bias stays 0, disclosed (S/B take it, R4) |
+| ViT-Ti | 71.61 headline (EMA) | DeiT, 4 × 256 | landed (04c72553); EMA-vs-live headline parked; patch-embed bias stays 0, disclosed (S/B take it, R4; Ti takes it with whatever next reruns the pair — not worth a run on its own, the user 2026-10-20; the two Ti confs refuse the flag until then) |
 | ViT-S / B | — | DeiT | not run; patch-embed bias at PyTorch's default on both paths (R4, 2026-10-20); smoke the `smx` renders first; ViT-B EMA-per-step check |
 
 Book and planning, today: markers carry what each pair owes and nothing about the queue
