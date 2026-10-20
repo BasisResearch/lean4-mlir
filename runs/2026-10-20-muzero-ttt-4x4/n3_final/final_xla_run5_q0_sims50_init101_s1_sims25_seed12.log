@@ -1,0 +1,77 @@
+[pjrt_ffi] allocator: 1 create option(s), memory_fraction=0.150
+I1020 16:09:18.980886 2253604 service.cc:154] XLA service 0x7d37b0008360 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1020 16:09:18.980946 2253604 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 16:09:18.982873 2253604 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1020 16:09:18.982918 2253604 gpu_helpers.cc:162] XLA backend allocating 2.34GiB (2510290944 bytes) on device 0 for BFCAllocator.
+I1020 16:09:18.992407 2253604 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_h_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 422 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_h_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 124 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_h_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 471 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_h_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 75 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_g_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 45 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_g_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 43 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_g_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 192 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_g_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 84 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_f_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 413 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_f_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 426 ms
+I1020 16:09:21.491128 2253652 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_9', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_f_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 575 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_f_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 81 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_r_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 294 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_r_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 465 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_r_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 114 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_s12_muzero_ttt_r_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 76 ms
+muzero ttt 3x3 (xla): h 56608 + g 74464 + f 3150 + r 2565 = 136787 params, C 32, K 5, 20 iterations of 256 games at 25 sims, batch 64 × 10 epochs over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000 (raw Q), Dir(1.000000) at 0.250000, seed 12 (graphs 4157 ms)
+  shape checks passed
+score: 4520 decision positions, M3–M5 from every 10-th (452), 310 visited by self-play (.lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_seen.bin), lines of up to 10 moves
+  M1 vs perfect, net alone: as X 0/256/0, as O 0/256/0 (W/D/L)
+  M1 vs perfect, search 25: as X 0/256/0, as O 0/248/8 (W/D/L)
+  M1 vs random, net alone: as X 252/4/0, as O 239/17/0 (W/D/L)
+  M1 vs random, search 25: as X 251/5/0, as O 230/26/0 (W/D/L)
+  M2 f∘h, all (4520): agree 96.55%  value mse 0.1778  sign 80.11%
+  M2 f∘h, seen (3102): agree 97.36%  value mse 0.1228  sign 85.59%
+  M2 f∘h, unseen (1418): agree 94.78%  value mse 0.2980  sign 68.12%
+  M4d probe on h, held out (226): cells 100.00%  whole boards 100.00%
+  lines: own — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 310: 97.7% / 88.4%   unseen 142: 95.1% / 71.1%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 160: 95.6% / 83.8%   unseen 43: 90.7% / 53.5%   0.0%   93.8% / 56.2%   88.3% / 0.00%
+    k 2   seen 123: 99.2% / 95.1%   unseen 19: 94.7% / 78.9%   0.0%   92.4% / 55.6%   80.9% / 0.00%
+    k 3   seen 78: 100.0% / 97.4%   unseen 7: 100.0% / 71.4%   0.0%   92.5% / 50.6%   81.4% / 0.00%
+    k 4   seen 52: 96.2% / 100.0%   unseen 1: 100.0% / 100.0%   0.0%   87.6% / 37.7%   100.0% / 0.00%
+    k 5   seen 20: 100.0% / 100.0%   0.0%   89.4% / 40.0%   100.0% / 2.22%
+    k 6   seen 3: 100.0% / 100.0%   0.0%   92.6% / 66.7%   –% / 0.00%
+    k 7   seen 1: 100.0% / 100.0%   0.0%   100.0% / 100.0%   –% / 0.00%
+    k 8   seen 1: 100.0% / 100.0%   0.0%   88.9% / 0.0%   –% / 0.00%
+    probe refit on g, held out by board, cells / whole boards:
+  lines: perfect — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 310: 97.7% / 88.4%   unseen 142: 95.1% / 71.1%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 171: 98.2% / 76.6%   unseen 66: 92.4% / 50.0%   0.0%   91.5% / 45.6%   84.9% / 0.81%
+    k 2   seen 125: 96.0% / 92.8%   unseen 56: 92.9% / 58.9%   0.0%   89.3% / 43.6%   69.0% / 0.00%
+    k 3   seen 74: 98.6% / 95.9%   unseen 19: 100.0% / 26.3%   2.2%   89.8% / 43.0%   78.5% / 0.00%
+    k 4   seen 49: 100.0% / 91.8%   unseen 8: 87.5% / 75.0%   3.5%   82.7% / 21.1%   77.8% / 1.19%
+    k 5   seen 18: 100.0% / 88.9%   unseen 1: 100.0% / 100.0%   0.0%   90.1% / 47.4%   52.9% / 0.00%
+    k 6   seen 2: 100.0% / 50.0%   unseen 1: 100.0% / 100.0%   0.0%   85.2% / 66.7%   –% / 0.00%
+    k 7   unseen 1: 100.0% / 100.0%   0.0%   77.8% / 0.0%   0.0% / 0.00%
+    k 8   unseen 1: 100.0% / 100.0%   0.0%   77.8% / 0.0%   –% / 0.00%
+    probe refit on g, held out by board, cells / whole boards:
+  lines: random — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 310: 97.7% / 88.4%   unseen 142: 95.1% / 71.1%   0.0%   100.0% / 100.0%   –% / –%
+    k 1   seen 204: 97.5% / 75.0%   unseen 123: 91.1% / 40.7%   0.0%   87.9% / 37.0%   88.7% / 1.48%
+    k 2   seen 146: 96.6% / 78.1%   unseen 83: 85.5% / 44.6%   0.4%   84.8% / 32.3%   67.8% / 0.42%
+    k 3   seen 94: 96.8% / 76.6%   unseen 33: 100.0% / 60.6%   3.9%   81.5% / 18.9%   71.1% / 2.16%
+    k 4   seen 39: 94.9% / 69.2%   unseen 15: 100.0% / 60.0%   5.6%   78.8% / 18.5%   63.3% / 1.49%
+    k 5   seen 16: 100.0% / 81.3%   unseen 3: 100.0% / 0.0%   5.3%   72.5% / 15.8%   52.4% / 9.09%
+    k 6   seen 6: 100.0% / 83.3%   33.3%   83.3% / 33.3%   60.0% / 0.00%
+    k 7   unseen 1: 100.0% / 100.0%   0.0%   100.0% / 100.0%   0.0% / 0.00%
+    k 8   seen 1: 100.0% / 100.0%   0.0%   88.9% / 0.0%   –% / 0.00%
+    probe refit on g, held out by board, cells / whole boards:
+  M4a every legal move from every decision position: winning moves called 86.24% (298), others called wins 0.60% (1340); visited starts 92.86% / 0.70%, unvisited 75.86% / 0.29%
+  M4b search principal lines (25 sims): through a taken cell 1.55%, past the true end 94.69%  (visited 1.94% / unvisited 0.70% taken)
+  blunders (25 sims): 7 starts where the search errs and the net alone does not; phantom win on the line for the mover 28.57% / the opponent 0.00%; the other 445 starts 0.90% / 1.35%
+  M4c transpositions (124 pairs a b c / c b a): ‖s₁ − s₂‖ 1.738, ‖s − h(board)‖ 3.112 / 3.189, two different boards 3.858; |v₁ − v₂| 0.198; value sign vs exact 83.1% / 86.3% (h of the board 96.8%)
+wrote .lake/build/muzero_ttt_3x3_xla_run5_q0_sims50_init101_s1_score.csv (5559 ms)
+EXIT 0

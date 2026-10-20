@@ -1,0 +1,73 @@
+== dump, XLA default (TF32 on for f32 convs)
+[pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_h_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 481 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_h_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 100 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_h_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 410 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_h_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 67 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_g_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 39 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_g_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 39 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_g_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 175 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_g_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 67 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_f_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 298 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_f_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 349 ms
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_f_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 512 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_f_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 70 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_r_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 281 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_r_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 337 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_r_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 109 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_muzero_ttt_r_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 79 ms
+muzero ttt 3x3 (xla): h 56608 + g 74464 + f 3150 + r 2565 = 136787 params, C 32, K 5, 20 iterations of 256 games at 25 sims, batch 64 × 10 epochs over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000, Dir(1.000000) at 0.250000, seed 1 (graphs 3736 ms)
+  shape checks passed
+dumped one batch to .lake/build/muz_unroll: loss value 1.75273 policy 4.85703 reward 0.11781, 7 clamped latents
+muzero unroll gate: n 3, C 32, K 5, B 64; 136787 parameters
+  ok   loss value: trainer 1.752728  jax 1.752773
+  ok   loss policy: trainer 4.857029  jax 4.856981
+  ok   loss reward: trainer 0.117808  jax 0.117797
+  FAIL ∂θ muzero ttt h 3x3 c32: max|Δ| / max|ref| = 2.00e-04  (‖ref‖∞ 2.260e-01)
+  FAIL ∂θ muzero ttt g 3x3 c32: max|Δ| / max|ref| = 2.44e-04  (‖ref‖∞ 4.074e-01)
+  FAIL ∂θ muzero ttt f 3x3 c32: max|Δ| / max|ref| = 2.09e-04  (‖ref‖∞ 1.741e+00)
+  FAIL ∂θ muzero ttt r 3x3 c32: max|Δ| / max|ref| = 6.56e-04  (‖ref‖∞ 1.648e-01)
+  ok   ½ seen: muzero ttt h 3x3 c32 against the unhalved gradient differs by 4.71e-02
+  ok   ½ seen: muzero ttt g 3x3 c32 against the unhalved gradient differs by 7.64e-02
+FAILED: 4
+gate EXIT 1
+
+== dump, NVIDIA_TF32_OVERRIDE=0
+[pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_h_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 486 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_h_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 90 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_h_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 229 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_h_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 73 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_g_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 41 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_g_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 37 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_g_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 145 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_g_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 66 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_f_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 319 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_f_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 343 ms
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_f_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 436 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_f_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 73 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_r_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 268 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_r_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 342 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_r_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 118 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_dump_notf32_muzero_ttt_r_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 78 ms
+muzero ttt 3x3 (xla): h 56608 + g 74464 + f 3150 + r 2565 = 136787 params, C 32, K 5, 20 iterations of 256 games at 25 sims, batch 64 × 10 epochs over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000, Dir(1.000000) at 0.250000, seed 1 (graphs 3440 ms)
+  shape checks passed
+dumped one batch to .lake/build/muz_unroll: loss value 1.75273 policy 4.85703 reward 0.11781, 7 clamped latents
+muzero unroll gate: n 3, C 32, K 5, B 64; 136787 parameters
+  ok   loss value: trainer 1.752728  jax 1.752773
+  ok   loss policy: trainer 4.857029  jax 4.856981
+  ok   loss reward: trainer 0.117808  jax 0.117797
+  FAIL ∂θ muzero ttt h 3x3 c32: max|Δ| / max|ref| = 2.02e-04  (‖ref‖∞ 2.260e-01)
+  FAIL ∂θ muzero ttt g 3x3 c32: max|Δ| / max|ref| = 1.91e-04  (‖ref‖∞ 4.074e-01)
+  FAIL ∂θ muzero ttt f 3x3 c32: max|Δ| / max|ref| = 2.09e-04  (‖ref‖∞ 1.741e+00)
+  FAIL ∂θ muzero ttt r 3x3 c32: max|Δ| / max|ref| = 6.56e-04  (‖ref‖∞ 1.648e-01)
+  ok   ½ seen: muzero ttt h 3x3 c32 against the unhalved gradient differs by 4.71e-02
+  ok   ½ seen: muzero ttt g 3x3 c32 against the unhalved gradient differs by 7.64e-02
+FAILED: 4
+gate EXIT 1

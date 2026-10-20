@@ -1,0 +1,276 @@
+I1020 15:31:35.997095 2226136 service.cc:154] XLA service 0x7d8b200084c0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1020 15:31:35.997156 2226136 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 15:31:35.998635 2226136 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1020 15:31:35.998677 2226136 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 0 for BFCAllocator.
+I1020 15:31:36.005555 2226136 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_h_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 521 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_h_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 136 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_h_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 356 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_h_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 76 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_g_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 42 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_g_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 63 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_g_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 156 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_g_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 78 ms
+I1020 15:31:37.581968 2228683 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_f_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 367 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_f_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 522 ms
+I1020 15:31:38.678334 2228672 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_5', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_f_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 566 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_f_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 83 ms
+I1020 15:31:39.053764 2228699 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_r_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 306 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_r_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 519 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_r_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 113 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_r_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 74 ms
+muzero ttt 4x4 (xla): h 56608 + g 74464 + f 5397 + r 4357 = 140826 params, C 32, K 5, 120 iterations of 256 games at 50 sims, batch 64 × 300 steps an iteration over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000 (raw Q), Dir(1.000000) at 0.250000, seed 3 (graphs 195855 ms)
+  shape checks passed
+  iter 0: f∘h sweep agree 62.25% value mse 0.3018 sign 66.21%  net alone vs perfect X 0/98/158 O 0/91/165  +search X 0/94/162 O 0/88/168
+  iter 1: f∘h sweep agree 60.98% value mse 0.3040 sign 66.13%  net alone vs perfect X 0/127/129 O 0/98/158  +search X 0/102/154 O 0/85/171
+    self-play 3767 positions (X 71 / draw 120 / O 65), 300 steps over 3767 samples, loss value 0.8755 policy 5.4214 reward 0.0371, 6 clamped latents  (play 1349 train 6921 score 1747 ms)
+  iter 2: f∘h sweep agree 61.14% value mse 0.3386 sign 66.21%  net alone vs perfect X 0/129/127 O 0/90/166  +search X 0/126/130 O 0/106/150
+    self-play 3762 positions (X 74 / draw 118 / O 64), 300 steps over 7529 samples, loss value 0.8900 policy 4.6864 reward 0.0358, 0 clamped latents  (play 1602 train 6844 score 1879 ms)
+  iter 3: f∘h sweep agree 61.39% value mse 0.3027 sign 66.21%  net alone vs perfect X 0/125/131 O 0/98/158  +search X 0/112/144 O 0/90/166
+    self-play 3741 positions (X 69 / draw 113 / O 74), 300 steps over 11270 samples, loss value 0.9050 policy 4.3272 reward 0.0348, 0 clamped latents  (play 1933 train 7562 score 1790 ms)
+  iter 4: f∘h sweep agree 61.53% value mse 0.3376 sign 66.21%  net alone vs perfect X 0/115/141 O 0/81/175  +search X 0/100/156 O 0/85/171
+    self-play 3700 positions (X 78 / draw 108 / O 70), 300 steps over 14970 samples, loss value 0.9068 policy 4.2349 reward 0.0337, 0 clamped latents  (play 1528 train 7660 score 1800 ms)
+  iter 5: f∘h sweep agree 61.03% value mse 0.3059 sign 66.21%  net alone vs perfect X 0/100/156 O 0/73/183  +search X 0/124/132 O 0/88/168
+    self-play 3715 positions (X 79 / draw 103 / O 74), 300 steps over 18685 samples, loss value 0.9292 policy 4.2187 reward 0.0345, 0 clamped latents  (play 1609 train 7281 score 1685 ms)
+  iter 6: f∘h sweep agree 61.39% value mse 0.3631 sign 66.21%  net alone vs perfect X 0/132/124 O 0/111/145  +search X 0/122/134 O 0/105/151
+    self-play 3760 positions (X 64 / draw 121 / O 71), 300 steps over 22445 samples, loss value 0.9074 policy 4.1898 reward 0.0342, 0 clamped latents  (play 1622 train 7164 score 1839 ms)
+  iter 7: f∘h sweep agree 62.04% value mse 0.3224 sign 66.21%  net alone vs perfect X 0/121/135 O 0/105/151  +search X 0/129/127 O 0/97/159
+    self-play 3767 positions (X 71 / draw 114 / O 71), 300 steps over 26212 samples, loss value 0.9162 policy 4.1815 reward 0.0335, 0 clamped latents  (play 1587 train 7324 score 1855 ms)
+  iter 8: f∘h sweep agree 62.20% value mse 0.3230 sign 66.21%  net alone vs perfect X 0/154/102 O 0/100/156  +search X 0/123/133 O 0/116/140
+    self-play 3701 positions (X 89 / draw 106 / O 61), 300 steps over 29913 samples, loss value 0.9275 policy 4.1751 reward 0.0345, 0 clamped latents  (play 1711 train 7249 score 1798 ms)
+  iter 9: f∘h sweep agree 61.11% value mse 0.2786 sign 66.21%  net alone vs perfect X 0/124/132 O 0/91/165  +search X 0/111/145 O 0/102/154
+    self-play 3706 positions (X 86 / draw 118 / O 52), 300 steps over 33619 samples, loss value 0.9159 policy 4.1756 reward 0.0337, 0 clamped latents  (play 1693 train 7310 score 1861 ms)
+  iter 10: f∘h sweep agree 63.38% value mse 0.3957 sign 66.21%  net alone vs perfect X 0/140/116 O 0/131/125  +search X 0/146/110 O 0/118/138
+    self-play 3737 positions (X 71 / draw 104 / O 81), 300 steps over 37356 samples, loss value 0.9213 policy 4.1817 reward 0.0344, 0 clamped latents  (play 1735 train 7604 score 1751 ms)
+  iter 11: f∘h sweep agree 61.61% value mse 0.2736 sign 66.21%  net alone vs perfect X 0/104/152 O 0/91/165  +search X 0/127/129 O 0/109/147
+    self-play 3727 positions (X 77 / draw 106 / O 73), 300 steps over 41083 samples, loss value 0.9144 policy 4.1792 reward 0.0338, 0 clamped latents  (play 1686 train 7028 score 1686 ms)
+  iter 12: f∘h sweep agree 62.25% value mse 0.2784 sign 66.21%  net alone vs perfect X 0/115/141 O 0/114/142  +search X 0/138/118 O 0/105/151
+    self-play 3703 positions (X 67 / draw 114 / O 75), 300 steps over 44786 samples, loss value 0.9159 policy 4.1539 reward 0.0337, 0 clamped latents  (play 1717 train 7487 score 1817 ms)
+  iter 13: f∘h sweep agree 62.98% value mse 0.3161 sign 66.21%  net alone vs perfect X 0/116/140 O 0/104/152  +search X 0/165/91 O 0/118/138
+    self-play 3748 positions (X 86 / draw 115 / O 55), 300 steps over 48534 samples, loss value 0.9150 policy 4.1677 reward 0.0339, 0 clamped latents  (play 1530 train 7229 score 1750 ms)
+  iter 14: f∘h sweep agree 63.17% value mse 0.3435 sign 66.21%  net alone vs perfect X 0/117/139 O 0/106/150  +search X 0/104/152 O 0/116/140
+    self-play 3760 positions (X 70 / draw 123 / O 63), 300 steps over 52294 samples, loss value 0.9130 policy 4.1690 reward 0.0339, 0 clamped latents  (play 1530 train 7550 score 1770 ms)
+  iter 15: f∘h sweep agree 62.96% value mse 0.3289 sign 66.21%  net alone vs perfect X 0/115/141 O 0/118/138  +search X 0/127/129 O 0/130/126
+    self-play 3700 positions (X 82 / draw 110 / O 64), 300 steps over 55994 samples, loss value 0.9114 policy 4.1572 reward 0.0340, 0 clamped latents  (play 1668 train 7409 score 1702 ms)
+  iter 16: f∘h sweep agree 63.21% value mse 0.2953 sign 66.21%  net alone vs perfect X 0/164/92 O 0/133/123  +search X 0/158/98 O 0/137/119
+    self-play 3693 positions (X 97 / draw 106 / O 53), 300 steps over 59687 samples, loss value 0.9205 policy 4.1699 reward 0.0338, 0 clamped latents  (play 1701 train 7338 score 1697 ms)
+  iter 17: f∘h sweep agree 63.28% value mse 0.3337 sign 66.21%  net alone vs perfect X 0/134/122 O 0/129/127  +search X 0/122/134 O 0/130/126
+    self-play 3736 positions (X 84 / draw 109 / O 63), 300 steps over 63423 samples, loss value 0.9153 policy 4.1551 reward 0.0339, 0 clamped latents  (play 1388 train 7119 score 1704 ms)
+  iter 18: f∘h sweep agree 64.82% value mse 0.3029 sign 66.21%  net alone vs perfect X 0/141/115 O 0/111/145  +search X 0/125/131 O 0/104/152
+    self-play 3658 positions (X 78 / draw 115 / O 63), 300 steps over 67081 samples, loss value 0.9144 policy 4.1684 reward 0.0340, 0 clamped latents  (play 1440 train 7244 score 1649 ms)
+  iter 19: f∘h sweep agree 64.17% value mse 0.3227 sign 66.21%  net alone vs perfect X 0/126/130 O 0/123/133  +search X 0/143/113 O 0/112/144
+    self-play 3691 positions (X 67 / draw 122 / O 67), 300 steps over 70772 samples, loss value 0.9074 policy 4.1618 reward 0.0339, 0 clamped latents  (play 1675 train 7259 score 1644 ms)
+  iter 20: f∘h sweep agree 62.58% value mse 0.2560 sign 66.27%  net alone vs perfect X 0/107/149 O 0/97/159  +search X 0/160/96 O 0/133/123
+    self-play 3702 positions (X 84 / draw 97 / O 75), 300 steps over 74474 samples, loss value 0.9056 policy 4.1625 reward 0.0337, 0 clamped latents  (play 1331 train 6969 score 1766 ms)
+  iter 21: f∘h sweep agree 64.21% value mse 0.3093 sign 66.21%  net alone vs perfect X 0/139/117 O 0/132/124  +search X 0/153/103 O 0/119/137
+    self-play 3648 positions (X 86 / draw 112 / O 58), 300 steps over 74355 samples, loss value 0.9027 policy 4.1611 reward 0.0341, 0 clamped latents  (play 1432 train 7296 score 1695 ms)
+  iter 22: f∘h sweep agree 65.01% value mse 0.2904 sign 66.21%  net alone vs perfect X 0/161/95 O 0/151/105  +search X 0/146/110 O 0/134/122
+    self-play 3645 positions (X 101 / draw 104 / O 51), 300 steps over 74238 samples, loss value 0.9092 policy 4.1523 reward 0.0343, 0 clamped latents  (play 1658 train 7158 score 1704 ms)
+  iter 23: f∘h sweep agree 64.14% value mse 0.3184 sign 66.21%  net alone vs perfect X 0/130/126 O 0/124/132  +search X 0/169/87 O 0/160/96
+    self-play 3711 positions (X 81 / draw 107 / O 68), 300 steps over 74208 samples, loss value 0.9106 policy 4.1559 reward 0.0346, 0 clamped latents  (play 1633 train 8080 score 1751 ms)
+  iter 24: f∘h sweep agree 64.73% value mse 0.3113 sign 66.21%  net alone vs perfect X 0/153/103 O 0/150/106  +search X 0/145/111 O 0/125/131
+    self-play 3725 positions (X 73 / draw 119 / O 64), 300 steps over 74233 samples, loss value 0.9063 policy 4.1425 reward 0.0336, 0 clamped latents  (play 1438 train 7058 score 1761 ms)
+  iter 25: f∘h sweep agree 64.37% value mse 0.2820 sign 66.23%  net alone vs perfect X 0/160/96 O 0/114/142  +search X 0/122/134 O 0/125/131
+    self-play 3695 positions (X 79 / draw 109 / O 68), 300 steps over 74213 samples, loss value 0.9020 policy 4.1376 reward 0.0333, 0 clamped latents  (play 1604 train 7499 score 1820 ms)
+  iter 26: f∘h sweep agree 64.66% value mse 0.2876 sign 66.23%  net alone vs perfect X 0/119/137 O 0/124/132  +search X 0/118/138 O 0/109/147
+    self-play 3735 positions (X 71 / draw 123 / O 62), 300 steps over 74188 samples, loss value 0.8950 policy 4.1338 reward 0.0349, 0 clamped latents  (play 1582 train 7144 score 1718 ms)
+  iter 27: f∘h sweep agree 64.47% value mse 0.2946 sign 66.26%  net alone vs perfect X 0/173/83 O 0/152/104  +search X 0/171/85 O 0/144/112
+    self-play 3685 positions (X 87 / draw 111 / O 58), 300 steps over 74106 samples, loss value 0.9155 policy 4.1345 reward 0.0344, 0 clamped latents  (play 1390 train 7044 score 1760 ms)
+  iter 28: f∘h sweep agree 65.08% value mse 0.3103 sign 66.24%  net alone vs perfect X 0/166/90 O 0/129/127  +search X 0/133/123 O 0/125/131
+    self-play 3702 positions (X 76 / draw 108 / O 72), 300 steps over 74107 samples, loss value 0.8902 policy 4.1165 reward 0.0334, 0 clamped latents  (play 1617 train 7559 score 1816 ms)
+  iter 29: f∘h sweep agree 65.07% value mse 0.3513 sign 66.23%  net alone vs perfect X 0/152/104 O 0/116/140  +search X 0/153/103 O 0/136/120
+    self-play 3669 positions (X 81 / draw 97 / O 78), 300 steps over 74070 samples, loss value 0.9137 policy 4.1090 reward 0.0348, 0 clamped latents  (play 1358 train 8086 score 2031 ms)
+  iter 30: f∘h sweep agree 66.16% value mse 0.3211 sign 66.26%  net alone vs perfect X 0/155/101 O 0/121/135  +search X 0/153/103 O 0/139/117
+    self-play 3686 positions (X 82 / draw 95 / O 79), 300 steps over 74019 samples, loss value 0.9062 policy 4.1077 reward 0.0347, 0 clamped latents  (play 2280 train 8297 score 2009 ms)
+  iter 31: f∘h sweep agree 65.68% value mse 0.2973 sign 66.44%  net alone vs perfect X 0/176/80 O 0/129/127  +search X 0/140/116 O 0/108/148
+    self-play 3658 positions (X 90 / draw 99 / O 67), 300 steps over 73950 samples, loss value 0.9010 policy 4.1022 reward 0.0350, 0 clamped latents  (play 1994 train 8324 score 1960 ms)
+  iter 32: f∘h sweep agree 64.82% value mse 0.2448 sign 67.06%  net alone vs perfect X 0/160/96 O 0/136/120  +search X 0/141/115 O 0/129/127
+    self-play 3685 positions (X 73 / draw 110 / O 73), 300 steps over 73932 samples, loss value 0.9045 policy 4.1073 reward 0.0346, 0 clamped latents  (play 1929 train 8041 score 1986 ms)
+  iter 33: f∘h sweep agree 65.18% value mse 0.2531 sign 67.87%  net alone vs perfect X 0/154/102 O 0/143/113  +search X 0/129/127 O 0/103/153
+    self-play 3655 positions (X 81 / draw 113 / O 62), 300 steps over 73839 samples, loss value 0.9040 policy 4.1023 reward 0.0343, 0 clamped latents  (play 1777 train 8052 score 1976 ms)
+  iter 34: f∘h sweep agree 65.14% value mse 0.2277 sign 68.08%  net alone vs perfect X 0/159/97 O 0/137/119  +search X 0/146/110 O 0/98/158
+    self-play 3719 positions (X 79 / draw 119 / O 58), 300 steps over 73798 samples, loss value 0.8979 policy 4.0822 reward 0.0337, 0 clamped latents  (play 1917 train 7941 score 1755 ms)
+  iter 35: f∘h sweep agree 65.51% value mse 0.2430 sign 68.28%  net alone vs perfect X 0/136/120 O 0/134/122  +search X 0/113/143 O 0/128/128
+    self-play 3615 positions (X 87 / draw 96 / O 73), 300 steps over 73713 samples, loss value 0.9026 policy 4.0832 reward 0.0339, 0 clamped latents  (play 1711 train 7670 score 1895 ms)
+  iter 36: f∘h sweep agree 66.25% value mse 0.2373 sign 68.56%  net alone vs perfect X 0/132/124 O 0/138/118  +search X 0/128/128 O 0/101/155
+    self-play 3666 positions (X 82 / draw 98 / O 76), 300 steps over 73686 samples, loss value 0.9000 policy 4.0691 reward 0.0333, 0 clamped latents  (play 1819 train 7962 score 2053 ms)
+  iter 37: f∘h sweep agree 65.48% value mse 0.2393 sign 68.01%  net alone vs perfect X 0/161/95 O 0/146/110  +search X 0/146/110 O 0/132/124
+    self-play 3640 positions (X 80 / draw 114 / O 62), 300 steps over 73590 samples, loss value 0.9013 policy 4.0612 reward 0.0328, 0 clamped latents  (play 1669 train 7977 score 1828 ms)
+  iter 38: f∘h sweep agree 66.16% value mse 0.2161 sign 69.98%  net alone vs perfect X 0/160/96 O 0/138/118  +search X 0/139/117 O 0/120/136
+    self-play 3591 positions (X 95 / draw 105 / O 56), 300 steps over 73523 samples, loss value 0.8999 policy 4.0435 reward 0.0321, 0 clamped latents  (play 1765 train 8144 score 1893 ms)
+  iter 39: f∘h sweep agree 66.50% value mse 0.2030 sign 71.82%  net alone vs perfect X 0/137/119 O 0/139/117  +search X 0/146/110 O 0/118/138
+    self-play 3558 positions (X 74 / draw 93 / O 89), 300 steps over 73390 samples, loss value 0.9039 policy 4.0534 reward 0.0308, 0 clamped latents  (play 1629 train 8045 score 2009 ms)
+  iter 40: f∘h sweep agree 66.61% value mse 0.2469 sign 68.53%  net alone vs perfect X 0/154/102 O 0/124/132  +search X 0/162/94 O 0/158/98
+    self-play 3499 positions (X 101 / draw 90 / O 65), 300 steps over 73187 samples, loss value 0.9094 policy 4.0424 reward 0.0300, 0 clamped latents  (play 1922 train 8345 score 1932 ms)
+  iter 41: f∘h sweep agree 67.25% value mse 0.2490 sign 68.58%  net alone vs perfect X 0/135/121 O 0/119/137  +search X 0/165/91 O 0/140/116
+    self-play 3385 positions (X 103 / draw 84 / O 69), 300 steps over 72924 samples, loss value 0.9050 policy 4.0471 reward 0.0290, 0 clamped latents  (play 1943 train 8220 score 1990 ms)
+  iter 42: f∘h sweep agree 67.52% value mse 0.2153 sign 70.21%  net alone vs perfect X 0/128/128 O 0/120/136  +search X 0/151/105 O 0/118/138
+    self-play 3506 positions (X 90 / draw 98 / O 68), 300 steps over 72785 samples, loss value 0.9026 policy 4.0297 reward 0.0261, 0 clamped latents  (play 1801 train 8193 score 1990 ms)
+  iter 43: f∘h sweep agree 68.99% value mse 0.1891 sign 72.77%  net alone vs perfect X 0/136/120 O 0/138/118  +search X 0/184/72 O 0/165/91
+    self-play 3314 positions (X 114 / draw 80 / O 62), 300 steps over 72388 samples, loss value 0.9139 policy 4.0322 reward 0.0248, 0 clamped latents  (play 1894 train 8113 score 2029 ms)
+  iter 44: f∘h sweep agree 69.01% value mse 0.2122 sign 71.04%  net alone vs perfect X 0/136/120 O 0/136/120  +search X 0/210/46 O 0/174/82
+    self-play 3241 positions (X 111 / draw 75 / O 70), 300 steps over 71904 samples, loss value 0.9277 policy 4.0390 reward 0.0221, 0 clamped latents  (play 1915 train 8000 score 1859 ms)
+  iter 45: f∘h sweep agree 69.02% value mse 0.1850 sign 73.49%  net alone vs perfect X 0/150/106 O 0/144/112  +search X 0/239/17 O 0/214/42
+    self-play 3304 positions (X 100 / draw 88 / O 68), 300 steps over 71513 samples, loss value 0.9237 policy 4.0379 reward 0.0181, 0 clamped latents  (play 1873 train 7906 score 1829 ms)
+  iter 46: f∘h sweep agree 69.92% value mse 0.1923 sign 74.45%  net alone vs perfect X 0/131/125 O 0/115/141  +search X 0/233/23 O 0/214/42
+    self-play 3257 positions (X 105 / draw 85 / O 66), 300 steps over 71035 samples, loss value 0.9245 policy 4.0329 reward 0.0161, 0 clamped latents  (play 1783 train 8098 score 1749 ms)
+  iter 47: f∘h sweep agree 72.61% value mse 0.1676 sign 76.54%  net alone vs perfect X 0/142/114 O 0/140/116  +search X 0/243/13 O 0/224/32
+    self-play 3281 positions (X 103 / draw 92 / O 61), 300 steps over 70631 samples, loss value 0.9316 policy 4.0292 reward 0.0141, 0 clamped latents  (play 1789 train 8068 score 1768 ms)
+  iter 48: f∘h sweep agree 73.31% value mse 0.1922 sign 74.56%  net alone vs perfect X 0/135/121 O 0/112/144  +search X 0/252/4 O 0/230/26
+    self-play 3280 positions (X 88 / draw 103 / O 65), 300 steps over 70209 samples, loss value 0.9191 policy 4.0297 reward 0.0129, 0 clamped latents  (play 1911 train 8177 score 1912 ms)
+  iter 49: f∘h sweep agree 75.40% value mse 0.1419 sign 82.65%  net alone vs perfect X 0/157/99 O 0/147/109  +search X 0/249/7 O 0/229/27
+    self-play 3268 positions (X 90 / draw 98 / O 68), 300 steps over 69808 samples, loss value 0.9129 policy 4.0352 reward 0.0118, 0 clamped latents  (play 1799 train 9294 score 1980 ms)
+  iter 50: f∘h sweep agree 76.28% value mse 0.1408 sign 82.83%  net alone vs perfect X 0/181/75 O 0/164/92  +search X 0/252/4 O 0/243/13
+    self-play 3104 positions (X 114 / draw 82 / O 60), 300 steps over 69226 samples, loss value 0.8991 policy 4.0265 reward 0.0103, 0 clamped latents  (play 1887 train 7945 score 1903 ms)
+  iter 51: f∘h sweep agree 79.31% value mse 0.1447 sign 81.91%  net alone vs perfect X 0/198/58 O 0/158/98  +search X 0/251/5 O 0/247/9
+    self-play 3351 positions (X 81 / draw 127 / O 48), 300 steps over 68919 samples, loss value 0.8879 policy 4.0257 reward 0.0101, 0 clamped latents  (play 1824 train 8073 score 1761 ms)
+  iter 52: f∘h sweep agree 79.01% value mse 0.2297 sign 71.04%  net alone vs perfect X 0/187/69 O 0/178/78  +search X 0/252/4 O 0/245/11
+    self-play 3302 positions (X 92 / draw 121 / O 43), 300 steps over 68536 samples, loss value 0.8627 policy 4.0052 reward 0.0100, 0 clamped latents  (play 1791 train 7852 score 1904 ms)
+  iter 53: f∘h sweep agree 82.04% value mse 0.1447 sign 81.64%  net alone vs perfect X 0/213/43 O 0/193/63  +search X 0/255/1 O 0/255/1
+    self-play 3388 positions (X 76 / draw 126 / O 54), 300 steps over 68269 samples, loss value 0.8524 policy 4.0008 reward 0.0090, 0 clamped latents  (play 1812 train 8105 score 1711 ms)
+  iter 54: f∘h sweep agree 83.76% value mse 0.1766 sign 77.89%  net alone vs perfect X 0/230/26 O 0/195/61  +search X 0/251/5 O 0/251/5
+    self-play 3457 positions (X 63 / draw 152 / O 41), 300 steps over 68007 samples, loss value 0.8278 policy 3.9847 reward 0.0081, 0 clamped latents  (play 1940 train 8120 score 1810 ms)
+  iter 55: f∘h sweep agree 84.97% value mse 0.1647 sign 78.73%  net alone vs perfect X 0/233/23 O 0/220/36  +search X 0/254/2 O 0/253/3
+    self-play 3446 positions (X 72 / draw 144 / O 40), 300 steps over 67838 samples, loss value 0.8076 policy 3.9773 reward 0.0075, 0 clamped latents  (play 1813 train 8046 score 1878 ms)
+  iter 56: f∘h sweep agree 86.27% value mse 0.1527 sign 79.82%  net alone vs perfect X 0/236/20 O 0/224/32  +search X 0/255/1 O 0/253/3
+    self-play 3407 positions (X 73 / draw 132 / O 51), 300 steps over 67579 samples, loss value 0.7751 policy 3.9601 reward 0.0066, 0 clamped latents  (play 1912 train 8132 score 1799 ms)
+  iter 57: f∘h sweep agree 86.89% value mse 0.1887 sign 76.42%  net alone vs perfect X 0/246/10 O 0/234/22  +search X 0/253/3 O 0/249/7
+    self-play 3421 positions (X 69 / draw 137 / O 50), 300 steps over 67360 samples, loss value 0.7719 policy 3.9375 reward 0.0063, 0 clamped latents  (play 1872 train 8075 score 1858 ms)
+  iter 58: f∘h sweep agree 90.74% value mse 0.1286 sign 83.86%  net alone vs perfect X 0/254/2 O 0/250/6  +search X 0/250/6 O 0/256/0
+    self-play 3482 positions (X 68 / draw 150 / O 38), 300 steps over 67251 samples, loss value 0.7461 policy 3.9085 reward 0.0049, 0 clamped latents  (play 1793 train 8118 score 1811 ms)
+  iter 59: f∘h sweep agree 91.20% value mse 0.1628 sign 78.87%  net alone vs perfect X 0/255/1 O 0/250/6  +search X 0/253/3 O 0/252/4
+    self-play 3581 positions (X 53 / draw 169 / O 34), 300 steps over 67274 samples, loss value 0.7016 policy 3.8748 reward 0.0041, 0 clamped latents  (play 1757 train 8109 score 1774 ms)
+  iter 60: f∘h sweep agree 91.98% value mse 0.1883 sign 76.68%  net alone vs perfect X 0/255/1 O 0/256/0  +search X 0/248/8 O 0/252/4
+    self-play 3552 positions (X 58 / draw 164 / O 34), 300 steps over 67327 samples, loss value 0.6765 policy 3.8599 reward 0.0030, 0 clamped latents  (play 1794 train 8034 score 1855 ms)
+  iter 61: f∘h sweep agree 92.74% value mse 0.1219 sign 85.07%  net alone vs perfect X 0/256/0 O 0/252/4  +search X 0/252/4 O 0/249/7
+    self-play 3537 positions (X 67 / draw 158 / O 31), 300 steps over 67479 samples, loss value 0.6631 policy 3.8233 reward 0.0026, 0 clamped latents  (play 1876 train 8041 score 1839 ms)
+  iter 62: f∘h sweep agree 93.18% value mse 0.1134 sign 85.73%  net alone vs perfect X 0/256/0 O 0/252/4  +search X 0/252/4 O 0/251/5
+    self-play 3612 positions (X 56 / draw 173 / O 27), 300 steps over 67585 samples, loss value 0.6251 policy 3.7728 reward 0.0018, 0 clamped latents  (play 1866 train 8089 score 1850 ms)
+  iter 63: f∘h sweep agree 94.06% value mse 0.1144 sign 85.91%  net alone vs perfect X 0/256/0 O 0/254/2  +search X 0/256/0 O 0/254/2
+    self-play 3665 positions (X 43 / draw 178 / O 35), 300 steps over 67936 samples, loss value 0.6010 policy 3.7414 reward 0.0018, 0 clamped latents  (play 1815 train 8024 score 1815 ms)
+  iter 64: f∘h sweep agree 94.43% value mse 0.1017 sign 88.40%  net alone vs perfect X 0/253/3 O 0/243/13  +search X 0/256/0 O 0/250/6
+    self-play 3625 positions (X 65 / draw 174 / O 17), 300 steps over 68320 samples, loss value 0.5556 policy 3.7021 reward 0.0014, 0 clamped latents  (play 1777 train 7923 score 1622 ms)
+  iter 65: f∘h sweep agree 94.32% value mse 0.1119 sign 85.57%  net alone vs perfect X 0/254/2 O 0/253/3  +search X 0/254/2 O 0/254/2
+    self-play 3671 positions (X 57 / draw 175 / O 24), 300 steps over 68687 samples, loss value 0.5317 policy 3.6631 reward 0.0011, 0 clamped latents  (play 1831 train 7948 score 1818 ms)
+  iter 66: f∘h sweep agree 95.20% value mse 0.0959 sign 88.84%  net alone vs perfect X 0/256/0 O 0/252/4  +search X 0/256/0 O 0/256/0
+    self-play 3679 positions (X 49 / draw 188 / O 19), 300 steps over 69109 samples, loss value 0.5036 policy 3.6008 reward 0.0010, 0 clamped latents  (play 1906 train 7946 score 1857 ms)
+  iter 67: f∘h sweep agree 95.38% value mse 0.1051 sign 87.19%  net alone vs perfect X 0/255/1 O 0/253/3  +search X 0/256/0 O 0/256/0
+    self-play 3709 positions (X 61 / draw 184 / O 11), 300 steps over 69537 samples, loss value 0.4765 policy 3.5717 reward 0.0008, 0 clamped latents  (play 1752 train 7836 score 1901 ms)
+  iter 68: f∘h sweep agree 95.62% value mse 0.1112 sign 86.45%  net alone vs perfect X 0/255/1 O 0/249/7  +search X 0/256/0 O 0/256/0
+    self-play 3688 positions (X 50 / draw 192 / O 14), 300 steps over 69945 samples, loss value 0.4590 policy 3.5514 reward 0.0007, 0 clamped latents  (play 1898 train 7960 score 1818 ms)
+  iter 69: f∘h sweep agree 95.83% value mse 0.0978 sign 90.23%  net alone vs perfect X 0/256/0 O 0/254/2  +search X 0/256/0 O 0/256/0
+    self-play 3705 positions (X 51 / draw 191 / O 14), 300 steps over 70382 samples, loss value 0.4256 policy 3.4973 reward 0.0007, 0 clamped latents  (play 1825 train 8078 score 1839 ms)
+  iter 70: f∘h sweep agree 95.62% value mse 0.1023 sign 87.39%  net alone vs perfect X 0/255/1 O 0/254/2  +search X 0/256/0 O 0/256/0
+    self-play 3696 positions (X 50 / draw 190 / O 16), 300 steps over 70974 samples, loss value 0.3920 policy 3.4497 reward 0.0005, 0 clamped latents  (play 1719 train 8118 score 1723 ms)
+  iter 71: f∘h sweep agree 95.98% value mse 0.0972 sign 89.46%  net alone vs perfect X 0/255/1 O 0/254/2  +search X 0/256/0 O 0/256/0
+    self-play 3736 positions (X 46 / draw 191 / O 19), 300 steps over 71359 samples, loss value 0.3772 policy 3.4228 reward 0.0005, 0 clamped latents  (play 1668 train 8081 score 1725 ms)
+  iter 72: f∘h sweep agree 96.15% value mse 0.0958 sign 88.52%  net alone vs perfect X 0/254/2 O 0/254/2  +search X 0/255/1 O 0/256/0
+    self-play 3802 positions (X 40 / draw 208 / O 8), 300 steps over 71859 samples, loss value 0.3660 policy 3.3894 reward 0.0004, 0 clamped latents  (play 1710 train 8131 score 1785 ms)
+  iter 73: f∘h sweep agree 96.28% value mse 0.1004 sign 87.51%  net alone vs perfect X 0/253/3 O 0/250/6  +search X 0/255/1 O 0/256/0
+    self-play 3724 positions (X 50 / draw 190 / O 16), 300 steps over 72195 samples, loss value 0.3480 policy 3.3729 reward 0.0004, 0 clamped latents  (play 1813 train 8178 score 1840 ms)
+  iter 74: f∘h sweep agree 96.43% value mse 0.0890 sign 89.83%  net alone vs perfect X 0/256/0 O 0/253/3  +search X 0/256/0 O 0/256/0
+    self-play 3749 positions (X 39 / draw 197 / O 20), 300 steps over 72487 samples, loss value 0.3359 policy 3.3553 reward 0.0006, 0 clamped latents  (play 1697 train 7929 score 1852 ms)
+  iter 75: f∘h sweep agree 96.49% value mse 0.0953 sign 88.50%  net alone vs perfect X 0/254/2 O 0/254/2  +search X 0/256/0 O 0/256/0
+    self-play 3799 positions (X 35 / draw 205 / O 16), 300 steps over 72840 samples, loss value 0.3203 policy 3.3354 reward 0.0002, 0 clamped latents  (play 1858 train 8117 score 1786 ms)
+  iter 76: f∘h sweep agree 96.58% value mse 0.1026 sign 87.43%  net alone vs perfect X 0/254/2 O 0/252/4  +search X 0/256/0 O 0/256/0
+    self-play 3678 positions (X 48 / draw 186 / O 22), 300 steps over 73111 samples, loss value 0.3166 policy 3.3219 reward 0.0004, 0 clamped latents  (play 1729 train 8042 score 1824 ms)
+  iter 77: f∘h sweep agree 96.63% value mse 0.1024 sign 87.26%  net alone vs perfect X 0/256/0 O 0/254/2  +search X 0/256/0 O 0/256/0
+    self-play 3787 positions (X 37 / draw 202 / O 17), 300 steps over 73477 samples, loss value 0.2945 policy 3.2856 reward 0.0002, 0 clamped latents  (play 1725 train 8165 score 1797 ms)
+  iter 78: f∘h sweep agree 96.59% value mse 0.1025 sign 87.49%  net alone vs perfect X 0/254/2 O 0/251/5  +search X 0/256/0 O 0/255/1
+    self-play 3856 positions (X 28 / draw 214 / O 14), 300 steps over 73851 samples, loss value 0.2849 policy 3.2720 reward 0.0002, 0 clamped latents  (play 1685 train 8193 score 1827 ms)
+  iter 79: f∘h sweep agree 96.89% value mse 0.0940 sign 88.62%  net alone vs perfect X 0/256/0 O 0/255/1  +search X 0/255/1 O 0/256/0
+    self-play 3778 positions (X 38 / draw 197 / O 21), 300 steps over 74048 samples, loss value 0.2750 policy 3.2493 reward 0.0002, 0 clamped latents  (play 1775 train 8050 score 1861 ms)
+  iter 80: f∘h sweep agree 97.14% value mse 0.0902 sign 89.47%  net alone vs perfect X 0/256/0 O 0/252/4  +search X 0/256/0 O 0/256/0
+    self-play 3778 positions (X 40 / draw 204 / O 12), 300 steps over 74274 samples, loss value 0.2703 policy 3.2294 reward 0.0002, 0 clamped latents  (play 1700 train 7846 score 1980 ms)
+  iter 81: f∘h sweep agree 97.30% value mse 0.0921 sign 88.99%  net alone vs perfect X 0/254/2 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3684 positions (X 52 / draw 184 / O 20), 300 steps over 74421 samples, loss value 0.2616 policy 3.2085 reward 0.0002, 0 clamped latents  (play 2092 train 7914 score 2077 ms)
+  iter 82: f∘h sweep agree 96.93% value mse 0.0989 sign 87.65%  net alone vs perfect X 0/256/0 O 0/254/2  +search X 0/256/0 O 0/254/2
+    self-play 3813 positions (X 39 / draw 207 / O 10), 300 steps over 74622 samples, loss value 0.2493 policy 3.1995 reward 0.0001, 0 clamped latents  (play 1593 train 8075 score 1920 ms)
+  iter 83: f∘h sweep agree 97.05% value mse 0.1080 sign 86.42%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3809 positions (X 33 / draw 211 / O 12), 300 steps over 74766 samples, loss value 0.2346 policy 3.1932 reward 0.0001, 0 clamped latents  (play 1852 train 9675 score 2648 ms)
+  iter 84: f∘h sweep agree 97.60% value mse 0.0939 sign 88.88%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3894 positions (X 28 / draw 224 / O 4), 300 steps over 75035 samples, loss value 0.2344 policy 3.1834 reward 0.0001, 0 clamped latents  (play 2150 train 8756 score 2006 ms)
+  iter 85: f∘h sweep agree 97.21% value mse 0.0972 sign 88.58%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3832 positions (X 30 / draw 208 / O 18), 300 steps over 75196 samples, loss value 0.2291 policy 3.1880 reward 0.0001, 0 clamped latents  (play 1921 train 8778 score 2099 ms)
+  iter 86: f∘h sweep agree 97.78% value mse 0.1024 sign 87.61%  net alone vs perfect X 0/256/0 O 0/254/2  +search X 0/256/0 O 0/256/0
+    self-play 3828 positions (X 28 / draw 207 / O 21), 300 steps over 75345 samples, loss value 0.2220 policy 3.1834 reward 0.0001, 0 clamped latents  (play 1914 train 9119 score 2120 ms)
+  iter 87: f∘h sweep agree 97.54% value mse 0.0913 sign 89.43%  net alone vs perfect X 0/256/0 O 0/255/1  +search X 0/256/0 O 0/256/0
+    self-play 3843 positions (X 31 / draw 209 / O 16), 300 steps over 75479 samples, loss value 0.2144 policy 3.1706 reward 0.0000, 0 clamped latents  (play 1931 train 8630 score 1950 ms)
+  iter 88: f∘h sweep agree 97.66% value mse 0.0870 sign 90.20%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3896 positions (X 24 / draw 220 / O 12), 300 steps over 75687 samples, loss value 0.2068 policy 3.1770 reward 0.0001, 0 clamped latents  (play 2011 train 8921 score 2054 ms)
+  iter 89: f∘h sweep agree 97.58% value mse 0.1029 sign 87.34%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3802 positions (X 40 / draw 201 / O 15), 300 steps over 75784 samples, loss value 0.2076 policy 3.1699 reward 0.0001, 0 clamped latents  (play 1967 train 9002 score 1973 ms)
+  iter 90: f∘h sweep agree 97.75% value mse 0.0911 sign 89.10%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3895 positions (X 25 / draw 219 / O 12), 300 steps over 75983 samples, loss value 0.2025 policy 3.1653 reward 0.0000, 0 clamped latents  (play 2059 train 9047 score 2047 ms)
+  iter 91: f∘h sweep agree 97.54% value mse 0.0908 sign 89.14%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3833 positions (X 33 / draw 213 / O 10), 300 steps over 76080 samples, loss value 0.2000 policy 3.1555 reward 0.0000, 0 clamped latents  (play 2032 train 8953 score 2049 ms)
+  iter 92: f∘h sweep agree 97.79% value mse 0.0961 sign 89.23%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3853 positions (X 31 / draw 211 / O 14), 300 steps over 76131 samples, loss value 0.2031 policy 3.1747 reward 0.0002, 0 clamped latents  (play 2063 train 8986 score 2043 ms)
+  iter 93: f∘h sweep agree 98.21% value mse 0.1100 sign 87.83%  net alone vs perfect X 0/256/0 O 0/255/1  +search X 0/256/0 O 0/256/0
+    self-play 3852 positions (X 26 / draw 212 / O 18), 300 steps over 76259 samples, loss value 0.2015 policy 3.1625 reward 0.0000, 0 clamped latents  (play 1917 train 8810 score 2019 ms)
+  iter 94: f∘h sweep agree 97.91% value mse 0.0853 sign 89.89%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3858 positions (X 28 / draw 209 / O 19), 300 steps over 76368 samples, loss value 0.1960 policy 3.1696 reward 0.0000, 0 clamped latents  (play 2001 train 9105 score 2007 ms)
+  iter 95: f∘h sweep agree 98.32% value mse 0.0859 sign 89.96%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3888 positions (X 30 / draw 219 / O 7), 300 steps over 76457 samples, loss value 0.1924 policy 3.1665 reward 0.0001, 0 clamped latents  (play 1852 train 8854 score 1974 ms)
+  iter 96: f∘h sweep agree 97.93% value mse 0.0965 sign 88.44%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3757 positions (X 43 / draw 197 / O 16), 300 steps over 76536 samples, loss value 0.1905 policy 3.1805 reward 0.0001, 0 clamped latents  (play 1957 train 8878 score 1977 ms)
+  iter 97: f∘h sweep agree 98.01% value mse 0.0791 sign 90.87%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3874 positions (X 24 / draw 217 / O 15), 300 steps over 76623 samples, loss value 0.1885 policy 3.1690 reward 0.0000, 0 clamped latents  (play 1994 train 9032 score 2026 ms)
+  iter 98: f∘h sweep agree 98.04% value mse 0.0939 sign 89.01%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3854 positions (X 28 / draw 214 / O 14), 300 steps over 76621 samples, loss value 0.1826 policy 3.1701 reward 0.0001, 0 clamped latents  (play 1953 train 8708 score 2080 ms)
+  iter 99: f∘h sweep agree 98.17% value mse 0.0830 sign 90.15%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3825 positions (X 37 / draw 202 / O 17), 300 steps over 76668 samples, loss value 0.1867 policy 3.1821 reward 0.0001, 0 clamped latents  (play 1940 train 9124 score 1956 ms)
+  iter 100: f∘h sweep agree 97.78% value mse 0.0843 sign 90.11%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3842 positions (X 36 / draw 209 / O 11), 300 steps over 76732 samples, loss value 0.1821 policy 3.1669 reward 0.0000, 0 clamped latents  (play 1927 train 8913 score 2012 ms)
+  iter 101: f∘h sweep agree 98.01% value mse 0.0869 sign 90.01%  net alone vs perfect X 0/255/1 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3857 positions (X 33 / draw 213 / O 10), 300 steps over 76905 samples, loss value 0.1855 policy 3.1749 reward 0.0000, 0 clamped latents  (play 1937 train 9075 score 1925 ms)
+  iter 102: f∘h sweep agree 98.30% value mse 0.0762 sign 91.23%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3885 positions (X 27 / draw 217 / O 12), 300 steps over 76977 samples, loss value 0.1843 policy 3.1884 reward 0.0001, 0 clamped latents  (play 2019 train 8853 score 1987 ms)
+  iter 103: f∘h sweep agree 98.46% value mse 0.0766 sign 91.03%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3847 positions (X 37 / draw 210 / O 9), 300 steps over 77015 samples, loss value 0.1783 policy 3.1867 reward 0.0000, 0 clamped latents  (play 1968 train 8804 score 2061 ms)
+  iter 104: f∘h sweep agree 98.32% value mse 0.0766 sign 91.09%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3791 positions (X 39 / draw 199 / O 18), 300 steps over 76912 samples, loss value 0.1867 policy 3.1897 reward 0.0001, 0 clamped latents  (play 1979 train 8827 score 2043 ms)
+  iter 105: f∘h sweep agree 98.57% value mse 0.0724 sign 92.02%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3893 positions (X 27 / draw 222 / O 7), 300 steps over 76973 samples, loss value 0.1880 policy 3.1884 reward 0.0000, 0 clamped latents  (play 2053 train 8898 score 1937 ms)
+  iter 106: f∘h sweep agree 98.32% value mse 0.0784 sign 90.67%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3823 positions (X 33 / draw 209 / O 14), 300 steps over 76968 samples, loss value 0.1861 policy 3.1790 reward 0.0001, 0 clamped latents  (play 2038 train 8904 score 2054 ms)
+  iter 107: f∘h sweep agree 98.55% value mse 0.0686 sign 92.26%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3842 positions (X 30 / draw 213 / O 13), 300 steps over 76967 samples, loss value 0.1835 policy 3.1795 reward 0.0001, 0 clamped latents  (play 2038 train 8971 score 2001 ms)
+  iter 108: f∘h sweep agree 98.47% value mse 0.0725 sign 91.81%  net alone vs perfect X 0/255/1 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3810 positions (X 38 / draw 208 / O 10), 300 steps over 76881 samples, loss value 0.1783 policy 3.1969 reward 0.0001, 0 clamped latents  (play 1936 train 8942 score 1999 ms)
+  iter 109: f∘h sweep agree 98.18% value mse 0.0809 sign 90.98%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3857 positions (X 27 / draw 212 / O 17), 300 steps over 76936 samples, loss value 0.1834 policy 3.1955 reward 0.0001, 0 clamped latents  (play 1923 train 8883 score 2054 ms)
+  iter 110: f∘h sweep agree 98.35% value mse 0.0718 sign 91.79%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3843 positions (X 31 / draw 213 / O 12), 300 steps over 76884 samples, loss value 0.1827 policy 3.2028 reward 0.0001, 0 clamped latents  (play 2031 train 8946 score 1987 ms)
+  iter 111: f∘h sweep agree 98.59% value mse 0.0677 sign 92.65%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3917 positions (X 19 / draw 225 / O 12), 300 steps over 76968 samples, loss value 0.1789 policy 3.2080 reward 0.0000, 0 clamped latents  (play 1976 train 9050 score 2099 ms)
+  iter 112: f∘h sweep agree 98.74% value mse 0.0694 sign 92.02%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3849 positions (X 33 / draw 212 / O 11), 300 steps over 76964 samples, loss value 0.1797 policy 3.2043 reward 0.0001, 0 clamped latents  (play 1988 train 9055 score 2066 ms)
+  iter 113: f∘h sweep agree 98.65% value mse 0.0813 sign 90.08%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3922 positions (X 24 / draw 222 / O 10), 300 steps over 77034 samples, loss value 0.1790 policy 3.2116 reward 0.0000, 0 clamped latents  (play 2069 train 9177 score 1963 ms)
+  iter 114: f∘h sweep agree 98.60% value mse 0.0791 sign 90.46%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3936 positions (X 22 / draw 223 / O 11), 300 steps over 77112 samples, loss value 0.1687 policy 3.2059 reward 0.0000, 0 clamped latents  (play 1875 train 8757 score 1935 ms)
+  iter 115: f∘h sweep agree 98.65% value mse 0.0766 sign 90.85%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3949 positions (X 19 / draw 228 / O 9), 300 steps over 77173 samples, loss value 0.1667 policy 3.2041 reward 0.0000, 0 clamped latents  (play 1919 train 8821 score 2004 ms)
+  iter 116: f∘h sweep agree 98.61% value mse 0.0781 sign 90.67%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3911 positions (X 21 / draw 222 / O 13), 300 steps over 77327 samples, loss value 0.1708 policy 3.2127 reward 0.0000, 0 clamped latents  (play 1888 train 8782 score 1904 ms)
+  iter 117: f∘h sweep agree 98.63% value mse 0.0707 sign 92.17%  net alone vs perfect X 0/256/0 O 0/255/1  +search X 0/256/0 O 0/256/0
+    self-play 3911 positions (X 29 / draw 220 / O 7), 300 steps over 77364 samples, loss value 0.1661 policy 3.2104 reward 0.0000, 0 clamped latents  (play 1866 train 8705 score 2026 ms)
+  iter 118: f∘h sweep agree 98.88% value mse 0.0649 sign 92.74%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3836 positions (X 32 / draw 211 / O 13), 300 steps over 77346 samples, loss value 0.1731 policy 3.2226 reward 0.0000, 0 clamped latents  (play 1970 train 8661 score 1946 ms)
+  iter 119: f∘h sweep agree 98.96% value mse 0.0673 sign 92.17%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3875 positions (X 23 / draw 218 / O 15), 300 steps over 77396 samples, loss value 0.1606 policy 3.2071 reward 0.0000, 0 clamped latents  (play 1972 train 8849 score 1999 ms)
+  iter 120: f∘h sweep agree 98.76% value mse 0.0698 sign 92.21%  net alone vs perfect X 0/256/0 O 0/256/0  +search X 0/256/0 O 0/256/0
+    self-play 3855 positions (X 35 / draw 209 / O 12), 300 steps over 77409 samples, loss value 0.1588 policy 3.2092 reward 0.0000, 0 clamped latents  (play 1952 train 8900 score 1984 ms)
+trained: 120 iterations, 36000 steps, 1624055 ms; self-play stood at 237814 of the 9062619 decision positions
+wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_curve.csv, .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_params.bin, .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_seen.bin
+EXIT 0

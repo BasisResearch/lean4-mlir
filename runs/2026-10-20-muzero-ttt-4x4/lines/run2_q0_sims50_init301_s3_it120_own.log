@@ -1,0 +1,100 @@
+[pjrt_ffi] allocator: 1 create option(s), memory_fraction=0.150
+I1020 16:03:47.065212 2245583 service.cc:154] XLA service 0x783728008360 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1020 16:03:47.065278 2245583 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 16:03:47.067543 2245583 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1020 16:03:47.067782 2245583 gpu_helpers.cc:162] XLA backend allocating 2.34GiB (2510290944 bytes) on device 0 for BFCAllocator.
+I1020 16:03:47.078355 2245583 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_h_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 469 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_h_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 145 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_h_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 430 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_h_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 92 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_g_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 42 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_g_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 63 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_g_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 153 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_g_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 76 ms
+I1020 16:03:48.703423 2248146 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_f_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 399 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_f_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 562 ms
+I1020 16:03:49.784842 2248132 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_5', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_f_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 629 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_f_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 83 ms
+I1020 16:03:50.306063 2248160 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_r_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 343 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_r_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 650 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_r_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 118 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_muzero_ttt_r_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 92 ms
+muzero ttt 4x4 (xla): h 56608 + g 74464 + f 5397 + r 4357 = 140826 params, C 32, K 5, 20 iterations of 256 games at 25 sims, batch 64 × 10 epochs over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000 (raw Q), Dir(1.000000) at 0.250000, seed 1 (graphs 198667 ms)
+  shape checks passed
+probes (own lines from 19961 starts): fit on 9981 boards at k = 0, k 1: 7199 held out, 99.8% boards, k 2: 6900 held out, 99.7% boards, k 3: 6376 held out, 99.7% boards, k 4: 5440 held out, 99.5% boards, k 5: 4031 held out, 99.7% boards
+line from 118179 (own, 5 moves #[6, 5, 0, 9, 8]):
+  k 0: true ....X.....O.....  probe ....X.....O.....  value -0.002  policy argmax 6  exact 0, optimal #[0, 1, 2, 3, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+  k 1: true ....X.X...O.....  probe ....X.X...O.....  value -0.044  reward 0.000  policy argmax 5  exact 0, optimal #[0, 1, 2, 3, 5, 7, 8, 9, 11, 12, 13, 14, 15]
+  k 2: true ....XOX...O.....  probe ....XOX...O.....  value -0.083  reward 0.000  policy argmax 0  exact 0, optimal #[0, 1, 2, 3, 7, 8, 9, 11, 12, 13, 14, 15]
+  k 3: true X...XOX...O.....  probe X...XOX...O.....  value -0.023  reward 0.000  policy argmax 9  exact 0, optimal #[1, 2, 3, 7, 8, 9, 11, 12, 13, 14, 15]
+  k 4: true X...XOX..OO.....  probe X...XOX..OO.....  value -0.037  reward 0.000  policy argmax 8  exact 0, optimal #[1, 2, 3, 7, 8, 11, 12, 13, 14, 15]
+  k 5: true X...XOX.XOO.....  probe X...XOX.XOO.....  value -0.087  reward 0.000  policy argmax 12  exact 0, optimal #[12]
+  wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_line118179.csv
+line from 21 (own, 5 moves #[5, 9, 6, 10, 11]):
+  k 0: true .XO.............  probe .XO.............  value -0.010  policy argmax 5  exact 0, optimal #[0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  k 1: true .XO..X..........  probe .XO..X..........  value -0.068  reward 0.000  policy argmax 9  exact 0, optimal #[0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  k 2: true .XO..X...O......  probe .XO..X...O......  value 0.016  reward 0.000  policy argmax 6  exact 0, optimal #[0, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15]
+  k 3: true .XO..XX..O......  probe .XO..XX..O......  value -0.045  reward 0.000  policy argmax 10  exact 0, optimal #[0, 3, 4, 7, 8, 10, 11, 12, 13, 14, 15]
+  k 4: true .XO..XX..OO.....  probe .XO..XX..OO.....  value -0.016  reward 0.000  policy argmax 11  exact 0, optimal #[0, 3, 4, 7, 8, 11, 12, 13, 14, 15]
+  k 5: true .XO..XX..OOX....  probe .XO..XX..OOX....  value -0.075  reward 0.000  policy argmax 7  exact 0, optimal #[0, 3, 4, 7, 8, 12, 13, 14, 15]
+  wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_line21.csv
+line from 139986 (own, 5 moves #[6, 5, 3, 12, 15]):
+  k 0: true ..O....X.XO.....  probe ..O....X.XO.....  value 0.035  policy argmax 6  exact 0, optimal #[0, 1, 3, 4, 5, 6, 8, 11, 12, 13, 14, 15]
+  k 1: true ..O...XX.XO.....  probe ..O...XX.XO.....  value -0.103  reward 0.000  policy argmax 12  exact 0, optimal #[0, 1, 3, 4, 5, 8, 11, 12, 13, 14, 15]
+  k 2: true ..O..OXX.XO.....  probe ..O..OXX.XO.....  value 0.028  reward 0.000  policy argmax 12  exact 0, optimal #[0, 1, 3, 4, 8, 11, 12, 13, 14, 15]
+  k 3: true ..OX.OXX.XO.....  probe ..OX.OXX.XO.....  value -0.089  reward 0.000  policy argmax 12  exact 0, optimal #[12]
+  k 4: true ..OX.OXX.XO.O...  probe ..OX.OXX.XO.O...  value -0.002  reward 0.000  policy argmax 15  exact 0, optimal #[0, 1, 4, 8, 11, 13, 14, 15]
+  k 5: true ..OX.OXX.XO.O..X  probe ..OX.OXX.XO.O..X  value -0.109  reward 0.000  policy argmax 11  exact 0, optimal #[11]
+  wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_line139986.csv
+line from 9568290 (own, 5 moves #[9, 5, 10, 8, 12]):
+  k 0: true .X..O..X......O.  probe .X..O..X......O.  value -0.005  policy argmax 9  exact 0, optimal #[0, 2, 3, 5, 6, 8, 9, 10, 11, 12, 13, 15]
+  k 1: true .X..O..X.X....O.  probe .X..O..X.X....O.  value -0.065  reward 0.000  policy argmax 5  exact 0, optimal #[0, 2, 3, 5, 6, 8, 10, 11, 12, 13, 15]
+  k 2: true .X..OO.X.X....O.  probe .X..OO.X.X....O.  value -0.018  reward 0.000  policy argmax 10  exact 0, optimal #[0, 2, 3, 6, 8, 10, 11, 12, 13, 15]
+  k 3: true .X..OO.X.XX...O.  probe .X..OO.X.XX...O.  value -0.054  reward 0.000  policy argmax 11  exact 0, optimal #[0, 2, 3, 6, 8, 11, 12, 13, 15]
+  k 4: true .X..OO.XOXX...O.  probe .X..OO.XOXX...O.  value -0.031  reward 0.000  policy argmax 0  exact 0, optimal #[0, 2, 3, 6, 11, 12, 13, 15]
+  k 5: true .X..OO.XOXX.X.O.  probe .X..OO.XOXX.X.O.  value -0.076  reward 0.000  policy argmax 6  exact 0, optimal #[0, 2, 3, 6, 11, 13, 15]
+  wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_line9568290.csv
+line from 29767500 (own, 5 moves #[9, 13, 14, 10, 6]):
+  k 0: true .....X..X...O..O  probe .....X..X...O..O  value -0.048  policy argmax 9  exact 0, optimal #[0, 1, 2, 3, 4, 6, 7, 9, 10, 11, 13, 14]
+  k 1: true .....X..XX..O..O  probe .....X..XX..O..O  value -0.042  reward 0.000  policy argmax 13  exact 0, optimal #[0, 1, 2, 3, 4, 6, 7, 10, 11, 13, 14]
+  k 2: true .....X..XX..OO.O  probe .....X..XX..OO.O  value -0.118  reward 0.000  policy argmax 14  exact 0, optimal #[14]
+  k 3: true .....X..XX..OOXO  probe .....X..XX..OOXO  value -0.042  reward 0.000  policy argmax 3  exact 0, optimal #[0, 1, 2, 3, 4, 6, 7, 10, 11]
+  k 4: true .....X..XXO.OOXO  probe .....X..XXO.OOXO  value -0.020  reward 0.000  policy argmax 6  exact 0, optimal #[0, 1, 2, 3, 4, 6, 7, 11]
+  k 5: true .....XX.XXO.OOXO  probe .....XX.XXO.OOXO  value -0.022  reward 0.000  policy argmax 3  exact 0, optimal #[0, 1, 2, 3, 4, 7, 11]
+  wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_line29767500.csv
+line from 4796593 (own, 5 moves #[6, 10, 9, 3, 15]):
+  k 0: true XOX..O..O.....X.  probe XOX..O..O.....X.  value -0.018  policy argmax 6  exact 0, optimal #[3, 4, 6, 7, 9, 10, 11, 12, 13, 15]
+  k 1: true XOX..OX.O.....X.  probe XOX..OX.O.....X.  value -0.063  reward 0.000  policy argmax 10  exact 0, optimal #[10]
+  k 2: true XOX..OX.O.O...X.  probe XOX..OX.O.O...X.  value -0.030  reward 0.000  policy argmax 9  exact 0, optimal #[9, 11, 13]
+  k 3: true XOX..OX.OXO...X.  probe XOX..OX.OXO...X.  value -0.074  reward 0.000  policy argmax 12  exact 0, optimal #[3, 4, 7, 11, 12, 13, 15]
+  k 4: true XOXO.OX.OXO...X.  probe XOXO.OX.OXO...X.  value -0.005  reward 0.000  policy argmax 15  exact 0, optimal #[4, 7, 11, 12, 13, 15]
+  k 5: true XOXO.OX.OXO...XX  probe XOXO.OX.OXO...XX  value -0.035  reward 0.000  policy argmax 12  exact 0, optimal #[4, 7, 11, 12, 13]
+  wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_line4796593.csv
+line from 3249955 (own, 5 moves #[15, 5, 9, 8, 12]):
+  k 0: true X.OO...X..X..O..  probe X.OO...X..X..O..  value 0.596  policy argmax 15  exact 0, optimal #[1, 4, 5, 6, 8, 9, 11, 12, 14, 15]
+  k 1: true X.OO...X..X..O.X  probe X.OO...X..X..O.X  value -0.145  reward 0.000  policy argmax 5  exact 0, optimal #[5]
+  k 2: true X.OO.O.X..X..O.X  probe X.OO.O.X..X..O.X  value 0.005  reward 0.000  policy argmax 9  exact 0, optimal #[1, 4, 6, 8, 9, 11, 12, 14]
+  k 3: true X.OO.O.X.XX..O.X  probe X.OO.O.X.XX..O.X  value 0.006  reward 0.000  policy argmax 6  exact 0, optimal #[1, 4, 6, 8, 11, 12, 14]
+  k 4: true X.OO.O.XOXX..O.X  probe X.OO.O.XOXX..O.X  value 0.015  reward 0.000  policy argmax 6  exact 0, optimal #[1, 4, 6, 11, 12, 14]
+  k 5: true X.OO.O.XOXX.XO.X  probe X.OO.O.XOXX.XO.X  value 0.004  reward 0.000  policy argmax 6  exact 0, optimal #[1, 4, 6, 11, 14]
+  wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_line3249955.csv
+line from 9335 (own, 5 moves #[3, 15, 10, 9, 1]):
+  k 0: true O.O.XO.XX.......  probe O.O.XO.XX.......  value -0.084  policy argmax 3  exact 0, optimal #[1, 3, 6, 9, 10, 11, 12, 13, 14, 15]
+  k 1: true O.OXXO.XX.......  probe O.OXXO.XX.......  value 0.043  reward 0.000  policy argmax 15  exact 0, optimal #[1, 6, 9, 10, 11, 12, 13, 14, 15]
+  k 2: true O.OXXO.XX......O  probe O.OXXO.XX......O  value -0.126  reward 0.000  policy argmax 10  exact 0, optimal #[10]
+  k 3: true O.OXXO.XX.X....O  probe O.OXXO.XX.X....O  value -0.017  reward 0.000  policy argmax 9  exact 0, optimal #[1, 6, 9, 11, 12, 13, 14]
+  k 4: true O.OXXO.XXOX....O  probe O.OXXO.XXOX....O  value -0.009  reward 0.000  policy argmax 1  exact 0, optimal #[1, 6, 11, 12, 13, 14]
+  k 5: true OXOXXO.XXOX....O  probe OXOXXO.XXOX....O  value -0.002  reward 0.000  policy argmax 12  exact 0, optimal #[6, 11, 12, 13, 14]
+  wrote .lake/build/muzero_ttt_4x4_run2_q0_sims50_init301_s3_it120_line9335.csv
+lines done (203287 ms)
+EXIT 0

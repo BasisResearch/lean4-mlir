@@ -1,0 +1,25 @@
+I1020 15:07:24.296879 2218112 service.cc:154] XLA service 0x73c740008470 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1020 15:07:24.296938 2218112 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 15:07:24.298395 2218112 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1020 15:07:24.298436 2218112 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 0 for BFCAllocator.
+I1020 15:07:24.305055 2218112 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_oracle3_muzero_oracle_az_trunk_3x3_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 471 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_oracle3_muzero_oracle_az_trunk_3x3_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 6 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_oracle3_muzero_oracle_az_trunk_3x3_vjp.mlir (@main, 7 outputs, 1 replica) in 266 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_oracle3_muzero_oracle_az_trunk_3x3_adam.mlir (@main, 18 outputs, 1 replica) in 63 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_oracle3_muzero_oracle_az_head_3x3_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 437 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_oracle3_muzero_oracle_az_head_3x3_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 73 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_oracle3_muzero_oracle_az_head_3x3_vjp.mlir (@main, 7 outputs, 1 replica) in 736 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_oracle3_muzero_oracle_az_head_3x3_adam.mlir (@main, 18 outputs, 1 replica) in 73 ms
+oracle gate (xla): AlphaZero 3x3 net trained, 4520 decision positions, cpuct 1.250000
+  sims 2: 4520 / 4520 root visit distributions equal, max L1 0.000000  ✓ exact
+  sims 3: 4520 / 4520 root visit distributions equal, max L1 0.000000  ✓ exact
+  sims 4: 4520 / 4520 root visit distributions equal, max L1 0.000000  ✓ exact
+  sims 5: 4520 / 4520 root visit distributions equal, max L1 0.000000  ✓ exact
+  sims 6: 4520 / 4520 root visit distributions equal, max L1 0.000000  ✓ exact
+  sims 25: 4489 / 4520 root visit distributions equal, max L1 0.250000  (transpositions share nodes in lean_mcts)
+oracle gate passed (4685 ms)
+EXIT 0

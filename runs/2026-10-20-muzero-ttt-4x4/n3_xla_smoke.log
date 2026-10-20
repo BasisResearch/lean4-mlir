@@ -1,0 +1,34 @@
+I1020 15:05:40.577124 2216431 service.cc:154] XLA service 0x71ccb40084c0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1020 15:05:40.577184 2216431 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 15:05:40.578899 2216431 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1020 15:05:40.578950 2216431 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 0 for BFCAllocator.
+I1020 15:05:40.585965 2216431 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_h_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 517 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_h_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 104 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_h_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 371 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_h_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 68 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_g_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 42 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_g_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 39 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_g_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 155 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_g_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 66 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_f_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 320 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_f_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 362 ms
+I1020 15:05:42.800411 2216505 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_9', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_f_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 511 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_f_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 73 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_r_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 281 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_r_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 334 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_r_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 109 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_xla_smoke3_muzero_ttt_r_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 72 ms
+muzero ttt 3x3 (xla): h 56608 + g 74464 + f 3150 + r 2565 = 136787 params, C 32, K 5, 1 iterations of 256 games at 50 sims, batch 64 × 300 steps an iteration over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000 (raw Q), Dir(1.000000) at 0.250000, seed 1 (graphs 3735 ms)
+  shape checks passed
+  iter 0: f∘h sweep agree 61.64% value mse 0.5728 sign 23.47%  net alone vs perfect X 0/134/122 O 0/19/237  +search X 0/110/146 O 0/12/244
+  iter 1: f∘h sweep agree 63.76% value mse 0.5832 sign 32.04%  net alone vs perfect X 0/163/93 O 0/8/248  +search X 0/0/256 O 0/9/247
+    self-play 1890 positions (X 151 / draw 33 / O 72), 300 steps over 1890 samples, loss value 1.2351 policy 4.0185 reward 0.1022, 14 clamped latents  (play 710 train 7967 score 862 ms)
+trained: 1 iterations, 300 steps, 14161 ms; self-play stood at 812 of the 4520 decision positions
+wrote .lake/build/muzero_ttt_3x3_xla_smoke3_curve.csv, .lake/build/muzero_ttt_3x3_xla_smoke3_params.bin, .lake/build/muzero_ttt_3x3_xla_smoke3_seen.bin
+EXIT 0

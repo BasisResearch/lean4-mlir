@@ -1,0 +1,42 @@
+[pjrt_ffi] allocator: 1 create option(s), memory_fraction=0.150
+I1020 15:40:40.423510 2233440 service.cc:154] XLA service 0x7dab980084c0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1020 15:40:40.423567 2233440 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1020 15:40:40.425381 2233440 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1020 15:40:40.425443 2233440 gpu_helpers.cc:162] XLA backend allocating 2.34GiB (2510290944 bytes) on device 0 for BFCAllocator.
+I1020 15:40:40.434514 2233440 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_h_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 441 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_h_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 160 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_h_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 421 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_h_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 86 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_g_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 48 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_g_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 72 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_g_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 185 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_g_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 86 ms
+I1020 15:40:42.084623 2234316 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_f_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 428 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_f_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 624 ms
+I1020 15:40:43.198861 2234309 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_5', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_f_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 662 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_f_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 103 ms
+I1020 15:40:43.843014 2234335 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 4 bytes spill stores, 4 bytes spill loads
+
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_r_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 373 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_r_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 655 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_r_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 122 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_muzero_ttt_r_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 89 ms
+muzero ttt 4x4 (xla): h 56608 + g 74464 + f 5397 + r 4357 = 140826 params, C 32, K 5, 20 iterations of 256 games at 25 sims, batch 64 × 10 epochs over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000 (raw Q), Dir(1.000000) at 0.250000, seed 1 (graphs 218250 ms)
+  shape checks passed
+line from 158436 (own, 5 moves #[15, 12, 3, 0, 7]): probes fit on 9981 boards at k = 0, k 1: 7319 held out, 85.6% boards, k 2: 6579 held out, 53.9% boards, k 3: 5643 held out, 29.7% boards, k 4: 4528 held out, 16.2% boards, k 5: 3145 held out, 11.3% boards
+  k 0: true .....XX..OO.....  probe .....XX..OO.....  value 0.227  policy argmax 15  exact 0, optimal #[0, 1, 2, 3, 4, 7, 8, 11, 12, 13, 14, 15]
+  k 1: true .....XX..OO....X  probe .....XX..OO....X  value -0.132  reward -0.001  policy argmax 3  exact 0, optimal #[0, 1, 2, 3, 4, 7, 8, 11, 12, 13, 14]
+  k 2: true .....XX..OO.O..X  probe .....XX..OO.O..X  value 0.238  reward 0.001  policy argmax 0  exact 0, optimal #[0, 1, 2, 3, 4, 7, 8, 11, 13, 14]
+  k 3: true ...X.XX..OO.O..X  probe ...X.XX..OO.O..X  value -0.146  reward -0.004  policy argmax 0  exact 0, optimal #[4, 7, 8, 11]
+  k 4: true O..X.XX..OO.O..X  probe O..X.XX..OO.O..X  value 0.011  reward 0.000  policy argmax 7  exact 1, optimal #[7]
+  k 5: true O..X.XXX.OO.O..X  probe O..X.XXX.OO.O..X  value -0.265  reward 0.001  policy argmax 4  exact -1, optimal #[1, 2, 4, 8, 11, 13, 14]
+wrote .lake/build/muzero_ttt_4x4_run1_q0_sims50_init101_s1_line158436.csv (222694 ms)
+EXIT 0
