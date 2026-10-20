@@ -22,6 +22,10 @@ next on this box.
 Trainer: `jax/.lake/build/generated_mobilenet_v2_imagenet_full.py`. Final state
 `/home/skoonce/mnv2_full_jax_2612/mobilenet_v2_imagenet_full.state.npz`.
 
+`rescore.sh` rescores that state over the full 50k through f32 with the per-image top-1 bitmap
+(`bitmaps/`, not committed): 35,921 / 45,268 = 71.84 / 90.54, one image off the in-training 35,920
+(`rescore_f32.log`). Paired with the verified run's e420 bitmap, McNemar p = 0.30.
+
 ## Curve (top-1 / top-5)
 
 | epoch | 5 | 10 | 50 | 100 | 200 | 300 | 400 | **420** |

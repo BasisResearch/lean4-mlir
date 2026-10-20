@@ -1,0 +1,24 @@
+=== mnv2 jax 2612 e420 f32 ===
+eval dtype: f32 forward (EVAL_DTYPE=f32); the module's DT=bfloat16 CONV_DT=bfloat16
+backend=gpu devices=4
+gen=/tmp/claude-1000/-home-skoonce-lean-klawd-max-power-lean4-jax-mlir/c38fba7b-56bb-4512-bd7a-4f6837a8fa0d/scratchpad/mnv2_rescore/generated_mobilenet_v2_imagenet_full.py
+state=/home/skoonce/mnv2_full_jax_2612/mobilenet_v2_imagenet_full.state.npz
+eval protocol: 224px, crop_pct=0.875000 (timm resize-then-crop, antialiased)
+state tuple (from the module): (params, opt_state, ema_params, ema_bn, bn_state)
+  params=158 bn=104 opt=316 leaves -> 840 total (file has 840) ✓
+loaded step=2101680
+scoring the EMA shadow + EMA-lagged BN buffers
+
+── scoring at 224px, crop_pct 0.875 — train (the module's own)
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+WARNING:tensorflow:From /home/skoonce/lean/klawd_max_power/lean4-jax-mlir/.venv/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bilinear (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BILINEAR...)` instead.
+E1020 13:44:03.468524 2187419 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+   per-image top-1 bitmap -> ../runs/2026-10-15-mnv2-full-jax/bitmaps/mnv2_jax_e420_f32.bin (50000 bytes, 35921 set) — pair with scripts/demos/mcnemar.py
+   top-1: 35921/50000 = 71.84%   top-5: 45268/50000 = 90.54%
+
+=== FULL VAL (f32 forward (EVAL_DTYPE=f32)) ===
+224px crop 0.875  top-1  71.84%  top-5  90.54%  (50000 images)  train (the module's own)

@@ -43,5 +43,9 @@ The verified half of the 420-epoch MNv2 pair. The JAX half is `runs/2026-10-15-m
 
 The pair ties: −0.15 (77 images) is well inside one run's ±0.40 95 % half-width, and the curves sit on
 each other the whole way (e23: 30,771 vs 30,774 correct). The 350-epoch pair this replaces was
-JAX 71.63 against verified 71.12, a −0.51 gap. McNemar needs a JAX bitmap, which the trainer does not write; the checkpoint
-is `/home/skoonce/mnv2_full_jax_2612/mobilenet_v2_imagenet_full.state.npz` for a rescore.
+JAX 71.63 against verified 71.12, a −0.51 gap.
+
+McNemar, this run's e420 bitmap against the JAX checkpoint rescored through f32
+(`../2026-10-15-mnv2-full-jax/rescore.sh`, 35,921 against its in-training 35,920): 33,129 both right,
+11,365 both wrong, 2,714 only verified, 2,792 only JAX — exact two-sided **p = 0.30**. The two
+checkpoints are not separated on the 50k.
