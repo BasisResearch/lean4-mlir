@@ -7782,59 +7782,23 @@ against forty-seven.
 
 Epoch 2 is worth a glance before moving on. Validation accuracy
 falls, from $24.1\%$ to $17.3\%$, while the training loss drops
-normally from $2.12$ to $1.78$. That is the warmup: the learning rate is
-still climbing toward its peak at epoch 3, and the BatchNorm running
-statistics are two epochs old and averaging over a network whose weights
-are moving fast. The evaluation forward is using statistics that no
-longer describe the thing being evaluated. It corrects itself by epoch 3
-and never recurs.
-
-Depthwise separability doesn't weaken it. That run did not execute a
-reimplementation of the network this chapter describes. It executed
-\texttt{verified\_mlir/mobilenetv2\_adam\_train\_step.mlir}, which is
-\texttt{pretty(provenGraph)} off the renderer. Every depthwise
-convolution in it backpropagates by the rule
-Theorem~\ref{ax:depthwiseHasVJP3} proves, every pointwise convolution by Theorem~\ref{ax:conv2dHasVJP3}, every
-BatchNorm by Theorem~\ref{thm:bnHasVJP}, and every residual skip by
-Theorem~\ref{thm:residualHasVJP}. Those per-operation theorems are unconditional and hold at any
-width or depth, so they cover all seventeen blocks.
+normally. The learning rate is still warming up and the BatchNorm running
+statistics are averaging over weights that are moving fast, so the
+evaluation forward --- \texttt{@mobilenetv2\_fwd\_eval}, the third
+artifact every BatchNorm net compiles, fed by the \texttt{running-stats
+BN} line above it --- is using statistics that no longer describe the
+thing being evaluated. It corrects itself by epoch 3 and never recurs.
 
 One scope note, because this is the chapter where the distinction starts
-to bite. The theorem that folds those rules into a single statement about
-the whole network, at the batch statistics this artifact runs, is
-\texttt{mobilenetv2ForwardBFullHasVJPAt\_correct}, in
-\texttt{Proofs/Nets/MobileNet/MobileNetV2FullBVJP.lean}, and it covers the
-stem, all seventeen bottlenecks and the head. The typed graph the artifact
-is printed from denotes that forward by
-\texttt{mobilenetv2FwdGraphBFull\_faithful} --- with classifier dropout, at
-every mask, by \texttt{mobilenetv2FwdGraphBFullDo\_faithful}; the inference
-render's typed graph denotes the frozen-statistics forward of one example by
-\texttt{mobilenetv2FwdGraphPaperEval\_faithful}, and both renders' block text
-is \texttt{pretty} of their typed blocks (\texttt{FwdGraphTextTies}) --- and
-the tie from the
-\texttt{mobilenetv2Verified} layer list to that forward is
-\texttt{mobilenetv2VerifiedB\_denote\_eq}, a \texttt{rfl} that stops
-reducing if any \texttt{[t,c,n,s]} entry of the spec drifts, with
-\texttt{mobilenetv2VerifiedB\_fwd\_faithful} above it.
-
-The full-depth fold is pointwise. It holds at a given input, and
-it carries one side condition per activation site, at every example of
-the batch, saying that the value entering relu6 is neither $0$ nor $6$.
-There are thirty-five such sites per example,
-and the reason for every one of them is that relu6 has two corners. The
-network is differentiable away from them and is not differentiable at
-them, so a statement quantified over all inputs would be false.
-Chapter~\ref{chap:se} does fold EfficientNet-B0 over all inputs
-(Theorem~\ref{thm:efficientnetFullHasVJP}), and it can do that because swish
-is smooth everywhere. The axis that moved here was the depth, from
-two blocks to seventeen, and not the pointwise-to-global one.
-
-The three compile lines are every BatchNorm net's three:
-\texttt{@mobilenetv2\_fwd\_eval} is a separate forward because BatchNorm evaluates differently than it trains,
-and \texttt{running-stats BN: 52 layers, 34112 stat floats} is the driver
-threading the running averages out of the train step and into it. This
-network has 52 BatchNorms against ResNet-34's 36, which is what a block
-built from three convolutions instead of two costs.
+to bite. The theorem that folds this run's backward into a single statement
+about the whole network, Theorem~\ref{thm:mobilenetv2FullHasVJP}, is
+pointwise: it holds at a given input, and it carries one side condition per
+activation site, thirty-five per example, saying that the value entering
+relu6 is neither $0$ nor $6$. relu6 has two corners, the network is not
+differentiable at them, and a statement quantified over all inputs would be
+false. Chapter~\ref{chap:se} folds EfficientNet-B0 over all inputs because
+swish is smooth everywhere; what moved here was the depth, from two blocks
+to seventeen, not the pointwise-to-global axis.
 
 \prosesection{Depthwise: one kernel per channel, no cross-channel sum}
 
@@ -9698,37 +9662,6 @@ the same recipe and the same eighty epochs. EfficientNet-B0 does it with
 $5.3\times$ fewer parameters than ResNet-34 and in forty-one minutes
 against forty-seven.
 
-The first four epochs are worth a glance. Top-1 climbs 19.3, 31.0, 38.9,
-then jumps to 53.9. The learning rate is still warming up through epoch
-3, and the BatchNorm running statistics are averaging over weights that
-are moving fast, so the evaluation forward is using statistics that no
-longer describe what is being evaluated. It resolves once the schedule
-reaches its peak and never recurs.
-
-Squeeze-excitation is the first place the product rule carries real
-weight. As in Chapter~\ref{chap:depthwise}, what ran is
-\texttt{pretty(provenGraph)} ---
-\texttt{verified\_mlir/efficientnet\_adam\_train\_step.mlir} --- and
-every squeeze-excitation gate in it backpropagates by the product rule
-Theorem~\ref{thm:seBlockHasVJP} proves; the depthwise, BatchNorm and residual rules are
-Theorems~\ref{ax:depthwiseHasVJP3}, \ref{thm:bnHasVJP} and~\ref{thm:residualHasVJP}.
-
-\medskip\noindent\textbf{And this fold holds at every input.}
-\texttt{efficientnetForwardBFullHasVJP} chains the stem, all
-sixteen MBConv blocks and the head through \texttt{vjpComp},
-batched over \(N\), assuming a positive \(\varepsilon\) at each BatchNorm
-and nothing else --- so every operation in the graph that just trained
-carries a proved backward, and their composition into the whole network
-carries one too. What buys that is swish. It is smooth, so the statement
-quantifies over all inputs, where Chapter~\ref{chap:depthwise}'s fold had to name a point and assume
-every relu6 activation stayed off the corner. Depth was never the obstacle, the activation was --- and every
-network after this one is smooth.
-
-The three compile lines and the \texttt{running-stats BN} line are every
-BatchNorm net's, here at 49 BatchNorms; the train step's 740
-outputs are what 213 parameter tensors plus their Adam moments plus the
-batch statistics plus the report-only loss come to.
-
 \prosesection{Three steps, one tensor product}
 
 An SE block on a feature map \(x \in \mathbb{R}^{B \times C \times H \times W}\)
@@ -11116,36 +11049,6 @@ front of it every time, so there is nothing to freeze, and the training
 forward and the evaluation forward are the same function. The chapter's
 central swap pays for itself in the build before it pays for itself in
 the mathematics.
-
-\medskip\noindent That also shows in the first four epochs. Top-1 climbs
-28.2, 39.9, 52.4, 56.7, smoothly. A BatchNorm net can show a step in its first epochs, when the running
-statistics average over weights that are still moving fast and the
-evaluation forward briefly uses statistics that no longer describe the
-network (Chapter~\ref{chap:se}). No such step exists here, because no such
-statistics exist here.
-
-Three new operations this chapter, still three rules. What ran is
-\texttt{pretty(provenGraph)}, the file
-\texttt{verified\_mlir/\allowbreak convnext\_adam\_train\_step.mlir}, and
-every channel-LayerNorm in it backpropagates by
-Theorem~\ref{thm:chanLNTensor3HasVJP} (the head's vector LayerNorm by
-Theorem~\ref{thm:layerNormVecHasVJP}), every GELU, at either form, by
-Theorem~\ref{thm:geluHasVJP}, every layer scale by its own diagonal
-adjoint, every depthwise convolution by Theorem~\ref{ax:depthwiseHasVJP3}, and every
-residual skip by Theorem~\ref{thm:residualHasVJP}.
-
-\medskip\noindent\textbf{And the fold holds at full depth.}
-\texttt{convNextForwardTChHasVJP} chains the patchify stem, all
-eighteen ConvNeXt blocks, the three downsamples, the pool and the
-head through \texttt{vjpComp}, with
-\texttt{convNextForwardTChHasVJP\_correct} carrying it back to the
-forward the spec denotes. It assumes 23 positive LayerNorm epsilons and
-nothing else. Unlike Chapter~\ref{chap:depthwise}, whose full-depth fold is
-pointwise because relu6's corner makes a statement over all inputs false,
-this one is a single global \texttt{HasVJP} over the entire network, and it
-can be because GELU is smooth everywhere. So for ConvNeXt the accurate sentence is the strong one:
-every operation in the graph that just trained carries a proved
-backward, and their composition into the whole network carries one too.
 
 \prosesection{Two new primitives}
 
@@ -12582,49 +12485,6 @@ and \textbf{68.74\%} top-1 with \textbf{90.42\%} top-5 on Imagenette's
 the fastest network in this book's Imagenette column by a wide margin
 and also the least accurate one in it
 (\S\ref{sec:attention_vit_example}).
-
-\medskip\noindent\textbf{Two compile lines, and the second one is the
-whole eval story.} Like ConvNeXt, and unlike the three chapters whose
-BatchNorm keeps running statistics, ViT emits no \texttt{vit\_fwd\_eval}. LayerNorm computes its
-statistics from the activation in front of it every time, so there is
-nothing to freeze and the training forward and the evaluation forward
-are the same function.
-
-\medskip\noindent\textbf{The top-5 column goes the wrong way, and that
-is the chapter's result in miniature.} Top-1 climbs the whole run, 35.2
-to 68.7. Top-5 climbs to $94.88\%$ at epoch 25 and then falls,
-finishing 4.5 points down at $90.42\%$. On a ten-class problem top-5 is
-a weak question, so what that divergence measures is a network growing
-more confident about its top choice while its ranking of the remaining
-classes decays. A transformer with 5.5M parameters and 9,469 training
-images has enough capacity to memorize its way to a better top-1 and
-not enough signal to keep the tail honest, which is
-\S\ref{sec:attention_vit_example}'s data-hunger argument showing up
-inside a single run rather than across the comparison table.
-
-Attention is where you would expect this to break. What ran is
-\texttt{pretty(provenGraph)}, the file
-\texttt{verified\_mlir/\allowbreak vit\_adam\_train\_step.mlir}, and every
-softmax in it backpropagates by Theorem~\ref{thm:softmaxHasVJP}, every
-scaled dot-product attention by
-Theorems~\ref{thm:sdpaBackQ_correct}--\ref{thm:sdpaBackV_correct},
-every LayerNorm by Theorem~\ref{thm:layerNormVecHasVJP}, every GELU by
-Theorem~\ref{thm:geluHasVJP}, and every residual skip by
-Theorem~\ref{thm:biPathMatHasVJP}.
-
-\medskip\noindent\textbf{And the fold holds at every depth.}
-\texttt{vitForwardKVHasVJP} chains the patch embedding, $k$
-transformer blocks with their own parameters, the final LayerNorm and
-the head through \texttt{vjpComp} for every $k$, and
-\texttt{vitTinyHasVJP\_correct} says the hand-written chain
-\texttt{vitInputGradK} is that fold's Jacobian transpose at this network's
-shape --- twelve blocks, $224/16$, any number of classes. Its only hypothesis is $\varepsilon > 0$ at
-the LayerNorms. It is a single global
-\texttt{HasVJP} over the entire network for the same reason
-Chapter~\ref{chap:layernorm}'s is --- softmax, GELU and LayerNorm are all
-smooth --- so ViT gets the strong sentence too: every operation in the
-graph that just trained carries a proved backward, and their
-composition into the whole network carries one too.
 
 \prosesection{Attention in one equation}
 
