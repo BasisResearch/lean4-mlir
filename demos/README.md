@@ -936,15 +936,16 @@ moment and checks eval ≡ train. Queue scripts and every arm's logs:
 
 ---
 
-## Reinforcement learning — DQN from pixels on Pong, Deep CFR on Leduc poker, and AlphaZero on tic-tac-toe
+## Reinforcement learning — DQN from pixels on Pong, Deep CFR on Leduc poker, AlphaZero and MuZero on tic-tac-toe
 
 Three games written in Lean, each with its own exact instrument — the book's closing
 section, Bestiary entries: game theory. They are the reinforcement-learning
 ladder of `planning/pong_dqn_demo.md`, `planning/leduc_deep_cfr_demo.md` and
 `planning/alphazero_ttt_demo.md`: rung 1 DQN from pixels on Pong, rung 2 regret
 minimisation under hidden information on Leduc hold'em, rung 3 self-play and tree search
-on tic-tac-toe — every rung through the stack on the rank-2 DDPM MSE block, zero new
-codegen. (A blackjack rung, tabular Q and a DQN against value iteration, opened the
+on tic-tac-toe, rung 4 the same game without its rules (MuZero, the one rung with a
+codegen piece of its own: a VJP module that returns the input cotangent) — every other rung
+through the stack on the rank-2 DDPM MSE block, zero new codegen. (A blackjack rung, tabular Q and a DQN against value iteration, opened the
 ladder until 2026-10-18; `runs/2026-09-11-blackjack-dqn/` is its record and
 `planning/archive/blackjack_dqn_demo.md` its plan.)
 
@@ -954,6 +955,8 @@ lake exe pong-dqn mode=pixels k=4         # DQN from frames; mode=state is the c
 lake exe ttt-env n=4                      # the solved game: counts, scripted pairings, the solver's gates
 lake exe alphazero-ttt n=3                # 20 iterations, 2.5 min on one card
 lake exe alphazero-ttt n=4 iters=40 sims=100 sweep=50000 epochs=5    # the same binary, 10 min
+lake exe muzero-ttt n=3 iters=60 steps=300 sims=50 qnorm=0            # MuZero on the same game, 10 min on one card
+lake exe muzero-ttt n=4 iters=120 steps=300 sims=50 qnorm=0 sweepN=20000   # 27 min; mode=score / mode=line / mode=oracle / mode=dump
 lake exe leduc-env                        # Leduc hold'em: the exact instrument, CFR+ / DCFR, the arms, ES-MCCFR, Gate 0 (seconds, no GPU)
 lake exe leduc-env r=13                   # the same instrument on a 26-card deck
 lake exe deep-cfr-leduc                   # Deep CFR, scored by exact exploitability; r=, T=, K=, seed=, tag=

@@ -283,6 +283,7 @@ Phase 4:           4×4, same binary, on a GPU box (below). Gate B as AlphaZero'
                    loses to perfect as either side.
 Phase 5:           figure, section, README, run README, bestiary cross-link
                    (`Bestiary/MuZero.lean` ↔ the trained specs), prior-art re-check.
+                   Drafted 2026-10-20 (§13); the prior-art re-check is still owed.
 ```
 
 **Phase 4 on a GPU (the plan as of 2026-10-18).** The CPU box measured what 4×4 costs
@@ -294,17 +295,27 @@ and is too slow for tuning:
   compile cache pre-seeded (Table.build, the symmetry check). 60 iterations ≈ 25–35 h a
   run; 80 at once ≈ 1.4 days. The full 9,062,619-position sweep is ~2 core-hours, which is
   why `sweepN=` exists; `mode=score` still sweeps them all.
-- Expected on GPU (an estimate, not measured): AlphaZero's 4×4 ran ~15 s an iteration on
-  an RTX 4060 Ti with the full sweep every iteration (`runs/2026-09-29-alphazero-ttt/
-  n4_run2_ctree.log`, XLA on CUDA). MuZero is ~3–5× that (a K = 5 unroll is ~6 net passes
-  a sample; three nets a simulation): ~45–75 s an iteration, ~1 h a 60-iteration run.
-  The calls are small (batch 64–256, 140,826 params), so the floor is launch overhead and
-  the Lean host side, not FLOPs; several runs sharing one GPU is likely the throughput play.
-- First step on the GPU box: the demo has only ever run on IREE llvm-cpu. Drop the CPU env
-  (`LEAN_MLIR_LOWERER`, `IREE_BACKEND=llvm-cpu`, `IREE_DEVICE`; the defaults are XLA and
-  `cuda`) and run the one-iteration smoke: `lake exe muzero-ttt n=4 iters=1 steps=300
-  sims=50 qnorm=0 sweepN=20000`, with `(play … train … score … ms)` replacing the estimate
-  above. Then 2–4 side by side on one GPU to see whether they share.
+- **Measured on XLA (2026-10-20, one RTX 4060 Ti, `runs/2026-10-20-muzero-ttt-4x4/`).**
+  The demo's first XLA runs, gated at 3×3 first: the one-iteration 3×3 smoke in 14 s against
+  5.8 min on IREE CPU (iteration 0 equal to the CPU baseline, iteration 1 diverged — self-play
+  on different low-order bits); the oracle gate on the trained AlphaZero net 4520 / 4520 exact
+  at sims 2–6 in 4.7 s; the unroll gate's losses to 5e-5 and the ½ check pass, the four ∂θ at
+  2e-4 … 7e-4 relative — over the 1e-5 tolerance, the same with `NVIDIA_TF32_OVERRIDE=0`
+  (XLA sets its own conv / dot math; the codegen has no precision knob) — the TF32 level
+  every XLA-vs-reference tie in the repo sits at, so the gate's tolerance is an IREE one.
+  The 4×4 smoke: 185 s of preamble (the dihedral symmetry check over 9,062,619 positions,
+  single-threaded Lean), then **play 1.3 / train 8.3 / score 2.1 s = 11.6 s an iteration**
+  at `sweepN=20000` — 60 iterations ≈ 15 min a run, against the ~1 h estimated and the CPU's
+  25–27 min an iteration. A train step is 27.6 ms for 38 calls (0.7 ms a call, the same at
+  3×3 and 4×4): launch and copy overhead on 140,826 parameters, not FLOPs. The lever, if one
+  is ever wanted, is fewer calls — one emitted module for the whole K-step unroll (one call a
+  step) and one for g + f + r per expansion — not residency (the copies are ~560 KB a call).
+- `mode=score` at 4×4: `scoreN=` (added 2026-10-20) starts M3–M5 from every ⌈nDec / scoreN⌉-th
+  decision position, the stride sample `sweepN=` uses; M1 plays its games and M2 sweeps every
+  decision position whatever it says (the root number beside AlphaZero's full sweep). The full
+  M2 at 4×4 is ~35k calls. Checked at 3×3: `scoreN=1000` leaves M1 and M2 identical to the full
+  score and runs M3–M5 from 904 starts (the g-probe refit needs more boards than that at 3×3;
+  at 4×4 `scoreN=20000` has them).
 - Then the arms: the 3×3 winner (50-sim self-play, 300 steps an iteration, raw Q, the
   AlphaZero-schedule never passed) across 3 inits (`initSeed=101/201/301`), 60 iterations,
   `sweepN=20000`; Gate B on the final net; M2–M5 via `mode=score` (full sweep). Steps 600
@@ -361,3 +372,30 @@ Stochastic MuZero, Sampled MuZero, Gumbel MuZero's root selection, reanalyse, Co
 - 2026-10-18: 4×4 costed on CPU — 80 runs side by side at 25–27 min an iteration (middle),
   ≈ 1.4 days for 60 iterations; `sweepN=` added (the full sweep is ~2 core-hours). Phase 4
   moves to a GPU box (§9).
+- 2026-10-20: the demo's first XLA runs (§9): 3×3 smoke 25× the CPU speed, the oracle gate
+  exact, the unroll gate at the TF32 level; the 4×4 smoke at 11.6 s an iteration; `scoreN=`
+  for `mode=score` at 4×4. The first 4×4 arm (init 101, 60 iterations, 16 min): root agreement
+  flat at 62–66% to iteration 40, 73% at 50, 92% at 60 — unbeaten as X with search, 0/250/6 as
+  O, still climbing. Four 120-iteration arms launched, one a card (inits 101 / 201 / 301 at 300
+  steps, init 101 at 600).
+- 2026-10-20, later: **Gate B met.** The 120-iteration arms on inits 201 and 301 (26–27 min each)
+  end at 98.3% / 98.8% root agreement, unbeaten both sides alone and with search, with 39 and 50
+  of their 121 per-iteration checks unbeaten from iterations 75 and 66; the scorer's own 256
+  games a side on init 201's net: 0/256/0 at every setting at 25 sims, full M2 98.18% / sign
+  89.58% (AlphaZero's 4×4 net 99.42% / 95.57%). The take-off comes at iterations 50–60 at 300
+  steps an iteration and ~40 at 600 — 60 iterations was simply short at 4×4. `mode=line` and
+  `scripts/demos/muzero_ttt_figure.py` built (§8's three panels; the middle one carries the
+  value sign as well as policy agreement, since the lines that survive to a deep k are endgames
+  and policy agreement rises with k). 3×3 replicated on XLA on three inits, 10 min a run:
+  alone 3 / 3, with search 1 / 3 at the final net — the CPU study's seed spread, not a
+  backend effect to claim either way.
+- 2026-10-20, evening: **Phase 4 closed, Phase 5 drafted.** All three 300-step inits at 4×4 pool
+  to 0/768/0 alone and with 25-sim search over three evaluation seeds and 0/256/0 at 100 sims
+  (full M2 98.57 / 98.18 / 98.74%); the 600-step arm reads 99.08% and drops one game in 256
+  alone as O. The table's and figure's net is init 301 (the best root agreement of the three).
+  Figure: `scripts/demos/muzero_ttt_figure.py` → `blueprint/src/figures/demos/muzero_ttt.png`
+  (a random line that loses the board at k = 5). Section: `\subsection{Tic-tac-toe without the
+  rules — MuZero against the solved game}` after the AlphaZero one (§10 option (a)), one figure,
+  one table (`scripts/demos/muzero_ttt_table.py` prints its rows), the findings; README rows and
+  the `Bestiary/MuZero.lean` cross-link. Run README: `runs/2026-10-20-muzero-ttt-4x4/README.md`.
+  Open: the prior-art re-check (§0; 2411.04580's title and authors), the rebase onto main, review.

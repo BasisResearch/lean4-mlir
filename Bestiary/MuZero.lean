@@ -8,7 +8,11 @@ public import LeanMlir.Spec
 
 MuZero (Schrittwieser, Antonoglou, Hubert, et al., 2020 — "Mastering
 Atari, Go, chess and shogi by planning with a learned model") is the
-successor to AlphaZero. Same MCTS-guided reinforcement learning — but
+successor to AlphaZero. The trained demo is `demos/MainMuZeroTtt.lean`
+(`lake exe muzero-ttt`): the same three networks plus a reward network on
+tic-tac-toe, plain conv stacks rather than the conv-BN bodies below (the
+AlphaZero demo's reason), scored against the solved game — book §10.4.4,
+`planning/muzero_ttt_demo.md`. Same MCTS-guided reinforcement learning — but
 **without being given the rules of the game**. MuZero learns a model
 of the environment's dynamics and plans in that learned latent space.
 

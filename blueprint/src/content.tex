@@ -18861,7 +18861,164 @@ sample is 92.1\% over the exhaustive opening, every position with at most three
 stones: it is best where the theory is. On this board the search is what closes the
 second player's games, and it has not closed them yet.
 
-The entries below are the same loop at the scale that made it famous: the network is
+\subsection{Tic-tac-toe without the rules --- MuZero against the solved game}
+\label{sec:game_muzero_ttt}
+
+The \texttt{demos/MainMuZeroTtt.lean} trainer is Schrittwieser et al.'s MuZero
+(2020, \href{https://www.nature.com/articles/s41586-020-03051-4}{Nature}) on the
+same instrument. AlphaZero is handed the rules: its search calls \texttt{step}.
+MuZero is not. Three plain convolution stacks --- a representation $h$ from the two
+stone planes to a $32 \times n \times n$ latent, a dynamics $g$ from a latent and a
+one-hot move plane to the next latent, and AlphaZero's two-headed prediction $f$ ---
+plus a one-output reward network $r$ on the latent a move reaches, 137k parameters at
+$3 \times 3$ and 141k at $4 \times 4$, are trained end to end on $K = 5$ moves of
+stored games: the policy, value and reward targets at every unrolled step, the
+latent min--max normalised after every network as in the paper. The search is PUCT in
+the latent: a node is a path, one batched $g$ over every game's pending leaf per
+simulation, then one $f$ and one $r$; legal moves are masked at the root from the real
+rules and nowhere inside the tree. Win rate cannot tell this agent from AlphaZero ---
+both are unbeaten --- so the question the section asks is the one the solved game can
+answer exactly: \emph{did MuZero learn tic-tac-toe, or only its values?} The
+literature predicts the second (Grimm et al.\ 2020's value-equivalence principle; He,
+Moerland, de Vries and Oliehoek 2023 find MuZero's model accurate on the policy it
+trained with and poor on others, measured against estimated returns). Here the
+answer is exact at every position, after every number of imagined moves, on lines
+the agent plays and lines it never would. Three things change relative to AlphaZero:
+
+\begin{itemize}
+  \item \textbf{One new codegen piece.} The kit emits a train step --- forward,
+    backward and optimizer in one call --- and an eval forward. MuZero's loss reaches
+    $h$ and $g$ through the unroll $s_0 = h(o)$, $s_{k+1} = g(s_k, a_k)$, so $g$'s
+    backward has to hand a cotangent to the previous step and $h$'s receives the sum of
+    everything downstream. \texttt{MlirCodegen.generateVjp} is the existing backward
+    walk with the first layer's input gradient --- every convolution already emits one
+    through \texttt{conv2dHasVJP3}; it was dead --- returned instead of dropped, and no
+    optimizer tail; \texttt{generateApplyAdam} is the existing Adam update on its own.
+    The trainer composes the gradient by hand, in reverse over the unroll, with the
+    min--max's VJP and the paper's two scalings on the host. Gated before any game code:
+    $\theta - \partial\theta$ from the VJP module equals the SGD train step's $\theta'$
+    bit for bit on all 136,787 parameters of the four $3 \times 3$ networks; the
+    input cotangent agrees with central differences and with \texttt{jax.vjp}; the
+    four composed gradients of the unrolled loss agree with \texttt{jax.grad} of the
+    same loss written as one JAX function to $7 \times 10^{-7}$ on the CPU compiler
+    (on XLA's CUDA path, $2$--$7 \times 10^{-4}$: TF32 convolutions, the level every
+    XLA-against-reference tie in this book sits at).
+  \item \textbf{A tree with no transpositions, gated against the one with them.}
+    AlphaZero's search keys nodes by the true position's index, so two move orders
+    reaching one board share a node. A latent tree cannot: a node is a path. The gate
+    that catches search bugs replaces $g$ with the true dynamics --- the latent of the
+    real next position --- and $f \circ h$ with a trained AlphaZero network cut after
+    its trunk, so both searches read the same two graphs: the position-keyed search's
+    first transposition needs seven simulations, so at $2$ to $6$ simulations every
+    root visit distribution must agree exactly, and all 4,520 do; a planted bug that
+    drops the edge reward passes at 2 and fails at 3--6 on 898--2,168 positions.
+  \item \textbf{The instrument scores the model, not only the player.} From every
+    reachable decision position (a fixed every-454th sample of the 9,062,619 at
+    $4 \times 4$), a legal line of $k = 0 \ldots 2K$ moves from three sources --- the
+    agent's own policy, perfect play, uniform random legal moves --- is played
+    \emph{inside the model}, and $f(g^k(h(s)))$ is scored against the exact value and
+    optimal set of the true position the line reaches; $r$ against the true outcome of
+    every move; and a closed-form ridge probe from the latent to the sixteen cell
+    states, fit on $h$ of real positions and refit on $g$'s own latents at each depth,
+    says whether the board is still linearly decodable --- the nearest thing to
+    ``knows the board''. Every number is exact per position; at $3 \times 3$ every set
+    is exhaustive.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{demos/muzero_ttt.png}
+\caption{Left: one $4 \times 4$ line played only inside the trained model, from a
+real position (O to move) along five uniformly random legal moves. Top row the true
+board; middle the board probe's readout of the imagined latent, cells the model has
+lost in red; bottom $f$'s policy over the cells with the solved game's optimal moves
+ringed. The model keeps every cell through four imagined moves and loses three at the
+fifth, where it reads $-0.12$ for a position whose exact value is $-1$. Middle: policy
+agreement with the optimal set (solid) and the value's sign (dashed) of $f(g^k(h(s)))$
+against imagined depth $k$, from a 19,961-position sample of the $4 \times 4$ decision
+positions, on the agent's own lines, perfect play and random lines, AlphaZero's
+exhaustive root agreement dash-dotted, $K = 5$ dotted. Right: $r$'s recall of the
+winning moves and the refit probe's whole-board accuracy against $k$, own and random
+lines.}
+\label{fig:muzero_ttt}
+\end{figure}
+
+\paragraph{Every arm against the solved game.} Table~\ref{tab:muzero_ttt_arms} adds
+MuZero's rows to Table~\ref{tab:ttt_arms}'s protocol --- agreement over every decision
+position, three independent 256-game evaluations of the saved network pooled against
+the perfect player --- and two columns only a model can have: the policy's agreement
+after $K = 5$ imagined moves on the agent's own lines and on random lines, and the
+share of winning moves $r$ calls, over every legal move from every scored start. The
+networks are the recipe that passed at $3 \times 3$ --- 50-simulation self-play, 300
+Adam steps an iteration, the raw mean $Q$ --- on fresh initialisations, 60 iterations
+at $3 \times 3$ and 120 at $4 \times 4$; at $4 \times 4$ all three initialisations run
+end unbeaten both sides, alone and with 25 and 100 simulations, and the table's is the
+one with the highest root agreement.
+
+\begin{table}[H]
+\centering
+\caption{The tic-tac-toe arms against the solved game, with MuZero's: 60 iterations and
+10 minutes on one card at $3 \times 3$, 120 iterations and 27 minutes at $4 \times 4$, the
+same binary with \texttt{n=4}. ``Imagined'' is policy agreement after five moves inside
+the model on the agent's own lines $\cdot$ random lines; ``$r$'' the winning moves the
+reward network calls at one move.}
+\label{tab:muzero_ttt_arms}
+\small
+\begin{tabular}{@{}l r l r l@{}}
+\hline
+arm & agrees & imagined, own $\cdot$ random & $r$ & vs perfect, X $\cdot$ O \\
+\hline
+\multicolumn{5}{l}{$3 \times 3$} \\
+random                 & 58.0\% & --- & --- & 0/207/793 $\cdot$ 0/33/967 \\
+win-or-block           & 94.0\% & --- & --- & 0/831/169 $\cdot$ 0/215/785 \\
+AlphaZero alone        & $\mathbf{97.3\%}$ & --- & --- & 0/768/0 $\cdot$ 0/768/0 \\
+AlphaZero + search     & ---    & --- & --- & 0/768/0 $\cdot$ 0/768/0 \\
+MuZero alone           & 96.9\% & 100\% $\cdot$ 96.5\% & 93.0\% & 0/768/0 $\cdot$ 0/768/0 \\
+MuZero + latent search & ---    & --- & --- & 0/768/0 $\cdot$ 0/768/0 \\
+perfect                & 100\%  & --- & --- & 0/1000/0 $\cdot$ 0/1000/0 \\
+\hline
+\multicolumn{5}{l}{$4 \times 4$} \\
+random                 & 60.4\% & --- & --- & 0/487/513 $\cdot$ 0/341/659 \\
+win-or-block           & 95.6\% & --- & --- & 0/930/70 $\cdot$ 0/840/160 \\
+AlphaZero alone        & $\mathbf{99.4\%}$ & --- & --- & 0/768/0 $\cdot$ 0/768/0 \\
+AlphaZero + search     & ---    & --- & --- & 0/768/0 $\cdot$ 0/768/0 \\
+MuZero alone           & 98.7\% & 100\% $\cdot$ 92.9\% & 99.5\% & 0/768/0 $\cdot$ 0/768/0 \\
+MuZero + latent search & ---    & --- & --- & 0/768/0 $\cdot$ 0/768/0 \\
+perfect                & 100\%  & --- & --- & 0/1000/0 $\cdot$ 0/1000/0 \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent MuZero bootstraps slowly: AlphaZero's $4 \times 4$ network passes 93\% root
+agreement by iteration 4, MuZero's sits at 62--66\% through iteration 40, 73\% at 50,
+92\% at 60 and 98\% by 100 --- self-play stays decisive for a long time, so $z$ teaches
+the values of weak play, and at $4 \times 4$ sixty iterations is simply short. Doubling
+the steps an iteration brings the take-off to iteration 40 and the sweep to 99.1\%, and
+costs one game in 256 alone as O. Self-play stood at 2.6\% of the decision positions.
+
+\paragraph{What the model learned.} The value-equivalent prediction --- values, not the
+board --- does not hold at one move and holds with depth. On the agent's own lines the
+probe refit on $g$'s latents recovers 99.8\% of whole $4 \times 4$ boards after one
+imagined move and 99.7\% after five; on random lines 94\% after one and 55\% after
+five, and a line of random moves is where the figure's model loses the board. The
+reward network calls 99.5\% of the winning moves at one move and 1.3\% of the others;
+along random lines its recall falls to 45\% by the fifth. The value's sign holds on
+the agent's own lines (92\% at the root, 99.8\% after five imagined moves, the surviving
+lines being endgames) and falls to 79--80\% on random lines by the fourth --- He et
+al.'s gap, against an exact value. Two move orders reaching one board land 2.0 apart in
+the latent, against 4.5 from $h$ of that board and 5.2 between different boards: the
+model keeps the board in its own encoding, not $h$'s. The probe fit on $h$ reads every
+held-out real position and 96--97\% of the cells of $g$'s latents --- at $3 \times 3$
+only 84\%, and the weaker the network, the less of the board $g$ keeps. What the
+search does with the model's mistakes is the last line: at $3 \times 3$ a third to a
+half of the positions where the search errs and the network alone does not carry a
+phantom win on the principal line --- $r$ calling a win the true board does not have
+--- against 1--2\% of other positions, and at the training budget extra simulations
+cost O games on two of three initialisations; at $4 \times 4$ the search errs where
+the network alone does not at 3 starts in 19,961, one of them with a phantom win, and
+holds at 100 simulations on every initialisation.
+
+The entries below are these loops at the scale that made them famous: the network is
 a residual tower, the game is Go or chess, and the target is still the model's own
 later estimate.
 
