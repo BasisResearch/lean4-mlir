@@ -102,7 +102,7 @@ row of `dedb34f5` at once on both paths).
 * Checkpoint, outside git: `.lake/build/efficientnetin_emarmstfdp64dropdowneps0001bf16_ckpt_xla.bin{,.bn,.epoch}`
   (marker 350, 84.6 MB, all four regions, plus BN running stats and their EMA).
 * Per-image top-1 bitmaps for all 350 epochs, `bitmaps/` (local only; `runs/**/*.bin` is gitignored).
-* `attempt.log` / `full.log` / `master.log`, `log_ts.log`, `epoch_clock.tsv`, `loader_rss.tsv`,
+* `attempt.log` / `full.log.gz` (gzipped: 2.5 MB plain, over the repo's 2 MB per-file cap) / `master.log`, `log_ts.log`, `epoch_clock.tsv`, `loader_rss.tsv`,
   `edac.tsv`, `CHAIN_EVENT`, `WATCH_EVENT`, the five watcher scripts and `chain_after_jax.sh`.
 * `enet_verified_curve.csv`, written by `summarize.sh`.
 

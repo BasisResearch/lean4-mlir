@@ -8,15 +8,18 @@ set -u
 cd /home/skoonce/lean/proof_verify_demo/verify-v2 || exit 1
 R=runs/2026-10-16-enet-verified-bf16-350ep
 CSV=${OUT:-$R}/enet_verified_curve.csv
+# full.log is committed as full.log.gz (2.5 MB, over repo_shape's 2 MB cap); read it through a temp copy.
+FL=$(mktemp); trap 'rm -f "$FL"' EXIT
+if [ -f "$R/full.log" ]; then cat "$R/full.log" > "$FL"; else zcat "$R/full.log.gz" > "$FL"; fi
 JCSV=${JOUT:-runs/2026-10-16-enet-full-jax-bf16-350ep}/enet_jax_curve.csv
 [ -s "$JCSV" ] || { echo "⛔ $JCSV missing — run the JAX run's summarize.sh first"; exit 1; }
 awk '/^Epoch [0-9]+\/350: loss=/ { split($2,a,"/"); e=a[1]+0; l=$3; sub(/loss=/,"",l); loss[e]=l }
      /^  epoch [0-9]+: test_acc = / { e=$2; sub(/:/,"",e); c=0
        for (i=1;i<=NF;i++) if ($i ~ /^[0-9.]+%$/) { c++; v=$i; gsub(/%/,"",v); if (c==1) t1=v; else if (c==2) t5=v }
        if (c>=2) { top1[e+0]=t1; top5[e+0]=t5; if (e+0>mx) mx=e+0 } }
-     END { print "epoch,train_loss,top1,top5"; for (e=1;e<=mx;e++) if (e in top1) printf "%d,%s,%s,%s\n", e, loss[e], top1[e], top5[e] }' "$R/full.log" > "$CSV"
+     END { print "epoch,train_loss,top1,top5"; for (e=1;e<=mx;e++) if (e in top1) printf "%d,%s,%s,%s\n", e, loss[e], top1[e], top5[e] }' "$FL" > "$CSV"
 echo "curve -> $CSV ($(($(wc -l < "$CSV")-1)) scored epochs)"
-echo "--- final"; grep -aE '^  epoch 350: ' "$R/full.log" | tail -1
+echo "--- final"; grep -aE '^  epoch 350: ' "$FL" | tail -1
 echo "--- best"; awk -F, 'NR>1 && $3>b {b=$3; e=$1} END{printf "best top1 %.3f at e%d\n", b, e}' "$CSV"
 echo "--- tail e326-350, every epoch"
 awk -F, 'NR>1 && $1>=326 {a+=$3; b+=$4; n++; if(!mn||$3<mn)mn=$3; if($3>mx)mx=$3} END{printf "mean %.3f / %.3f over %d   top-1 range %.3f..%.3f\n", a/n, b/n, n, mn, mx}' "$CSV"
@@ -32,8 +35,8 @@ awk -F, 'FILENAME==ARGV[1] && FNR>1 {jl[$1]=$3; j1[$1]=$4; j5[$1]=$5; next}
 echo "--- endpoint"; awk -F, 'FILENAME==ARGV[1] && FNR>1 {j1[$1]=$4; j5[$1]=$5; next} FNR>1 && $1==350 {printf "e350 verified %s / %s   JAX %s / %s   Δ %+.3f / %+.3f\n", $3, $4, j1[350], j5[350], $3-j1[350], $4-j5[350]}' "$JCSV" "$CSV"
 echo "--- launches / restarts"
 echo "supervisor starts: $(grep -c ' START job=' "$R/master.log")   trainer launches: $(grep -c 'launched PID=' "$R/master.log")   planned rests: $(grep -c '💤' "$R/master.log")   thermal: $(grep -c '🌡' "$R/master.log")"
-grep -aE 'resuming from checkpoint at epoch' "$R/full.log" | sed 's/^ *//' | tr '\n' ';'; echo
-echo "ema_bn restored on resume: $(grep -ac 'resumed BN running stats + ema_bn' "$R/full.log")"
+grep -aE 'resuming from checkpoint at epoch' "$FL" | sed 's/^ *//' | tr '\n' ';'; echo
+echo "ema_bn restored on resume: $(grep -ac 'resumed BN running stats + ema_bn' "$FL")"
 grep -E 'COMPLETE' "$R/master.log"
 s=$(grep -oE '^\[sup\] [0-9-]+ [0-9:]+ START' "$R/master.log" | head -1 | awk '{print $2" "$3}')
 f=$(grep -oE '^\[sup\] [0-9-]+ [0-9:]+ ✅ COMPLETE' "$R/master.log" | tail -1 | awk '{print $2" "$3}')
@@ -43,6 +46,6 @@ tail -n +2 "$R/epoch_clock.tsv" | awk -F'\t' 'NR>1{d=$2-p; n++; s+=d; if(!mn||d<
 echo "--- loaders: any producer whose arena-class memory passed 6 GiB"
 awk -F'\t' 'NR>1 && $6>6 {last[$3]=$2" "$4" "$6} END{for(k in last){split(last[k],a," "); printf "  pid %s last seen e%s, age %.1f h, arena %s GiB\n", k, a[1], a[2]/3600, a[3]}}' "$R/loader_rss.tsv"
 awk -F'\t' 'NR>1 && $6>mx {mx=$6; e=$2} END{printf "  peak arena-class %s GiB (e%s)\n", mx, e}' "$R/loader_rss.tsv"
-grep -aoE 'shim respawn: producer [0-9] of 4 replaced after epoch [0-9]+' "$R/full.log" | wc -l | awk '{print "  producer respawns: "$1}'
+grep -aoE 'shim respawn: producer [0-9] of 4 replaced after epoch [0-9]+' "$FL" | wc -l | awk '{print "  producer respawns: "$1}'
 echo "--- EDAC"; tail -n +2 "$R/edac.tsv" | awk -F'\t' '{ce+=$4; ue+=$5} END{printf "rows %d, corrected %d, uncorrectable %d\n", NR, ce, ue}'
 echo "--- bitmaps (LOCAL ONLY): $(ls "$R"/bitmaps/enet_*_e*.bin 2>/dev/null | wc -l) scored epochs"
