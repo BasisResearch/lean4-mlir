@@ -32,7 +32,7 @@ import re
 import sys
 from fractions import Fraction
 from pathlib import Path
-from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
+from _gencheck import modularize, module_header  # noqa: E402  (module-system header on what we write)
 
 import numpy as np
 
@@ -191,8 +191,10 @@ def emit(tag, W1q, W2q, Xraw, yte, out_path, counts_ibp, pgd, netdesc, ibp_impor
 
     L = []
     A = L.append
-    A("import LeanMlir.Proofs.Certificates.CrownBound")
-    A(f"import LeanMlir.Proofs.Certificates.{ibp_import}")
+    # as in the IBP scorecards: the unconstrained net reaches into both image halves (`lake shake`)
+    imgs = ["A", "B"] if tag == "TF" else ["A"]
+    A(module_header(["LeanMlir.Proofs.Certificates.CrownBound", f"LeanMlir.Proofs.Certificates.{ibp_import}"]
+                    + [f"LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgs{h}" for h in imgs], ["Mathlib.Tactic.Positivity.Finset"]))
     A("")
     A(f"/-! # CROWN-IBP L∞ scorecard, full 784-dim input — {netdesc}")
     A("")

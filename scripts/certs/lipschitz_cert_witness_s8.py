@@ -3,7 +3,7 @@
 import numpy as np, os, sys, tempfile
 from fractions import Fraction
 from math import ceil
-from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
+from _gencheck import modularize, module_header  # noqa: E402  (module-system header on what we write)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "scripts", "lib"))
@@ -129,9 +129,8 @@ open(os.path.join(SNIPPET_DIR, "s8_snippet.lean"), "w").write("\n".join(L) + "\n
 # ═══ emit trained-weight VJP witness file ═══
 W = []
 A = W.append
-A("import LeanMlir.Proofs.Foundation.MLP")
-A("import LeanMlir.Proofs.Training.JacobianSeal")
-A("import LeanMlir.Proofs.Certificates.LipschitzCert.Instance")
+A(module_header(["LeanMlir.Proofs.Foundation.MLP", "LeanMlir.Proofs.Certificates.LipschitzCert.Instance"],
+                ["LeanMlir.Proofs.Training.JacobianSeal"]))
 A("")
 A("/-! # Trained-weight whole-network VJP witness (MLP rung)")
 A("")

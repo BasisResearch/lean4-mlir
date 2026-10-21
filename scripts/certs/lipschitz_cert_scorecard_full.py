@@ -408,8 +408,7 @@ def write_files():
     # ═══ file 4: certificates + aggregate ═══
     L4 = []
     A = L4.append
-    A("import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA")
-    A("import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB")
+    A(module_header(["LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA", "LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB"], ["Mathlib.Tactic.Positivity.Finset"]))
     A("")
     A("/-! # Full-input certified-accuracy scorecard (4/4): the certificates")
     A("")
