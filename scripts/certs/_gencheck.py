@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib" / "modules"))
-from to_module import modularize  # noqa: E402  (the module-system header every .lean file carries)
+from to_module import modularize, module_header  # noqa: E402,F401  (the module-system header every .lean file carries)
 
 CHECK = "--check" in sys.argv
 _drift = []

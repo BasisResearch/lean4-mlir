@@ -28,7 +28,7 @@ does not have. Regenerate by hand and confirm the committed Lean comes back byte
 import os
 import numpy as np
 from fractions import Fraction
-from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
+from _gencheck import modularize, module_header  # noqa: E402  (module-system header on what we write)
 
 # ---- reproduce the witness (trains the net and computes the exact tables; WITNESS_NO_WRITE
 # ---- keeps it from rewriting Trained/CnnWitness.lean — run that generator for that file)
@@ -204,8 +204,10 @@ def mask_fold_bullets(preV, maskT, inV, n72='2*(2*3)*(2*3)'):
 s2r_bullets = mask_fold_bullets("c2V", "M2T", "t2V")
 s0r_bullets = mask_fold_bullets("c1V", "M1T", "t1V")
 
-body = f'''import LeanMlir.Proofs.Training.Trained.CnnWitness
-import LeanMlir.Proofs.Training.JacobianSeal
+SEAL_HEADER = module_header(["LeanMlir.Proofs.Training.Trained.CnnWitness"],
+                            ["LeanMlir.Proofs.Training.JacobianSeal"])
+
+body = f'''{SEAL_HEADER}
 
 /-! # Level-3 seal for the trained-CNN witness
 

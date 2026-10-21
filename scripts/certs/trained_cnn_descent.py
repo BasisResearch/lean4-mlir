@@ -35,7 +35,7 @@ comes back byte-identical.
 import os
 import sys
 from fractions import Fraction
-from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
+from _gencheck import modularize, module_header  # noqa: E402  (module-system header on what we write)
 
 import numpy as np
 
@@ -549,7 +549,10 @@ live_twin_windows = [(ci, ho, wo) for (ci, ho, wo), c in sorted(T["certs"].items
                      if c[0] == "live" and "twin" in c[2]]
 n_dead = sum(1 for c in T["certs"].values() if c[0] == "dead")
 
-body = f'''import LeanMlir.Proofs.Training.SgdDescent.Cnn
+DESCENT_HEADER = module_header(["LeanMlir.Proofs.Training.SgdDescent.Cnn"],
+                               ["Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp"])
+
+body = f'''{DESCENT_HEADER}
 
 /-! # Descent at TRAINED weights — the CNN conv2 rungs, through tied pool windows
 
@@ -980,7 +983,7 @@ DIMS = "(h := 6) (w := 6)"
 L1 = f"cnnConv1KernelLoss {DIMS} b1 T0 W2 b2 W3 b3 W4 b4 W5 b5 lbl"
 L1B = f"cnnConv1BiasLoss {DIMS} W1 T0 W2 b2 W3 b3 W4 b4 W5 b5 lbl"
 
-body_b = f'''import LeanMlir.Proofs.Training.SgdDescent.Cnn
+body_b = f'''{DESCENT_HEADER}
 
 /-! # Descent at TRAINED weights — the CNN conv1 rungs, through two-layer twins
 

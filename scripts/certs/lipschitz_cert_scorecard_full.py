@@ -30,7 +30,7 @@ import numpy as np, os, sys
 from fractions import Fraction
 from math import ceil
 from pathlib import Path
-from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
+from _gencheck import modularize, module_header  # noqa: E402  (module-system header on what we write)
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTDIR = ROOT / "LeanMlir" / "Proofs" / "Certificates"
@@ -362,8 +362,8 @@ def write_files():
     # ═══ file 1: nets ═══
     L1 = []
     A = L1.append
-    A("import LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard")
-    A("import LeanMlir.Proofs.Foundation.ListDot")
+    A(module_header(["LeanMlir.Proofs.Foundation.ListDot", "LeanMlir.Proofs.Certificates.DenseEuclid",
+                     "LeanMlir.Proofs.Foundation.GramQ"], ["Mathlib.Tactic.Positivity.Finset"]))
     A("")
     A("/-! # Full-input scorecard, part 1/4: the two 784→16→10 nets")
     A("")
@@ -389,7 +389,7 @@ def write_files():
     for part, rng_ in (("A", range(0, 50)), ("B", range(50, 100))):
         L2 = []
         A = L2.append
-        A("import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullNets")
+        A(module_header(["LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullNets"], ["Mathlib.Tactic.Positivity.Finset"]))
         A("")
         A(f"/-! # Full-input scorecard, part {'2' if part == 'A' else '3'}/4: images {rng_.start}–{rng_.stop - 1}")
         A("")

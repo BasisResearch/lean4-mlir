@@ -29,7 +29,7 @@ import inspect
 import numpy as np
 from fractions import Fraction
 from pathlib import Path
-from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
+from _gencheck import modularize, module_header  # noqa: E402  (module-system header on what we write)
 
 import lipschitz_cert_scorecard_full as base
 
@@ -136,9 +136,7 @@ def emit_data(results, out_path):
     """The shared module: per-row l1 facts for both nets, plus every fallback image."""
     Lb = []
     A = Lb.append
-    A("import LeanMlir.Proofs.Certificates.IntervalBound")
-    A("import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA")
-    A("import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB")
+    A(module_header(["LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullNets"], ["Mathlib.Tactic.Positivity.Finset"]))
     A("")
     A("/-! # IBP / CROWN L∞ scorecards — the shared data")
     A("")
@@ -196,7 +194,11 @@ def emit_net(tag, r, out_path):
 
     Lb = []
     A = Lb.append
-    A("import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardIBPData")
+    # the unconstrained net's certificates reach into both image halves, the constrained one's
+    # only into the first (`lake shake`)
+    imgs = ["A", "B"] if tag == "TF" else ["A"]
+    A(module_header(["LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardIBPData", "LeanMlir.Proofs.Certificates.IntervalBound"]
+                    + [f"LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgs{h}" for h in imgs], ["Mathlib.Tactic.Positivity.Finset"]))
     A("")
     netdesc = ("spectrally-capped σ≤2 net (`mlpSF`)" if tag == "SF"
                else "unconstrained net (`mlpTF`)")

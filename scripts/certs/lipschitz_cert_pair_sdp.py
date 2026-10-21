@@ -28,7 +28,7 @@ from fractions import Fraction
 from math import ceil, sqrt
 from scipy.linalg import sqrtm
 from scipy.optimize import minimize
-from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
+from _gencheck import modularize, module_header  # noqa: E402  (module-system header on what we write)
 
 import os
 import re
@@ -218,8 +218,7 @@ def emit_net(tag, W1z, W2z, G1q, den, facts, w1name, w2name, g1name, g1eq,
 
     L = []
     A = L.append
-    A("import LeanMlir.Proofs.Certificates.LipschitzCert.PairSDP")
-    A("import LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard")
+    A(module_header(["LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard"], ["LeanMlir.Proofs.Certificates.LipschitzCert.PairSDP"]))
     A("")
     netdesc = ("spectrally-capped /256 net (`mlpS`)" if tag == "C"
                else "unconstrained /128 net (`mlpT`)")

@@ -26,7 +26,7 @@ does not have. Regenerate by hand and confirm the committed Lean comes back byte
 """
 import numpy as np, os, sys
 from fractions import Fraction
-from _gencheck import modularize  # noqa: E402  (module-system header on what we write)
+from _gencheck import modularize, module_header  # noqa: E402  (module-system header on what we write)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "scripts", "lib"))
@@ -103,7 +103,9 @@ GRAD = "gradAt (fun w => crossEntropy 10 (dense (Mat.unflatten w) bd xd) lblD)\n
 
 L = []
 A_ = L.append
-A_("import LeanMlir.Proofs.Float.Binary32Instance")
+A_(module_header(["LeanMlir.Proofs.Float.Binary32Instance"],
+                  ["Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp",
+                   "Mathlib.MeasureTheory.Integral.Bochner.Basic"]))
 A_("")
 A_("/-! # Descent at TRAINED weights")
 A_("")

@@ -22,6 +22,13 @@ def modularize(text):
     out+=lines[i:]
     return '\n'.join(out)
 
+def module_header(public, private=()):
+    """The header `modularize` would write, but with the imports `lake shake` settled on: `public`
+    ones pass on to importers, `private` ones are proof detail. Text that starts with it is
+    module-form already, so `modularize` leaves it alone."""
+    imps=[f'public import {m}' for m in public]+[f'import {m}' for m in private]
+    return '\n'.join(['module','']+imps+['','@[expose] public section'])
+
 if __name__=='__main__':
     for p in sys.argv[1:]:
         s=open(p,encoding='utf-8').read(); t=modularize(s)
