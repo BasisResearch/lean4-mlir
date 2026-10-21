@@ -1,0 +1,71 @@
+EfficientNet-B0 on full 1000-class ImageNet via the VERIFIED renderer → XLA/PJRT → GPU, with the tfds batch shim supplying the same augmentation the Lean→JAX reference trainer uses
+  SCORING A CHECKPOINT — no training. EfficientNet-B0 (ImageNet-1k) emarmstfdp64dropdowneps0001bf16, .lake/build/efficientnetin_emarmstfdp64dropdowneps0001bf16_ckpt_xla.bin
+  region 0 of 4 (the live weights), 5288548 params
+  BN: 49 layers from .lake/build/efficientnetin_emarmstfdp64dropdowneps0001bf16_ckpt_xla.bin.bn — the running stats
+I1021 13:12:26.091233  315839 service.cc:154] XLA service 0x71f5e001e490 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1021 13:12:26.091339  315839 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 3060, Compute Capability 8.6 (Driver: 13.3.0[610.57.4]; Runtime: 13.3.0; Toolkit: 13.0.0; DNN: 9.24.0)
+I1021 13:12:26.091359  315839 service.cc:170]   StreamExecutor [1]: NVIDIA GeForce RTX 3060, Compute Capability 8.6 (Driver: 13.3.0[610.57.4]; Runtime: 13.3.0; Toolkit: 13.0.0; DNN: 9.24.0)
+I1021 13:12:26.091373  315839 service.cc:170]   StreamExecutor [2]: NVIDIA GeForce RTX 3060, Compute Capability 8.6 (Driver: 13.3.0[610.57.4]; Runtime: 13.3.0; Toolkit: 13.0.0; DNN: 9.24.0)
+I1021 13:12:26.091386  315839 service.cc:170]   StreamExecutor [3]: NVIDIA GeForce RTX 3060, Compute Capability 8.6 (Driver: 13.3.0[610.57.4]; Runtime: 13.3.0; Toolkit: 13.0.0; DNN: 9.24.0)
+I1021 13:12:26.095048  315839 se_gpu_pjrt_client.cc:1450] Using BFC allocator.
+I1021 13:12:26.095099  315839 gpu_helpers.cc:162] XLA backend allocating 8.72GiB (9365880832 bytes) on device 0 for BFCAllocator.
+I1021 13:12:26.095138  315839 gpu_helpers.cc:162] XLA backend allocating 8.72GiB (9365880832 bytes) on device 1 for BFCAllocator.
+I1021 13:12:26.095149  315839 gpu_helpers.cc:162] XLA backend allocating 8.72GiB (9365880832 bytes) on device 2 for BFCAllocator.
+I1021 13:12:26.095161  315839 gpu_helpers.cc:162] XLA backend allocating 8.72GiB (9365880832 bytes) on device 3 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.114, 4 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1021 13:12:26.112133  315839 se_gpu_pjrt_compiler.cc:382] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+I1021 13:12:26.362559  315839 cuda_dnn.cc:442] Loaded cuDNN version 92400
+I1021 13:12:26.518859  315897 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_10', 12 bytes spill stores, 12 bytes spill loads
+
+I1021 13:12:26.622491  315904 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_10', 64 bytes spill stores, 64 bytes spill loads
+
+I1021 13:12:26.775602  315891 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_10', 128 bytes spill stores, 84 bytes spill loads
+
+W1021 13:12:26.842495  315884 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+W1021 13:12:27.024072  315884 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+W1021 13:12:27.388001  315884 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+W1021 13:12:27.843132  315892 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+W1021 13:12:31.344567  315894 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[pjrt_ffi] compiled verified_mlir/efficientnetin_fwd_eval_eps0001.mlir (@efficientnetin_fwd_eval_eps0001, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 6660 ms
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792588353.037221  316955 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1792588353.066397  316955 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP16 AVX_VNNI AMX_TILE AMX_INT8 AMX_BF16 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792588354.107379  316955 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:From /home/skoonce/.venv-cuda/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bicubic (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BICUBIC...)` instead.
+WARNING:tensorflow:From /home/skoonce/.venv-cuda/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bicubic (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BICUBIC...)` instead.
+I0000 00:00:1792588354.781710  317061 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792588355.068898  317064 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1792588355.112837  317064 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP16 AVX_VNNI AMX_TILE AMX_INT8 AMX_BF16 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792588356.228810  317064 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:From /home/skoonce/.venv-cuda/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bicubic (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BICUBIC...)` instead.
+WARNING:tensorflow:From /home/skoonce/.venv-cuda/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bicubic (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BICUBIC...)` instead.
+I0000 00:00:1792588356.901920  317250 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @efficientnetin_fwd_eval_eps0001 holds 311 parameter tensors (20.3 MB) on 4 devices; they stop crossing PCIe from here
+I1021 13:12:37.555525  315874 cuda_dnn.cc:442] Loaded cuDNN version 92400
+I1021 13:12:37.558987  315880 cuda_dnn.cc:442] Loaded cuDNN version 92400
+I1021 13:12:37.559741  315877 cuda_dnn.cc:442] Loaded cuDNN version 92400
+  xla/pjrt verified_mlir/efficientnetin_fwd_eval_eps0001.mlir  (eval, SHARDED over 4 replicas)
+  imagenet: val streams per pass (50,000 images at eval width 150528) — nothing is held
+  EVAL SHARDED: 4 replicas x 64 = 256 images per invoke, 196 invokes, last one 80 real + 176 pad
+  imagenet shim: jax/.lake/build/generated_efficientnet_b0_imagenet_shim.py — validation split, batch 256, 150528 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_efficientnet_b0_imagenet_shim.py — validation split, batch 256, 150528 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  checkpoint: acc = 38255/50000 = 76.510000%  top5 = 46602/50000 = 93.204000%  [95% CI 76.14–76.88]
+    per-example top-1 bitmap -> runs/2026-10-16-enet-verified-bf16-350ep/bitmaps/ver_e350_live.bin (50000 bytes) — pair two of these with scripts/demos/mcnemar.py

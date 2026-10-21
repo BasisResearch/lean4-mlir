@@ -40,9 +40,21 @@ both runs score every epoch):
 * The verified run is ahead on top-1 on 284 of 350 epochs and behind on 63 (3 equal). The largest
   window lead is +0.23 (e151–200); it settles at +0.05. Train loss runs 0.002–0.007 lower in every
   window.
-* No per-image McNemar yet: the JAX run wrote no per-image bitmap. This run's
-  `bitmaps/enet_…_e350.bin` (local only) can be paired with a re-score of the JAX run's final
-  `.state.npz` (as for ViT-Ti, `runs/2026-10-01-vit-jax-bf16-300ep/score_arms.py` is the template).
+
+### McNemar, per image (`scripts/demos/mcnemar.py`)
+
+The JAX run's final `.state.npz` was re-scored through `jax/scripts/eval_full50k.py`
+(`EVAL_DTYPE=f32 PROTOCOL=train BATCH=256`, `DUMP_CORRECT`; logs `rescore_{ema,live}.log` in the
+JAX folder). Its EMA arm reproduces the logged 38,584 exactly. This run's live arm is
+`score-checkpoint` with `LEAN_MLIR_REGION=live` (region 0 plus the running BN stats; `rescore_live.log`).
+
+| arm | JAX | verified | only JAX right | only verified right | p (exact) |
+|---|---|---|---|---|---|
+| EMA (scored) | 38,584 (77.168) | 38,604 (77.208) | 2,190 | 2,210 | **0.77** |
+| live weights | 38,315 (76.630) | 38,255 (76.510) | 2,567 | 2,507 | **0.41** |
+
+Neither arm separates the two checkpoints. The EMA is worth +0.54 (JAX) and +0.70 (verified) on this
+recipe. The bitmaps are local only.
 
 ## Against the 09-12 pair (timm-form recipe)
 

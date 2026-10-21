@@ -1,0 +1,31 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792588263.836373  313429 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792588264.657195  313429 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:From /home/skoonce/.venv-cuda/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bicubic (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BICUBIC...)` instead.
+WARNING:tensorflow:From /home/skoonce/.venv-cuda/lib/python3.12/site-packages/tensorflow/python/util/dispatch.py:1264: resize_bicubic (from tensorflow.python.ops.image_ops_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.image.resize(...method=ResizeMethod.BICUBIC...)` instead.
+W1021 13:11:16.895966  313632 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+W1021 13:11:17.141712  313652 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+W1021 13:11:17.467276  313631 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+W1021 13:11:21.081579  313642 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+=== efficientnet_b0_imagenet.state.npz ===
+eval dtype: f32 forward (EVAL_DTYPE=f32); the module's DT=bfloat16 CONV_DT=bfloat16
+backend=gpu devices=4
+gen=.lake/build/generated_efficientnet_b0_imagenet_full.py
+state=/home/skoonce/enet_tf350_2612/efficientnet_b0_imagenet.state.npz
+eval protocol: 224px, crop_pct=0.875000 (timm resize-then-crop, antialiased)
+state tuple (from the module): (params, opt_state, ema_params, ema_bn, bn_state)
+  params=213 bn=98 opt=426 leaves -> 1048 total (file has 1048) ✓
+loaded step=1751400
+scoring the live weights + running BN buffers
+
+── scoring at 224px, crop_pct 0.875 — train (the module's own)
+   per-image top-1 bitmap -> ../runs/2026-10-16-enet-full-jax-bf16-350ep/bitmaps/jax_e350_live.bin (50000 bytes, 38315 set) — pair with scripts/demos/mcnemar.py
+   top-1: 38315/50000 = 76.63%   top-5: 46574/50000 = 93.15%
+
+=== FULL VAL (f32 forward (EVAL_DTYPE=f32)) ===
+224px crop 0.875  top-1  76.63%  top-5  93.15%  (50000 images)  train (the module's own)
