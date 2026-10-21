@@ -1,8 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Foundation.MLP
-public import LeanMlir.Proofs.Training.JacobianSeal
 public import LeanMlir.Proofs.Certificates.LipschitzCert.Instance
+import LeanMlir.Proofs.Training.JacobianSeal
 
 @[expose] public section
 

@@ -1,4 +1,4 @@
-module
+module -- shake: keep-all
 
 public import LeanMlir.Types
 public import LeanMlir.Spec
@@ -63,6 +63,7 @@ public import LeanMlir.Proofs.Foundation.IR
 -- Spec→math ties (rungs B/C/E). Also a Certs root, and audited in
 -- tests/AuditAxioms.lean.
 public import LeanMlir.Proofs.SpecVJP
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

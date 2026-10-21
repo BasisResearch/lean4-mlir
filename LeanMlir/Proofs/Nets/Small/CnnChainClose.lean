@@ -1,7 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Architectures.ConvGrad
-public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+public import LeanMlir.Proofs.Foundation.IR
+import LeanMlir.Proofs.Architectures.ConvGrad
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

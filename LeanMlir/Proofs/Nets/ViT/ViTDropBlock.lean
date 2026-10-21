@@ -2,6 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.ViT.ViTStepTie
 public import LeanMlir.Proofs.Foundation.Batched.Indexed
+import LeanMlir.Proofs.Nets.ViT.ViTVecLNBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

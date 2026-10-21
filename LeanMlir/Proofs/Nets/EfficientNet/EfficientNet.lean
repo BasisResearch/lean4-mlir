@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Architectures.Depthwise
 public import LeanMlir.Proofs.Architectures.SE
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

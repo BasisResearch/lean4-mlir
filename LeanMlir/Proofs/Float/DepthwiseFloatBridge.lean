@@ -1,7 +1,9 @@
 module
 
 public import LeanMlir.Proofs.Architectures.Depthwise
-public import LeanMlir.Proofs.Float.ConvFloat
+public import LeanMlir.Proofs.Architectures.ConvIndex
+public import LeanMlir.Proofs.Float.FloatBridge
+import LeanMlir.Proofs.Float.ConvFloat
 
 @[expose] public section
 

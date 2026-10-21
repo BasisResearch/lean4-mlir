@@ -2,6 +2,9 @@ module
 
 public import LeanMlir.Proofs.Certificates.CrownBound
 public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardIBPData
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB
+import Mathlib.Tactic.Positivity.Finset
 
 @[expose] public section
 

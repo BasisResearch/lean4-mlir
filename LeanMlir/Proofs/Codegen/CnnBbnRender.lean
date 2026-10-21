@@ -2,9 +2,8 @@ module
 
 public import LeanMlir.Proofs.Codegen.CnnRender
 public import LeanMlir.Proofs.Codegen.SyncBnSites
-meta import LeanMlir.Proofs.Codegen.CnnRender
-meta import LeanMlir.Proofs.Codegen.SyncBnSites
-meta import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Codegen.CnnRender -- shake: keep
+meta import LeanMlir.Proofs.Codegen.SyncBnSites -- shake: keep
 
 @[expose] public section
 

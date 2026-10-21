@@ -1,7 +1,9 @@
 module
 
 public import LeanMlir.Proofs.Architectures.BatchNorm
-public import LeanMlir.Proofs.Architectures.Activations
+public import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+import Mathlib.Tactic.Measurability.Init
 
 @[expose] public section
 

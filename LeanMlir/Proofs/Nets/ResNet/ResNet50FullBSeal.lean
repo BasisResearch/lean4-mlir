@@ -1,7 +1,10 @@
 module
 
 public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullBVJP
-public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBSeal
+public import LeanMlir.Proofs.Training.BatchSealKit
+import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBSeal
+import LeanMlir.Proofs.Training.JacobianSeal
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

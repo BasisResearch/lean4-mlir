@@ -1,7 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
-public import LeanMlir.Proofs.Foundation.ParamGradNodes
+import LeanMlir.Proofs.Foundation.ParamGradNodes
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

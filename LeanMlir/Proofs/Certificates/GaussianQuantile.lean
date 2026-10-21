@@ -1,6 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Foundation.UpstreamDraft
+public import Mathlib.Probability.CDF
+public import Mathlib.Probability.Distributions.Gaussian.Real
+import LeanMlir.Proofs.Foundation.UpstreamDraft
 
 @[expose] public section
 

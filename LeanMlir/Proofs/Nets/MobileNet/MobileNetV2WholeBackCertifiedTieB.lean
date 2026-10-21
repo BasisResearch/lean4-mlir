@@ -1,9 +1,10 @@
 module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
-public import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
 public import LeanMlir.Proofs.Foundation.OpaquePrefix
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetBackChains
+import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

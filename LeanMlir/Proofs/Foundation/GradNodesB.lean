@@ -1,8 +1,9 @@
 module
 
 public import LeanMlir.Proofs.Codegen.StableHLO.Basic
-public import LeanMlir.Proofs.Architectures.PerChannelBNGrad
-public import LeanMlir.Proofs.Architectures.ConvGrad
+import LeanMlir.Proofs.Architectures.ConvGrad
+import LeanMlir.Proofs.Architectures.PerChannelBNGrad
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

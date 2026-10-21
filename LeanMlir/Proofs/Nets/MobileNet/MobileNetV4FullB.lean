@@ -2,9 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4BackB0
 public import LeanMlir.Proofs.Foundation.HeadLayers
-public import LeanMlir.Proofs.Foundation.Bf16Erasure
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4BackB0
+public import LeanMlir.Proofs.Foundation.Bf16Erasure -- shake: keep
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4BackB0 -- shake: keep
 
 @[expose] public section
 

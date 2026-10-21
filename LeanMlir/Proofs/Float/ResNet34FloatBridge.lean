@@ -1,7 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Float.ConvFloat
-public import LeanMlir.Proofs.Float.BnFloatBridge
+public import LeanMlir.Proofs.Architectures.CNN
+public import LeanMlir.Proofs.Float.FloatBridge
+import LeanMlir.Proofs.Float.BnFloatBridge
 
 @[expose] public section
 

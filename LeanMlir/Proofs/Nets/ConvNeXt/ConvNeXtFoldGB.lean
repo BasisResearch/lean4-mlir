@@ -1,6 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFoldG
+public import LeanMlir.Proofs.Architectures.ChannelLN
+import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFoldG
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

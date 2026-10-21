@@ -1,6 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Architectures.Attention
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

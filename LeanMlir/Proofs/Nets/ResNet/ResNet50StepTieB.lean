@@ -3,6 +3,7 @@ module
 public import LeanMlir.Proofs.Nets.ResNet.ResNet34StepTieB
 public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullBVJP
 public import LeanMlir.Proofs.Foundation.BceLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

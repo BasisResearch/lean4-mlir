@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Foundation.GradNodesBAt
 public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

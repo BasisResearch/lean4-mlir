@@ -4,6 +4,8 @@ public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Eval
 public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
 public import LeanMlir.Proofs.Foundation.DropSites
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

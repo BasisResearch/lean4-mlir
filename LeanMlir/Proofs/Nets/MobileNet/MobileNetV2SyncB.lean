@@ -2,6 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
 public import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

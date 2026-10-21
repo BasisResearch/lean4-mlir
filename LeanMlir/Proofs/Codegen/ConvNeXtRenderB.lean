@@ -1,8 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Codegen.ConvNeXtRender
-meta import LeanMlir.Proofs.Architectures.GeluForm
-meta import LeanMlir.Proofs.Codegen.ConvNeXtRender
+meta import LeanMlir.Proofs.Codegen.ConvNeXtRender -- shake: keep
 
 @[expose] public section
 

@@ -2,7 +2,7 @@ module
 
 public import LeanMlir.IreeRuntime
 public import LeanMlir.SpecHelpers
-meta import LeanMlir.Types
+meta import LeanMlir.Types -- shake: keep
 
 @[expose] public section
 

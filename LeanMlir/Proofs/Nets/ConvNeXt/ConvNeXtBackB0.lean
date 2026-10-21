@@ -1,6 +1,12 @@
 module
 
-public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+public import LeanMlir.Proofs.Architectures.ChannelLNBack
+public import LeanMlir.Proofs.Foundation.Batched.BackLinks
+public import LeanMlir.Proofs.Foundation.CertifiedChain
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
+import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtChannelLN
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

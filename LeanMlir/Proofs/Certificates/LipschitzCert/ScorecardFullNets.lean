@@ -1,7 +1,9 @@
 module
 
-public import LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard
 public import LeanMlir.Proofs.Foundation.ListDot
+public import LeanMlir.Proofs.Certificates.DenseEuclid
+public import LeanMlir.Proofs.Foundation.GramQ
+import Mathlib.Tactic.Positivity.Finset
 
 @[expose] public section
 

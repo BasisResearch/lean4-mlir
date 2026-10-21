@@ -1,7 +1,11 @@
 module
 
-public import LeanMlir.Proofs.Nets.Small.MlpFold
-public import LeanMlir.Proofs.Nets.Small.SmallParamGrad
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+public import LeanMlir.Proofs.Foundation.ParamGrad
+public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import LeanMlir.Proofs.Nets.Small.SmallParamGrad
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

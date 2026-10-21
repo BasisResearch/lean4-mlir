@@ -1,7 +1,11 @@
 module
 
-public import LeanMlir.Proofs.Nets.Small.CnnFold
-public import LeanMlir.Proofs.Nets.Small.MlpFoldB
+public import LeanMlir.Proofs.Nets.Small.CnnChainClose
+public import LeanMlir.Proofs.Nets.Small.LinearFoldB
+public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+import LeanMlir.Proofs.Foundation.GradNodesB
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

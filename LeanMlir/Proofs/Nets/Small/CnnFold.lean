@@ -4,6 +4,8 @@ public import LeanMlir.Proofs.Nets.Small.CnnChainClose
 public import LeanMlir.Proofs.Nets.Small.MnistCNN
 public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
 public import LeanMlir.Proofs.Foundation.SgdNodes
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

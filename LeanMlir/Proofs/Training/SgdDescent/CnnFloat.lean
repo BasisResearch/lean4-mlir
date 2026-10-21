@@ -29,8 +29,6 @@ is not the loss gradient, and a float rung needs windows without ties
 
 namespace Proofs
 
-open StableHLO
-
 -- ════════════════════════════════════════════════════════════════
 -- § The conv2 float-backward grad-close (two generic cores)
 -- ════════════════════════════════════════════════════════════════

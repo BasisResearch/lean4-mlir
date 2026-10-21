@@ -21,6 +21,7 @@ public import LeanMlir.Proofs.Training.DropPath
 -- denote it. MaxPool3s2 imports only Architectures.CNN, which this file already has in scope
 -- transitively, so it adds no cycle.
 public import LeanMlir.Proofs.Architectures.MaxPool3s2
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

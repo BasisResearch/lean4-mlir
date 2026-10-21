@@ -1,8 +1,9 @@
 module
 
 public import LeanMlir.Proofs.Foundation.Tensor
-public import Mathlib.Analysis.Calculus.Deriv.Mul
-public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 @[expose] public section
 

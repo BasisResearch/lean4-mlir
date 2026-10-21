@@ -2,7 +2,9 @@ module
 
 public import LeanMlir.Proofs.Architectures.Softmax
 public import LeanMlir.Proofs.Architectures.SE
-public import LeanMlir.Proofs.Architectures.GeluForm
+public import LeanMlir.Proofs.Architectures.GeluErf
+public import LeanMlir.Proofs.Architectures.LayerNorm
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

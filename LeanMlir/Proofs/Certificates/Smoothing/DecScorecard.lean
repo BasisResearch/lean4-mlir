@@ -1,6 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Certificates.Smoothing.DecChunk6
+public import LeanMlir.Proofs.Certificates.Smoothing.PhiBounds
+import LeanMlir.Proofs.Certificates.Smoothing.DecChunk6
 
 @[expose] public section
 

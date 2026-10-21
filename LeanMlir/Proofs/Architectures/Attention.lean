@@ -4,6 +4,7 @@ public import LeanMlir.Proofs.Architectures.Softmax
 public import LeanMlir.Proofs.Architectures.CNN          -- needed for Kernel4 in patchEmbed
 public import LeanMlir.Proofs.Architectures.LayerNorm
 public import LeanMlir.Proofs.Architectures.GeluForm
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

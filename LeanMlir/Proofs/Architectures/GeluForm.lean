@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Architectures.Activations
 public import LeanMlir.Proofs.Architectures.GeluErf
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

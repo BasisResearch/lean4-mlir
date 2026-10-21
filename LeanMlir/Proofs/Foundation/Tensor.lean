@@ -1,7 +1,7 @@
 module
 
-public import Mathlib.Analysis.Calculus.FDeriv.Mul
-public import Mathlib.Analysis.Calculus.Deriv.Comp
+public import Mathlib.Analysis.Calculus.FDeriv.Mul -- shake: keep
+public import Mathlib.Analysis.Calculus.Deriv.Comp -- shake: keep
 
 @[expose] public section
 

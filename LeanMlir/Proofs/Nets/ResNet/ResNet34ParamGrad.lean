@@ -1,7 +1,10 @@
 module
 
 public import LeanMlir.Proofs.Nets.ResNet.ResNet34StepTieB
-public import LeanMlir.Proofs.Training.BatchSealKit
+public import LeanMlir.Proofs.Foundation.SmoothedBatchLoss
+import LeanMlir.Proofs.Foundation.ParamGradNodes
+import LeanMlir.Proofs.Training.BatchSealKit
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

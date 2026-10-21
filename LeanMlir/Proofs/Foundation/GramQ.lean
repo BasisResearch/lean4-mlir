@@ -1,9 +1,11 @@
 module
 
 public import Mathlib.Basic.Real.Basic
-public import Mathlib.Data.Rat.BigOperators
-public import Mathlib.Data.Rat.Cast.Order
-public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
+public import Mathlib.Data.Fintype.Basic
+import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Data.Rat.BigOperators
+import Mathlib.Data.Rat.Cast.Order
 
 @[expose] public section
 

@@ -1,6 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Architectures.LayerNorm
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+import Mathlib.Tactic.Measurability.Init
 
 @[expose] public section
 

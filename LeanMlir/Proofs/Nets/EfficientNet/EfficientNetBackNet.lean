@@ -1,6 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
+public import LeanMlir.Proofs.Foundation.Batched.BackLinks
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

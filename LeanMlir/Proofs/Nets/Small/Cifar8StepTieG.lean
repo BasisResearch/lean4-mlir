@@ -1,6 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Nets.Small.Cifar8StepTie
+public import LeanMlir.Proofs.Nets.Small.CifarFold
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

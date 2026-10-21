@@ -3,6 +3,7 @@ module
 public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
 public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullBVJP
 public import LeanMlir.Proofs.Nets.ResNet.ResNet50BackB0
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

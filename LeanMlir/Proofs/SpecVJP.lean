@@ -6,7 +6,10 @@ public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
 public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
 public import LeanMlir.Proofs.Nets.ViT.ViTDepthK
 public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullB
-public import LeanMlir.Proofs.Nets.Small.ChapterGraphTies
+public import LeanMlir.Proofs.Codegen.ChapterGraphs
+public import LeanMlir.Proofs.Nets.Small.CifarCNN
+import LeanMlir.Proofs.Nets.Small.ChapterGraphTies
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

@@ -1,6 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Nets.ViT.ViTFwdGraph
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+import LeanMlir.Proofs.Nets.ViT.ViTFwdGraph
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

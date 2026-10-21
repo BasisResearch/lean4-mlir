@@ -1,6 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Float.Binary32Instance
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
 @[expose] public section
 

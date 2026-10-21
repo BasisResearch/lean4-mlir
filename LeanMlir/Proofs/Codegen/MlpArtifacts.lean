@@ -1,8 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Codegen.MlpRender
-meta import Mathlib.Basic.Real.Basic
-meta import LeanMlir.Proofs.Codegen.MlpRender
+public import LeanMlir.Proofs.Codegen.MlpRender -- shake: keep
+meta import LeanMlir.Proofs.Codegen.MlpRender -- shake: keep
 
 @[expose] public section
 

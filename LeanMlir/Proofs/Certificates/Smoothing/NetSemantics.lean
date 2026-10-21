@@ -1,6 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Certificates.Smoothing.CP
+import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
+import LeanMlir.Proofs.Foundation.UpstreamDraft
 
 @[expose] public section
 

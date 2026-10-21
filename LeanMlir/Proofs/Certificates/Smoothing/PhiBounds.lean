@@ -1,7 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
-public import Mathlib.Analysis.Real.Pi.Bounds
+public import LeanMlir.Proofs.Certificates.GaussianQuantile
+import Mathlib.Algebra.Order.Star.Real
+import Mathlib.Analysis.Real.Pi.Bounds
 
 @[expose] public section
 

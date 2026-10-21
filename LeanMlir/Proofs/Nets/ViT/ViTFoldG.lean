@@ -1,7 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Architectures.TokenParamGrad
 public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+import LeanMlir.Proofs.Architectures.TokenParamGrad
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

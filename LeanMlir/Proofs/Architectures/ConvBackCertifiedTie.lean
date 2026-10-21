@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Foundation.BackwardMaps
 public import LeanMlir.Proofs.Foundation.Batched.StageLayers
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

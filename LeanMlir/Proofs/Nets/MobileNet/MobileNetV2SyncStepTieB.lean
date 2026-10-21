@@ -1,6 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2StepTieB
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

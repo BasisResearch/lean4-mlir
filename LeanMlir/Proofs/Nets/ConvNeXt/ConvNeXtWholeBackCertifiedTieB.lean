@@ -1,6 +1,9 @@
 module
 
 public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtWholeBackCertifiedTie
+import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

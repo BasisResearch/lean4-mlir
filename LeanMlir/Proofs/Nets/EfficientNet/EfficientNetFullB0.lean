@@ -1,6 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

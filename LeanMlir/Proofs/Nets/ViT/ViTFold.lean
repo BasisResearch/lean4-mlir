@@ -1,7 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Architectures.TokenParamGrad
-public import LeanMlir.Proofs.Foundation.SgdNodes
+public import LeanMlir.Proofs.Architectures.TokenParamGrad -- shake: keep
+public import LeanMlir.Proofs.Foundation.SgdNodes -- shake: keep
 
 @[expose] public section
 

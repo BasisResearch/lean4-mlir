@@ -2,8 +2,7 @@ module
 
 public import LeanMlir.Proofs.Foundation.IndexCast
 public import LeanMlir.Proofs.Codegen.RenderKit
-meta import LeanMlir.Proofs.Architectures.GeluForm
-meta import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Codegen.RenderKit -- shake: keep
 
 @[expose] public section
 

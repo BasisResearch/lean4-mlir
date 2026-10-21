@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Codegen.ChapterGraphs
 public import LeanMlir.Proofs.Nets.Small.CifarCNN
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

@@ -5,7 +5,9 @@ public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFold
 public import LeanMlir.Proofs.Architectures.ChannelLNBack
 public import LeanMlir.Proofs.Foundation.SgdNodes
 public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
-public import LeanMlir.Proofs.Foundation.ParamGradNodes
+import LeanMlir.Proofs.Foundation.ParamGradNodes
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

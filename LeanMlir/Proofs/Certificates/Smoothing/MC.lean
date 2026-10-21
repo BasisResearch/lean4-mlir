@@ -1,7 +1,9 @@
 module
 
-public import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
-public import Mathlib.Probability.Moments.SubGaussian
+public import LeanMlir.Proofs.Certificates.GaussianQuantile
+public import Mathlib.Probability.Distributions.Gaussian.Multivariate
+import LeanMlir.Proofs.Certificates.Smoothing.Gaussian
+import Mathlib.Probability.Moments.SubGaussian
 
 @[expose] public section
 

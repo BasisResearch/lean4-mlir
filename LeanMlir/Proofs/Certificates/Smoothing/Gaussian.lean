@@ -2,6 +2,8 @@ module
 
 public import LeanMlir.Proofs.Certificates.GaussianQuantile
 public import LeanMlir.Proofs.Certificates.LipschitzCert.Basic
+public import Mathlib.Probability.Distributions.Gaussian.Multivariate
+import LeanMlir.Proofs.Foundation.UpstreamDraft
 
 @[expose] public section
 

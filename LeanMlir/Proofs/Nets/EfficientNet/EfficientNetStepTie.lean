@@ -2,7 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFold
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
-public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetBackB0
+public import LeanMlir.Proofs.Foundation.Batched.BackLinks
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

@@ -1,9 +1,9 @@
 module
 
-public import LeanMlir.Proofs.Float.ConvFloat
-public import LeanMlir.Proofs.Training.SgdDescent.MlpBias
+public import LeanMlir.Proofs.Float.ConvFloat -- shake: keep
+public import LeanMlir.Proofs.Training.SgdDescent.MlpBias -- shake: keep
 public import LeanMlir.Proofs.Architectures.ConvGrad
-public import LeanMlir.Proofs.Nets.Small.MnistCNN
+public import LeanMlir.Proofs.Nets.Small.MnistCNN -- shake: keep
 
 @[expose] public section
 
@@ -81,8 +81,6 @@ Jacobians and drifts (`conv2d_weight_pdiv`, `convTap`, `conv2d_input_l1_drift`,
 `conv2d_bias_pdiv`) in `ConvGrad`. -/
 
 namespace Proofs
-
-open StableHLO
 
 -- ════════════════════════════════════════════════════════════════
 -- § The 3-dense head above the pool: input-gradient closed form

@@ -1,7 +1,12 @@
 module
 
-public import LeanMlir.Proofs.Foundation.Bf16Erasure
 public import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
+public import LeanMlir.Proofs.Foundation.GradNodesB
+public import LeanMlir.Proofs.Foundation.ParamGrad
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import LeanMlir.Proofs.Foundation.ParamGradNodes
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

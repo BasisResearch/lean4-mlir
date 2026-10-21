@@ -2,6 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.ResNet.ResNet34FullB
 public import LeanMlir.Proofs.Foundation.HeadLayers
+public import LeanMlir.Proofs.Nets.ResNet.ResNet34BackB0
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

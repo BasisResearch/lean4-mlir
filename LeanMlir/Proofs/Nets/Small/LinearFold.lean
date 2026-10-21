@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Nets.Small.LinearTrainStep
 public import LeanMlir.Proofs.Codegen.ChapterGraphs
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

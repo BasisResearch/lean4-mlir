@@ -1,8 +1,10 @@
 module
 
-public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2BackB0
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaper
-public import LeanMlir.Proofs.Foundation.Bf16Erasure
+public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
+public import LeanMlir.Proofs.Foundation.Batched.StageLayers
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

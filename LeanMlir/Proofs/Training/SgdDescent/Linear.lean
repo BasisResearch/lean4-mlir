@@ -1,8 +1,9 @@
 module
 
 public import LeanMlir.Proofs.Training.SgdDescent.Basic
-public import LeanMlir.Proofs.Nets.Small.LinearTrainStep
 public import LeanMlir.Proofs.Float.FloatBridge
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

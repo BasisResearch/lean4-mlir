@@ -1,7 +1,10 @@
 module
 
-public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullBVJP
 public import LeanMlir.Proofs.Nets.ResNet.ResNet34BackCertifiedTieB
+public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
+import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+import LeanMlir.Proofs.Nets.ResNet.ResNet50FullBVJP
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

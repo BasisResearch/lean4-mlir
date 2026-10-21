@@ -2,6 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
 public import LeanMlir.Proofs.Foundation.DataParallel.SyncKit
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

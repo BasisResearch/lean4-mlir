@@ -4,6 +4,7 @@ public import LeanMlir.Proofs.Foundation.MLP
 public import LeanMlir.Proofs.Architectures.BatchNorm
 public import LeanMlir.Proofs.Architectures.Residual
 public import LeanMlir.Proofs.Architectures.WindowMax
+import Mathlib.Analysis.Calculus.ContDiff.Operations
 
 @[expose] public section
 

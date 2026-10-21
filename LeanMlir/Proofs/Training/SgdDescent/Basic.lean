@@ -1,7 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Foundation.Tensor
-public import Mathlib.Analysis.Calculus.Deriv.MeanValue
+import Mathlib.Analysis.Calculus.Deriv.MeanValue
 
 @[expose] public section
 

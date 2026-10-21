@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Foundation.GradNodesBAt
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

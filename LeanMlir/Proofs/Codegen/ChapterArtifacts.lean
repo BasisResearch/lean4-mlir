@@ -1,7 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Codegen.ChapterGraphs
-meta import LeanMlir.Proofs.Codegen.ChapterGraphs
+public import LeanMlir.Proofs.Codegen.ChapterGraphs -- shake: keep
+meta import LeanMlir.Proofs.Codegen.ChapterGraphs -- shake: keep
 
 @[expose] public section
 

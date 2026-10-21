@@ -2,6 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.Small.CifarFold
 public import LeanMlir.Proofs.Nets.Small.CnnParamGrad
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

@@ -1,6 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Foundation.MLP
+public import LeanMlir.Proofs.Foundation.Tensor
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 @[expose] public section
 

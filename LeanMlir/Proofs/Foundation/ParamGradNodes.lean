@@ -1,9 +1,11 @@
 module
 
 public import LeanMlir.Proofs.Foundation.ParamGrad
-public import LeanMlir.Proofs.Foundation.GradNodesB
-public import LeanMlir.Proofs.Foundation.SmoothedBatchLoss
 public import LeanMlir.Proofs.Foundation.CertifiedChain
+public import LeanMlir.Proofs.Foundation.Batched.BackLinks
+import LeanMlir.Proofs.Foundation.GradNodesB
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

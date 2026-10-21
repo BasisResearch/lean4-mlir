@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Training.SgdDescent.Mlp
 public import LeanMlir.Proofs.Nets.Small.MlpFold
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

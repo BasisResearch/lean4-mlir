@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Foundation.Batched.Stages
 public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

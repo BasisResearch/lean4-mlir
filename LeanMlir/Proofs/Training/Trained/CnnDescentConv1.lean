@@ -1,6 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Training.SgdDescent.Cnn
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

@@ -1,7 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Certificates.LipschitzCert.PairSDP
 public import LeanMlir.Proofs.Certificates.LipschitzCert.Scorecard
+import LeanMlir.Proofs.Certificates.LipschitzCert.PairSDP
 
 @[expose] public section
 

@@ -1,7 +1,9 @@
 module
 
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetChainClose
-public import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+public import LeanMlir.Proofs.Foundation.BackwardMaps
+import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

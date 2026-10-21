@@ -3,9 +3,9 @@ module
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
 public import LeanMlir.Proofs.Codegen.SyncBnSites
 public import LeanMlir.Proofs.Codegen.RenderKit
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
-meta import LeanMlir.Proofs.Codegen.SyncBnSites
-meta import LeanMlir.Proofs.Codegen.RenderKit
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec -- shake: keep
+meta import LeanMlir.Proofs.Codegen.SyncBnSites -- shake: keep
+meta import LeanMlir.Proofs.Codegen.RenderKit -- shake: keep
 
 @[expose] public section
 

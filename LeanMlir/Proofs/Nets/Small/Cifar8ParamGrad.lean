@@ -1,7 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Nets.Small.Cifar8StepTieG
 public import LeanMlir.Proofs.Nets.Small.CifarParamGrad
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

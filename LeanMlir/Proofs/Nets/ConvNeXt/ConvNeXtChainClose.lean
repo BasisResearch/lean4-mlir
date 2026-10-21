@@ -1,6 +1,9 @@
 module
 
-public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXt
+public import LeanMlir.Proofs.Architectures.CNN
+public import LeanMlir.Proofs.Architectures.GeluForm
+public import LeanMlir.Proofs.Architectures.LayerNorm
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

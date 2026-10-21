@@ -2,7 +2,9 @@ module
 
 public import LeanMlir.Proofs.Training.SgdDescent.Linear
 public import LeanMlir.Proofs.Float.RndP
-public import LeanMlir.Proofs.Float.MlpFloatBridge
+import LeanMlir.Proofs.Float.MlpFloatBridge
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
 @[expose] public section
 

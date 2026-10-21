@@ -1,8 +1,12 @@
 module
 
 public import LeanMlir.Proofs.Nets.ViT.ViTFoldGB
-public import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTieB
 public import LeanMlir.Proofs.Nets.ViT.ViTDropBlock
+public import LeanMlir.Proofs.Foundation.BatchMapVJPAt
+public import LeanMlir.Proofs.Foundation.GradNodesB
+public import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

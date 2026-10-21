@@ -1,9 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Codegen.StableHLO.Basic
-meta import LeanMlir.Proofs.Codegen.StableHLO.Basic
+meta import LeanMlir.Proofs.Codegen.StableHLO.Basic -- shake: keep
 public import Mathlib.Data.String.Defs
-meta import Mathlib.Basic.Real.Basic
 
 @[expose] public section
 

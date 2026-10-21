@@ -1,6 +1,10 @@
 module
 
-public import LeanMlir.Proofs.Nets.Small.CifarFold
+public import LeanMlir.Proofs.Foundation.SgdNodes
+public import LeanMlir.Proofs.Nets.Small.CifarCNN
+public import LeanMlir.Proofs.Nets.Small.CnnChainClose
+public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

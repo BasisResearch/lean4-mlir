@@ -1,8 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Certificates.IntervalBound
-public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsA
-public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullImgsB
+public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullNets
+import Mathlib.Tactic.Positivity.Finset
 
 @[expose] public section
 

@@ -2,7 +2,8 @@ module
 
 public import LeanMlir.Proofs.Certificates.IntervalBound
 public import LeanMlir.Proofs.Foundation.ListDot
-public import Mathlib.Data.List.GetD
+import Mathlib.Data.List.GetD
+import Mathlib.Tactic.Positivity.Finset
 
 @[expose] public section
 

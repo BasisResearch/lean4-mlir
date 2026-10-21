@@ -1,6 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Certificates.LipschitzCert.ScorecardFullNets
+import Mathlib.Tactic.Positivity.Finset
 
 @[expose] public section
 

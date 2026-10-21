@@ -1,6 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2BackB0
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

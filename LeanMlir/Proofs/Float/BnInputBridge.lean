@@ -1,6 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Float.BnFloatBridge
+public import LeanMlir.Proofs.Architectures.BatchNorm
+import LeanMlir.Proofs.Float.BnFloatBridge
 
 @[expose] public section
 

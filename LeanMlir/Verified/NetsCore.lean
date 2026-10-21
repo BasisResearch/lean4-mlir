@@ -1,11 +1,11 @@
 module
 
 public import LeanMlir.Verified.Spec
-public import LeanMlir.ParamLayouts
-public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
-meta import LeanMlir.ParamLayouts
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
-meta import LeanMlir.Verified.Spec
+public import LeanMlir.ParamLayouts -- shake: keep
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec -- shake: keep
+meta import LeanMlir.ParamLayouts -- shake: keep
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec -- shake: keep
+meta import LeanMlir.Verified.Spec -- shake: keep
 
 @[expose] public section
 

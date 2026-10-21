@@ -1,6 +1,9 @@
 module
 
-public import LeanMlir.Proofs.Foundation.Bf16Erasure
+public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
+public import LeanMlir.Proofs.Foundation.Batched.Stages
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

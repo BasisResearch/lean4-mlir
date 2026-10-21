@@ -1,7 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Training.SgdDescent.Linear
-public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
+public import LeanMlir.Proofs.Nets.Small.MlpTrainStep -- shake: keep
 
 @[expose] public section
 
@@ -47,8 +47,6 @@ all-layers step (every parameter moving at once, logits no longer affine in the
 moving parameters) is not proved here. -/
 
 namespace Proofs
-
-open StableHLO
 
 -- ════════════════════════════════════════════════════════════════
 -- § Helpers: ReLU is 1-Lipschitz; margins freeze signs; ℓ1 column mass

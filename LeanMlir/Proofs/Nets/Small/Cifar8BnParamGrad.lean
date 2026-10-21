@@ -1,8 +1,9 @@
 module
 
-public import LeanMlir.Proofs.Nets.Small.Cifar8BnStepTieG
-public import LeanMlir.Proofs.Nets.Small.Cifar8ParamGrad
-public import LeanMlir.Proofs.Foundation.ParamGradNodes
+public import LeanMlir.Proofs.Nets.Small.Cifar8BnStepTieG -- shake: keep
+public import LeanMlir.Proofs.Nets.Small.Cifar8ParamGrad -- shake: keep
+public import LeanMlir.Proofs.Foundation.ParamGradNodes -- shake: keep
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
 
 @[expose] public section
 

@@ -1,6 +1,5 @@
 module
 
-public import LeanMlir.Proofs.Float.ConvFloat
 public import LeanMlir.Proofs.Float.ConvMixedFloatBridge
 
 @[expose] public section

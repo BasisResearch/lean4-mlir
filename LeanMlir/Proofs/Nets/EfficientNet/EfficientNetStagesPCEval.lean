@@ -1,6 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+public import LeanMlir.Proofs.Foundation.Batched.Stages
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

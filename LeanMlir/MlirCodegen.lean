@@ -1,7 +1,7 @@
 module
 
 public import LeanMlir.Spec
-meta import LeanMlir.Types
+meta import LeanMlir.Types -- shake: keep
 
 @[expose] public section
 

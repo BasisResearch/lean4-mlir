@@ -1,7 +1,12 @@
 module
 
 public import LeanMlir.Proofs.Architectures.EvenKernelConvBack
-public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+public import LeanMlir.Proofs.Architectures.ChannelLNBack
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackChains
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
+import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

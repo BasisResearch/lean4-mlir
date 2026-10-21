@@ -2,7 +2,10 @@ module
 
 public import LeanMlir.Proofs.Nets.ViT.ViTDepthK
 public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
-public import LeanMlir.Proofs.Foundation.Bf16Erasure
+public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import LeanMlir.Proofs.Nets.ViT.ViTFwdGraph
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

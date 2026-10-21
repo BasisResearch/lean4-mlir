@@ -1,39 +1,29 @@
 module
 
-public import LeanMlir.Proofs.Codegen.ResNet50RenderB
+public import LeanMlir.Proofs.Codegen.ResNet50RenderB -- shake: keep
 public import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
-public import LeanMlir.Proofs.Codegen.MobileNetV2RenderB
-public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
+public import LeanMlir.Proofs.Codegen.MobileNetV2RenderB -- shake: keep
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB -- shake: keep
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaperEval
-public import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
+public import LeanMlir.Proofs.Codegen.MobileNetV4RenderB -- shake: keep
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBEval
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBDrop
-public import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
-public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
-public import LeanMlir.Proofs.Codegen.ConvNeXtRender
-public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
-meta import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic
-meta import LeanMlir.Proofs.Codegen.MobileNetV2RenderB
-meta import LeanMlir.Proofs.Codegen.MobileNetV4RenderB
-meta import LeanMlir.Proofs.Codegen.ResNet34RenderB
-meta import LeanMlir.Proofs.Codegen.ResNet50RenderB
-meta import LeanMlir.Proofs.Codegen.StableHLO.Basic
-meta import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaperEval
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
-meta import LeanMlir.Proofs.Nets.ResNet.ResNet34FullB
-meta import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB
-meta import Mathlib.Basic.Real.Basic
-meta import LeanMlir.Proofs.Codegen.ConvNeXtRender
-meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
-meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
-meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Eval
-meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPC
-meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStagesPCEval
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBEval
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBDrop
+public import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic -- shake: keep
+public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop -- shake: keep
+public import LeanMlir.Proofs.Codegen.ConvNeXtRender -- shake: keep
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT -- shake: keep
+meta import LeanMlir.Proofs.Codegen.EfficientNetRender.Basic -- shake: keep
+meta import LeanMlir.Proofs.Codegen.MobileNetV2RenderB -- shake: keep
+meta import LeanMlir.Proofs.Codegen.MobileNetV4RenderB -- shake: keep
+meta import LeanMlir.Proofs.Codegen.ResNet50RenderB -- shake: keep
+meta import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT -- shake: keep
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullB -- shake: keep
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullPaperEval -- shake: keep
+meta import LeanMlir.Proofs.Nets.ResNet.ResNet50FullB -- shake: keep
+meta import LeanMlir.Proofs.Codegen.ConvNeXtRender -- shake: keep
+meta import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop -- shake: keep
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBEval -- shake: keep
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBDrop -- shake: keep
 
 @[expose] public section
 

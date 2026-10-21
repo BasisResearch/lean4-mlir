@@ -1,6 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Nets.ViT.ViTMhsaBackCertifiedTie
+public import LeanMlir.Proofs.Nets.ViT.ViTBackChains
+import LeanMlir.Proofs.Nets.ViT.ViTMhsaBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

@@ -1,7 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Foundation.MLP
-public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 
 @[expose] public section
 

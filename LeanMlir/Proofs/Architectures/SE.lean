@@ -1,7 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Architectures.CNN
-public import LeanMlir.Proofs.Architectures.LayerNorm
+public import LeanMlir.Proofs.Architectures.Activations
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

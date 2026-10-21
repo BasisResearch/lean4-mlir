@@ -1,8 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Codegen.ViTRender
-meta import LeanMlir.Proofs.Architectures.GeluForm
-meta import LeanMlir.Proofs.Codegen.ViTRender
+meta import LeanMlir.Proofs.Codegen.ViTRender -- shake: keep
 
 @[expose] public section
 

@@ -1,8 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Foundation.ParamGrad
-public import LeanMlir.Proofs.Foundation.BatchMapVJPAt
 public import LeanMlir.Proofs.Foundation.DropSites
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

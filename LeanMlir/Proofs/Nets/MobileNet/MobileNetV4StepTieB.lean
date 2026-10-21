@@ -1,7 +1,8 @@
 module
 
 public import LeanMlir.Proofs.Foundation.GradNodesBAt
-public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBVJP
+public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

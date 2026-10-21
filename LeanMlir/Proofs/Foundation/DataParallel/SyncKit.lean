@@ -4,6 +4,7 @@ public import LeanMlir.Proofs.Foundation.IndexCast
 public import LeanMlir.Proofs.Foundation.DataParallel.Sync
 public import LeanMlir.Proofs.Foundation.Batched.BackLinks
 public import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

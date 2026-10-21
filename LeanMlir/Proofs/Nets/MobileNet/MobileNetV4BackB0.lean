@@ -3,7 +3,7 @@ module
 public import LeanMlir.Proofs.Foundation.Batched.StageLayers
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
 public import LeanMlir.Proofs.Foundation.IndexCast
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec -- shake: keep
 
 @[expose] public section
 

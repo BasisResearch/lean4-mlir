@@ -1,7 +1,9 @@
 module
 
-public import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTie
 public import LeanMlir.Proofs.Foundation.BatchMapVJPAt
+public import LeanMlir.Proofs.Nets.ViT.ViTBackChains
+import LeanMlir.Proofs.Nets.ViT.ViTWholeBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

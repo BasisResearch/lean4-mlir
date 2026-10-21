@@ -1,7 +1,10 @@
 module
 
-public import LeanMlir.Proofs.Training.SgdDescent.Cnn
 public import LeanMlir.Proofs.Nets.Small.CifarCNN
+public import LeanMlir.Proofs.Architectures.ConvIndex
+public import LeanMlir.Proofs.Training.SgdDescent.Basic
+import LeanMlir.Proofs.Training.SgdDescent.Cnn
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

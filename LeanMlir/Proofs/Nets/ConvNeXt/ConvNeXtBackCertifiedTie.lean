@@ -3,8 +3,9 @@ module
 public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackChains
 public import LeanMlir.Proofs.Architectures.ChannelLNBack
 public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFullT
-public import LeanMlir.Proofs.Architectures.DepthwiseBackCertifiedTie
-public import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+import LeanMlir.Proofs.Architectures.DepthwiseBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

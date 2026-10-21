@@ -1,7 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
-public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch
+public import LeanMlir.Proofs.Codegen.StableHLO.PrecisionSwitch -- shake: keep
 public import LeanMlir.Proofs.Foundation.SmoothedLossCot
 public import LeanMlir.Proofs.Foundation.BceLossCot
 

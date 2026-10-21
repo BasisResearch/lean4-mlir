@@ -1,6 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Foundation.GradNodesB
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+import LeanMlir.Proofs.Foundation.GradNodesB
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

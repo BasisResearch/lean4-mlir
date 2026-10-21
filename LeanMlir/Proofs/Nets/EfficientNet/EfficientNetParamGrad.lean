@@ -1,6 +1,10 @@
 module
 
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetStepTieG
+public import LeanMlir.Proofs.Foundation.SmoothedBatchLoss
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import LeanMlir.Proofs.Foundation.ParamGradNodes
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

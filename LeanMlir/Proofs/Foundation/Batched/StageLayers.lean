@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Foundation.Batched.BackLinks
 public import LeanMlir.Proofs.Foundation.CertifiedChain
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

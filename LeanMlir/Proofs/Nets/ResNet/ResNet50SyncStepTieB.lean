@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Nets.ResNet.ResNet50StepTieB
 public import LeanMlir.Proofs.Nets.ResNet.ResNet34SyncStepTieB
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

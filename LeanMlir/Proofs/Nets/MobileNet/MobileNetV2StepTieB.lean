@@ -3,6 +3,7 @@ module
 public import LeanMlir.Proofs.Foundation.GradNodesBAt
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
 public import LeanMlir.Proofs.Foundation.DropSites
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

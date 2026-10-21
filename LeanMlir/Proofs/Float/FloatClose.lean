@@ -1,6 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Float.FloatBridge
+public import LeanMlir.Proofs.Foundation.MLP
+import LeanMlir.Proofs.Float.FloatBridge
 
 @[expose] public section
 

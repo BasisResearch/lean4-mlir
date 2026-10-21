@@ -1,8 +1,12 @@
 module
 
 public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtStepTie
-public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtWholeBackCertifiedTie
 public import LeanMlir.Proofs.Foundation.Batched.Indexed
+public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackChains
+import LeanMlir.Proofs.Architectures.ConvBackCertifiedTie
+import LeanMlir.Proofs.Architectures.DepthwiseBackCertifiedTie
+import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

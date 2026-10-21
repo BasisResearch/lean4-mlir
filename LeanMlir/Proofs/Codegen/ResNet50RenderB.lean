@@ -1,8 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Codegen.ResNet34RenderB
-meta import LeanMlir.Proofs.Codegen.RenderKit
-meta import LeanMlir.Proofs.Codegen.ResNet34RenderB
+meta import LeanMlir.Proofs.Codegen.ResNet34RenderB -- shake: keep
 
 @[expose] public section
 

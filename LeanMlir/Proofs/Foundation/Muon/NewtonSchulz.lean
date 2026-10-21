@@ -1,10 +1,11 @@
 module
 
-public import Mathlib.Algebra.Order.Star.Real
-public import Mathlib.Analysis.Normed.Field.Basic
 public import Mathlib.Topology.Instances.Matrix
-public import Mathlib.Topology.Metrizable.Uniformity
-public import Mathlib.Dynamics.FixedPoints.Topology
+public import Mathlib.Topology.MetricSpace.Pseudo.Defs
+import Mathlib.Algebra.Order.Star.Real
+import Mathlib.Analysis.Normed.Field.Basic
+import Mathlib.Dynamics.FixedPoints.Topology
+import Mathlib.Topology.Metrizable.Uniformity
 
 @[expose] public section
 

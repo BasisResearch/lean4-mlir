@@ -3,6 +3,11 @@ module
 public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtFoldGB
 public import LeanMlir.Proofs.Foundation.GradNodesBAt
 public import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtDropBlock
+import LeanMlir.Proofs.Foundation.Bf16Erasure
+import LeanMlir.Proofs.Foundation.ParamGradNodes
+import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtBackCertifiedTie
+import LeanMlir.Proofs.Nets.ConvNeXt.ConvNeXtWholeBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

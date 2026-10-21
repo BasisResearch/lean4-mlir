@@ -2,8 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullBVJP
 public import LeanMlir.Proofs.Training.BatchSealKit
-public import LeanMlir.Proofs.Training.JacobianSeal
-meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec
+public import LeanMlir.Proofs.Training.JacobianSeal -- shake: keep
+meta import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4Spec -- shake: keep
 
 @[expose] public section
 

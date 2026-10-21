@@ -2,7 +2,8 @@ module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2FullBVJP
 public import LeanMlir.Proofs.Training.BatchSealKit
-public import LeanMlir.Proofs.Training.JacobianSeal
+import LeanMlir.Proofs.Training.JacobianSeal
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

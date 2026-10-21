@@ -1,7 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Foundation.DataParallel.Sync
-public import LeanMlir.Proofs.Float.RndP
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

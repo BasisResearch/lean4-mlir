@@ -146,8 +146,12 @@ def implied(with_tests):
         if f == "LeanMlir.lean":
             continue                     # the doc-gen umbrella lists modules on purpose
         # a `meta import` is a different phase: it neither implies nor is implied by a plain one
-        imps = [i for i, _, meta in import_kinds(module_of(f))[1] if not meta]
-        red = [x for x in imps if any(x in reexported(y) for y in imps if y != x)]
+        # and a `public import` passes its module on downstream, which a plain one reaching the
+        # same module does not, so only another public import implies it
+        is_mod, kinds = import_kinds(module_of(f))
+        imps = [(i, pub or not is_mod) for i, pub, meta in kinds if not meta]
+        red = [x for x, xpub in imps
+               if any(x in reexported(y) for y, ypub in imps if y != x and (ypub or not xpub))]
         if red:
             bad.append((f, red))
     checked = [(f, r) for f, r in bad if f.startswith(CHECKED_PREFIXES)]

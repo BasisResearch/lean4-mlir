@@ -1,8 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetBackNet
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0Drop
 public import LeanMlir.Proofs.Foundation.GradNodesBAt
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

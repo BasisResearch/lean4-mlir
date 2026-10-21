@@ -1,6 +1,9 @@
 module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV2StepTieB
+public import LeanMlir.Proofs.Foundation.SmoothedBatchLoss
+import LeanMlir.Proofs.Foundation.ParamGradNodes
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

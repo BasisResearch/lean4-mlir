@@ -1,6 +1,8 @@
 module
 
-public import LeanMlir.Proofs.Nets.Small.LinearTrainStep
+public import LeanMlir.Proofs.Foundation.IR
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

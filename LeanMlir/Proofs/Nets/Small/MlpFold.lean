@@ -1,7 +1,10 @@
 module
 
 public import LeanMlir.Proofs.Nets.Small.MlpTrainStep
-public import LeanMlir.Proofs.Foundation.SgdNodes
+public import LeanMlir.Proofs.Codegen.StableHLO.Basic
+import LeanMlir.Proofs.Foundation.SgdNodes
+import LeanMlir.Proofs.Foundation.SmoothedLossCot
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

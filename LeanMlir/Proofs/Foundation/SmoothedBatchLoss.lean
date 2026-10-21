@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Foundation.SmoothedLossCot
 public import LeanMlir.Proofs.Foundation.Batched.BackLinks
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

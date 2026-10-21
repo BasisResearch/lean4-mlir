@@ -1,8 +1,7 @@
 module
 
-public import LeanMlir.Proofs.Codegen.CnnBbnRender
-meta import LeanMlir.Proofs.Codegen.CnnBbnRender
-meta import Mathlib.Basic.Real.Basic
+public import LeanMlir.Proofs.Codegen.CnnBbnRender -- shake: keep
+meta import LeanMlir.Proofs.Codegen.CnnBbnRender -- shake: keep
 
 @[expose] public section
 

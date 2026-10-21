@@ -1,6 +1,6 @@
 module
 
-public import LeanMlir.Proofs.Training.SgdDescent.Mlp
+public import LeanMlir.Proofs.Training.SgdDescent.Mlp -- shake: keep
 
 @[expose] public section
 
@@ -28,8 +28,6 @@ conditions remain hypotheses; no binary32 twin is stated for the biases.
 -/
 
 namespace Proofs
-
-open StableHLO
 
 -- ════════════════════════════════════════════════════════════════
 -- § The bias map: drift is exactly the step

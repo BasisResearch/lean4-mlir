@@ -1,7 +1,7 @@
 module
 
 public import LeanMlir.Proofs.Training.Trained.CnnWitness
-public import LeanMlir.Proofs.Training.JacobianSeal
+import LeanMlir.Proofs.Training.JacobianSeal
 
 @[expose] public section
 

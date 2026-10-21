@@ -2,6 +2,7 @@ module
 
 public import LeanMlir.Proofs.Nets.MobileNet.MobileNetV4FullB
 public import LeanMlir.Proofs.Codegen.StableHLO.Pretty
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 

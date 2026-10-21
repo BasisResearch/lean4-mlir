@@ -2,8 +2,9 @@ module
 
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetFullB0
 public import LeanMlir.Proofs.Foundation.OpaquePrefix
-public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetWholeBackCertifiedTie
 public import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetBackChains
+import LeanMlir.Proofs.Nets.EfficientNet.EfficientNetWholeBackCertifiedTie
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 @[expose] public section
 
