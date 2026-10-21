@@ -443,7 +443,7 @@ private theorem enet_noexp_tiedGAt (xN vN epsStr cotN : String) {N ic oc r kh kw
     at the cotangent that chain delivers, the chain's top being `smoothedLossCotGraph` at the
     target `t`. The statement is at one replica's nodes; `bf16` selects the conv and depthwise
     weight nodes' kind — `false` the f32 artifacts', `true` the bf16 kinds
-    `efficientnetin_emarmsdp64dropdowxeps0001bf16` emits, read over ℝ at the identity rounding
+    `efficientnetin_emarmstfdp64dropdowneps0001bf16` emits, read over ℝ at the identity rounding
     (`Bf16Erasure`); the right-hand side is the same certified gradient at either value. The
     optimizer update is outside it. -/
 theorem efficientnet_net_tiedG (xN vN epsStr cotN dN : String) (N : Nat) {nCls : Nat} (w : B0Weights nCls)

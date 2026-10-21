@@ -76,7 +76,7 @@ activation on every replica. The forward half with the sites is
 `StableHLO.efficientnetFwdGraphSyncFullDrop_shard`.
 
 **Precision is a flag on the statement.** The ImageNet run the book reports trains from
-`efficientnetin_emarmsdp64dropdowxeps0001bf16`, whose conv and depthwise weight gradients are the
+`efficientnetin_emarmstfdp64dropdowneps0001bf16`, whose conv and depthwise weight gradients are the
 bf16 kinds. Every conv and depthwise weight collective below is stated on the renderers' switch —
 `ConvWSyncAt bf16` / `ConvStridedXlaWSyncAt bf16` / `DepthwiseWSyncAt bf16` /
 `DepthwiseStridedXlaWSyncAt bf16` (`Foundation.GradNodesBAt`): the replicas' nodes and the

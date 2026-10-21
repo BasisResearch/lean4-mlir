@@ -38,7 +38,7 @@ The residual-block-with-drop and the dropout head are text-guarded against the r
 their drop-free blocks are guarded at inference BatchNorm. The training graph takes the renderers'
 `bf16` flag through the same switch as `EfficientNetFullB0` (`StableHLO.PrecisionSwitch`), so
 `efficientnetFwdGraphBFullDrop … true` is the forward of the `*bf16` train steps —
-`efficientnetin_emarmsdp64dropdowxeps0001bf16`, the run the book reports, among them — read over
+`efficientnetin_emarmstfdp64dropdowneps0001bf16`, the run the book reports, among them — read over
 ℝ as the f32 one is; the eval graphs stay f32, as the eval artifacts are. The train steps'
 backward through the drop sites is `EfficientNetStepTieG`'s, at the same `sd` / `cd` binders.
 

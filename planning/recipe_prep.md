@@ -638,3 +638,10 @@ answer. Each is the user's call, and none moves a landed number.
 * ResNet RSB — timm's `cooldown_epochs 10` (§8; disclosed in the configs).
 * The second scoring protocols (timm's for MNv4's paper tier, MNv2, B0) are post-hoc scores kept beside the
   papers' own, not gaps.
+
+**§7 pair landed 2026-10-21.** JAX `runs/2026-10-16-enet-full-jax-bf16-350ep/` 77.168 / 93.39 (42.49 h,
+no restart); verified `runs/2026-10-16-enet-verified-bf16-350ep/` 77.208 / 93.464 (65.14 h). A tie:
++0.04 / +0.07, McNemar 2,210 vs 2,190, p = 0.77 (EMA), p = 0.41 (live). The 09-12 pair's −0.32 window
+offset is gone. Chapter 7's ImageNet section carries the pair and the marker is out; the B0 tie
+headers name the `emarmstf` render. The one ch 7 row left disclosed is nothing: every line of the
+listing ran.

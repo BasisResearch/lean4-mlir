@@ -23,7 +23,7 @@ the right-hand side is the committed `efficientnetForwardBFull`, at `N := R·N`,
 move with the precision either: `bf16` selects the conv and depthwise kinds at every site
 (`.convAt` / `.convStridedXlaAt` / `.depthwiseAt` / `.depthwiseStridedXlaAt`, as the single-device
 graph), `bf16 := true` being the kinds the `*bf16` DP renders emit —
-`efficientnetin_emarmsdp64dropdowxeps0001bf16`, the run the book reports, among them (its drop
+`efficientnetin_emarmstfdp64dropdowneps0001bf16`, the run the book reports, among them (its drop
 sites are outside this graph, as they are at f32); each conv's shard step erases the switch
 through `Bf16Erasure` (`Bf16Fold.denOp_convAt_id`, …) and the rest of the proof is the f32 one.
 
