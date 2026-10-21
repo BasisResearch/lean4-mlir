@@ -168,6 +168,7 @@ import LeanMlir.Proofs.Nets.Small.Cifar8StepTie
 import LeanMlir.Proofs.Nets.Small.Cifar8BnStepTie
 import LeanMlir.Proofs.Nets.Small.Cifar8StepTieG
 import LeanMlir.Proofs.Nets.Small.Cifar8BnStepTieG
+import LeanMlir.Proofs.Nets.Small.Cifar8BbnStepTieB
 import LeanMlir.Proofs.Nets.Small.LinearParamGrad
 import LeanMlir.Proofs.Nets.Small.MlpParamGrad
 import LeanMlir.Proofs.Nets.Small.CnnParamGrad
@@ -483,6 +484,7 @@ open Proofs
 #audit_axioms Cifar8BnTie.cifar8Bn_train_step_tied_certified
 #audit_axioms Cifar8TieG.cifar8_train_step_tiedG
 #audit_axioms Cifar8BnTieG.cifar8Bn_train_step_tiedG
+#audit_axioms Cifar8BbnTieB.cifar8Bbn_train_step_tiedB
 #audit_axioms GradNode.convWGrad_den
 #audit_axioms GradNode.convBGrad_den
 #audit_axioms GradNode.bnGammaGrad_den

@@ -11,9 +11,9 @@ public import LeanMlir.Verified.Train
 with every BatchNorm reducing over `[0,2,3]` — the first cifar8 artifact whose BN couples the
 batch, and the first with a running-statistics protocol. Its forward is `pretty` of nodes the
 proofs tie (`bnBatchF` ↔ `bnBatchTensor4`); its backward is `pretty` of `bnBatchBack` /
-`bnGammaGradB` / `bnBetaGradB`, whose per-op `den` theorems exist, but the whole-net step tie at
-these nodes (`Cifar8BbnStepTieB`) is not yet stated. This file gates the backward numerically
-until it is, and stays as the artifact-level check afterwards — the pattern of
+`bnGammaGradB` / `bnBetaGradB`, whose per-op `den` theorems exist, and the whole-net step tie at
+these nodes is `Cifar8BbnStepTieB.cifar8Bbn_train_step_tiedB`. This file gates the backward
+numerically on the artifact beside that tie — the pattern of
 `tests/TestR50GradCheck.lean`, at a net small enough to run on a CPU in seconds.
 
 It needs no second framework: the AdamW step returns its own loss beside its own first moment,
