@@ -1,0 +1,24 @@
+[sup] 2026-10-16 17:36:32 START job=enet-full-jax-4gpu devs=0,1,2,3 epochs=350 rest_after=[none] temp_max=0 stall=1800s logs=runs/2026-10-16-enet-full-jax-bf16-350ep
+[sup] 2026-10-16 17:36:32 cmd: bash -c 
+  set -u
+  base=/home/skoonce/enet_tf350_2612/efficientnet_b0_imagenet
+  last=""; n=0
+  for f in "${base}"_e*.state.npz; do
+    [ -e "$f" ] || continue
+    k="${f##*_e}"; k="${k%.state.npz}"
+    [ "$k" -gt "$n" ] && { n="$k"; last="$f"; }
+  done
+  resume=()
+  if [ -n "$last" ]; then echo "[jax] resuming from epoch $n ($last)"; resume=(LEAN_MLIR_RESUME="$last")
+  else echo "[jax] fresh start"; fi
+  cd jax || exit 1
+  exec env JAX_COMPILATION_CACHE_DIR=/home/skoonce/.jax_cache \
+    LEAN_MLIR_PARAMS_OUT="$base" LEAN_MLIR_CKPT_EVERY=1 \
+    TFDS_DATA_DIR="${TFDS_DATA_DIR:-/home/skoonce/tensorflow_datasets}" \
+    "${resume[@]}" /home/skoonce/.venv-cuda/bin/python3 -u .lake/build/generated_efficientnet_b0_imagenet_full.py
+
+[sup] 2026-10-16 17:36:32 eta: ~49 h for 350 ep: SMOKED 2026-10-12 (runs/2026-10-12-enet-jax-smoke/) at 99 ms a 256-row step in the second 100-step epoch (9.9 s train) + ~12 s a validation, at the default arena
+[sup] 2026-10-16 17:36:32 attempt 1: resuming at epoch 0/350 (next rest: 999)
+[sup] 2026-10-16 17:36:32   launched PID=2342924 PGID=2342924
+[sup]   last line: Done. Total time: 152980.0s
+[sup] 2026-10-18 12:06:33 ✅ COMPLETE — 350/350 epochs

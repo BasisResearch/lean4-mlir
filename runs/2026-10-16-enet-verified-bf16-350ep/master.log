@@ -1,0 +1,37 @@
+[sup] 2026-10-18 12:07:32 START job=enet-default-4gpu devs=0,1,2,3 epochs=350 rest_after=[125 160 200 240 280 320] temp_max=78 stall=1800s logs=runs/2026-10-16-enet-verified-bf16-350ep
+[sup] 2026-10-18 12:07:32 cmd: .lake/build/bin/efficientnet-imagenet-verified data
+[sup] 2026-10-18 12:07:32 eta: bf16 ~67 h on 4x 4060 Ti: PROBED 2026-10-12 on the TF-recipe render (emarmstfdp64dropdowneps0001bf16, D3 padding, TF's AutoAugment + legacy bicubic in the shim) at 121 ms/step median (min 119, p90 122, starvation 2 ms; 606 s/epoch) + ~85 s/epoch eval/ckpt, 350 ep; the 2026-09-25 probe read 148 ms on the PIL-bicubic feed
+[sup] 2026-10-18 12:07:32 attempt 1: resuming at epoch 0/350 (next rest: 125)
+[sup] 2026-10-18 12:07:32   launched PID=3010099 PGID=3010099
+[sup] 2026-10-19 11:22:09   💤 epoch 125 reached — planned cooldown 15s
+[sup]   last line:   step 2/5004: loss=2.726039
+[sup] 2026-10-19 11:22:26   cooldown over
+[sup] 2026-10-19 11:22:26 attempt 2: resuming at epoch 125/350 (next rest: 160)
+[sup] 2026-10-19 11:22:26   launched PID=3494928 PGID=3494928
+[sup] 2026-10-19 17:57:28   💤 epoch 160 reached — planned cooldown 15s
+[sup]   last line: I0000 00:00:1792432646.693216 3636834 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[sup] 2026-10-19 17:57:45   cooldown over
+[sup] 2026-10-19 17:57:45 attempt 3: resuming at epoch 160/350 (next rest: 200)
+[sup] 2026-10-19 17:57:45   launched PID=3637045 PGID=3637045
+[sup] 2026-10-20 01:28:49   💤 epoch 200 reached — planned cooldown 15s
+[sup]   last line: I0000 00:00:1792459726.017201 3804167 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[sup] 2026-10-20 01:29:06   cooldown over
+[sup] 2026-10-20 01:29:06 attempt 4: resuming at epoch 200/350 (next rest: 240)
+[sup] 2026-10-20 01:29:06   launched PID=3804379 PGID=3804379
+[sup] 2026-10-20 08:50:55   💤 epoch 240 reached — planned cooldown 15s
+[sup]   last line: To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP16 AVX_VNNI AMX_TILE AMX_INT8 AMX_BF16 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+[sup] 2026-10-20 08:51:12   cooldown over
+[sup] 2026-10-20 08:51:12 attempt 5: resuming at epoch 240/350 (next rest: 280)
+[sup] 2026-10-20 08:51:12   launched PID=3968403 PGID=3968403
+[sup] 2026-10-20 16:13:00   💤 epoch 280 reached — planned cooldown 15s
+[sup]   last line: I0000 00:00:1792512777.958432 4132476 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[sup] 2026-10-20 16:13:17   cooldown over
+[sup] 2026-10-20 16:13:17 attempt 6: resuming at epoch 280/350 (next rest: 320)
+[sup] 2026-10-20 16:13:17   launched PID=4132633 PGID=4132633
+[sup] 2026-10-20 23:36:08   💤 epoch 320 reached — planned cooldown 15s
+[sup]   last line: To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX512_FP16 AVX_VNNI AMX_TILE AMX_INT8 AMX_BF16 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+[sup] 2026-10-20 23:36:26   cooldown over
+[sup] 2026-10-20 23:36:26 attempt 7: resuming at epoch 320/350 (next rest: 999)
+[sup] 2026-10-20 23:36:26   launched PID=104061 PGID=104061
+[sup]   last line: done (trained EfficientNet-B0 (ImageNet-1k) emarmstfdp64dropdowneps0001bf16 + exp x0.970000/2.400000ep staircase/warmup via packed threading).
+[sup] 2026-10-21 05:15:39 ✅ COMPLETE — 350/350 epochs
