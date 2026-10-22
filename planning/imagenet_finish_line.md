@@ -329,7 +329,7 @@ after `tab:r50_paths` say both halves rerun.
       smokes on both halves (`runs/2026-10-20-r34-bot-{verified,jax}-smoke/`); the verified conf moved
       to Arm B (respawn every 10 epochs, the user's call). R50-2018's exe still to build.
 - [ ] Launch, the user's word: `r34-default-jax-4gpu` + `r34-default-bf16-4gpu` (~13 + 21 h) — R34
-      LAUNCHED 2026-10-20 on ares (the user), JAX then verified, `runs/2026-10-20-r34-bot-jax/queue.sh`;
+      LAUNCHED 2026-10-20 on ares (the user), JAX then verified, `runs/2026-10-20-r34-bot-jax/queue.sh`, LANDED 2026-10-22 (73.98 / 74.14, p = 0.29; ch 5 moved, marker gone);
       `r50-2018-jax-4gpu` + `r50-2018-bf16-4gpu` (~22 + 29 h). Fresh RUNDIRs. Then both pairs' rows
       and numbers in ch 5 move together.
 
@@ -337,7 +337,7 @@ after `tab:r50_paths` say both halves rerun.
 
 | row | pair printed (reference / verified) | recipe the row runs | status |
 |---|---|---|---|
-| R34 | 74.14 / 74.17 | Bag of Tricks (deviations above, less the three rows of item 7) | crop + the three rows: **rerun of both halves prepared, not launched** (items 2, 7) |
+| R34 | 73.98 / 74.14 | Bag of Tricks (deviations above) | ✅ landed 2026-10-22 on ares (JAX 12.7 h, verified 23.5 h), McNemar p = 0.29; book moved 2026-10-22, marker gone |
 | R50-2018 | 76.76 / 77.09 | Bag of Tricks (deviations above, less no-bias-decay) | no-bias-decay: **rerun of both halves prepared, not launched** (item 7) |
 | R50-A3 | 77.58 / 78.05 at 235 | RSB-A3 + F6 | both halves rescored at timm's 235 (verified on ares 2026-10-20); book moved with them, marker gone |
 | R50-A2 / A1 | — | RSB | side quest, not run; RASampler (F3) still index-level-less |
