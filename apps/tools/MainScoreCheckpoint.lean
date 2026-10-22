@@ -67,6 +67,7 @@ def scorableNets : List (String × VerifiedNetSpec) :=
   , ("resnet34-in",  resnet34ImagenetVerified)
   , ("resnet50",     resnet50Verified)
   , ("resnet50-in",  resnet50ImagenetVerified)
+  , ("resnet50-in-2018", resnet50Imagenet2018Verified)   -- the 2018 recipe's shim: 224 / 0.875, not A2's 0.95
   , ("resnet50-in160", resnet50Imagenet160Verified)
   , ("mobilenetv2",  mobilenetv2Verified)
   , ("mobilenetv2-in", mobilenetv2ImagenetVerified)
