@@ -414,6 +414,35 @@ def cifar8wbBbnVerified : VerifiedNetSpec :=
 -- the driver EMAs, and `@cifar8wb_bbn_fwd_eval` reads.
 #guard cifar8wbBbnVerified.bnChannels == #[16, 16, 16, 16, 32, 32, 32, 32]
 
+/-- **FC-head-parametric `cifar8wb_bbn`** — the batch-statistics BN net of `cifar8wbBbnVerified`
+    with the conv backbone held at `[16,16,32,32]` and only the dense head swept:
+    `…flatten(128) → dense 128→d → relu → dense d→d → relu → dense d→10`. The batch-statistics
+    peer of `cifar8BnG` (per-image BN), for the chapter's head-width sweep on the layer the chapter
+    names. `cifar8wb-bbn-grid` renders the width-slugged artifacts itself at run time —
+    `.lake/build/cifar8wb_bbn_{d}_{adam_train_step,fwd,fwd_eval}.mlir` (`mlirDir`, build products)
+    from `CnnBbnRender.lean`'s width-parametric renderers — and trains each via
+    `trainAdamSched "adam"`, scoring through `@<slug>_fwd_eval` with the EMA'd running statistics
+    (`runningBN` on, inherited). `cifar8wbBbnG 512` is exactly `cifar8wbBbnVerified`'s
+    architecture. Slug `cifar8wb_bbn_{d}`. -/
+def cifar8wbBbnG (d : Nat) : VerifiedNetSpec :=
+  { cifar8wbBbnVerified with
+    name     := s!"CIFAR-CNN8-wide-BN-batchstat-fc{d}"
+    slug     := s!"cifar8wb_bbn_{d}"
+    -- A BUILD PRODUCT, NOT A COMMITTED RENDER (as `cifar8BnG`): instantiated from argv, rendered at
+    -- run time, regenerated every invocation. See `VerifiedNet.mlirDir`.
+    mlirDir  := ".lake/build"
+    layers   := [.conv 3 16 3 1, .bnPerChannel 16, .relu, .conv 16 16 3 1, .bnPerChannel 16, .relu, .maxPool 2 2,
+                 .conv 16 16 3 1, .bnPerChannel 16, .relu, .conv 16 16 3 1, .bnPerChannel 16, .relu, .maxPool 2 2,
+                 .conv 16 32 3 1, .bnPerChannel 32, .relu, .conv 32 32 3 1, .bnPerChannel 32, .relu, .maxPool 2 2,
+                 .conv 32 32 3 1, .bnPerChannel 32, .relu, .conv 32 32 3 1, .bnPerChannel 32, .relu, .maxPool 2 2, .flatten,
+                 .dense 128 d, .relu, .dense d d, .relu, .dense d 10]
+    blurb    := s!"CIFAR-CNN8-BN at BATCH statistics, fc{d} (8× conv→BN→relu [16,16,32,32] → 128→{d}→{d}→10, AdamW, running-stat eval) via the VERIFIED renderer → %LOWERER% → GPU" }
+
+-- `cifar8wbBbnG 512` is exactly the canonical `cifar8wbBbnVerified` architecture, and the stat
+-- layout does not depend on the head width.
+#guard (cifar8wbBbnG 512).toSpecs == cifar8wbBbnVerified.toSpecs
+#guard (cifar8wbBbnG 8).bnChannels == cifar8wbBbnVerified.bnChannels
+
 /-- Chapter 5 **ResNet-34** on Imagenette 224²: 7×7-s2 stem → BN → relu → maxpool →
     [3,4,6,3] basic-block stages (per-channel BN, strided downsample at the first block of
     stages 2–4) → GAP → dense. **110 param tensors** (no conv biases: every conv is BN-followed).

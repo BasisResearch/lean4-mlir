@@ -113,7 +113,7 @@ Build: `lake build cifar8wb-bbn-ablation cifar8-bbn-gradcheck fwd-tie`. First, o
 |---|---|---|---|
 | `runs/2026-09-01-cifar8w-6arm-constlr/` BN half → `runs/<date>-bbn-seeds/` | 3 optimizers × 5 seeds × 40 ep, f32 | `SUITE=bbn scripts/sweeps/seed_sweep.sh 0 "1 2 3 4 5"` runs all six arms per seed | ~25 min × 5 ≈ 2 h |
 | `runs/2026-09-01-bnprec-seeds/` (tab:cifar_bf16) | the bf16 twins | the same sweep (six lines per log) | included |
-| head-width sweep (`results.tsv`, cosine, 25 ep) | 10 widths, single runs | needs a `cifar8-bbn-grid` peer of `cifar8-bn-grid` (parametric `d1` on `CnnBbnRender`) — not built | ≈ 25 min |
+| head-width sweep (`results.tsv`, cosine, 25 ep) → `runs/<date>-cifar8wb-bbn-grid-xla/` | 10 widths, single runs | `GPUS=0 scripts/sweeps/run_cifar8wb_bbn_grid_sweep.sh` (built 2026-10-22: `cifar8wb-bbn-grid`, `cifar8wbBbnG d`, renders its own width-slugged artifacts) | ≈ 25 min on one card |
 | `fig:cifar_bn_curves` | from the SGD arm | free |
 | `runs/2026-09-01-cifar8w-bn-xla-cuda/` (the §4 transcript) | 1 run, 3 arms | `.lake/build/bin/cifar8wb-bbn-ablation data adam` etc. | ≈ 13 min |
 

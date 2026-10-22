@@ -1055,6 +1055,13 @@ lean_exe «cifar8-bn-grid» where
   root := `apps.cifar.MainCifar8BnGrid
   moreLinkArgs := lowererLink
 
+-- The batch-statistics peer: `cifar8wb-bbn-grid <fc-width> [epochs] [dataDir]` sweeps the same
+-- head on `cifar8wbBbnG d` (BN over [0,2,3], running-stat eval), rendering its own width-slugged
+-- artifacts into .lake/build at run time from CnnBbnRender.lean. planning/cifar-batch-bn-rerender.md.
+lean_exe «cifar8wb-bbn-grid» where
+  root := `apps.cifar.MainCifar8WideBbnGrid
+  moreLinkArgs := lowererLink
+
 -- Chapter 5: trains the CIFAR-10 CNN (no BN) on the VERIFIED-rendered StableHLO
 -- (verified_mlir/cifar_train_step.mlir = Proofs.StableHLO.cifarTrainStepText).
 lean_exe «cifar-verified» where
