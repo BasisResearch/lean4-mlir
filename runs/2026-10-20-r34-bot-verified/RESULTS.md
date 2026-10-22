@@ -12,5 +12,15 @@ half: 07:04 → 06:31 UTC, 23.5 h, ~15.6 min an epoch, one attempt, no restarts.
 | verified top-1 / top-5 | 57.88 / 82.24 | 64.67 / 86.58 | **74.14 / 91.85** |
 | JAX (same recipe) | 56.84 / 81.47 | 64.56 / 86.59 | 73.98 / 91.70 |
 
-Against the landed pair (verified 74.17, 09-22; JAX 74.14, 10-07) the three Bag-of-Tricks rows moved
-neither half outside its run-to-run spread: verified −0.03, JAX −0.16. One seed per arm.
+`rescore.sh` rescored the e90 `bot` checkpoint with `score-checkpoint` (37,070 / 45,924, the in-training
+count exactly, top-5 one image off) and the JAX e90 state through `eval_full50k.py` at EVAL_DTYPE=f32
+(36,989 / 45,851, its in-training 36,990 / 0.917 to one image), each with a per-image bitmap
+(`bitmaps/`, gitignored). McNemar (`mcnemar.txt`), JAX f32 against verified on the same 50,000:
+
+| both right | both wrong | only JAX | only verified | net | discordant | exact p |
+|---|---|---|---|---|---|---|
+| 34,126 | 10,067 | 2,863 | 2,944 | +81 verified | 5,807 (11.6 %) | **0.29** |
+
+The two checkpoints are not separated on the 50k. Against the landed pair (verified 74.17, 09-22; JAX
+74.14, 10-07; McNemar 0.86) the three Bag-of-Tricks rows moved neither half outside its run-to-run
+spread: verified −0.03, JAX −0.16. One seed per arm.
