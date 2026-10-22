@@ -1,0 +1,10 @@
+# per-seed run dirs: the copied trainer binary, the data/ffi symlinks and the IREE build cache
+nano_s*/tinygpt-shakespeare
+nano_s*/data
+nano_s*/ffi
+nano_s*/.lake/
+# regenerable: `fit` (5 s) and `score` (seconds) rebuild the model and per-position arrays
+*.npz
+*.npy
+# the three checkpoints are kept (832 KB each): the 2026-09-09 one was lost to a retrain
+!nano_s*/nano_params.bin

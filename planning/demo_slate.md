@@ -49,6 +49,10 @@ In order of value per cost.
    documented, not implemented), no dropout while `tiny` overfits, the train/val curve is
    logged and not drawn. A Kneser–Ney n-gram ladder is its matched filter; the RoPE
    length-extrapolation gate (§5 there) is a ready-made result.
+   *2026-10-21:* the ladder has its plan, `tinygpt_ngram_ladder.md` (the chunked-val scoring
+   caveat is its §3), and its result: three nano seeds at 10k steps sit 0.04–0.06 bits/char
+   **above** the Kneser-Ney 7-gram (2.188 streaming), CIs excluding zero — undertrained, and
+   the book's bigram 3.56 is a train loss. The section is owed the ladder table and figure.
 3. **VisDrone and NEU-DET: every row is n = 1.** NEU-DET's prose cites "the noise floor the
    VisDrone table established", which was never measured. `LEAN_MLIR_SEED` exists now (it
    landed for BraTS); the top rows need two more seeds. `detector_v5_next.md` §1 has the

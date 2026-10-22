@@ -34,6 +34,9 @@ Subcommands:
   lake exe tinygpt-shakespeare train  [nano|tiny] [steps=2000] [batch=32] [lr_x10000=30]
   lake exe tinygpt-shakespeare sample [nano|tiny] [n_chars=400] [temp_x100=80] [topk=0] [topp_x100=100] [seed=1] [prompt]
   lake exe tinygpt-shakespeare suite  [nano|tiny]
+  lake exe tinygpt-shakespeare score  [nano|tiny] [params] [outDir]   — the chunked and
+      streaming val protocols of planning/tinygpt_ngram_ladder.md §3 on a checkpoint,
+      per-position CE to <outDir>, beside the trainer's own 12-batch number
 -/
 
 def vocabSize : Nat := 65
@@ -290,7 +293,10 @@ def runTinyGptTrain (g : GptCfg) (steps : Nat) (batch : Nat) (lrMax : Float)
   let (valTokens, nValTokens) ← F32.loadTokenStream "data/shakespeare/val.bin"
   IO.eprintln s!"  {nTokens} train tokens, {nValTokens} val tokens"
 
-  let mut params ← spec.heInitParams
+  -- LEAN_MLIR_SEED=<k> moves the He-init and every chunk draw, as the generic trainer's does
+  let seedOff : Nat := ((← IO.getEnv "LEAN_MLIR_SEED").bind String.toNat?).getD 0
+  if seedOff > 0 then IO.eprintln s!"  seed offset: {seedOff} (LEAN_MLIR_SEED)"
+  let mut params ← spec.heInitParams (seed := (42 + seedOff).toUSize)
   let nP := F32.size params
   let m0 ← F32.const nP.toUSize 0.0
   let v0 ← F32.const nP.toUSize 0.0
@@ -307,7 +313,7 @@ def runTinyGptTrain (g : GptCfg) (steps : Nat) (batch : Nat) (lrMax : Float)
   let mut history : Array Float := #[]
   for step in [:steps] do
     let lr := lrAt lrMax step steps
-    let seedU : USize := (step * 65537 + 17).toUSize
+    let seedU : USize := (step * 65537 + 17 + seedOff * 1000003).toUSize
     let chunks ← F32.sampleChunks tokens nTokens batch.toUSize T.toUSize seedU
     let inputBytes := batch * T * 4
     let inputIds  := chunks.extract 0 inputBytes
@@ -447,6 +453,115 @@ def runSuite (g : GptCfg) (paramsPath : String) : IO Unit := do
   IO.FS.writeFile outPath out
   IO.eprintln s!"wrote {outPath}"
 
+/-- Softmax cross-entropy in nats of the `V` logits at `base` against `target`. -/
+def ceAt (logits : ByteArray) (base target V : Nat) : Float := Id.run do
+  let mut mx := F32.read logits base.toUSize
+  for v in [1:V] do
+    let x := F32.read logits (base + v).toUSize
+    if x > mx then mx := x
+  let mut sum : Float := 0.0
+  for v in [:V] do
+    sum := sum + Float.exp (F32.read logits (base + v).toUSize - mx)
+  return Float.log sum + mx - F32.read logits (base + target).toUSize
+
+/-- The int32 token at stream position `t`. -/
+@[inline] def tokAt (stream : ByteArray) (t : Nat) : Nat := readU32LE stream (4 * t)
+
+/-- The two deterministic scoring protocols of planning/tinygpt_ngram_ladder.md §3 on a
+    saved checkpoint, so the n-gram ladder (`scripts/demos/ngram_ladder.py`) is scored on
+    the same positions under the same context rule:
+
+    * chunked: the trainer's own chunks laid consecutively over val — inputs
+      `[cT, cT+T)`, targets `[cT+1, cT+T+1)` — one forward per batch of chunks, the CE at
+      every position; target j of a chunk is predicted from j+1 characters.
+    * streaming: every position t ≥ T predicted from the full window `[t−T, t)`, the CE
+      at the window's last position only — the literature's "bits/char on
+      tinyshakespeare", and T× the chunked pass's work.
+
+    Writes one f32 CE (nats) per predicted position, in stream order, to
+    `<outDir>/tinygpt_<key>_score_{chunked,streaming}.bin`, prints both means in
+    bits/char, and prints the trainer's own number — `evalValLoss`'s 12 fixed-seed random
+    batches — from the same checkpoint, which is what `train` logs. -/
+def runScore (g : GptCfg) (paramsPath outDir : String) : IO Unit := do
+  let spec := mkSpec g
+  let T := g.seqLen
+  let B := 32
+  let V := vocabSize
+  let evalCfg : TrainConfig := { trainConfig with batchSize := B, learningRate := 0.0 }
+  IO.eprintln s!"compiling eval forward + train step at B={B} (model={g.key}, T={T}) ..."
+  let _ ← spec.compileVmfbs evalCfg
+  let pfx := spec.buildPrefix
+  let sess ← LowererSession.create (← NetSpec.graphArtifact pfx "fwd_eval")
+  let params ← IO.FS.readBinFile paramsPath
+  if params.size != spec.totalParams * 4 then
+    IO.eprintln s!"  checkpoint {params.size}B ≠ expected {spec.totalParams * 4}B"; IO.Process.exit 1
+  let bnPad ← F32.const spec.nBnStats.toUSize 0.0
+  let evalParams := params.append bnPad
+  let evalShapesBA := spec.evalShapesBA
+  let xShape := spec.xShape B
+  let (valTokens, nValTokens) ← F32.loadTokenStream "data/shakespeare/val.bin"
+  let n := nValTokens.toNat
+  let outElems : USize := (T * V).toUSize          -- per sample; the forward scales by B
+  -- one forward over B windows, each `T` input ids starting at `starts[b]`
+  let forwardWindows := fun (starts : Array Nat) => do
+    let mut idsBA : ByteArray := ByteArray.emptyWithCapacity (B * T * 4)
+    for b in [:B] do
+      let s0 := if b < starts.size then starts[b]! else 0
+      for j in [:T] do
+        idsBA := pushU32LE idsBA (tokAt valTokens (s0 + j))
+    let xba ← if g.ids then F32.idsToFloats idsBA
+              else F32.tokenOneHot idsBA B.toUSize T.toUSize V.toUSize
+    LowererSession.forwardF32 sess spec.evalFnName evalParams evalShapesBA xba xShape B.toUSize outElems
+
+  -- protocol 1: chunked
+  let nChunks := (n - 1) / T
+  let mut ceChunked : ByteArray := ByteArray.emptyWithCapacity (nChunks * T * 4)
+  let mut totC : Float := 0.0
+  let mut c := 0
+  while c < nChunks do
+    let starts := (Array.range B).map fun b => (c + b) * T
+    let logits ← forwardWindows (starts.filter fun s0 => s0 / T < nChunks)
+    for b in [:B] do
+      if c + b < nChunks then
+        for j in [:T] do
+          let ce := ceAt logits (b * T * V + j * V) (tokAt valTokens ((c + b) * T + j + 1)) V
+          ceChunked := pushF32LE ceChunked ce
+          totC := totC + ce
+    c := c + B
+  let meanC := totC / (nChunks * T).toFloat
+  IO.FS.writeBinFile s!"{outDir}/tinygpt_{g.key}_score_chunked.bin" ceChunked
+  IO.println s!"score {g.key} chunked{T}: {nChunks * T} positions, {meanC} nats/char = {meanC / ln2} bits/char"
+
+  -- protocol 2: streaming
+  let nPos := n - T
+  let mut ceStream : ByteArray := ByteArray.emptyWithCapacity (nPos * 4)
+  let mut totS : Float := 0.0
+  let mut i := 0
+  while i < nPos do
+    let starts := (Array.range B).map fun b => i + b          -- window [t−T, t) with t = T + i + b
+    let logits ← forwardWindows (starts.filter fun s0 => s0 < nPos)
+    for b in [:B] do
+      if i + b < nPos then
+        let t := T + i + b
+        let ce := ceAt logits (b * T * V + (T - 1) * V) (tokAt valTokens t) V
+        ceStream := pushF32LE ceStream ce
+        totS := totS + ce
+    i := i + B
+    if i % (B * 200) == 0 then IO.eprintln s!"  streaming {i}/{nPos}"
+  let meanS := totS / nPos.toFloat
+  IO.FS.writeBinFile s!"{outDir}/tinygpt_{g.key}_score_streaming.bin" ceStream
+  IO.println s!"score {g.key} streaming: {nPos} positions, {meanS} nats/char = {meanS / ln2} bits/char"
+
+  -- the trainer's own number from the same checkpoint
+  let trainSess ← LowererSession.create (← NetSpec.graphArtifact pfx "train_step")
+  let nP := F32.size params
+  let m0 ← F32.const nP.toUSize 0.0
+  let v0 ← F32.const nP.toUSize 0.0
+  let packed := F32.concat #[params, m0, v0]
+  let nats ← evalValLoss trainSess spec g.ids packed spec.shapesBA xShape spec.bnShapesBA
+                valTokens nValTokens B T 12
+  IO.println s!"score {g.key} trainer-logged (12 fixed random batches of {B}×{T}): {nats} nats/char = {nats / ln2} bits/char"
+
 /-- Peel an optional leading model key off the arg list (defaults to
     nano so the CLI shapes without a model key still work). -/
 def peelModel (rest : List String) : GptCfg × List String :=
@@ -500,8 +615,17 @@ def main (args : List String) : IO Unit := do
     if !(← System.FilePath.pathExists paramsPath) then
       IO.eprintln s!"missing {paramsPath}; run `train {g.key}` first"; IO.Process.exit 1
     runSuite g paramsPath
+  | "score" :: rest =>
+    let (g, rest) := peelModel rest
+    let pfx := (mkSpec g).buildPrefix
+    let paramsPath := (rest[0]?).getD s!"{pfx}_params.bin"
+    let outDir := (rest[1]?).getD ".lake/build"
+    if !(← System.FilePath.pathExists paramsPath) then
+      IO.eprintln s!"missing {paramsPath}; run `train {g.key}` first"; IO.Process.exit 1
+    runScore g paramsPath outDir
   | _ =>
     IO.eprintln "usage: tinygpt-shakespeare train  [nano|tiny] [steps=2000] [batch=32] [lr_x10000=30]"
     IO.eprintln "       tinygpt-shakespeare sample [nano|tiny] [n_chars=400] [temp_x100=80] [topk=0] [topp_x100=100] [seed=1] [prompt]"
     IO.eprintln "       tinygpt-shakespeare suite  [nano|tiny]"
+    IO.eprintln "       tinygpt-shakespeare score  [nano|tiny] [params=.lake/build/<prefix>_params.bin] [outDir=.lake/build]"
     IO.Process.exit 1
