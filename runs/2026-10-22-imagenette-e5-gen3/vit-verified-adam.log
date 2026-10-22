@@ -1,0 +1,83 @@
+I1022 22:34:45.806530  102821 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1022 22:34:45.822662  102821 service.cc:154] XLA service 0x7439524696d0 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1022 22:34:45.822678  102821 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1022 22:34:45.822688  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.822936  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823071  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823187  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823221  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823247  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823273  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823299  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823326  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823352  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823470  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823496  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823522  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823549  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823575  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823602  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823628  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.823654  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:34:45.825376  102821 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1022 22:34:45.825394  102821 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1022 22:34:45.915609  102821 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/vit_adam_train_step.mlir (@vit_adam_train_step, 603 outputs, 1 replica) in 17864 ms
+[pjrt_ffi] compiled verified_mlir/vit_fwd.mlir (@vit_fwd, 1 outputs, 1 replica) in 4880 ms
+ViT-Tiny on Imagenette 224² (patch-16 → CLS+pos → 12 transformer blocks @ dim192/3heads/MLP768 → final LN → CLS-head 10) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/vit_adam_train_step.mlir
+  xla/pjrt verified_mlir/vit_fwd.mlir
+  train 9469, val 3925; bs 32, ViT-Tiny adam (cosine+warmup 5ep, baseLR 0.000300), He init
+I1022 22:35:13.149395  103199 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:35:13.149621  103199 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @vit_adam_train_step holds 600 parameter tensors (63.2 MB) on 1 device; they stop crossing PCIe from here
+I1022 22:35:13.256846  102821 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:35:14.000362  103199 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:35:14.001044  103200 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:35:14.001104  103213 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/295: loss=3.351305
+  step 1/295: loss=3.004615
+  step 2/295: loss=2.555267
+  step 100/295: loss=2.180400
+  step 200/295: loss=1.955609
+I1022 22:35:37.994912  103690 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @vit_fwd holds 200 parameter tensors (21.1 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/80: loss=2.127477 lr=0.000060
+  epoch 1: val_acc = 1377/3925 = 35.082803%  top5 = 3119/3925 = 79.464968%  [95% CI 33.61–36.59]
+  step 0/295: loss=2.029182
+  step 1/295: loss=1.859526
+  step 2/295: loss=1.928016
+  step 100/295: loss=1.839034
+  step 200/295: loss=1.595359
+[pjrt_ffi] RESIDENT: @vit_fwd holds 200 parameter tensors (21.1 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/80: loss=1.869699 lr=0.000120
+  epoch 2: val_acc = 1620/3925 = 41.273885%  top5 = 3351/3925 = 85.375796%  [95% CI 39.74–42.82]
+  step 0/295: loss=2.084804
+  step 1/295: loss=2.032501
+  step 2/295: loss=1.823203
+  step 100/295: loss=1.824563
+  step 200/295: loss=1.639260
+[pjrt_ffi] RESIDENT: @vit_fwd holds 200 parameter tensors (21.1 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/80: loss=1.750579 lr=0.000180
+  epoch 3: val_acc = 1589/3925 = 40.484076%  top5 = 3361/3925 = 85.630573%  [95% CI 38.96–42.03]
+  step 0/295: loss=1.888981
+  step 1/295: loss=1.719188
+  step 2/295: loss=1.873543
+  step 100/295: loss=1.477451
+  step 200/295: loss=1.527871
+[pjrt_ffi] RESIDENT: @vit_fwd holds 200 parameter tensors (21.1 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/80: loss=1.678091 lr=0.000240
+  epoch 4: val_acc = 1825/3925 = 46.496815%  top5 = 3508/3925 = 89.375796%  [95% CI 44.94–48.06]
+  step 0/295: loss=1.260962
+  step 1/295: loss=1.805646
+  step 2/295: loss=1.650699
+  step 100/295: loss=1.755733
+  step 200/295: loss=1.613994
+[pjrt_ffi] RESIDENT: @vit_fwd holds 200 parameter tensors (21.1 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/80: loss=1.618400 lr=0.000300
+  epoch 5: val_acc = 1992/3925 = 50.751592%  top5 = 3557/3925 = 90.624204%  [95% CI 49.19–52.31]
+done (trained ViT-Tiny adam + cosine/warmup via packed threading).

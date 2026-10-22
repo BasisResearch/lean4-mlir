@@ -1,0 +1,767 @@
+I1022 17:43:15.791830    3239 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1022 17:43:15.812390    3239 service.cc:154] XLA service 0x73db92491670 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1022 17:43:15.812399    3239 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1022 17:43:15.812407    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813442    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813471    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813497    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813524    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813551    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813577    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813603    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813630    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813656    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813690    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813716    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813742    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813769    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813795    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813821    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813847    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.813873    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:15.817625    3239 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1022 17:43:15.817643    3239 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1022 17:43:15.907102    3239 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/resnet34_adam_train_step.mlir (@resnet34_adam_train_step, 405 outputs, 1 replica) in 2024 ms
+[pjrt_ffi] compiled verified_mlir/resnet34_fwd.mlir (@resnet34_fwd, 1 outputs, 1 replica) in 306 ms
+[pjrt_ffi] compiled verified_mlir/resnet34_fwd_eval.mlir (@resnet34_fwd_eval, 1 outputs, 1 replica) in 187 ms
+Real ResNet-34 on Imagenette 224² (7×7-s2 stem→3×3-s2 overlapping max pool→[3,4,6,3] blocks w/ batch-norm, He et al. option-B 1×1 projection shortcuts, no conv biases; 56→28→14→7→GAP→dense) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/resnet34_adam_train_step.mlir
+  xla/pjrt verified_mlir/resnet34_fwd.mlir
+  xla/pjrt verified_mlir/resnet34_fwd_eval.mlir
+  train 9469, val 3925; bs 32, ResNet-34 adam (cosine+warmup 3ep, baseLR 0.001000), He init
+  running-stats BN: 36 layers, 17024 stat floats → eval via @resnet34_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1022 17:43:23.871252    3410 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:23.871680    3410 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @resnet34_adam_train_step holds 330 parameter tensors (243.6 MB) on 1 device; they stop crossing PCIe from here
+I1022 17:43:24.083857    3239 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:27.416243    3517 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:27.419163    3507 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:27.419588    3480 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 17:43:27.419982    3450 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/295: loss=3.614365
+  step 1/295: loss=3.722508
+  step 2/295: loss=3.375149
+  step 100/295: loss=2.113394
+  step 200/295: loss=1.589053
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/80: loss=2.043803 lr=0.000333
+  epoch 1: val_acc = 797/3925 = 20.305732%  top5 = 2861/3925 = 72.891720%  [95% CI 19.08–21.59]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 14895492706210680050)
+  step 0/295: loss=1.867047
+  step 1/295: loss=1.659141
+  step 2/295: loss=1.330871
+  step 100/295: loss=1.481541
+  step 200/295: loss=1.353553
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/80: loss=1.535748 lr=0.000667
+  epoch 2: val_acc = 727/3925 = 18.522293%  top5 = 2415/3925 = 61.528662%  [95% CI 17.34–19.77]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 745301188417077858)
+  step 0/295: loss=1.545588
+  step 1/295: loss=1.764854
+  step 2/295: loss=1.526409
+  step 100/295: loss=1.280199
+  step 200/295: loss=1.160387
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/80: loss=1.383835 lr=0.001000
+  epoch 3: val_acc = 1510/3925 = 38.471338%  top5 = 3007/3925 = 76.611465%  [95% CI 36.96–40.00]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 1453309881993875195)
+  step 0/295: loss=1.357707
+  step 1/295: loss=0.911096
+  step 2/295: loss=1.260332
+  step 100/295: loss=1.206797
+  step 200/295: loss=1.298134
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/80: loss=1.292465 lr=0.001000
+  epoch 4: val_acc = 1174/3925 = 29.910828%  top5 = 3387/3925 = 86.292994%  [95% CI 28.50–31.36]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 8796028522176857054)
+  step 0/295: loss=1.077619
+  step 1/295: loss=1.417895
+  step 2/295: loss=1.222884
+  step 100/295: loss=1.391789
+  step 200/295: loss=1.161413
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/80: loss=1.193362 lr=0.000998
+  epoch 5: val_acc = 2176/3925 = 55.439490%  top5 = 3520/3925 = 89.681529%  [95% CI 53.88–56.99]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 11525629190273354678)
+  step 0/295: loss=1.352324
+  step 1/295: loss=0.968433
+  step 2/295: loss=1.002397
+  step 100/295: loss=1.218351
+  step 200/295: loss=1.099163
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 6/80: loss=1.126092 lr=0.000996
+  epoch 6: val_acc = 2437/3925 = 62.089172%  top5 = 3548/3925 = 90.394904%  [95% CI 60.56–63.59]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 10219959107701682975)
+  step 0/295: loss=1.142570
+  step 1/295: loss=1.141612
+  step 2/295: loss=1.041291
+  step 100/295: loss=1.270669
+  step 200/295: loss=1.232324
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 7/80: loss=1.101212 lr=0.000993
+  epoch 7: val_acc = 2183/3925 = 55.617834%  top5 = 3623/3925 = 92.305732%  [95% CI 54.06–57.17]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 5592890617567696281)
+  step 0/295: loss=1.032151
+  step 1/295: loss=1.118050
+  step 2/295: loss=1.245170
+  step 100/295: loss=0.998432
+  step 200/295: loss=1.023517
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 8/80: loss=1.056542 lr=0.000990
+  epoch 8: val_acc = 2508/3925 = 63.898089%  top5 = 3729/3925 = 95.006369%  [95% CI 62.38–65.39]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 5094092073405813611)
+  step 0/295: loss=1.102981
+  step 1/295: loss=0.905828
+  step 2/295: loss=1.160523
+  step 100/295: loss=0.935905
+  step 200/295: loss=1.075538
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 9/80: loss=1.032981 lr=0.000985
+  epoch 9: val_acc = 3023/3925 = 77.019108%  top5 = 3796/3925 = 96.713376%  [95% CI 75.68–78.31]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 2817988348601046678)
+  step 0/295: loss=0.918629
+  step 1/295: loss=0.870006
+  step 2/295: loss=0.900423
+  step 100/295: loss=1.220660
+  step 200/295: loss=0.841565
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 10/80: loss=1.006117 lr=0.000980
+  epoch 10: val_acc = 2606/3925 = 66.394904%  top5 = 3639/3925 = 92.713376%  [95% CI 64.90–67.86]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 15322708605994581509)
+  step 0/295: loss=0.923089
+  step 1/295: loss=0.878740
+  step 2/295: loss=0.854379
+  step 100/295: loss=1.196439
+  step 200/295: loss=0.915375
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 11/80: loss=0.976176 lr=0.000974
+  epoch 11: val_acc = 1428/3925 = 36.382166%  top5 = 3733/3925 = 95.108280%  [95% CI 34.89–37.90]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 7008085489532666915)
+  step 0/295: loss=0.993923
+  step 1/295: loss=0.853109
+  step 2/295: loss=1.059731
+  step 100/295: loss=0.925038
+  step 200/295: loss=0.826581
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 12/80: loss=0.945195 lr=0.000967
+  epoch 12: val_acc = 2737/3925 = 69.732484%  top5 = 3748/3925 = 95.490446%  [95% CI 68.28–71.15]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 1715108719696421938)
+  step 0/295: loss=1.203218
+  step 1/295: loss=1.044861
+  step 2/295: loss=1.003483
+  step 100/295: loss=0.931840
+  step 200/295: loss=0.928402
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 13/80: loss=0.925264 lr=0.000959
+  epoch 13: val_acc = 2758/3925 = 70.267516%  top5 = 3772/3925 = 96.101911%  [95% CI 68.82–71.68]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 17655002495109934820)
+  step 0/295: loss=0.895260
+  step 1/295: loss=0.852098
+  step 2/295: loss=0.908803
+  step 100/295: loss=0.828104
+  step 200/295: loss=0.894760
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 14/80: loss=0.916597 lr=0.000951
+  epoch 14: val_acc = 2083/3925 = 53.070064%  top5 = 3481/3925 = 88.687898%  [95% CI 51.51–54.63]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 12478911623641974283)
+  step 0/295: loss=1.021726
+  step 1/295: loss=0.961026
+  step 2/295: loss=0.779742
+  step 100/295: loss=1.020538
+  step 200/295: loss=0.842267
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 15/80: loss=0.890016 lr=0.000941
+  epoch 15: val_acc = 3022/3925 = 76.993631%  top5 = 3779/3925 = 96.280255%  [95% CI 75.65–78.28]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 495368686009350472)
+  step 0/295: loss=1.000866
+  step 1/295: loss=1.061022
+  step 2/295: loss=0.738569
+  step 100/295: loss=0.693880
+  step 200/295: loss=0.676682
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 16/80: loss=0.868397 lr=0.000931
+  epoch 16: val_acc = 2972/3925 = 75.719745%  top5 = 3808/3925 = 97.019108%  [95% CI 74.35–77.04]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 17635547829466634786)
+  step 0/295: loss=0.796542
+  step 1/295: loss=0.948140
+  step 2/295: loss=0.926331
+  step 100/295: loss=0.688398
+  step 200/295: loss=1.052653
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 17/80: loss=0.854205 lr=0.000921
+  epoch 17: val_acc = 2857/3925 = 72.789809%  top5 = 3801/3925 = 96.840764%  [95% CI 71.38–74.16]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 12387390537496448981)
+  step 0/295: loss=0.795497
+  step 1/295: loss=0.725183
+  step 2/295: loss=0.917421
+  step 100/295: loss=0.814732
+  step 200/295: loss=0.748279
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 18/80: loss=0.834841 lr=0.000909
+  epoch 18: val_acc = 2759/3925 = 70.292994%  top5 = 3748/3925 = 95.490446%  [95% CI 68.84–71.70]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 5390461812988269172)
+  step 0/295: loss=0.726125
+  step 1/295: loss=0.659363
+  step 2/295: loss=0.919339
+  step 100/295: loss=0.691252
+  step 200/295: loss=0.922323
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 19/80: loss=0.812019 lr=0.000897
+  epoch 19: val_acc = 3071/3925 = 78.242038%  top5 = 3797/3925 = 96.738854%  [95% CI 76.92–79.50]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 17311059336839632840)
+  step 0/295: loss=0.832100
+  step 1/295: loss=0.818887
+  step 2/295: loss=0.849053
+  step 100/295: loss=0.757608
+  step 200/295: loss=0.649915
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 20/80: loss=0.793284 lr=0.000885
+  epoch 20: val_acc = 3091/3925 = 78.751592%  top5 = 3777/3925 = 96.229299%  [95% CI 77.44–80.00]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 10582357951077721796)
+  step 0/295: loss=0.759676
+  step 1/295: loss=0.641409
+  step 2/295: loss=0.744294
+  step 100/295: loss=0.644133
+  step 200/295: loss=0.754186
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 21/80: loss=0.780057 lr=0.000871
+  epoch 21: val_acc = 3021/3925 = 76.968153%  top5 = 3793/3925 = 96.636943%  [95% CI 75.62–78.26]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 12125077431717475273)
+  step 0/295: loss=0.705470
+  step 1/295: loss=0.841535
+  step 2/295: loss=0.751483
+  step 100/295: loss=0.879842
+  step 200/295: loss=0.821788
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 22/80: loss=0.762866 lr=0.000857
+  epoch 22: val_acc = 2873/3925 = 73.197452%  top5 = 3793/3925 = 96.636943%  [95% CI 71.79–74.56]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 11701233751072457692)
+  step 0/295: loss=0.836045
+  step 1/295: loss=0.684918
+  step 2/295: loss=0.702194
+  step 100/295: loss=0.798177
+  step 200/295: loss=0.943415
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 23/80: loss=0.754284 lr=0.000843
+  epoch 23: val_acc = 3019/3925 = 76.917197%  top5 = 3756/3925 = 95.694268%  [95% CI 75.57–78.21]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 3779003339004665053)
+  step 0/295: loss=0.864877
+  step 1/295: loss=0.721942
+  step 2/295: loss=0.795219
+  step 100/295: loss=0.745011
+  step 200/295: loss=0.815988
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 24/80: loss=0.739424 lr=0.000827
+  epoch 24: val_acc = 3166/3925 = 80.662420%  top5 = 3821/3925 = 97.350318%  [95% CI 79.40–81.87]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 7682864799110117284)
+  step 0/295: loss=0.640778
+  step 1/295: loss=0.727934
+  step 2/295: loss=0.713386
+  step 100/295: loss=0.707325
+  step 200/295: loss=0.771439
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 25/80: loss=0.713776 lr=0.000812
+  epoch 25: val_acc = 3175/3925 = 80.891720%  top5 = 3782/3925 = 96.356688%  [95% CI 79.63–82.09]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 17236423920428809654)
+  step 0/295: loss=0.670605
+  step 1/295: loss=0.655489
+  step 2/295: loss=0.702777
+  step 100/295: loss=0.609111
+  step 200/295: loss=0.844571
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 26/80: loss=0.707017 lr=0.000796
+  epoch 26: val_acc = 3292/3925 = 83.872611%  top5 = 3853/3925 = 98.165605%  [95% CI 82.69–84.99]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 17454694665879436464)
+  step 0/295: loss=0.718013
+  step 1/295: loss=0.650176
+  step 2/295: loss=0.637158
+  step 100/295: loss=0.632521
+  step 200/295: loss=0.717068
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 27/80: loss=0.695945 lr=0.000779
+  epoch 27: val_acc = 3036/3925 = 77.350318%  top5 = 3753/3925 = 95.617834%  [95% CI 76.01–78.63]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 2282764918224823463)
+  step 0/295: loss=0.607411
+  step 1/295: loss=0.675069
+  step 2/295: loss=0.781006
+  step 100/295: loss=0.660864
+  step 200/295: loss=0.793209
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 28/80: loss=0.672295 lr=0.000762
+  epoch 28: val_acc = 3282/3925 = 83.617834%  top5 = 3845/3925 = 97.961783%  [95% CI 82.43–84.74]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 18113942877597302087)
+  step 0/295: loss=0.589186
+  step 1/295: loss=0.603557
+  step 2/295: loss=0.641695
+  step 100/295: loss=0.636268
+  step 200/295: loss=0.606513
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 29/80: loss=0.673767 lr=0.000744
+  epoch 29: val_acc = 3110/3925 = 79.235669%  top5 = 3836/3925 = 97.732484%  [95% CI 77.94–80.48]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 8503697724381654749)
+  step 0/295: loss=0.661219
+  step 1/295: loss=0.683511
+  step 2/295: loss=0.744648
+  step 100/295: loss=0.659147
+  step 200/295: loss=0.572823
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 30/80: loss=0.658744 lr=0.000726
+  epoch 30: val_acc = 3162/3925 = 80.560510%  top5 = 3817/3925 = 97.248408%  [95% CI 79.29–81.77]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 9706996917733228689)
+  step 0/295: loss=0.674134
+  step 1/295: loss=0.697273
+  step 2/295: loss=0.656964
+  step 100/295: loss=0.724147
+  step 200/295: loss=0.709519
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 31/80: loss=0.636856 lr=0.000708
+  epoch 31: val_acc = 3230/3925 = 82.292994%  top5 = 3838/3925 = 97.783439%  [95% CI 81.07–83.46]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 2736060423912369695)
+  step 0/295: loss=0.629081
+  step 1/295: loss=0.676995
+  step 2/295: loss=0.684183
+  step 100/295: loss=0.587112
+  step 200/295: loss=0.549226
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 32/80: loss=0.624247 lr=0.000689
+  epoch 32: val_acc = 3282/3925 = 83.617834%  top5 = 3829/3925 = 97.554140%  [95% CI 82.43–84.74]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 17650711522349744770)
+  step 0/295: loss=0.602032
+  step 1/295: loss=0.666410
+  step 2/295: loss=0.577583
+  step 100/295: loss=0.594983
+  step 200/295: loss=0.688411
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 33/80: loss=0.610516 lr=0.000670
+  epoch 33: val_acc = 3213/3925 = 81.859873%  top5 = 3798/3925 = 96.764331%  [95% CI 80.62–83.03]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 18011954003673840392)
+  step 0/295: loss=0.541538
+  step 1/295: loss=0.647733
+  step 2/295: loss=0.533566
+  step 100/295: loss=0.555345
+  step 200/295: loss=0.602955
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 34/80: loss=0.605675 lr=0.000651
+  epoch 34: val_acc = 3232/3925 = 82.343949%  top5 = 3839/3925 = 97.808917%  [95% CI 81.12–83.51]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 11018339655733423093)
+  step 0/295: loss=0.600859
+  step 1/295: loss=0.564269
+  step 2/295: loss=0.533922
+  step 100/295: loss=0.596975
+  step 200/295: loss=0.533459
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 35/80: loss=0.607519 lr=0.000631
+  epoch 35: val_acc = 3355/3925 = 85.477707%  top5 = 3865/3925 = 98.471338%  [95% CI 84.34–86.55]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 9154409592313577080)
+  step 0/295: loss=0.553692
+  step 1/295: loss=0.572776
+  step 2/295: loss=0.585760
+  step 100/295: loss=0.558501
+  step 200/295: loss=0.601149
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 36/80: loss=0.596273 lr=0.000611
+  epoch 36: val_acc = 3371/3925 = 85.885350%  top5 = 3865/3925 = 98.471338%  [95% CI 84.76–86.94]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 2650322958493668614)
+  step 0/295: loss=0.541767
+  step 1/295: loss=0.610952
+  step 2/295: loss=0.599529
+  step 100/295: loss=0.565793
+  step 200/295: loss=0.542056
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 37/80: loss=0.589302 lr=0.000591
+  epoch 37: val_acc = 3386/3925 = 86.267516%  top5 = 3864/3925 = 98.445860%  [95% CI 85.16–87.31]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 3957800717275332195)
+  step 0/295: loss=0.553511
+  step 1/295: loss=0.526234
+  step 2/295: loss=0.527868
+  step 100/295: loss=0.547616
+  step 200/295: loss=0.532600
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 38/80: loss=0.573859 lr=0.000571
+  epoch 38: val_acc = 3351/3925 = 85.375796%  top5 = 3859/3925 = 98.318471%  [95% CI 84.24–86.45]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 5350279672324298292)
+  step 0/295: loss=0.557364
+  step 1/295: loss=0.613955
+  step 2/295: loss=0.530693
+  step 100/295: loss=0.538469
+  step 200/295: loss=0.537884
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 39/80: loss=0.567184 lr=0.000551
+  epoch 39: val_acc = 3373/3925 = 85.936306%  top5 = 3859/3925 = 98.318471%  [95% CI 84.81–86.99]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 1743665239119005524)
+  step 0/295: loss=0.536687
+  step 1/295: loss=0.578218
+  step 2/295: loss=0.569710
+  step 100/295: loss=0.522030
+  step 200/295: loss=0.527233
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 40/80: loss=0.559147 lr=0.000531
+  epoch 40: val_acc = 3426/3925 = 87.286624%  top5 = 3849/3925 = 98.063694%  [95% CI 86.21–88.29]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 14502465134476187092)
+  step 0/295: loss=0.548961
+  step 1/295: loss=0.544578
+  step 2/295: loss=0.520335
+  step 100/295: loss=0.534374
+  step 200/295: loss=0.528758
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 41/80: loss=0.554681 lr=0.000510
+  epoch 41: val_acc = 3382/3925 = 86.165605%  top5 = 3842/3925 = 97.885350%  [95% CI 85.05–87.21]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 8579852567784290419)
+  step 0/295: loss=0.554854
+  step 1/295: loss=0.531469
+  step 2/295: loss=0.524278
+  step 100/295: loss=0.515977
+  step 200/295: loss=0.529174
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 42/80: loss=0.548324 lr=0.000490
+  epoch 42: val_acc = 3335/3925 = 84.968153%  top5 = 3827/3925 = 97.503185%  [95% CI 83.82–86.05]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 3643318956048190477)
+  step 0/295: loss=0.545866
+  step 1/295: loss=0.530081
+  step 2/295: loss=0.527263
+  step 100/295: loss=0.529157
+  step 200/295: loss=0.518673
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 43/80: loss=0.545314 lr=0.000469
+  epoch 43: val_acc = 3410/3925 = 86.878981%  top5 = 3843/3925 = 97.910828%  [95% CI 85.79–87.90]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 5346000174233025578)
+  step 0/295: loss=0.543370
+  step 1/295: loss=0.553153
+  step 2/295: loss=0.562048
+  step 100/295: loss=0.568429
+  step 200/295: loss=0.517437
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 44/80: loss=0.540066 lr=0.000449
+  epoch 44: val_acc = 3380/3925 = 86.114650%  top5 = 3851/3925 = 98.114650%  [95% CI 85.00–87.16]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 13135855087255642543)
+  step 0/295: loss=0.511008
+  step 1/295: loss=0.553743
+  step 2/295: loss=0.524894
+  step 100/295: loss=0.523696
+  step 200/295: loss=0.538515
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 45/80: loss=0.535028 lr=0.000429
+  epoch 45: val_acc = 3396/3925 = 86.522293%  top5 = 3843/3925 = 97.910828%  [95% CI 85.42–87.55]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 8884818414547489885)
+  step 0/295: loss=0.544606
+  step 1/295: loss=0.519312
+  step 2/295: loss=0.516384
+  step 100/295: loss=0.529888
+  step 200/295: loss=0.537464
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 46/80: loss=0.535001 lr=0.000409
+  epoch 46: val_acc = 3393/3925 = 86.445860%  top5 = 3837/3925 = 97.757962%  [95% CI 85.34–87.48]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 15858991099495866037)
+  step 0/295: loss=0.515997
+  step 1/295: loss=0.528053
+  step 2/295: loss=0.536286
+  step 100/295: loss=0.509048
+  step 200/295: loss=0.533183
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 47/80: loss=0.530130 lr=0.000389
+  epoch 47: val_acc = 3370/3925 = 85.859873%  top5 = 3850/3925 = 98.089172%  [95% CI 84.73–86.91]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 15192110389670151080)
+  step 0/295: loss=0.590485
+  step 1/295: loss=0.513909
+  step 2/295: loss=0.513051
+  step 100/295: loss=0.513318
+  step 200/295: loss=0.580917
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 48/80: loss=0.526046 lr=0.000369
+  epoch 48: val_acc = 3442/3925 = 87.694268%  top5 = 3871/3925 = 98.624204%  [95% CI 86.63–88.69]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 14073305672990422169)
+  step 0/295: loss=0.515044
+  step 1/295: loss=0.508259
+  step 2/295: loss=0.508612
+  step 100/295: loss=0.546377
+  step 200/295: loss=0.519389
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 49/80: loss=0.525815 lr=0.000349
+  epoch 49: val_acc = 3443/3925 = 87.719745%  top5 = 3855/3925 = 98.216561%  [95% CI 86.66–88.71]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 11952976193037774429)
+  step 0/295: loss=0.514485
+  step 1/295: loss=0.510452
+  step 2/295: loss=0.584841
+  step 100/295: loss=0.517469
+  step 200/295: loss=0.513955
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 50/80: loss=0.525219 lr=0.000330
+  epoch 50: val_acc = 3426/3925 = 87.286624%  top5 = 3867/3925 = 98.522293%  [95% CI 86.21–88.29]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 9819700056043145879)
+  step 0/295: loss=0.559136
+  step 1/295: loss=0.508989
+  step 2/295: loss=0.511465
+  step 100/295: loss=0.513363
+  step 200/295: loss=0.566566
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 51/80: loss=0.519301 lr=0.000311
+  epoch 51: val_acc = 3444/3925 = 87.745223%  top5 = 3850/3925 = 98.089172%  [95% CI 86.68–88.73]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 8391715409000060084)
+  step 0/295: loss=0.512149
+  step 1/295: loss=0.525909
+  step 2/295: loss=0.512983
+  step 100/295: loss=0.530731
+  step 200/295: loss=0.511359
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 52/80: loss=0.517631 lr=0.000292
+  epoch 52: val_acc = 3468/3925 = 88.356688%  top5 = 3868/3925 = 98.547771%  [95% CI 87.32–89.32]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 14995088974119990985)
+  step 0/295: loss=0.508180
+  step 1/295: loss=0.519312
+  step 2/295: loss=0.506953
+  step 100/295: loss=0.540596
+  step 200/295: loss=0.512088
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 53/80: loss=0.518972 lr=0.000274
+  epoch 53: val_acc = 3459/3925 = 88.127389%  top5 = 3866/3925 = 98.496815%  [95% CI 87.08–89.10]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 9943955469101780546)
+  step 0/295: loss=0.509325
+  step 1/295: loss=0.515098
+  step 2/295: loss=0.509791
+  step 100/295: loss=0.507044
+  step 200/295: loss=0.512302
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 54/80: loss=0.512511 lr=0.000256
+  epoch 54: val_acc = 3446/3925 = 87.796178%  top5 = 3869/3925 = 98.573248%  [95% CI 86.74–88.78]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 3781343568075427169)
+  step 0/295: loss=0.572844
+  step 1/295: loss=0.509810
+  step 2/295: loss=0.507666
+  step 100/295: loss=0.510102
+  step 200/295: loss=0.509237
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 55/80: loss=0.514319 lr=0.000238
+  epoch 55: val_acc = 3488/3925 = 88.866242%  top5 = 3871/3925 = 98.624204%  [95% CI 87.84–89.81]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 9048152902888666097)
+  step 0/295: loss=0.510988
+  step 1/295: loss=0.511146
+  step 2/295: loss=0.505345
+  step 100/295: loss=0.506223
+  step 200/295: loss=0.509084
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 56/80: loss=0.509820 lr=0.000221
+  epoch 56: val_acc = 3475/3925 = 88.535032%  top5 = 3880/3925 = 98.853503%  [95% CI 87.50–89.49]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 3298382975185279541)
+  step 0/295: loss=0.503767
+  step 1/295: loss=0.505533
+  step 2/295: loss=0.505779
+  step 100/295: loss=0.510962
+  step 200/295: loss=0.510757
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 57/80: loss=0.507627 lr=0.000205
+  epoch 57: val_acc = 3484/3925 = 88.764331%  top5 = 3865/3925 = 98.471338%  [95% CI 87.74–89.71]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 6303705112189837598)
+  step 0/295: loss=0.509459
+  step 1/295: loss=0.517821
+  step 2/295: loss=0.504958
+  step 100/295: loss=0.503684
+  step 200/295: loss=0.504750
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 58/80: loss=0.507776 lr=0.000188
+  epoch 58: val_acc = 3460/3925 = 88.152866%  top5 = 3868/3925 = 98.547771%  [95% CI 87.10–89.13]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 16871280504239800254)
+  step 0/295: loss=0.505052
+  step 1/295: loss=0.505014
+  step 2/295: loss=0.516589
+  step 100/295: loss=0.504825
+  step 200/295: loss=0.509909
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 59/80: loss=0.508001 lr=0.000173
+  epoch 59: val_acc = 3463/3925 = 88.229299%  top5 = 3861/3925 = 98.369427%  [95% CI 87.18–89.20]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 10506107166226434995)
+  step 0/295: loss=0.504063
+  step 1/295: loss=0.508311
+  step 2/295: loss=0.508562
+  step 100/295: loss=0.506572
+  step 200/295: loss=0.505899
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 60/80: loss=0.507348 lr=0.000157
+  epoch 60: val_acc = 3493/3925 = 88.993631%  top5 = 3866/3925 = 98.496815%  [95% CI 87.98–89.93]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 17989431973917606611)
+  step 0/295: loss=0.506067
+  step 1/295: loss=0.504331
+  step 2/295: loss=0.504606
+  step 100/295: loss=0.504150
+  step 200/295: loss=0.511748
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 61/80: loss=0.507182 lr=0.000143
+  epoch 61: val_acc = 3489/3925 = 88.891720%  top5 = 3865/3925 = 98.471338%  [95% CI 87.87–89.84]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 3032578346434391454)
+  step 0/295: loss=0.503768
+  step 1/295: loss=0.504844
+  step 2/295: loss=0.512261
+  step 100/295: loss=0.503259
+  step 200/295: loss=0.512021
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 62/80: loss=0.505995 lr=0.000129
+  epoch 62: val_acc = 3459/3925 = 88.127389%  top5 = 3866/3925 = 98.496815%  [95% CI 87.08–89.10]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 16231241713250125554)
+  step 0/295: loss=0.503708
+  step 1/295: loss=0.502837
+  step 2/295: loss=0.504198
+  step 100/295: loss=0.508108
+  step 200/295: loss=0.505286
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 63/80: loss=0.506342 lr=0.000116
+  epoch 63: val_acc = 3488/3925 = 88.866242%  top5 = 3867/3925 = 98.522293%  [95% CI 87.84–89.81]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 10426263208858356880)
+  step 0/295: loss=0.503097
+  step 1/295: loss=0.509021
+  step 2/295: loss=0.503355
+  step 100/295: loss=0.509899
+  step 200/295: loss=0.503205
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 64/80: loss=0.504551 lr=0.000103
+  epoch 64: val_acc = 3494/3925 = 89.019108%  top5 = 3857/3925 = 98.267516%  [95% CI 88.00–89.96]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 17436303248735994868)
+  step 0/295: loss=0.502946
+  step 1/295: loss=0.513357
+  step 2/295: loss=0.502474
+  step 100/295: loss=0.503734
+  step 200/295: loss=0.504374
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 65/80: loss=0.504360 lr=0.000091
+  epoch 65: val_acc = 3500/3925 = 89.171975%  top5 = 3863/3925 = 98.420382%  [95% CI 88.16–90.11]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 1528828193100396787)
+  step 0/295: loss=0.502794
+  step 1/295: loss=0.502754
+  step 2/295: loss=0.501939
+  step 100/295: loss=0.503406
+  step 200/295: loss=0.507518
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 66/80: loss=0.503964 lr=0.000079
+  epoch 66: val_acc = 3503/3925 = 89.248408%  top5 = 3873/3925 = 98.675159%  [95% CI 88.24–90.18]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 13261699103667181931)
+  step 0/295: loss=0.502266
+  step 1/295: loss=0.502963
+  step 2/295: loss=0.505564
+  step 100/295: loss=0.503569
+  step 200/295: loss=0.503171
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 67/80: loss=0.503824 lr=0.000069
+  epoch 67: val_acc = 3502/3925 = 89.222930%  top5 = 3856/3925 = 98.242038%  [95% CI 88.21–90.15]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 5150808280394587668)
+  step 0/295: loss=0.503821
+  step 1/295: loss=0.519187
+  step 2/295: loss=0.502639
+  step 100/295: loss=0.505261
+  step 200/295: loss=0.505055
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 68/80: loss=0.503920 lr=0.000059
+  epoch 68: val_acc = 3510/3925 = 89.426752%  top5 = 3865/3925 = 98.471338%  [95% CI 88.43–90.35]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 18012601234732021588)
+  step 0/295: loss=0.503980
+  step 1/295: loss=0.506189
+  step 2/295: loss=0.501969
+  step 100/295: loss=0.501818
+  step 200/295: loss=0.502329
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 69/80: loss=0.503351 lr=0.000050
+  epoch 69: val_acc = 3515/3925 = 89.554140%  top5 = 3875/3925 = 98.726115%  [95% CI 88.56–90.47]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 11075725199733778649)
+  step 0/295: loss=0.506510
+  step 1/295: loss=0.501716
+  step 2/295: loss=0.501837
+  step 100/295: loss=0.509365
+  step 200/295: loss=0.502405
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 70/80: loss=0.502917 lr=0.000041
+  epoch 70: val_acc = 3515/3925 = 89.554140%  top5 = 3869/3925 = 98.573248%  [95% CI 88.56–90.47]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 9865156820642350922)
+  step 0/295: loss=0.501769
+  step 1/295: loss=0.501532
+  step 2/295: loss=0.503415
+  step 100/295: loss=0.505594
+  step 200/295: loss=0.502047
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 71/80: loss=0.502810 lr=0.000033
+  epoch 71: val_acc = 3512/3925 = 89.477707%  top5 = 3871/3925 = 98.624204%  [95% CI 88.48–90.40]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 5767950492963721301)
+  step 0/295: loss=0.502130
+  step 1/295: loss=0.505438
+  step 2/295: loss=0.502891
+  step 100/295: loss=0.503174
+  step 200/295: loss=0.503862
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 72/80: loss=0.502886 lr=0.000026
+  epoch 72: val_acc = 3512/3925 = 89.477707%  top5 = 3864/3925 = 98.445860%  [95% CI 88.48–90.40]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 15296229027381211748)
+  step 0/295: loss=0.502417
+  step 1/295: loss=0.501655
+  step 2/295: loss=0.502011
+  step 100/295: loss=0.502321
+  step 200/295: loss=0.502086
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 73/80: loss=0.502601 lr=0.000020
+  epoch 73: val_acc = 3511/3925 = 89.452229%  top5 = 3869/3925 = 98.573248%  [95% CI 88.45–90.37]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 18394580519900533884)
+  step 0/295: loss=0.502465
+  step 1/295: loss=0.501681
+  step 2/295: loss=0.501550
+  step 100/295: loss=0.502072
+  step 200/295: loss=0.502101
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 74/80: loss=0.503023 lr=0.000015
+  epoch 74: val_acc = 3525/3925 = 89.808917%  top5 = 3872/3925 = 98.649682%  [95% CI 88.82–90.72]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 15453810681343056661)
+  step 0/295: loss=0.501793
+  step 1/295: loss=0.501852
+  step 2/295: loss=0.501766
+  step 100/295: loss=0.502417
+  step 200/295: loss=0.502173
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 75/80: loss=0.502538 lr=0.000010
+  epoch 75: val_acc = 3519/3925 = 89.656051%  top5 = 3872/3925 = 98.649682%  [95% CI 88.66–90.57]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 1312202806822880528)
+  step 0/295: loss=0.501433
+  step 1/295: loss=0.502504
+  step 2/295: loss=0.501855
+  step 100/295: loss=0.521209
+  step 200/295: loss=0.502310
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 76/80: loss=0.502456 lr=0.000007
+  epoch 76: val_acc = 3522/3925 = 89.732484%  top5 = 3871/3925 = 98.624204%  [95% CI 88.74–90.64]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 13632189904217237983)
+  step 0/295: loss=0.501499
+  step 1/295: loss=0.501466
+  step 2/295: loss=0.501778
+  step 100/295: loss=0.502619
+  step 200/295: loss=0.503156
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 77/80: loss=0.502374 lr=0.000004
+  epoch 77: val_acc = 3520/3925 = 89.681529%  top5 = 3872/3925 = 98.649682%  [95% CI 88.69–90.59]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 13584185551288208259)
+  step 0/295: loss=0.502256
+  step 1/295: loss=0.502635
+  step 2/295: loss=0.502021
+  step 100/295: loss=0.501582
+  step 200/295: loss=0.502427
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 78/80: loss=0.502370 lr=0.000002
+  epoch 78: val_acc = 3516/3925 = 89.579618%  top5 = 3872/3925 = 98.649682%  [95% CI 88.58–90.50]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 9919189168691196027)
+  step 0/295: loss=0.501629
+  step 1/295: loss=0.504159
+  step 2/295: loss=0.501861
+  step 100/295: loss=0.501231
+  step 200/295: loss=0.501767
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 79/80: loss=0.502345 lr=0.000000
+  epoch 79: val_acc = 3522/3925 = 89.732484%  top5 = 3873/3925 = 98.675159%  [95% CI 88.74–90.64]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 14732189253863737906)
+  step 0/295: loss=0.501340
+  step 1/295: loss=0.501985
+  step 2/295: loss=0.503221
+  step 100/295: loss=0.501952
+  step 200/295: loss=0.501865
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 80/80: loss=0.502362 lr=0.000000
+  epoch 80: val_acc = 3520/3925 = 89.681529%  top5 = 3871/3925 = 98.624204%  [95% CI 88.69–90.59]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_gen3.bin.bn (17024 floats x 2, hash 18319989078279673321)
+done (trained ResNet-34 adam + cosine/warmup via packed threading).

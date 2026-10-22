@@ -1,0 +1,92 @@
+I1022 22:02:27.786688   76572 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1022 22:02:27.802626   76572 service.cc:154] XLA service 0x797a164905b0 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1022 22:02:27.802637   76572 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1022 22:02:27.802645   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.802871   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.802899   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.802925   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.802952   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.802978   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803004   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803031   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803057   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803084   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803119   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803145   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803171   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803209   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803400   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803427   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803453   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.803479   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:27.805166   76572 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1022 22:02:27.805181   76572 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1022 22:02:27.862393   76572 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/resnet34_adam_train_step.mlir (@resnet34_adam_train_step, 405 outputs, 1 replica) in 1941 ms
+[pjrt_ffi] compiled verified_mlir/resnet34_fwd.mlir (@resnet34_fwd, 1 outputs, 1 replica) in 295 ms
+[pjrt_ffi] compiled verified_mlir/resnet34_fwd_eval.mlir (@resnet34_fwd_eval, 1 outputs, 1 replica) in 191 ms
+Real ResNet-34 on Imagenette 224² (7×7-s2 stem→3×3-s2 overlapping max pool→[3,4,6,3] blocks w/ batch-norm, He et al. option-B 1×1 projection shortcuts, no conv biases; 56→28→14→7→GAP→dense) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/resnet34_adam_train_step.mlir
+  xla/pjrt verified_mlir/resnet34_fwd.mlir
+  xla/pjrt verified_mlir/resnet34_fwd_eval.mlir
+  train 9469, val 3925; bs 32, ResNet-34 adam (cosine+warmup 3ep, baseLR 0.001000), He init
+  running-stats BN: 36 layers, 17024 stat floats → eval via @resnet34_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1022 22:02:34.970666   76712 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:34.970903   76712 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @resnet34_adam_train_step holds 330 parameter tensors (243.6 MB) on 1 device; they stop crossing PCIe from here
+I1022 22:02:35.163855   76572 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:38.401924   76780 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:38.402569   76779 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:38.404750   76894 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:02:38.404944   76896 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/295: loss=3.614365
+  step 1/295: loss=3.722508
+  step 2/295: loss=3.375148
+  step 100/295: loss=2.037772
+  step 200/295: loss=1.668941
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/80: loss=2.049630 lr=0.000333
+  epoch 1: val_acc = 1002/3925 = 25.528662%  top5 = 2790/3925 = 71.082803%  [95% CI 24.19–26.92]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_e5.bin.bn (17024 floats x 2, hash 2740076954178393021)
+  step 0/295: loss=1.808199
+  step 1/295: loss=1.657238
+  step 2/295: loss=1.350569
+  step 100/295: loss=1.477966
+  step 200/295: loss=1.318574
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/80: loss=1.523828 lr=0.000667
+  epoch 2: val_acc = 1345/3925 = 34.267516%  top5 = 2817/3925 = 71.770701%  [95% CI 32.80–35.77]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_e5.bin.bn (17024 floats x 2, hash 10083679865261898942)
+  step 0/295: loss=1.472434
+  step 1/295: loss=1.770184
+  step 2/295: loss=1.435421
+  step 100/295: loss=1.329257
+  step 200/295: loss=1.163872
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/80: loss=1.380537 lr=0.001000
+  epoch 3: val_acc = 1935/3925 = 49.299363%  top5 = 3278/3925 = 83.515924%  [95% CI 47.74–50.86]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_e5.bin.bn (17024 floats x 2, hash 6942014152734588318)
+  step 0/295: loss=1.306031
+  step 1/295: loss=0.984554
+  step 2/295: loss=1.326918
+  step 100/295: loss=1.174826
+  step 200/295: loss=1.254183
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/80: loss=1.286987 lr=0.001000
+  epoch 4: val_acc = 2193/3925 = 55.872611%  top5 = 3675/3925 = 93.630573%  [95% CI 54.31–57.42]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_e5.bin.bn (17024 floats x 2, hash 13581261743826752145)
+  step 0/295: loss=1.133047
+  step 1/295: loss=1.379724
+  step 2/295: loss=1.143144
+  step 100/295: loss=1.359666
+  step 200/295: loss=1.116392
+[pjrt_ffi] RESIDENT: @resnet34_fwd_eval holds 182 parameter tensors (81.3 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/80: loss=1.182630 lr=0.000998
+  epoch 5: val_acc = 2381/3925 = 60.662420%  top5 = 3553/3925 = 90.522293%  [95% CI 59.12–62.18]
+    BN companion -> .lake/build/resnet34_adam_ckpt_xla_e5.bin.bn (17024 floats x 2, hash 1353815965619615162)
+done (trained ResNet-34 adam + cosine/warmup via packed threading).

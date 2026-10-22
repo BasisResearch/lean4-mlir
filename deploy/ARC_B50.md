@@ -1,10 +1,12 @@
-# Intel Arc Pro B50 — the verified MNIST and CIFAR tiers on oneAPI
+# Intel Arc Pro B50 — the verified MNIST, CIFAR and Imagenette tiers on oneAPI
 
-**Status: works — every rung green on minerva's Arc Pro B50 (2026-10-12/13). TODO: full
-Imagenette runs.** MNIST and CIFAR-10 train end to end on the GPU and match CUDA; all seven
-Imagenette nets train, but only 60-step probes have been done, because on minerva the card falls
-off the PCIe bus under load — two minutes into sustained 70 W, and once (10-18) three minutes into
-the suite (§4).
+**Status: works — every `arc_setup.sh` rung green on minerva's Arc Pro B50 at Gen3 (2026-10-22),
+ResNet-34's full Imagenette run done, and all seven Imagenette nets tracking CUDA over their
+first five epochs. TODO: full runs of the other six.** MNIST and CIFAR-10 train end to end on the
+GPU and match CUDA; ResNet-34 ran its 80 Imagenette epochs to 89.68 % in 86 min; ConvNeXt-T and
+ViT-Tiny reproduce CUDA's training loss to 4–5 decimals. That took **the slot at PCIe Gen3**: at
+Gen4 the card fell off the bus under load every time — two minutes into sustained 70 W, and once
+three minutes into the suite (§4).
 
 The trainers reach a GPU through a PJRT plugin that the shim (`ffi/pjrt_ffi.c`) `dlopen`s, so an
 Intel card needs Intel's plugin and nothing else from this repo's side. The plugin is
@@ -22,7 +24,7 @@ connector), behind its own internal PCIe switch, on x8 Gen4.
 |---|---|
 | box | Linux x86_64. minerva: ASUS Pro WS X570-ACE, Ubuntu 24.04 |
 | kernel | **7.0** (Ubuntu 24.04: `linux-generic-hwe-24.04`). 6.8's `xe` has no B50 ID |
-| BIOS | **Resizable BAR on, BAR at full VRAM (16 GB).** At 256 MB Intel's runtime sees no device at all (§1) |
+| BIOS | **Resizable BAR on, BAR at full VRAM (16 GB).** At 256 MB Intel's runtime sees no device at all (§1). On minerva also **the slot forced to Gen3**: at Gen4 the card drops off the bus under load (§4) |
 | runtime | Intel's Level Zero GPU runtime from `ppa:kobuk-team/intel-graphics`: `libze1`, `libze-intel-gpu1`, `intel-opencl-icd`, `xpu-smi` |
 | tools | gcc, Python 3.12+, elan |
 | disk | ~20 GB: the oneAPI wheels (~3 GB), Mathlib's prebuilt cache, the build |
@@ -71,28 +73,46 @@ runtime and package versions in `manifest.txt` beside it. Each trainer's own log
 Arc Pro B50 16 GB in minerva (Ryzen, X570, x8 Gen4 through a riser), kernel 7.0.0-38,
 `jax_oneapi_pjrt` 0.11.2 (`intel-sycl-rt` 2025.1.1), the shim's serial uploads on.
 
+The rungs below are the 2026-10-22 `arc_setup.sh suite` run at Gen3
+([`runs/2026-10-22-arc-setup/`](../runs/2026-10-22-arc-setup/), its 1 Hz sensor logs beside it;
+link at 8 GT/s throughout), with CIFAR retrained from scratch under a fresh checkpoint tag.
+
 | | per epoch | result | CUDA (README) |
 |---|---|---|---|
-| suite, tiers 0–2 | — | 21 pass, 0 fail, 3 skips (two-device tests, one card) | — |
+| suite, tiers 0–2 | — | 21 pass, 0 fail, 3 skips (two-device tests, one card; same 24 tests as 10-11) — [`runs/platform/2026-10-22-minerva-xpu/`](../runs/platform/2026-10-22-minerva-xpu/) | — |
 | `smoke`: `linear_fwd` vs the host | — | max error 1.7e-06; all six MNIST renders compile | — |
 | MNIST linear, 12 ep | ~0.25 s | **92.10 %** | 92.10 % |
-| MNIST MLP, 12 ep | ~0.45 s | **97.83 %** | 97.78 % (median of 30) |
-| MNIST CNN, 12 ep | ~1.5 s | **98.74 %** | 98.78 % (median of 30) |
-| CIFAR-10 `lake run cifar`, 6 × 40 ep | ~2–3 s | **76.77 %** best arm (BN, Nesterov); 10½ min for all six | 76.3 % |
-| ResNet-34, Imagenette 224² | ~1 min (187 ms/step) | 60-step probe only; ~1.4 h for 80 ep. TODO: full run (§4) | 89.99 % |
+| MNIST MLP, 12 ep | ~0.55 s | **97.83 %** | 97.77 % (median of 30; 97.49–97.93) |
+| MNIST CNN, 12 ep | ~1.5 s | **98.66 %** (98.74 % on 10-12) | 98.78 % (median of 30; 97.39–98.94) |
+| CIFAR-10 `lake run cifar`, 6 × 40 ep | ~2–3 s | **76.24 %** best arm (BN, Nesterov); 11 min for all six | 76.3 % |
+| ResNet-34, Imagenette 224², 80 ep (Gen3) | ~64 s (218 ms/step with eval) | **89.68 %** (top-5 98.62 %, CI 88.69–90.59); 85.8 min | 89.99 % |
 
-CIFAR's six arms, 40 epochs each (2026-10-12; [`runs/2026-10-12-cifar8w-ablation/`](../runs/2026-10-12-cifar8w-ablation/),
-[`…-bn-ablation/`](../runs/2026-10-12-cifar8w-bn-ablation/)). Times run from client start, so
-they include compiling and evaluation.
+CIFAR's six arms, 40 epochs each, against CUDA's five seeds per arm
+([`runs/2026-09-01-cifar8w-6arm-constlr/`](../runs/2026-09-01-cifar8w-6arm-constlr/), a 4060 Ti).
+Seed 1 is `lake run cifar` ([`runs/2026-10-22-cifar8w-ablation/`](../runs/2026-10-22-cifar8w-ablation/),
+[`…-bn-ablation/`](../runs/2026-10-22-cifar8w-bn-ablation/)); seeds 2 and 3 of the no-BN net are
+[`runs/2026-10-22-cifar8w-seeds-gen3/`](../runs/2026-10-22-cifar8w-seeds-gen3/)
+(`LEAN_MLIR_SEED=<s> LEAN_MLIR_CKPT_TAG=gen3s<s>`).
 
-| net | optimizer | time | test accuracy |
-|---|---|---|---|
-| no BN | SGD | 74 s | 69.69% |
-| no BN | Nesterov | 100 s | 74.65% |
-| no BN | AdamW | 103 s | 75.09% |
-| BN | SGD | 107 s | 74.97% |
-| BN | Nesterov | 119 s | 76.77% |
-| BN | AdamW | ~120 s | 75.48% |
+| net | optimizer | B50, seed 1 | B50, seeds 2 / 3 | CUDA, 5 seeds |
+|---|---|---|---|---|
+| no BN | SGD | 73.37 % | 72.36 / 67.34 % | 68.03–70.73 % |
+| no BN | Nesterov | 73.52 % | 74.17 / 72.73 % | 71.05–74.36 % |
+| no BN | AdamW | 73.50 % | 73.32 / 72.62 % | 71.04–73.82 % |
+| BN | SGD | 74.87 % | — | 74.14–75.21 % |
+| BN | Nesterov | 76.24 % | — | 75.75–76.73 % |
+| BN | AdamW | 74.33 % | — | 74.24–74.46 % |
+
+Five of six arms land inside CUDA's range. The sixth, no-BN SGD (lr 0.1, no normalization), is the
+least stable arm in the set — the no-BN net is the one whose momentum arm diverged to 10.00 % in
+3 of 5 CUDA seeds under the old cosine schedule
+([`runs/2026-08-12-cifar8w-6arm-xla-cuda/`](../runs/2026-08-12-cifar8w-6arm-xla-cuda/)) — and
+the B50's three seeds straddle CUDA's range (67.34–73.37 %) rather than sitting off one side of
+it. Epoch-1 loss says the same: within 0.015 of CUDA's seed 1 on the four stable arms, apart only
+on the two no-BN arms with a large step. The 2026-10-12 record
+([`runs/2026-10-12-cifar8w-ablation/`](../runs/2026-10-12-cifar8w-ablation/), 69.69 % on this
+arm) is not a clean baseline: both SGD arms resumed from checkpoints an earlier crashed attempt
+left behind (epoch 10 without BN, epoch 4 with), so 10-22 is the first clean set.
 
 The seven Imagenette nets (2026-10-13), each 60 steps at batch 32 in probe mode
 (`LEAN_MLIR_MAX_STEPS=60 LEAN_MLIR_PROBE_WARM=20 LEAN_MLIR_SKIP_EVAL=1`), the step time the
@@ -111,8 +131,52 @@ with eval off).
 | ResNet-50 | 287 | 113 min | ~2.1 h |
 | **`lake run imagenette`** | | **~7.6 h** | **~8½–9 h** |
 
-**TODO: full runs.** An 80-epoch ResNet-34 to completion once §4 is fixed, then the other six
-Imagenette nets; a second card for the suite's two-device tests and the DP path.
+The ResNet-34 run (2026-10-22, [`runs/2026-10-22-resnet34-verified-adam/`](../runs/2026-10-22-resnet34-verified-adam/),
+the card's 1 Hz sensors beside the log) is the first full Imagenette run on the card: Gen3, 68.6 W
+mean over 85.8 min, GPU at most 69 °C, no kernel errors. Its full-run time is the probe's 187
+ms/step plus about 17 % for the per-epoch eval and compiles, so the column above, at +14 %, is about right;
+Gen3 itself cost nothing measurable, since the weights stay on the card and only the batch
+crosses PCIe.
+
+All seven nets then ran the first five epochs of their real 80-epoch schedule
+(2026-10-22, Gen3, [`runs/2026-10-22-imagenette-e5-gen3/`](../runs/2026-10-22-imagenette-e5-gen3/)
+with its sensor log; `LEAN_MLIR_MAX_EPOCHS=5 LEAN_MLIR_CKPT_TAG=e5`, which caps the epochs without
+changing the schedule, so epoch 5 here is epoch 5 of a full run). The reference is CUDA's five
+seeds per net on a 4060 Ti ([`runs/2026-08-31-imagenette-n3/`](../runs/2026-08-31-imagenette-n3/)),
+same seed 1 as the B50. 35 min for all seven, 64 W mean, GPU at most 69 °C, no kernel errors.
+
+| net | 5 ep wall | probe + eval predicts | epoch-5 val | training loss vs CUDA |
+|---|---|---|---|---|
+| ResNet-34 | 329 s | ~335 s | 60.66 % (CUDA 48.5–68.3) | at or just under the seeds' low edge (≤ 0.015) |
+| ResNet-50 | 499 s | ~513 s | 60.61 % (55.4–64.3) | inside, or ≤ 0.02 under the low edge |
+| MobileNetV2 | 203 s | ~196 s | 59.90 % (51.3–62.2) | inside; seed 1 to ±0.01 |
+| MobileNetV4-Conv-M | 231 s | ~223 s | 25.55 % — a one-epoch dip, see below | below all five seeds (the net changed since; see below) |
+| EfficientNet-B0 | 238 s | ~229 s | 58.06 % (58.7–67.7) | inside; seed 1 to ±0.01 |
+| ConvNeXt-T | 436 s | ~431 s | 62.68 % (63.2–65.7, older recipe) | **= the 09-13 CUDA run to 5 decimals** |
+| ViT-Tiny | 173 s | ~143 s | 50.75 % (50.4–51.2) | **= CUDA seed 1 to 4 decimals** |
+
+Wall-clock includes startup and the per-epoch eval; every net lands within a few percent of the
+13th's probe plus eval (ViT's extra half-minute is startup, a large share of so short a run), so
+no net is running a slow schedule here. ConvNeXt-T and ViT-Tiny are the strongest evidence that
+the card computes what CUDA computes: epoch-1 loss 2.321477 against 2.321471
+([`runs/2026-09-13-convnext-imagenette-ls1e-6-resident/`](../runs/2026-09-13-convnext-imagenette-ls1e-6-resident/),
+the LayerScale-1e-6 recipe — the five n3 seeds predate it) and 2.127477 against 2.127563. The BN
+nets wander more between backends and can only be held to the seed spread; the ResNets sit at its
+low edge (lower loss, by at most 0.02), which is the direction CUDA's TF32 convolutions would push
+a reference if the card runs full fp32 — not checked; `NVIDIA_TF32_OVERRIDE=0` on the reference
+box would say.
+
+Two rows need a sentence. **MobileNetV4**'s reference seeds predate 90e4af7e (2026-09-25, the net
+rebuilt to match timm's `mobilenetv4_conv_medium`), and no CUDA run of the current net on
+Imagenette is on record — its lower loss (1.575 against 1.70–1.72 at epoch 3) is the newer net,
+not the card. Its epoch-5 validation fell from 52.97 % to 25.55 % while training loss kept falling;
+resuming a copy of the checkpoint for two more epochs gave 49.48 % and then 65.68 %
+([`mnv4-resume/`](../runs/2026-10-22-imagenette-e5-gen3/mnv4-resume/)), so it was a warm-up wobble
+in the eval, not a fault (CUDA's seeds wobble too, by up to 16 points). **EfficientNet-B0**'s 58.06 %
+is just under its seeds' 58.68 % floor at an epoch where they span nine points; its loss is inside.
+
+**TODO: full runs** of the other six Imagenette nets (~7½ h at the table's rates); a second card
+for the suite's two-device tests and the DP path.
 
 ## What to expect
 
@@ -122,7 +186,16 @@ Imagenette nets; a second card for the suite's two-device tests and the DP path.
 - **The BAR is the whole bring-up.** If `clinfo` shows no platform or `zeInit` fails, look at
   the BAR size before anything else (§1).
 - **A card that drops off the bus stays off it.** `CT write: non-zero status: 4294967295` in
-  dmesg, then every read returns `0xFFFFFFFF`: only a power cycle at the wall brings it back (§4).
+  dmesg, then every read returns `0xFFFFFFFF`: only a power cycle at the wall brings it back. On
+  minerva the cure was the slot at Gen3 (§4); try that first on a box that shows it.
+- **A second `arc_setup.sh` on the same box does not retrain CIFAR.** `lake run cifar` scores
+  each arm's finished checkpoint in `.lake/build/` instead of training it again (the 10-22 suite
+  pass printed six `checkpoint:` lines and no epochs). To retest training — after a hardware
+  change, say — give it a fresh tag: `LEAN_MLIR_CKPT_TAG=<name> bash deploy/arc_setup.sh cifar`.
+  MNIST keeps no checkpoint and always trains.
+- **`run.sh` logs to `runs/<date>-<trainer>/`, so a second run of a trainer on the same day
+  overwrites the first one's log.** Set `RUN_LOG_DIR` for a short or side run; the 10-22 five-epoch
+  ResNet-34 replaced the full run's log until it was restored.
 
 ## After it runs
 
@@ -202,9 +275,16 @@ The repro and the upstream report are in
 plugin with a fixed runtime and the repro runs clean.
 
 
-## §4 The open fault: the card leaves the bus under sustained load
+## §4 The bus drop at Gen4, and Gen3 as the fix
 
-ResNet-34 Imagenette has died three times, every time about 2:00–2:20 into full 70 W load:
+**2026-10-22: with the slot forced to Gen3 in the BIOS (8 GT/s x8 at the root port and the card's
+upstream switch, from 16 GT/s), ResNet-34 ran all 80 epochs** — 85.8 min at 68.6 W mean, past
+every earlier failure point by 40×, no kernel errors. Nothing else changed: same riser, same 70 W
+cap, runtime PM back at `auto`. So the drop was the Gen4 link, signal integrity through the riser
+or the card's own switch, not the slot's power. One run is one run; the record below is kept for
+whoever sees it next. The host's own unexplained reset (10-14) is a separate question.
+
+The record at Gen4. ResNet-34 Imagenette has died three times, every time about 2:00–2:20 into full 70 W load:
 the 2026-10-11 stress loop, 2026-10-12 (~2 min), and 2026-10-13 (2:18, then 2:02 under the
 sensor log). The sequence in dmesg is always:
 
@@ -258,7 +338,7 @@ second:
 - `temp3`: VRAM.
 - `fan1_input`.
 
-### Next steps, cheapest first
+### What was next, had Gen3 not fixed it
 
 1. **Card directly in a motherboard slot, no riser** — and, given the host resets, a look at the
    PSU (its age and rating, and whether the resets stop with the B50 out). If it passes, the riser is the cause.
@@ -270,8 +350,5 @@ second:
    echo 45000000 | sudo tee /sys/bus/pci/devices/0000:0d:00.0/hwmon/hwmon*/power1_cap
    ```
    If it survives at 45 W, the 70 W slot draw is implicated.
-3. **Force Gen3 in the BIOS.** If that fixes it, the cause is signal integrity, not power.
-
-When a full ResNet-34 run completes, fill in the `imagenette` cell in
-[`scripts/platform/support.tsv`](../scripts/platform/support.tsv) and replace this section with
-the cause.
+3. **Force Gen3 in the BIOS.** If that fixes it, the cause is signal integrity, not power. —
+   It did (2026-10-22, above). Back at Gen4, a better riser (or none) is what to test.

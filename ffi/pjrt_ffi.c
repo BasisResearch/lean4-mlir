@@ -80,6 +80,8 @@ static PJRT_Device* g_devices[8];
 static int g_platform_rocm = 0;
 // 1 when it reports Metal ("mtl"): Apple Silicon's unified memory, so no PCIe to speak of.
 static int g_platform_unified = 0;
+// 1 when it reports Intel's oneAPI/SYCL platform (jax_oneapi_pjrt). Same source as both above.
+static int g_platform_xpu = 0;
 
 // ⚠⚠ **XLA's ROCm command buffers CORRUPT MEMORY on gfx1100 for some graph
 // shapes**, so this defaults ON for ROCm and OFF for CUDA.
@@ -512,6 +514,34 @@ static int await_event(PJRT_Event* ev, const char* what) {
   return rc;
 }
 
+// ⚠ **jax_oneapi_pjrt 0.11.2 crashes in libsycl when uploads overlap**
+// (runs/2026-10-11-xpu-sycl-race/). Each BufferFromHostBuffer ends on one of XLA's
+// async-work threads, which submits a host callback to the SYCL queue; with several
+// in flight, SYCL 2025.1.1's scheduler frees an event another host task still waits
+// on (`cleanupDependencyEvents` GPF, or `urEventWait must not be called for an
+// internal event`). Awaiting only the batch's events before Execute is not enough —
+// the crash was caught with Execute not yet called. So on the Intel plugin each
+// upload is awaited, done-with-host AND ready, before the next is issued.
+// `$PJRT_FFI_H2D_SERIAL` = 1 / 0 forces it either way.
+static int h2d_serial(void) {
+  const char* e = getenv("PJRT_FFI_H2D_SERIAL");
+  if (e && *e) return atoi(e) != 0;
+  return g_platform_xpu;
+}
+
+// h2d_serial()'s per-upload wait: consumes *ev (NULLed, so the batch await skips
+// it), then awaits the buffer's ready event.
+static int h2d_settle(PJRT_Event** ev, PJRT_Buffer* buf, const char* what) {
+  int rc = 0;
+  if (*ev) { rc = await_event(*ev, what); *ev = NULL; }
+  PJRT_Buffer_ReadyEvent_Args a = {0};
+  a.struct_size = PJRT_Buffer_ReadyEvent_Args_STRUCT_SIZE;
+  a.buffer = buf;
+  if (check(g_api->PJRT_Buffer_ReadyEvent(&a), what)) return 1;
+  if (a.event && await_event(a.event, what)) rc = 1;
+  return rc;
+}
+
 static int ensure_client(void) {
   if (g_client) { g_client_refs++; return 0; }
 
@@ -716,6 +746,9 @@ static int ensure_client(void) {
       g_platform_rocm = (strstr(pn.platform_name, "rocm") != NULL);
       g_platform_unified = (strstr(pn.platform_name, "mtl") != NULL ||
                             strstr(pn.platform_name, "metal") != NULL);
+      g_platform_xpu = (strstr(pn.platform_name, "oneapi") != NULL ||
+                        strstr(pn.platform_name, "sycl") != NULL ||
+                        strstr(pn.platform_name, "xpu") != NULL);
       if (trace_enabled())
         fprintf(stderr, "[pjrt_ffi] platform: %.*s\n",
                 (int)pn.platform_name_size, pn.platform_name);
@@ -734,7 +767,12 @@ static int ensure_client(void) {
           getenv("PJRT_COMMAND_BUFFERS") && *getenv("PJRT_COMMAND_BUFFERS")
             ? " ($PJRT_COMMAND_BUFFERS)"
             : (g_platform_rocm ? " (ROCm default — see command_buffers_disabled())"
-                               : " (CUDA default)"));
+                               : " (default)"));
+  fprintf(stderr, "[pjrt_ffi] h2d: %s%s\n",
+          h2d_serial() ? "SERIAL — one upload in flight" : "batched",
+          getenv("PJRT_FFI_H2D_SERIAL") && *getenv("PJRT_FFI_H2D_SERIAL")
+            ? " ($PJRT_FFI_H2D_SERIAL)"
+            : (g_platform_xpu ? " (oneAPI default — see h2d_serial())" : " (default)"));
   // Same rule for residency, and more so since the default flipped to on: a run
   // that says nothing is the resident one, so the copying path must announce
   // itself too.
@@ -1075,6 +1113,7 @@ static int invoke_typed(
       }
       in[i] = a.buffer;
       h2d[i] = a.done_with_host_buffer;
+      if (h2d_serial() && h2d_settle(&h2d[i], in[i], "h2d(serial)")) { failed = 1; break; }
       off += input_ranks[i];
     }
     double tw = acct ? now_ms() : 0;
@@ -1431,6 +1470,10 @@ int pjrt_ffi_invoke_f32_dp(
       in[(size_t)rep * n_inputs + i] = a.buffer;
       h2d[(size_t)rep * n_inputs + i] = a.done_with_host_buffer;
       off += rank;
+      if (h2d_serial() && h2d_settle(&h2d[(size_t)rep * n_inputs + i],
+                                     in[(size_t)rep * n_inputs + i], "h2d(serial,dp)")) {
+        rc = 2; break;
+      }
     }
   }
   {
@@ -1759,6 +1802,10 @@ int pjrt_ffi_invoke_f32_resident_v2(
         }
         res->buf[(size_t)rep * n_resident + j] = a.buffer;
         sev[(size_t)rep * n_resident + j] = a.done_with_host_buffer;
+        if (h2d_serial() && h2d_settle(&sev[(size_t)rep * n_resident + j],
+                                       a.buffer, "h2d(serial,seed)")) {
+          failed = 1; break;
+        }
       }
     }
     for (int k = 0; k < n_replicas * n_resident; k++)
@@ -1835,6 +1882,10 @@ int pjrt_ffi_invoke_f32_resident_v2(
       }
       in[(size_t)rep * n_inputs + i] = a.buffer;
       h2d[(size_t)rep * n_inputs + i] = a.done_with_host_buffer;
+      if (h2d_serial() && h2d_settle(&h2d[(size_t)rep * n_inputs + i],
+                                     a.buffer, "h2d(serial,res)")) {
+        rc = 2; break;
+      }
     }
   }
   {

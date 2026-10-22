@@ -1,0 +1,66 @@
+I1022 22:01:42.251793   74885 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1022 22:01:42.267425   74885 service.cc:154] XLA service 0x74d5ba492a40 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1022 22:01:42.267434   74885 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1022 22:01:42.267442   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267711   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267740   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267768   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267795   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267823   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267850   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267877   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267905   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267931   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267969   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.267996   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.268023   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.268051   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.268078   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.268105   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.268132   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.268159   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.269857   74885 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1022 22:01:42.269872   74885 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1022 22:01:42.275769   74885 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/linear_train_step.mlir (@linear_train_step, 2 outputs, 1 replica) in 159 ms
+[pjrt_ffi] compiled verified_mlir/linear_fwd.mlir (@linear_fwd, 1 outputs, 1 replica) in 24 ms
+MNIST-Linear via the VERIFIED renderer (pretty∘emit) → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/linear_train_step.mlir
+  xla/pjrt verified_mlir/linear_fwd.mlir
+  train 60000, test 10000; dense 784->10, bs 128, SGD
+I1022 22:01:42.890074   74936 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:42.890326   74936 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @linear_train_step holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+I1022 22:01:42.895105   74885 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:43.224557   74937 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:01:43.224638   74936 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+I1022 22:01:43.227539   74936 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  epoch 1: test_acc = 8977/10000 = 89.770000%  [95% CI 89.16–90.35] (665ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 2: test_acc = 9082/10000 = 90.820000%  [95% CI 90.24–91.37] (307ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 3: test_acc = 9124/10000 = 91.240000%  [95% CI 90.67–91.78] (266ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 4: test_acc = 9156/10000 = 91.560000%  [95% CI 91.00–92.09] (273ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 5: test_acc = 9167/10000 = 91.670000%  [95% CI 91.11–92.20] (272ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 6: test_acc = 9176/10000 = 91.760000%  [95% CI 91.20–92.28] (261ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 7: test_acc = 9186/10000 = 91.860000%  [95% CI 91.31–92.38] (259ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 8: test_acc = 9194/10000 = 91.940000%  [95% CI 91.39–92.46] (270ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 9: test_acc = 9198/10000 = 91.980000%  [95% CI 91.43–92.50] (269ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 10: test_acc = 9198/10000 = 91.980000%  [95% CI 91.43–92.50] (259ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 11: test_acc = 9203/10000 = 92.030000%  [95% CI 91.48–92.54] (245ms)
+[pjrt_ffi] RESIDENT: @linear_fwd holds 2 parameter tensors (0.0 MB) on 1 device; they stop crossing PCIe from here
+  epoch 12: test_acc = 9210/10000 = 92.100000%  [95% CI 91.56–92.61] (252ms)
+done (trained MNIST-Linear via the proof-rendered StableHLO).

@@ -1,0 +1,83 @@
+I1022 22:27:29.342607   97351 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1022 22:27:29.358750   97351 service.cc:154] XLA service 0x70b0b6492a40 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1022 22:27:29.358760   97351 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1022 22:27:29.358768   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.358995   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359024   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359051   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359077   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359116   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359142   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359168   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359195   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359230   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359266   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359292   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359318   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359345   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359371   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359398   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359424   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.359450   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:29.361139   97351 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1022 22:27:29.361157   97351 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1022 22:27:29.436380   97351 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/convnext_adam_train_step.mlir (@convnext_adam_train_step, 549 outputs, 1 replica) in 2605 ms
+[pjrt_ffi] compiled verified_mlir/convnext_fwd.mlir (@convnext_fwd, 1 outputs, 1 replica) in 341 ms
+ConvNeXt-T on Imagenette 224² (patchify /4 → stem channel-LN → [3,3,9,3] blocks @ [96,192,384,768] depthwise-7×7 + channel-LN + GELU + layerScale + 3 downsamples 56→7 → GAP → LN → dense) via the VERIFIED renderer → XLA/PJRT → GPU. LayerNorm is ConvNeXt's REAL channel LN — statistics over the c channels at each spatial position, per-channel [c] affine — on all 22 of those sites (§2m), plus a 23rd over the [768] GAP output — the paper's head LN, restored 2026-08-30; the count matches timm at 28,589,128 for K=1000
+  xla/pjrt verified_mlir/convnext_adam_train_step.mlir
+  xla/pjrt verified_mlir/convnext_fwd.mlir
+  train 9469, val 3925; bs 32, ConvNeXt-T adam (cosine+warmup 3ep, baseLR 0.001000), He init
+I1022 22:27:37.272033   97520 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:37.272278   97520 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @convnext_adam_train_step holds 546 parameter tensors (318.5 MB) on 1 device; they stop crossing PCIe from here
+I1022 22:27:37.512553   97351 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:44.895447   97609 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:44.895634   97520 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:27:44.895752   97521 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/295: loss=3.556978
+  step 1/295: loss=3.736045
+  step 2/295: loss=3.749500
+  step 100/295: loss=2.402002
+  step 200/295: loss=2.225305
+I1022 22:28:56.376707   98427 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @convnext_fwd holds 182 parameter tensors (106.2 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/80: loss=2.321477 lr=0.000333
+  epoch 1: val_acc = 1105/3925 = 28.152866%  top5 = 2872/3925 = 73.171975%  [95% CI 26.77–29.58]
+  step 0/295: loss=2.357020
+  step 1/295: loss=2.179426
+  step 2/295: loss=2.272337
+  step 100/295: loss=2.080178
+  step 200/295: loss=1.941224
+[pjrt_ffi] RESIDENT: @convnext_fwd holds 182 parameter tensors (106.2 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/80: loss=2.000218 lr=0.000667
+  epoch 2: val_acc = 1567/3925 = 39.923567%  top5 = 3378/3925 = 86.063694%  [95% CI 38.40–41.46]
+  step 0/295: loss=1.760963
+  step 1/295: loss=2.058062
+  step 2/295: loss=2.027074
+  step 100/295: loss=1.724117
+  step 200/295: loss=1.481445
+[pjrt_ffi] RESIDENT: @convnext_fwd holds 182 parameter tensors (106.2 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/80: loss=1.675254 lr=0.001000
+  epoch 3: val_acc = 2058/3925 = 52.433121%  top5 = 3604/3925 = 91.821656%  [95% CI 50.87–53.99]
+  step 0/295: loss=1.620965
+  step 1/295: loss=1.301867
+  step 2/295: loss=1.555702
+  step 100/295: loss=1.459490
+  step 200/295: loss=1.629664
+[pjrt_ffi] RESIDENT: @convnext_fwd holds 182 parameter tensors (106.2 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/80: loss=1.507172 lr=0.001000
+  epoch 4: val_acc = 2243/3925 = 57.146497%  top5 = 3634/3925 = 92.585987%  [95% CI 55.59–58.69]
+  step 0/295: loss=1.285851
+  step 1/295: loss=1.567490
+  step 2/295: loss=1.366480
+  step 100/295: loss=1.565967
+  step 200/295: loss=1.281831
+[pjrt_ffi] RESIDENT: @convnext_fwd holds 182 parameter tensors (106.2 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/80: loss=1.385637 lr=0.000998
+  epoch 5: val_acc = 2460/3925 = 62.675159%  top5 = 3661/3925 = 93.273885%  [95% CI 61.15–64.18]
+done (trained ConvNeXt-T adam + cosine/warmup via packed threading).
