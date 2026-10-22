@@ -1,0 +1,92 @@
+I1022 22:23:30.368015   93749 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1022 22:23:30.384581   93749 service.cc:154] XLA service 0x76a8d2490720 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1022 22:23:30.384595   93749 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1022 22:23:30.384603   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.384834   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.384862   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.384889   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.384916   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.384942   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.384968   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.384995   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385021   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385047   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385083   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385109   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385135   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385162   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385188   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385225   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385252   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.385278   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:30.386975   93749 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1022 22:23:30.386991   93749 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1022 22:23:30.485437   93749 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/efficientnet_adam_train_step.mlir (@efficientnet_adam_train_step, 740 outputs, 1 replica) in 5846 ms
+[pjrt_ffi] compiled verified_mlir/efficientnet_fwd.mlir (@efficientnet_fwd, 1 outputs, 1 replica) in 1187 ms
+[pjrt_ffi] compiled verified_mlir/efficientnet_fwd_eval.mlir (@efficientnet_fwd_eval, 1 outputs, 1 replica) in 988 ms
+EfficientNet-B0 on Imagenette 224² (stem-s2 → 16 MBConv [t,c,n,s,k], swish + squeeze-excite + batch-norm, 5 downsamples 224→7 → head 320→1280 → GAP → LN → dense) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/efficientnet_adam_train_step.mlir
+  xla/pjrt verified_mlir/efficientnet_fwd.mlir
+  xla/pjrt verified_mlir/efficientnet_fwd_eval.mlir
+  train 9469, val 3925; bs 32, EfficientNet-B0 adam (cosine+warmup 3ep, baseLR 0.001000), He init
+  running-stats BN: 49 layers, 42016 stat floats → eval via @efficientnet_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1022 22:23:42.965110   94033 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:42.965349   94033 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @efficientnet_adam_train_step holds 639 parameter tensors (46.0 MB) on 1 device; they stop crossing PCIe from here
+I1022 22:23:43.098310   93749 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:48.680318   94123 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:48.680443   94124 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:48.682421   94135 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:23:48.683763   94231 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/295: loss=2.444781
+  step 1/295: loss=2.256287
+  step 2/295: loss=2.506456
+  step 100/295: loss=2.221895
+  step 200/295: loss=1.871416
+[pjrt_ffi] RESIDENT: @efficientnet_fwd_eval holds 311 parameter tensors (15.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/80: loss=2.062354 lr=0.000333
+  epoch 1: val_acc = 748/3925 = 19.057325%  top5 = 2747/3925 = 69.987261%  [95% CI 17.86–20.32]
+    BN companion -> .lake/build/efficientnet_adam_ckpt_xla_e5.bin.bn (42016 floats x 2, hash 9297242270246749939)
+  step 0/295: loss=1.777387
+  step 1/295: loss=1.576185
+  step 2/295: loss=1.330345
+  step 100/295: loss=1.385907
+  step 200/295: loss=1.553094
+[pjrt_ffi] RESIDENT: @efficientnet_fwd_eval holds 311 parameter tensors (15.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/80: loss=1.621938 lr=0.000667
+  epoch 2: val_acc = 1534/3925 = 39.082803%  top5 = 3295/3925 = 83.949045%  [95% CI 37.57–40.62]
+    BN companion -> .lake/build/efficientnet_adam_ckpt_xla_e5.bin.bn (42016 floats x 2, hash 1463335123491697520)
+  step 0/295: loss=1.602740
+  step 1/295: loss=1.792906
+  step 2/295: loss=1.460948
+  step 100/295: loss=1.308036
+  step 200/295: loss=1.119489
+[pjrt_ffi] RESIDENT: @efficientnet_fwd_eval holds 311 parameter tensors (15.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/80: loss=1.417403 lr=0.001000
+  epoch 3: val_acc = 1454/3925 = 37.044586%  top5 = 3241/3925 = 82.573248%  [95% CI 35.55–38.57]
+    BN companion -> .lake/build/efficientnet_adam_ckpt_xla_e5.bin.bn (42016 floats x 2, hash 3348988521722532406)
+  step 0/295: loss=1.259747
+  step 1/295: loss=1.045656
+  step 2/295: loss=1.231965
+  step 100/295: loss=1.314340
+  step 200/295: loss=1.312860
+[pjrt_ffi] RESIDENT: @efficientnet_fwd_eval holds 311 parameter tensors (15.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/80: loss=1.286467 lr=0.001000
+  epoch 4: val_acc = 2496/3925 = 63.592357%  top5 = 3657/3925 = 93.171975%  [95% CI 62.07–65.08]
+    BN companion -> .lake/build/efficientnet_adam_ckpt_xla_e5.bin.bn (42016 floats x 2, hash 16158112400759303266)
+  step 0/295: loss=1.337952
+  step 1/295: loss=1.538044
+  step 2/295: loss=1.145113
+  step 100/295: loss=1.448433
+  step 200/295: loss=1.243801
+[pjrt_ffi] RESIDENT: @efficientnet_fwd_eval holds 311 parameter tensors (15.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/80: loss=1.179913 lr=0.000998
+  epoch 5: val_acc = 2279/3925 = 58.063694%  top5 = 3656/3925 = 93.146497%  [95% CI 56.51–59.60]
+    BN companion -> .lake/build/efficientnet_adam_ckpt_xla_e5.bin.bn (42016 floats x 2, hash 768162677936208899)
+done (trained EfficientNet-B0 adam + cosine/warmup via packed threading).

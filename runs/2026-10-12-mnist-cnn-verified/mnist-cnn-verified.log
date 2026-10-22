@@ -1,0 +1,67 @@
+I1012 18:07:24.121494   55398 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1012 18:07:24.137270   55398 service.cc:154] XLA service 0x7423b2490e10 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1012 18:07:24.137281   55398 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1012 18:07:24.137289   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137539   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137564   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137588   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137612   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137635   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137658   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137682   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137705   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137728   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137761   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137785   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137808   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137831   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137854   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137878   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137901   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.137924   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:24.139640   55398 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1012 18:07:24.139653   55398 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1012 18:07:24.146522   55398 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/cnn_train_step.mlir (@cnn_train_step, 11 outputs, 1 replica) in 436 ms
+[pjrt_ffi] compiled verified_mlir/cnn_fwd.mlir (@cnn_fwd, 1 outputs, 1 replica) in 105 ms
+MNIST-CNN via the VERIFIED renderer (conv→conv→pool→512→512→10) → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cnn_train_step.mlir
+  xla/pjrt verified_mlir/cnn_fwd.mlir
+  train 60000, test 10000; bs 128, MNIST-CNN (10 params, 3489130 floats), mean-loss SGD (lr baked into the render), He init
+I1012 18:07:25.112871   55463 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:25.113109   55463 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cnn_train_step holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+I1012 18:07:25.130201   55398 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:25.538897   55464 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:25.544329   55463 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:26.919861   55463 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1012 18:07:26.920333   55516 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 1: loss = 0.348799, test_acc = 9426/10000 = 94.260000%  [95% CI 93.79–94.70] (2223ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 2: loss = 0.094438, test_acc = 9744/10000 = 97.440000%  [95% CI 97.11–97.73] (1479ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 3: loss = 0.056211, test_acc = 9794/10000 = 97.940000%  [95% CI 97.64–98.20] (1479ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 4: loss = 0.038461, test_acc = 9834/10000 = 98.340000%  [95% CI 98.07–98.57] (1488ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 5: loss = 0.026250, test_acc = 9843/10000 = 98.430000%  [95% CI 98.17–98.66] (1446ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 6: loss = 0.017916, test_acc = 9849/10000 = 98.490000%  [95% CI 98.23–98.71] (1456ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 7: loss = 0.012941, test_acc = 9854/10000 = 98.540000%  [95% CI 98.29–98.76] (1473ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 8: loss = 0.068724, test_acc = 9443/10000 = 94.430000%  [95% CI 93.96–94.86] (1470ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 9: loss = 0.056503, test_acc = 9835/10000 = 98.350000%  [95% CI 98.08–98.58] (1434ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 10: loss = 0.023403, test_acc = 9868/10000 = 98.680000%  [95% CI 98.44–98.89] (1468ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 11: loss = 0.012996, test_acc = 9866/10000 = 98.660000%  [95% CI 98.42–98.87] (1448ms)
+[pjrt_ffi] RESIDENT: @cnn_fwd holds 10 parameter tensors (13.3 MB) on 1 device; they stop crossing PCIe from here
+  epoch 12: loss = 0.007552, test_acc = 9874/10000 = 98.740000%  [95% CI 98.50–98.94] (1460ms)
+done (trained MNIST-CNN via the proof-rendered StableHLO).

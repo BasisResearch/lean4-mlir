@@ -1,0 +1,92 @@
+I1022 22:19:38.870919   90425 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1022 22:19:38.888861   90425 service.cc:154] XLA service 0x7d7dfa491af0 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1022 22:19:38.888880   90425 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1022 22:19:38.888894   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889111   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889244   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889358   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889391   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889421   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889451   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889482   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889512   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889543   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889672   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889703   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889732   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889762   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889792   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889822   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889853   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.889884   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:38.892189   90425 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1022 22:19:38.892246   90425 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1022 22:19:39.004953   90425 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/mnv4_adam_train_step.mlir (@mnv4_adam_train_step, 856 outputs, 1 replica) in 4225 ms
+[pjrt_ffi] compiled verified_mlir/mnv4_fwd.mlir (@mnv4_fwd, 1 outputs, 1 replica) in 589 ms
+[pjrt_ffi] compiled verified_mlir/mnv4_fwd_eval.mlir (@mnv4_fwd_eval, 1 outputs, 1 replica) in 331 ms
+MobileNetV4-Conv-M on Imagenette 224² (stem-s2 → fused MBConv → 21 Universal Inverted Bottleneck blocks spanning all four families from ONE constructor, 224→7 → head conv 256→960 → GAP → conv_head 960→1280 → dense, timm order) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/mnv4_adam_train_step.mlir
+  xla/pjrt verified_mlir/mnv4_fwd.mlir
+  xla/pjrt verified_mlir/mnv4_fwd_eval.mlir
+  train 9469, val 3925; bs 32, MobileNetV4-Conv-M adam (cosine+warmup 3ep, baseLR 0.001000), He init
+  running-stats BN: 77 layers, 67904 stat floats → eval via @mnv4_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1022 22:19:48.657416   90628 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:48.657641   90628 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @mnv4_adam_train_step holds 699 parameter tensors (96.7 MB) on 1 device; they stop crossing PCIe from here
+I1022 22:19:48.827237   90425 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:54.732665   90718 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:54.736697   90703 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:54.738499   90974 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 22:19:54.738641   90719 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/295: loss=2.709823
+  step 1/295: loss=2.649331
+  step 2/295: loss=2.515712
+  step 100/295: loss=2.139030
+  step 200/295: loss=2.176790
+[pjrt_ffi] RESIDENT: @mnv4_fwd_eval holds 387 parameter tensors (32.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/80: loss=2.121309 lr=0.000333
+  epoch 1: val_acc = 689/3925 = 17.554140%  top5 = 2624/3925 = 66.853503%  [95% CI 16.40–18.78]
+    BN companion -> .lake/build/mnv4_adam_ckpt_xla_e5.bin.bn (67904 floats x 2, hash 612222910622633315)
+  step 0/295: loss=2.127064
+  step 1/295: loss=1.675913
+  step 2/295: loss=1.770318
+  step 100/295: loss=1.584589
+  step 200/295: loss=1.459123
+[pjrt_ffi] RESIDENT: @mnv4_fwd_eval holds 387 parameter tensors (32.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/80: loss=1.778595 lr=0.000667
+  epoch 2: val_acc = 934/3925 = 23.796178%  top5 = 2692/3925 = 68.585987%  [95% CI 22.49–25.15]
+    BN companion -> .lake/build/mnv4_adam_ckpt_xla_e5.bin.bn (67904 floats x 2, hash 8278520307174431202)
+  step 0/295: loss=1.708320
+  step 1/295: loss=2.121962
+  step 2/295: loss=1.769766
+  step 100/295: loss=1.554556
+  step 200/295: loss=1.368671
+[pjrt_ffi] RESIDENT: @mnv4_fwd_eval holds 387 parameter tensors (32.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/80: loss=1.575273 lr=0.001000
+  epoch 3: val_acc = 1731/3925 = 44.101911%  top5 = 3420/3925 = 87.133758%  [95% CI 42.56–45.66]
+    BN companion -> .lake/build/mnv4_adam_ckpt_xla_e5.bin.bn (67904 floats x 2, hash 16961053424713732254)
+  step 0/295: loss=1.571855
+  step 1/295: loss=1.305944
+  step 2/295: loss=1.548242
+  step 100/295: loss=1.481075
+  step 200/295: loss=1.361597
+[pjrt_ffi] RESIDENT: @mnv4_fwd_eval holds 387 parameter tensors (32.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/80: loss=1.471363 lr=0.001000
+  epoch 4: val_acc = 2079/3925 = 52.968153%  top5 = 3563/3925 = 90.777070%  [95% CI 51.40–54.53]
+    BN companion -> .lake/build/mnv4_adam_ckpt_xla_e5.bin.bn (67904 floats x 2, hash 8583281743508441984)
+  step 0/295: loss=1.270228
+  step 1/295: loss=1.399565
+  step 2/295: loss=1.238720
+  step 100/295: loss=1.435370
+  step 200/295: loss=1.423927
+[pjrt_ffi] RESIDENT: @mnv4_fwd_eval holds 387 parameter tensors (32.5 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/80: loss=1.399267 lr=0.000998
+  epoch 5: val_acc = 1003/3925 = 25.554140%  top5 = 2699/3925 = 68.764331%  [95% CI 24.21–26.94]
+    BN companion -> .lake/build/mnv4_adam_ckpt_xla_e5.bin.bn (67904 floats x 2, hash 13120691630754650832)
+done (trained MobileNetV4-Conv-M adam + cosine/warmup via packed threading).
