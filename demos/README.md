@@ -1,8 +1,8 @@
 # Demos
 
-Trainers and inference exes that ride on the chapter nets. The top-level `Main*Train.lean` files
-are the chapters themselves (MLP, CNN, ResNet, MobileNet, EfficientNet, ConvNeXt, ViT); these
-extend the same codegen path into the domains Chapter 10 of the book walks — recognition first
+Trainers and inference exes that ride on the chapter nets. The trainers under `apps/`
+(`apps/mnist`, `apps/cifar`, `apps/imagenette`) are the chapters themselves (linear, MLP, CNN,
+CIFAR-BN, ResNet, MobileNet, EfficientNet, ConvNeXt, ViT); these extend the same codegen path into the domains Chapter 10 of the book walks — recognition first
 (detection, industrial inspection, people, agriculture, segmentation), then beyond it
 (language, diffusion, physics, signal processing, a quantum ground state, a protein's
 shape), and last the games
@@ -85,7 +85,8 @@ follows its label. The night market and the street market are where the misses l
 and the rare, exactly what the per-class spread predicts.
 
 **mAP@0.5 = 0.2363** (recall 0.769, class-agnostic AP 0.487) at 30 epochs, and 65 fps on one RTX
-4060 Ti — or **35.7 fps on a 25 W Jetson Orin Nano** under TensorRT fp16, which is the deployment
+4060 Ti — or **55.9 fps on a 25 W Jetson Orin Nano** under TensorRT, with a uint8 input path and
+the clocks pinned (`runs/2026-09-09-orin-remeasure/`, `deploy/ORIN.md`), which is the deployment
 this dataset implies. That beats a hand-written PyTorch replica of this same architecture (0.1532)
 by **54%**.
 
@@ -154,6 +155,7 @@ scripts/sweeps/neudet_eval_sweep.sh fpn  run1 0 val
 scripts/sweeps/neudet_eval_sweep.sh grid run1 1 val
 scripts/sweeps/neudet_eval_sweep.sh fpn  run1 0 test "28"      # the table's row, at the val-peak epoch
 
+# the figure, from each sweep's e30 val logits (267 MB each, not checked in — re-run the sweep to get them)
 python3 scripts/demos/fpn_render.py runs/2026-09-17-neudet-fpn-run1-sweep/e30_val/logits.bin \
     data/neu_det_fpn/val.bin --fpn data/neu_det --gt data/neu_det448/val.full_gt.bin \
     --classes neu --compare-grid runs/2026-09-17-neudet-grid-run1-sweep/e30_val/logits.bin \
@@ -193,14 +195,15 @@ objects are small; on NEU the neck runs three heads for one level's work.
 ⭐ Recall is 0.99 on NEU — the number is ranking, and it is two classes: crazing
 (0.29) and rolled-in scale (0.41), the diffuse textures whose "box" is most of
 the crop, worst for both heads and in every NEU paper. The ImageNet prefix is
-worth +0.07 at 1,080 images. Photometric augmentation is within the n=1 noise
-floor (+0.007). Both arms are still rising at e30 — 30 epochs here is 4,050
+worth +0.07 at 1,080 images. Photometric augmentation's +0.007 is one run against
+one run; no seed spread has been measured on this detector, so it is not a result in
+either direction. Both arms are still rising at e30 — 30 epochs here is 4,050
 steps against VisDrone's 24,000 — and the gap to the published rows is
 schedule, resolution and split before it is architecture.
 
 The VisDrone single-grid row is `yolov1-visdrone448` (the archived 448/14 arm,
-12 epochs) measured on the current data and lowerer:
-`runs/2026-09-17-visdrone-grid448-remeasure/`.
+12 epochs) measured on the current data and lowerer — Table 2 of
+`runs/2026-09-17-neudet-fpn-run1/README.md` (the remeasure's logits were not kept).
 
 ---
 
@@ -224,7 +227,7 @@ loop. See `planning/arasl_people_watching_demo.md` and `runs/2026-09-17-arasl/RE
 ./scripts/datasets/download_arasl.sh          # Mendeley, URLs resolved from the public API, sha256-checked;
                              # writes both splits + census + chain statistic + leak audit
 
-# the demo: the chapter net under each split, ~5 min per run on one 4060 Ti
+# the demo: the chapter net under each split, ~5.5 min per run on one 4060 Ti
 CUDA_VISIBLE_DEVICES=0 lake exe arasl-signs net=cifar8w split=random  seed=1 tag=s1 out=runs/x
 CUDA_VISIBLE_DEVICES=1 lake exe arasl-signs net=cifar8w split=blocked seed=1 tag=s1 out=runs/x
 # the bracket: net=mlp | net=linear, and the chapter's own 32×32 input with size=32
@@ -391,6 +394,9 @@ CUDA_VISIBLE_DEVICES=0 lake exe rs-bands arm=all train=brazil_all val=brazil_all
 CUDA_VISIBLE_DEVICES=0 lake exe rs-bands arm=all eval tag=s1 out=runs/x score=shap_amazon_dry
 .venv-rs/bin/python scripts/demos/rs_shapley.py score --part amazon_dry --logits runs/x/rs_cifar8w_all_s1_logits_shap_amazon_dry.bin
 .venv-rs/bin/python scripts/demos/rs_figure.py make --name rondonia --scene <scene id> --center=-9.0994,-61.2937
+CUDA_VISIBLE_DEVICES=0 lake exe rs-bands arm=all eval tag=s1 out=runs/x score=fig_rondonia      # one eval per arm per window
+.venv-rs/bin/python scripts/demos/rs_figure.py render --panel rondonia:rgb=<logits>,ir=<logits>,all=<logits> \
+    --panel cerrado_dry:... --panel cerrado_wet:... --out remote_sensing_wavelengths.png        # the figure is that PNG as a JPEG
 ```
 
 ![which wavelengths travel](figures/remote_sensing_wavelengths.jpg)
@@ -407,14 +413,14 @@ verbatim as the contracting path) + a UNet decoder, on MSD Task01_BrainTumour:
 224×224 axial slices, 4 co-registered MRI modalities (FLAIR / T1w / T1gd / T2w)
 → 4 tumour classes. 24.5M params, plain per-pixel CE, 10 epochs.
 
-`MainUnetBratsR34.lean`, `MainBratsPredict.lean`. See
+`MainUnetBratsR34.lean`, `MainBratsPredict.lean`, `MainBratsEval.lean`. See
 `planning/archive/r34_brats_retrain.md`; logs and per-epoch curves in
 `runs/2026-09-25-brats-r34-xla/`.
 
 ```bash
 ./scripts/datasets/download_brats.sh
 python3 scripts/datasets/preprocess_brats.py data/brats/Task01_BrainTumour data/brats224 \
-        --size 224 --seed 0            # same patient split as data/brats
+        --size 224 --seed 0 --val-full # same patient split as data/brats; --val-full is what brats-eval reads
 ./scripts/sweeps/run_brats_r34_ab.sh 10 data/brats224 # both arms, one per GPU, ~50 min
 lake exe brats-predict net=r34 arm=scratch,r34 best out.ppm   # best-by-val checkpoints
 python3 scripts/demos/brats_figure.py out.ppm demos/figures/brats_r34_skip_transfer.png \
@@ -444,13 +450,26 @@ tumour-free slices themselves cost under 0.003.
 
 **Through-plane context, measured two ways** (`runs/2026-09-29-brats-25d/`). `unet-brats-r34
 ctx=1` is the same net fed the slice above and below as eight extra channels, from a 2.5D build
-(`preprocess_brats.py --context 1`), everything else matched to the 2D run: it ties, +0.001 to
-+0.004 on every metric, pooled and per patient. A 3D UNet on 128³ patches in JAX
-(`jax/scripts/unet3d_brats.py`, the reference a Lean 3D port would tie to) reaches per-patient
-WT 0.894 / TC 0.810 / ET 0.790 after one hour on one card, level with the anchor and still
-improving; rank-5 convolution runs at 77% of the 2D per-voxel rate (`jax/scripts/unet3d_gate0.py`).
-Whether 3D goes past the slice model on this data is a longer-schedule question, and the 3D
-codegen port waits on it (`planning/brats_25d_3d.md`).
+(`preprocess_brats.py --context 1`), everything else matched to the 2D run: it ties the 2D
+anchor within 0.004 on every metric, pooled and per patient — at 1 mm spacing the neighbours
+are nearly the centre slice again. The direct test is a 3D UNet (this UNet with 3³ kernels and
+2³ pools, 23.5M params) trained in JAX on random 128³ patches for 20,000 steps, a little over
+five hours on one card (`jax/scripts/unet3d_brats.py`, the reference a Lean rank-5 port would
+tie to; `runs/2026-10-03-brats-3d/`). Per patient, after the usual BraTS size post-process
+(enhancing-tumour predictions under 200 voxels relabelled as core), two seeds a side:
+
+| per-patient Dice, mean · worst tenth | WT | TC | ET | ET false alarms |
+|---|---|---|---|---|
+| ResNet-34 UNet, seeds 0 / 1 | 0.893 · 0.713 / 0.891 · 0.699 | 0.821 · 0.470 / 0.818 · 0.453 | 0.804 · 0.418 / 0.801 · 0.421 | 2.49% / 2.42% |
+| 3D UNet, seeds 0 / 1 | 0.900 · 0.747 / 0.903 · 0.772 | 0.827 · 0.495 / 0.830 · 0.521 | 0.807 · 0.464 / 0.805 · 0.440 | 1.07% / 1.03% |
+
+Paired over patients the 3D means are ahead by 0.009 on WT and TC and 0.004 on ET, and the
+bootstrap interval excludes zero on WT alone; the tail is where the two part — the 3D net's
+worst tenth on tumour core is above both 2D seeds on both of its own, and it raises a false
+enhancing-tumour alarm on under half as many slices (out of 8,060 with none in the truth).
+Rank-5 convolution runs at 77% of the 2D per-voxel rate through XLA (`jax/scripts/unet3d_gate0.py`),
+so the port is affordable; it is not built, and the Lean trainer here is the slice model
+(`planning/brats_25d_3d.md` §4d).
 
 ![The ResNet-34 UNet on four held-out BraTS patients, both arms](figures/brats_r34_skip_transfer.png)
 
@@ -559,9 +578,8 @@ lake exe mnist-ddpm-sample runs/mnist_samples.ppm          # 4x4 grid, ancestral
 
 # the two-row trajectory figure below — drawn with deterministic DDIM, whose reverse
 # row denoises smoothly; the ancestral row re-injects noise at every step
-lake exe mnist-ddpm-sample trajectory data=data img=7 eta=0
-python3 scripts/demos/ddpm_trajectory_figure.py \
-    runs/2026-09-02-mnist-ddpm/trajectory.ppm \
+lake exe mnist-ddpm-sample trajectory data=data img=7 eta=0 runs/mnist_trajectory.ppm
+python3 scripts/demos/ddpm_trajectory_figure.py runs/mnist_trajectory.ppm \
     --out demos/figures/ddpm_mnist_trajectory.png
 ```
 
@@ -796,7 +814,7 @@ python3 scripts/demos/nqs_figure.py runs/2026-09-11-nqs-ising nqs_ising.png
 | GPT, exact sampling, 4000 steps, lr 1e-3 | 27,056 | 1.5e-04 | 1.9e-02 | 0.6323 | 0.3374 |
 | exact (Jordan-Wigner) | — | 0 | 0 | 0.6367 | 0.3036 |
 
-At N = 12 every rung is four to six orders below the floor and the GPT, whose
+At N = 12 every rung is three to four orders below the floor and the GPT, whose
 conditionals are the wavefunction, is the best of them at every field. At N = 64 the
 ceiling is the free-fermion solution and the ladder separates: the GPT's exact,
 independent samples keep it at 1e-5 to 1e-4 across the whole sweep, while the ViT
@@ -829,8 +847,8 @@ Majumdar-Ghosh point) the phase head learns the Marshall signs from scratch at
 J2 = 0, every arm finds the dimer state at J2 = J1/2 to 3e-6 with fidelity 1.000,
 and past that point, where the sign rule breaks, every arm stalls at 1e-2 with a
 fidelity below 0.5 — the row this rung exists for. A wider pass (hidden 256 / d 64,
-8000 steps) takes the unfrustrated rows to 1e-5 and the frustrated one only to 6e-3
-at fidelity 0.55, so the sign structure past the Majumdar-Ghosh point is the open
+8000 steps) takes the unfrustrated rows to 1e-5 and the frustrated one only to 5.6–6.1e-3
+at fidelity 0.54–0.58, so the sign structure past the Majumdar-Ghosh point is the open
 problem, not capacity. Table 3 and the figure are in the run folder.
 
 ![The J1-J2 rung](figures/nqs_j1j2.png)
@@ -862,7 +880,7 @@ against ESMFold's 0.778 on the same language model and the field's median model 
 
 `MainDistogramCasp.lean`; data `scripts/datasets/casp16_*.py` + `download_casp16.sh`; fold,
 score, table and figures `scripts/demos/casp16_*.py`; everything Python in `.venv-casp`. Plan:
-`planning/casp16_distogram_demo.md` (§10 the 30-arm ablation table, §11 the review, §11a the
+`planning/casp16_distogram_demo.md` (§10 the 23-arm ablation table, §11 the review, §11a the
 parked MSA route). One new layer and one new proof item
 (`LeanMlir/Proofs/Foundation/PairTile.lean`: the two weight VJPs, with and without host
 planes); no input gradient — the language model is outside the proof.
@@ -940,8 +958,8 @@ moment and checks eval ≡ train. Queue scripts and every arm's logs:
 
 Three games written in Lean, each with its own exact instrument — the book's closing
 section, Bestiary entries: game theory. They are the reinforcement-learning
-ladder of `planning/pong_dqn_demo.md`, `planning/leduc_deep_cfr_demo.md` and
-`planning/alphazero_ttt_demo.md`: rung 1 DQN from pixels on Pong, rung 2 regret
+ladder of `planning/pong_dqn_demo.md`, `planning/leduc_deep_cfr_demo.md`,
+`planning/alphazero_ttt_demo.md` and `planning/muzero_ttt_demo.md`: rung 1 DQN from pixels on Pong, rung 2 regret
 minimisation under hidden information on Leduc hold'em, rung 3 self-play and tree search
 on tic-tac-toe, rung 4 the same game without its rules (MuZero, the one rung with a
 codegen piece of its own: a VJP module that returns the input cotangent) — every other rung
@@ -962,10 +980,11 @@ lake exe leduc-env r=13                   # the same instrument on a 26-card dec
 lake exe deep-cfr-leduc                   # Deep CFR, scored by exact exploitability; r=, T=, K=, seed=, tag=
 ```
 
-`MainPongEnv.lean` is Pong in ~150 lines: 84×84 render, frame skip 4, a scripted
+`LeanMlir/Pong.lean` is Pong in ~200 lines: 84×84 render, frame skip 4, a scripted
 opponent with a speed and a reaction-delay knob, deterministic from a seed, five
 million raw frames per second single-threaded. Random scores −17.9 per game, a
-reactive tracker +11.2 against the default opponent; the frame strip the
+reactive tracker +11.2 against the default opponent (`MainPongEnv.lean` plays the
+baselines); the frame strip the
 network will see is written to `.lake/build/pong_stack.pgm`.
 
 `MainPongDqn.lean` is Mnih et al.'s loop on that Pong: replay 100k, ε 1 → 0.1 over 100k
@@ -1029,7 +1048,7 @@ one. The sweep there is a fixed random-play sample of 20,000 decision positions 
 least six stones (`sweepMin=6`; a fresh 3-stone subtree costs seconds, a 6-stone one
 milliseconds) — exact per position, not exhaustive, and off the self-play distribution —
 and the perfect player takes the search's principal move from the third stone on (one solve
-a move; valuing every child was 40 min an iteration). `ttt-env n=5 k=4`: random loses all
+a move; valuing every child sat 50 min without a line). `ttt-env n=5 k=4`: random loses all
 400 games to perfect, win-or-block draws 8, perfect draws itself 400/400.
 
 ![AlphaZero on tic-tac-toe: the policy at X-centre on both boards, the curves for three boards, the value head against the theorem](figures/alphazero_ttt.png)
@@ -1101,6 +1120,134 @@ statistics over nine binary cells are a liability — a channel whose batch vari
 vanishes is divided by √1e-5 — and with BN the eval forward the loss trick reads and the
 train step's forward are different functions. Pong made the same call.
 
+### MuZero on tic-tac-toe — the same game without its rules
+
+`MainMuZeroTtt.lean` is Schrittwieser et al.'s MuZero (2020) on the same instrument. AlphaZero's
+search is handed the rules — it calls `Pos.play`; this one learns a model of them and searches
+inside the model. Four plain conv stacks at board size n: a representation h from the two stone
+planes to a 32 × n × n latent, a dynamics g from a latent and a one-hot move plane to the next
+latent, AlphaZero's two-headed prediction f, and a one-output reward net r on the latent a move
+reaches — 137k parameters at 3×3, 141k at 4×4 — trained end to end on K = 5 moves of stored
+games (policy, value and reward targets at every unrolled step, the latent min–max normalised
+after every net as in the paper). The search is PUCT in the latent (`lean_muz_*` in
+`ffi/f32_helpers.c`): a node is a path, one batched g over every game's pending leaf per
+simulation, then one f and one r; the real rules mask the root's moves and nothing inside the
+tree. Win rate cannot tell this agent from AlphaZero — both are unbeaten — so the question is the
+one the solved game can answer exactly: did MuZero learn tic-tac-toe, or only its values? Plan:
+`planning/muzero_ttt_demo.md`; the 3×3 study on CPU in `runs/2026-10-16-muzero-ttt/`, the XLA
+runs and 4×4 in `runs/2026-10-20-muzero-ttt-4x4/`.
+
+**The ladder's one codegen piece.** The kit emits a train step — forward, backward and optimizer
+in one call — and an eval forward. MuZero's loss reaches h and g through the unroll
+s₀ = h(o), s_{k+1} = g(s_k, a_k), so g's backward has to hand a cotangent to the previous step.
+`MlirCodegen.generateVjp` is the existing backward walk with the first layer's input gradient —
+every convolution already emitted one through `conv2dHasVJP3`; it was dead — returned instead of
+dropped, and no optimizer tail; `generateApplyAdam` is the Adam update on its own. The trainer
+composes the gradient by hand, in reverse over the unroll, with the min–max's VJP and the paper's
+two scalings on the host. Gated before any game code: θ − ∂θ from the VJP module equals the SGD
+train step's θ' bit for bit on all 136,787 parameters of the four 3×3 nets, and the input
+cotangent agrees with central differences and `jax.vjp` (`scripts/probes/vjp_gate.py`); the four
+composed gradients of the unrolled loss agree with `jax.grad` of the same loss to 7e-7 on the CPU
+compiler (`mode=dump` + `scripts/probes/muz_unroll_gate.py`; on XLA's CUDA path 2–7e-4, TF32
+convolutions, the level every XLA-against-reference tie in this repo sits at).
+
+**A tree with no transpositions, gated against the one with them.** AlphaZero's search keys
+nodes by the true position, so two move orders reaching one board share a node; a latent tree
+cannot. `mode=oracle` replaces g with the true dynamics and f ∘ h with a trained AlphaZero net
+cut after its trunk, so the latent search and `lean_mcts_*` read the same two graphs: the
+position-keyed search's first transposition needs seven simulations, so at 2–6 every root visit
+distribution must agree exactly, and all 4,520 do (a planted bug that drops the edge reward
+passes at 2 and fails at 3–6 on 898–2,168 positions).
+
+**The instrument scores the model, not only the player.** `mode=score` on a saved net: from
+every reachable decision position (every 454th of the 9,062,619 at 4×4, `scoreN=20000`), a legal
+line of k = 0 … 2K moves from three sources — the agent's own policy, perfect play, uniform
+random legal moves — is played *inside the model*, and f(gᵏ(h(s))) is scored against the exact
+value and optimal set of the true position the line reaches; r against the true outcome of every
+move; and a closed-form ridge probe from the latent to the cell states, fit on h of real
+positions and refit on g's own latents at each depth, says whether the board is still linearly
+decodable — the nearest thing to "knows the board". `mode=line` prints one such line step by
+step and is the figure's left panel.
+
+```bash
+# the recipe that passed at 3×3, three fresh inits (initSeed=101/201/301); 10 min on one card
+lake exe muzero-ttt n=3 iters=60 steps=300 sims=50 qnorm=0 initSeed=301 seed=3 tag=init301
+# 4×4, the same binary; sweepN= samples the per-iteration sweep (the full one is two core-hours); 27 min
+lake exe muzero-ttt n=4 iters=120 steps=300 sims=50 qnorm=0 sweepN=20000 initSeed=301 seed=3 tag=init301
+# Gate B and M2–M5 on the saved net: 256 games a side, every decision position, lines from every 454th
+lake exe muzero-ttt n=4 mode=score qnorm=0 sims=25 seed=11 scoreN=20000 tag=init301 \
+    params=.lake/build/muzero_ttt_4x4_init301_params.bin
+# one imagined line from a real position, the probe's readout at every depth (the figure's left panel)
+lake exe muzero-ttt n=4 mode=line start=139986 src=random tag=init301 params=.lake/build/muzero_ttt_4x4_init301_params.bin
+python3 scripts/demos/muzero_ttt_table.py runs/2026-10-20-muzero-ttt-4x4/gate_b run2_q0_sims50_init301_s3_it120   # the table's rows
+python3 scripts/demos/muzero_ttt_figure.py <score.csv> <line.csv> demos/figures/muzero_ttt.png
+```
+
+![MuZero on tic-tac-toe: one imagined line, agreement against imagined depth, the reward net and the board probe](figures/muzero_ttt.png)
+
+Left: one 4×4 line played only inside the trained model, from a real position (O to move) along
+five uniformly random legal moves — top the true board, middle the board probe's readout of the
+imagined latent with the cells the model has lost in red, bottom f's policy with the solved
+game's optimal moves ringed. The model keeps every cell through four imagined moves and loses
+three at the fifth, where it reads −0.12 for a position whose exact value is −1. Middle: policy
+agreement with the optimal set (solid) and the value's sign (dashed) of f(gᵏ(h(s))) against
+imagined depth k, from the 19,961-position sample, on the agent's own lines, perfect play and
+random lines, AlphaZero's exhaustive root agreement dash-dotted. Right: r's recall of the winning
+moves and the refit probe's whole-board accuracy against k, own and random lines.
+
+The AlphaZero table's protocol — agreement over every decision position, three independent
+256-game evaluations of the saved net pooled against the perfect player — plus two columns only
+a model can have: the policy's agreement after K = 5 imagined moves on the agent's own lines ·
+random lines, and the share of winning moves r calls at one move. The nets are the recipe that
+passed at 3×3 (50-simulation self-play, 300 Adam steps an iteration, the raw mean Q) on fresh
+inits, 60 iterations at 3×3 and 120 at 4×4; at 4×4 all three inits end unbeaten both sides,
+alone and with 25 and 100 simulations, and the rows are the one with the highest root agreement
+(init 301):
+
+| arm | 3×3 agree | imagined, own · random | r | vs perfect X · O | 4×4 agree | imagined, own · random | r | vs perfect X · O |
+|---|---|---|---|---|---|---|---|---|
+| AlphaZero alone | **97.3%** | — | — | 0/768/0 · 0/768/0 | **99.4%** | — | — | 0/768/0 · 0/768/0 |
+| MuZero alone | 96.9% | 100% · 96.5% | 93.0% | 0/768/0 · 0/768/0 | 98.7% | 100% · 92.9% | 99.5% | 0/768/0 · 0/768/0 |
+| MuZero + latent search | — | — | — | 0/768/0 · 0/768/0 | — | — | — | 0/768/0 · 0/768/0 |
+
+3×3: 60 iterations, **10 min** on one 4060 Ti (6 h on the 88-core CPU box under IREE, where the
+3×3 study ran); 4×4: 120 iterations, **27 min** (the CPU estimate was 1.4 days, which is why
+Phase 4 moved to a GPU). A train step is 27.6 ms for 38 calls — 17 forwards, 17 VJPs, 4 Adam
+applies — launch and copy overhead on 140k parameters, not FLOPs.
+
+⭐ **MuZero bootstraps slowly.** AlphaZero's 4×4 net passes 93% root agreement by iteration 4;
+MuZero's sits at 62–66% through iteration 40, 73% at 50, 92% at 60 and 98% by 100 — self-play
+stays decisive for a long time, so z teaches the values of weak play, and at 4×4 sixty
+iterations is simply short (the first arm stopped six O losses short of Gate B). Doubling the
+steps an iteration brings the take-off to iteration 40 and the sweep to 99.1%, and costs one
+game in 256 alone as O. Self-play stood at 2.6% of the decision positions.
+
+⭐ **The value-equivalent prediction — values, not the board — does not hold at one move and
+holds with depth.** On the agent's own lines the probe refit on g's latents recovers 99.8% of
+whole 4×4 boards after one imagined move and 99.7% after five; on random lines 94% after one
+and 55% after five, and a line of random moves is where the figure's model loses the board. r
+calls 99.5% of the winning moves at one move and 1.3% of the others; along random lines its
+recall falls to 45% by the fifth. The value's sign holds on own lines (92% at the root, 99.8%
+after five imagined moves — the surviving lines are endgames) and falls to 79–80% on random
+lines by the fourth: He et al. 2023's gap, here against an exact value. Two move orders
+reaching one board land 2.0 apart in the latent, against 4.5 from h of that board and 5.2
+between different boards — the model keeps the board in its own encoding, not h's. The probe
+fit on h reads every held-out real position and 96–97% of the cells of g's latents; at 3×3 only
+84%, and the weaker the net, the less of the board g keeps.
+
+⭐ **What the search does with the model's mistakes.** At 3×3 a third to a half of the positions
+where the search errs and the net alone does not carry a *phantom win* on the principal line —
+r calling a win the true board does not have — against 1–2% of other positions, and at the
+training budget extra simulations cost O games on two of three inits. At 4×4 the search errs
+where the net alone does not at 3 starts in 19,961, one of them with a phantom win, and holds
+at 100 simulations on every init.
+
+⚠ `qnorm=0` is not the paper. The paper's min–max-normalised Q in the search (`qnorm=1`, the
+default) never passed Gate A at 3×3 at this budget (0/103/153 as O after 60 iterations, 0/191/65
+on a second seed); the raw mean Q, AlphaZero's, did on every init. The arm on AlphaZero's
+epochs-over-the-window schedule (`steps=0`, 22 h on CPU) never passed either. The recipe is
+`steps=300 sims=50 qnorm=0`.
+
 ### Deep CFR on Leduc hold'em, scored by exact exploitability
 
 `MainDeepCfrLeduc.lean` is Brown, Lerer, Gross & Sandholm's loop (Deep CFR, ICML 2019) on
@@ -1164,7 +1311,7 @@ the table is 3.1× less exploitable at r = 3, 2.0× at r = 6 (SD-CFR 0.112 / 0.1
 against 0.053 / 0.066 / 0.058 at 3.6M nodes) and 1.0× at r = 13 (0.099 / 0.120 / 0.106
 against 0.113 / 0.107 / 0.102 at 3.4M), where the net is the better head-to-head
 (−0.028 against −0.035 per hand). The net's error does not grow with the number of sets
-and the table's noise at a fixed budget does. 5.8 minutes a seed on one 4060 Ti at every r
+and the table's noise at a fixed budget does. 5.7–5.8 minutes a seed on one 4060 Ti at every r
 (the C traversal is not the cost; the 200k Adam steps are).
 
 ## Layout
@@ -1182,6 +1329,7 @@ demos/
 ├── MainUnetBratsR34.lean                  # R34-UNet on BraTS (segmentation)
 ├── MainUnetBratsTrain.lean                # from-scratch UNet on BraTS
 ├── MainBratsPredict.lean                  # render predicted masks from a checkpoint
+├── MainBratsEval.lean                     # per-patient Dice, the BraTS papers' protocol
 ├── MainYolov1VisdroneFpn.lean             # R34+FPN detector on VisDrone, train + infer
 ├── MainYolov1NeuDetFpn.lean               # the same detector on NEU-DET steel defects (industrial inspection)
 ├── MainYolov1NeuDet448.lean               #   and the single-grid arm beside it, out of the archive
@@ -1196,14 +1344,15 @@ demos/
 ├── MainDistogramCasp.lean                 # distogram ResNet on frozen ESM-2 features, scored against the CASP16 field (structure)
 ├── MainTinyGptShakespeare.lean            # char-level transformer
 ├── MainBigramShakespeare.lean             # bigram baseline (validates the data pipeline)
-├── MainPongEnv.lean                       # Pong in Lean, 84×84 frames, scripted opponent (RL rung 1, Phase 0)
+├── MainPongEnv.lean                       # the scripted baselines over the Pong in LeanMlir/Pong.lean, 84×84 frames (RL rung 1, Phase 0)
 ├── MainPongDqn.lean                       # DQN from the six-number state or 84×84 frames on that Pong (RL rung 1)
 ├── MainTttEnv.lean                        # tic-tac-toe n×n: the solved game, scripted players, the solver's gates (RL rung 3, no GPU)
 ├── MainAlphaZeroTtt.lean                  # AlphaZero self-play + PUCT on that game, scored against the solved game (RL rung 3)
+├── MainMuZeroTtt.lean                     # MuZero: the rules replaced by a learned model, PUCT in the latent, the model scored against the solved game (RL rung 4)
 ├── MainLeducEnv.lean                      # Leduc hold'em: the exact instrument (best response, CFR+ / DCFR, ES-MCCFR), the scripted arms, Gate 0 (RL rung 2; env in LeanMlir/Leduc.lean, no GPU)
 ├── MainDeepCfrLeduc.lean                  # Deep CFR on that game through the DDPM MSE block, every arm scored by exact exploitability (RL rung 2)
 │
-├── probes/                                # gates and tools, not demos — these RUN IN CI
+├── probes/                                # gates and tools, not demos — type-checked in CI (`lake build Apps`), run by hand
 │   ├── MainFpnLossProbe.lean              #   finite-difference gate on the detector loss
 │   ├── MainFpnNeckProbe.lean              #   FPN neck shapes
 │   ├── MainFpnDetectProbe.lean            #   detector head
@@ -1212,6 +1361,7 @@ demos/
 │   ├── MainDiouLossProbe.lean             #   DIoU box loss
 │   ├── MainSegLossProbe.lean              #   segmentation losses
 │   ├── MainGradFdProbe.lean               #   generic finite-difference gradient check
+│   ├── MainVjpProbe.lean                  #   the VJP module (input cotangent) against the train step, FD and jax.vjp
 │   ├── MainFlashProbe.lean                #   flash-attention
 │   ├── MainMnistDdpmScore.lean            #   DDPM sample scoring
 │   └── MainGradCAM.lean                   #   closed-form CAM for GAP+dense nets

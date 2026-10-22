@@ -54,9 +54,15 @@ public import LeanMlir.CliArgs
     latent to the cells, fit on h of half the decision positions. Every number split visited /
     unvisited (M5), all of them written to `<prefix>_score.csv`.
 
-    `lake exe muzero-ttt [mode=train|oracle|dump|score] [n=3] [k=n] [C=32] [K=5] [iters=20]
+    `mode=line start=<index>[,…] [src=own|perfect|random] [moves=…] [lineN=20000]` walks one
+    imagined line per start and prints, per step, the true board, the board probe's readout of
+    the latent, f's policy and value, r's reward and the exact value and optimal set of the
+    true position — the figure's left panel (`scripts/demos/muzero_ttt_figure.py`).
+
+    `lake exe muzero-ttt [mode=train|oracle|dump|score|line] [n=3] [k=n] [C=32] [K=5] [iters=20]
      [sims=25] [bf=256] [batch=64] [epochs=10] [steps=0] [lr=1e-3] [window=20] [cpuct=1.25]
-     [alpha=1.0] [noise=0.25] [tempPlies=n²] [aug=1] [qnorm=1] [seed=1] [tag=<name>] [params=<file>]
+     [alpha=1.0] [noise=0.25] [tempPlies=n²] [aug=1] [qnorm=1] [seed=1] [initSeed=11]
+     [sweepN=0] [scoreN=0] [tag=<name>] [params=<file>]
      [azParams=<file>] [oracleSims=2,3,4,5,6,<sims>] [lines=2K] [probeLambda=1]`;
     writes `<prefix>_curve.csv`, `<prefix>_params.bin` (h, g, f, r back to back) and
     `<prefix>_seen.bin` (the decision positions self-play stood at, u64) under

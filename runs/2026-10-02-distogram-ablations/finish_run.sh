@@ -3,7 +3,7 @@
 # usage: finish_run.sh <gpu> <predict args…>     e.g.  finish_run.sh 0 list=train_full fs=onehot dim=30 ch=64 units=16 tag=e30-onehot
 # MEMFRAC (default 0.2) caps the predict session's arena so it can share a card with a trainer.
 set -uo pipefail
-cd /home/skoonce/lean/klawd_max_power/lean4-jax-mlir
+cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 gpu=$1; shift
 P=.venv-casp/bin/python
 export CUDA_VISIBLE_DEVICES=$gpu
