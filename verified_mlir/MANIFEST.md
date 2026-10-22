@@ -395,13 +395,13 @@ and `gen_mlir_manifest.py --selftest` replays those collisions through this deco
 
 | file | kind | variant | decoded | MB | writer | runs |
 |---|---|---|---|---|---|---|
-| `resnet34in_fwd.mlir` | fwd | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | 8 |
-| `resnet34in_fwd_eval.mlir` | fwd_eval | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | 8 |
+| `resnet34in_fwd.mlir` | fwd | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | 10 |
+| `resnet34in_fwd_eval.mlir` | fwd_eval | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | 10 |
 | `resnet34in_mom256_train_step.mlir` | train_step | `mom256` | momentum, batch 256 | 0.5 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | — |
 | `resnet34in_momdp128_train_step.mlir` | train_step | `momdp128` | momentum, data-parallel, batch 128 per replica | 0.6 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | — |
 | `resnet34in_momdp64_train_step.mlir` | train_step | `momdp64` | momentum, data-parallel, batch 64 per replica | 0.6 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | 3 |
 | `resnet34in_momdp64bf16_train_step.mlir` | train_step | `momdp64bf16` | momentum, data-parallel, bf16, batch 64 per replica | 0.6 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | 6 |
-| `resnet34in_momdp64wxbf16_train_step.mlir` | train_step | `momdp64wxbf16` | momentum, data-parallel, no decay on norm/bias, bf16, batch 64 per replica | 0.6 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | — |
+| `resnet34in_momdp64wxbf16_train_step.mlir` | train_step | `momdp64wxbf16` | momentum, data-parallel, no decay on norm/bias, bf16, batch 64 per replica | 0.6 | `LeanMlir/Proofs/Codegen/ResNet34RenderB.lean` | 2 |
 
 ## `resnet50` — 4 artifacts, 2.4 MB
 
