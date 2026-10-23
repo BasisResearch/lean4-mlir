@@ -86,19 +86,19 @@ def efficientNetB0ImagenetConfig : TrainConfig where
   dropPathOverN  := true     -- TF's and timm's ramp: 0.2 · i/16, not the default i/15
   runningBN      := true     -- paper-faithful eval: running BN stats, not eval-batch stats
   bnEps          := 1e-3     -- TF's BN ε
-  -- ── 2026-10-12, planning/recipe_prep.md §7: the rest of TF TPU EfficientNet's own code, read off
+  -- ── The rest of TF TPU EfficientNet's own code, read off
   --    tensorflow/tpu models/official/efficientnet/{main,utils,efficientnet_model,preprocessing,
   --    autoaugment}.py and set row by row. Each line names its source. ──
-  rmspropTf      := true     -- utils.build_optimizer: tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon) — TF1's ApplyRMSProp folds lr into the momentum buffer (D13)
+  rmspropTf      := true     -- utils.build_optimizer: tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon) — TF1's ApplyRMSProp folds lr into the momentum buffer
   wdDecayBiases  := true     -- main.py: weight_decay · Σ l2_loss(v) over every trainable variable with 'batch_normalization' not in its name — BN γ/β exempt, biases decayed
-  initHeadTfUniform := true  -- efficientnet_model.py dense_kernel_initializer: U(±1/√1000) on the classifier, zeros bias (D6)
+  initHeadTfUniform := true  -- efficientnet_model.py dense_kernel_initializer: U(±1/√1000) on the classifier, zeros bias
   autoAugmentTf  := true     -- autoaugment.py: the v0 table op for op; 'TranslateY' absolute, fill 128, TF's posterize shift
   augNearest     := true     -- contrib_image.{transform,rotate,translate}: interpolation defaults to NEAREST
   randAugmentTranslateConst := 250.0  -- distort_image_with_autoaugment: HParams(cutout_const=100, translate_const=250) → (m/10)·250 px
   resizeLegacyTf1 := true    -- preprocessing.py _resize_image: tf.image.resize_bicubic (TF1 op: no antialias, half_pixel_centers=False)
   evalCropTf     := true     -- preprocess_for_eval: _decode_and_center_crop — crop first, 224/256 of the shorter side …
   evalCropTfEfficientNet := true  -- … with its arithmetic (truncated side, ((h − side) + 1)//2 offsets), then bicubic to 224
-  evalF32        := true     -- F8: the logged number scored through an f32 forward (the verified path's and timm's)
+  evalF32        := true     -- the logged number scored through an f32 forward (the verified path's and timm's)
 
 #eval efficientNetB0Imagenet.validate!
 

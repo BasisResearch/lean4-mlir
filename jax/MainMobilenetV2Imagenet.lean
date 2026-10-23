@@ -85,10 +85,10 @@ def mobilenetV2ImagenetConfig : TrainConfig where
   momentum       := 0.9       -- rmsprop_momentum 0.9
   rmspropDecay   := 0.9       -- rmsprop_decay 0.9
   rmspropEps     := 1.0       -- opt_epsilon 1.0 (NOT 1e-8)
-  rmspropTf      := true      -- TF1 ApplyRMSProp: the rate inside the momentum term (D13)
+  rmspropTf      := true      -- TF1 ApplyRMSProp: the rate inside the momentum term
   weightDecay    := 4e-5      -- weight_decay 4e-5, coupled (the regularization loss)
   wdExcludeNormBias := true   -- l2_regularizer on slim.conv2d only: no BN γ/β, no biases
-  wdExcludeDepthwise := true  -- …and separable_conv2d (the depthwise) has weights_regularizer=None (D11)
+  wdExcludeDepthwise := true  -- …and separable_conv2d (the depthwise) has weights_regularizer=None
   initTruncNormal := 0.09     -- training_scope(stddev=0.09): truncated_normal on every kernel + the logits
   cosineDecay      := false   -- exponential_decay instead
   expLRDecayRate   := 0.98    -- learning_rate_decay_factor 0.98
@@ -104,7 +104,7 @@ def mobilenetV2ImagenetConfig : TrainConfig where
   trainResize    := .bilinear -- resize_images, fast_mode: bilinear
   resizeAntialias := false    -- tf.image.resize_images: no antialias
   resizeLegacyTf1 := true     -- …and TF 1's resize_bilinear kernel (half_pixel_centers=False), which resize_images was; train and eval
-  colorDistortSlim := true    -- distort_color fast_mode: brightness ±32/255 then saturation 0.5–1.5 (D12)
+  colorDistortSlim := true    -- distort_color fast_mode: brightness ±32/255 then saturation 0.5–1.5
   inputScalePm1  := true      -- (x − 0.5) × 2
   evalCropTf     := true      -- preprocess_for_eval: crop first, then resize (timm's resize-then-crop kept beside it for PROTOCOL=timm)
   evalCropSlim   := true      -- …central_crop(0.875) of BOTH sides, then resize_bilinear to 224 × 224 — slim's window, not tf-models' shorter-side square
@@ -113,7 +113,7 @@ def mobilenetV2ImagenetConfig : TrainConfig where
   useEMA         := true      -- README: --moving_average_decay=0.9999
   emaDecay       := 0.9999
   emaWarmup      := true      -- tf.train.ExponentialMovingAverage(decay, num_updates=global_step)
-  evalF32        := true      -- the reference number from an f32 forward (F8)
+  evalF32        := true      -- the reference number from an f32 forward
   bf16           := true
   bf16Conv       := true      -- reaches the inverted-residual blocks
   f32StemHead    := true      -- classifier head in fp32, as every verified render keeps it

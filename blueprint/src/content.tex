@@ -313,17 +313,25 @@ started'' is where those commands live.
     with a clean closed form. Three terms, one cancellation, and you
     never have to derive it again.
   \item \textbf{Chapter 5: ResNet-34.} Residual connections. Gradients
-    from two paths add at the input.
+    from two paths add at the input. The ImageNet recipe is assembled
+    and ablated here, and ResNet-50 trains on it.
   \item \textbf{Chapter 6: MobileNetV2.} Depthwise convolution. Same as
-    regular conv, but diagonal in the channel dimension.
+    regular conv, but diagonal in the channel dimension. MobileNetV4 is
+    the side quest.
   \item \textbf{Chapter 7: EfficientNet.} Squeeze-and-excitation. The
     product rule: main path times gate, gradients from both paths add.
-  \item \textbf{Chapter 8: ConvNeXt.} LayerNorm, which is Batchnorm in
-    disguise. GELU activation function. Data augmentation strategies.
+  \item \textbf{Chapter 8: ConvNeXt.} LayerNorm, which is BatchNorm in
+    disguise. GELU, layer scale, and the \(7 \times 7\) depthwise kernel.
+    ConvNeXt-S and B are the side quest.
   \item \textbf{Chapter 9: Vision Transformer.} Self-attention. Softmax
     in the middle of the network, three-way fan-in at the input. The
-    capstone.
+    capstone. ViT-S and B are the side quest.
 \end{itemize}
+
+From Chapter~\ref{chap:residual} on, each chapter also closes with an
+ImageNet pair: the paper's recipe trained once through the JAX reference
+and once through the verified trainer, and the two scored against each
+other.
 
 \textbf{Part 2: The bestiary (Chapter 10).} Forty-six further
 architectures, from U-Net to Mamba to Stable Diffusion, each written as
@@ -364,8 +372,7 @@ written to be, that a data-parallel render's step is one device's step on
 the global batch, that a gradient node is the loss's derivative in its
 parameter, or that one SGD step decreases the loss. A theorem that
 only restates a counted one at fixed dimensions or over the committed
-spec, and a smooth-point form that a later global theorem superseded, is
-not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
+spec is not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
 \textbf{9 witnesses} and \textbf{37 step certificates}. Even Chapter~1's
 toolkit is used straight away by a proven model, so no chapter is pure
 scaffolding. Table~\ref{tab:theorem_budget} is the count, chapter by chapter.
@@ -402,8 +409,7 @@ chapter. The per-chapter detail lives where the work does, because each
 chapter names its contracts as it proves them. Appendix~\ref{app:verification}
 covers how those claims get checked, through the audits, the bridge
 theorems, and the hardware oracles. It reads most naturally once you've
-been through the Foundations chapter, so it's safe to skip on a first
-pass.
+been through a few chapters, so it's safe to skip on a first pass.
 
 \subsection*{Roadmap: skip to your target architecture}
 
@@ -421,41 +427,52 @@ The MLP backward pass uses chain rule, additive fan-in, identity,
 and the Dense Jacobians, all of them Chapter~1's.
 
 \textbf{Target: CNN, with or without BN (Ch \ref{chap:cnn}--\ref{chap:bn}).}
-Ch~1 + Ch~\ref{chap:mlp}--\ref{chap:bn}. CNN adds Conv2d and MaxPool
-VJPs proved from this chapter's foundation, and BN adds the
-inverse-stddev smoothness chain.
+Ch~1 + Ch~\ref{chap:mlp}--\ref{chap:bn}. CNN adds the Conv2d and MaxPool
+VJPs, proved from Chapter~1's rules, and BN adds the inverse-stddev
+smoothness chain.
 
-\textbf{Target: ResNet-34 (Ch~\ref{chap:residual}).} Ch~1--\ref{chap:residual}.
-Adds one theorem on top of CNN+BN, the residual additive-fan-in VJP.
-This is a great stopping point. ResNet-34 was state of the
+\textbf{Target: ResNet-34 (Ch~\ref{chap:residual}).} Ch~1--\ref{chap:residual},
+plus the matrix-level machinery of \S\ref{sec:matrix_machinery}, which
+this chapter is the first to cite. Adds the residual additive fan-in,
+global average pooling, the stride-2 convolution and the stem pool on top
+of CNN+BN. This is a great stopping point. ResNet-34 was state of the
 art for years and still routinely gets 90\% on Imagenette, and its
-bigger brother ResNet-50 is the standard benchmark (the GOAT) for
+bigger brother ResNet-50 is the standard benchmark for
 production image classification. If your destination is a real
-image classifier that works, Ch~2--\ref{chap:residual} is a complete
+image classifier that works, Ch~1--\ref{chap:residual} is a complete
 reading list and Chs \ref{chap:depthwise}--\ref{chap:attention} are
 strictly skippable.
 
-\textbf{Target: MobileNetV2 (Ch~\ref{chap:depthwise}).} ResNet
-subset $+$ Ch~\ref{chap:depthwise}. Adds depthwise conv VJPs, the same
+\textbf{Target: MobileNetV2 (Ch~\ref{chap:depthwise}).} CNN+BN
+subset $+$ Ch~\ref{chap:depthwise}; nothing from
+Chapter~\ref{chap:residual} is cited. Adds depthwise conv VJPs, the same
 recipe as Ch~\ref{chap:cnn} with one fewer summation level.
 
 \textbf{Target: EfficientNet (Ch~\ref{chap:se}).} MobileNet subset
-$+$ Ch~\ref{chap:se}. Adds the SE block VJP, which is
-squeeze-and-excitation as an elementwise product over global pool and
-1$\times$1 convs.
+$+$ Chapter~\ref{chap:residual}'s residual VJP $+$ Ch~\ref{chap:se}.
+Adds the SE block VJP, which is squeeze-and-excitation as an elementwise
+product over global pool and 1$\times$1 convs.
 
-\textbf{Target: ConvNeXt (Ch~\ref{chap:layernorm}).} EfficientNet
-subset $+$ Ch~\ref{chap:layernorm}. Adds GELU and LayerNorm as new
-operator primitives, both proved from Ch~1 foundation rules.
+\textbf{Target: ConvNeXt (Ch~\ref{chap:layernorm}).} ResNet and
+MobileNet subsets $+$ Ch~\ref{chap:layernorm}; nothing from
+Chapter~\ref{chap:se} is cited. Adds GELU and LayerNorm as new operator
+primitives, both proved from Ch~1 foundation rules; the \(7 \times 7\)
+depthwise kernel is Chapter~\ref{chap:depthwise}'s.
 
 \textbf{Target: Attention / ViT (Ch~\ref{chap:attention}).}
-Everything above plus Ch~\ref{chap:attention}, which proves the
-matrix-level machinery --- matmul Jacobians and VJPs in both factor
-positions, transpose, scalar-scale, row-wise lifting, and 3D extensions
---- in \S\ref{sec:matrix_machinery}, just before the attention proofs
-that use it.
+Ch~1 $+$ Ch~\ref{chap:bn}'s inverse-stddev chain $+$
+Ch~\ref{chap:layernorm}'s GELU and LayerNorm $+$ Ch~\ref{chap:attention};
+no convolution chapter is on its chain. Chapter~\ref{chap:attention}
+proves the matrix-level machinery --- matmul Jacobians and VJPs in both
+factor positions, transpose, scalar-scale, row-wise lifting, and 3D
+extensions --- in \S\ref{sec:matrix_machinery}, just before the attention
+proofs that use it.
 
-If you're unsure: read Ch~1 carefully (it's short), pick an
+These chains are read off the \texttt{\textbackslash uses} graph;
+Figure~\ref{fig:chapter_map} in Appendix~\ref{app:verification} draws
+the same graph at the scale of chapters.
+
+If you're unsure: read Ch~1 carefully, pick an
 architecture target that fits your interest, follow the chapter
 chain to it. You can always extend the read list later as new
 architectures catch your eye.
@@ -501,9 +518,11 @@ Concretely, that means:
   data augmentation are how this book's Imagenette results were
   achieved. That full recipe is assembled and ablated in
   Chapter~\ref{chap:residual} (ResNet) and ran against each
-  architecture after as a common baseline. Later chapters add full
-  ImageNet recipes, trained through paired Lean 4 \(\to\) JAX and Lean 4
-  \(\to\) PJRT trainers, with modern data augmentations.
+  architecture after as a common baseline. The ImageNet recipes from
+  Chapter~\ref{chap:residual} on keep each paper's own optimizer instead
+  --- SGD for the ResNets, RMSProp for MobileNetV2 and EfficientNet-B0,
+  AdamW for ConvNeXt and ViT --- trained through paired Lean 4 \(\to\)
+  JAX and Lean 4 \(\to\) PJRT trainers, with modern data augmentations.
 
 \item \textbf{The codegen is new.} The first book's Swift-for-TensorFlow
   pipeline is replaced with Lean 4 \(\to\) StableHLO MLIR \(\to\) XLA
@@ -8624,10 +8643,9 @@ def runMobilenetV2Adam (argv : List String) : IO Unit := do
 def main (argv : List String) : IO Unit := runMobilenetV2Adam argv
 \end{verbatim}
 
-\noindent Lines marked \texttt{x2} or \texttt{x3} appear that many times
-in the source. The spec has no repeat count, because one constructor is
-one block: \texttt{.invertedResidualNB ic mid oc stride} takes the
-expanded width \texttt{mid} rather than a ratio \(t\), so the
+\noindent Every block is its own line, with no repeat count, because one
+constructor is one block. The constructor
+\texttt{.invertedResidualNB ic mid oc stride} takes the expanded width \texttt{mid} rather than a ratio \(t\), so the
 widths read straight off the paper's table and the stage boundaries are
 visible as the places where \texttt{stride} is 2. Internally each block
 is a $1 \times 1$ conv to \texttt{mid} channels, a $3 \times 3$
@@ -8835,10 +8853,10 @@ def mobilenetV2ImagenetConfig : TrainConfig where
   momentum       := 0.9       -- rmsprop_momentum 0.9
   rmspropDecay   := 0.9       -- rmsprop_decay 0.9
   rmspropEps     := 1.0       -- opt_epsilon 1.0 (NOT 1e-8)
-  rmspropTf      := true      -- TF1 ApplyRMSProp: the rate inside the momentum term (D13)
+  rmspropTf      := true      -- TF1 ApplyRMSProp: the rate inside the momentum term
   weightDecay    := 4e-5      -- weight_decay 4e-5, coupled (the regularization loss)
   wdExcludeNormBias := true   -- l2_regularizer on slim.conv2d only: no BN γ/β, no biases
-  wdExcludeDepthwise := true  -- …and separable_conv2d (the depthwise) has weights_regularizer=None (D11)
+  wdExcludeDepthwise := true  -- …and separable_conv2d (the depthwise) has weights_regularizer=None
   initTruncNormal := 0.09     -- training_scope(stddev=0.09): truncated_normal on every kernel + the logits
   cosineDecay      := false   -- exponential_decay instead
   expLRDecayRate   := 0.98    -- learning_rate_decay_factor 0.98
@@ -8854,7 +8872,7 @@ def mobilenetV2ImagenetConfig : TrainConfig where
   trainResize    := .bilinear -- resize_images, fast_mode: bilinear
   resizeAntialias := false    -- tf.image.resize_images: no antialias
   resizeLegacyTf1 := true     -- …and TF 1's resize_bilinear kernel (half_pixel_centers=False), which resize_images was; train and eval
-  colorDistortSlim := true    -- distort_color fast_mode: brightness ±32/255 then saturation 0.5–1.5 (D12)
+  colorDistortSlim := true    -- distort_color fast_mode: brightness ±32/255 then saturation 0.5–1.5
   inputScalePm1  := true      -- (x − 0.5) × 2
   evalCropTf     := true      -- preprocess_for_eval: crop first, then resize (timm's resize-then-crop kept beside it for PROTOCOL=timm)
   evalCropSlim   := true      -- …central_crop(0.875) of BOTH sides, then resize_bilinear to 224 × 224 — slim's window, not tf-models' shorter-side square
@@ -8863,7 +8881,7 @@ def mobilenetV2ImagenetConfig : TrainConfig where
   useEMA         := true      -- README: --moving_average_decay=0.9999
   emaDecay       := 0.9999
   emaWarmup      := true      -- tf.train.ExponentialMovingAverage(decay, num_updates=global_step)
-  evalF32        := true      -- the reference number from an f32 forward (F8)
+  evalF32        := true      -- the reference number from an f32 forward
   bf16           := true
   bf16Conv       := true      -- reaches the inverted-residual blocks
   f32StemHead    := true      -- classifier head in fp32, as every verified render keeps it
@@ -10272,7 +10290,7 @@ forty-one minutes, $\mathbf{90.04\%}$ top-1 and $\mathbf{98.29\%}$
 top-5, with the loss settling on the same ${\sim}0.50$ label-smoothing
 floor as ResNet-34 and MobileNetV2. Table~\ref{tab:imagenette_three} is the
 three-chapter comparison --- same dataset, same recipe, same eighty epochs,
-and every row now a measurement on the verified XLA path, on one RTX 4060 Ti.
+every row a measurement on the verified XLA path, on one RTX 4060 Ti.
 
 \begin{table}[H]
 \centering
@@ -10488,19 +10506,19 @@ def efficientNetB0ImagenetConfig : TrainConfig where
   dropPathOverN  := true     -- TF's and timm's ramp: 0.2 · i/16, not the default i/15
   runningBN      := true     -- paper-faithful eval: running BN stats, not eval-batch stats
   bnEps          := 1e-3     -- TF's BN ε
-  -- ── 2026-10-12, planning/recipe_prep.md §7: the rest of TF TPU EfficientNet's own code, read off
+  -- ── The rest of TF TPU EfficientNet's own code, read off
   --    tensorflow/tpu models/official/efficientnet/{main,utils,efficientnet_model,preprocessing,
   --    autoaugment}.py and set row by row. Each line names its source. ──
-  rmspropTf      := true     -- utils.build_optimizer: tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon) — TF1's ApplyRMSProp folds lr into the momentum buffer (D13)
+  rmspropTf      := true     -- utils.build_optimizer: tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon) — TF1's ApplyRMSProp folds lr into the momentum buffer
   wdDecayBiases  := true     -- main.py: weight_decay · Σ l2_loss(v) over every trainable variable with 'batch_normalization' not in its name — BN γ/β exempt, biases decayed
-  initHeadTfUniform := true  -- efficientnet_model.py dense_kernel_initializer: U(±1/√1000) on the classifier, zeros bias (D6)
+  initHeadTfUniform := true  -- efficientnet_model.py dense_kernel_initializer: U(±1/√1000) on the classifier, zeros bias
   autoAugmentTf  := true     -- autoaugment.py: the v0 table op for op; 'TranslateY' absolute, fill 128, TF's posterize shift
   augNearest     := true     -- contrib_image.{transform,rotate,translate}: interpolation defaults to NEAREST
   randAugmentTranslateConst := 250.0  -- distort_image_with_autoaugment: HParams(cutout_const=100, translate_const=250) → (m/10)·250 px
   resizeLegacyTf1 := true    -- preprocessing.py _resize_image: tf.image.resize_bicubic (TF1 op: no antialias, half_pixel_centers=False)
   evalCropTf     := true     -- preprocess_for_eval: _decode_and_center_crop — crop first, 224/256 of the shorter side …
   evalCropTfEfficientNet := true  -- … with its arithmetic (truncated side, ((h − side) + 1)//2 offsets), then bicubic to 224
-  evalF32        := true     -- F8: the logged number scored through an f32 forward (the verified path's and timm's)
+  evalF32        := true     -- the logged number scored through an f32 forward (the verified path's and timm's)
 
 
 /-- Paper-faithful full run: identical recipe at the 350-epoch schedule, at the
@@ -10784,7 +10802,7 @@ weights scored       & EMA $0.9999$ + BN buffers, epoch 350 & EMA $0.9999$ + BN 
 \texttt{lake run enet-default-4gpu} trains, with synchronised BatchNorm. The
 reference's in-training evaluation reads $77.17\%$ at epoch~350 and its saved
 state rescored through the same fp32 forward counts the same $38{,}584$
-images, so there is no rescoring gap this time; the verified run's $77.21\%$
+images, so the two numbers are on the same footing; the verified run's $77.21\%$
 is $38{,}604$. The verified run's $65.1$\,h include six planned refreshes of
 its loader feed, a minute or so each, and one slow stretch of eight epochs
 behind a degraded loader, about fifteen minutes in all; no restart.
@@ -11567,6 +11585,21 @@ downsample and head backwards; see
 \leandocref{Proofs.CnxTieGB.cnx\_net\_tiedGB}.
 \end{proof}
 
+\medskip\noindent\textbf{Stated at one replica, and what the data-parallel
+render adds.} The \texttt{replicas} $> 1$ renders wrap each of these 182
+nodes in an all-reduce mean, which denotes the mean of the replicas' nodes
+(\leandocref{Proofs.den\_allReduceMeanF\_eq\_dpMean}). ConvNeXt has no
+BatchNorm, so its batch loss is a mean of per-example losses, and for such
+a loss the mean over replicas of the gradient is the gradient at the
+combined batch
+(\leandocref{Proofs.dpMeanGrad\_eq\_globalBatchGrad\_of\_perExample}).
+That is the fact the sync-BN theorems of
+Chapters~\ref{chap:residual}--\ref{chap:se} prove node by node for the
+five BatchNorm nets, where the statistics all-reduce makes it
+non-trivial. Here its composition with these nodes is not stated as a
+theorem; the collectives are gated by the two checks of
+\S\ref{sec:convnext_imagenet} instead.
+
 \begin{theorem}[Every ConvNeXt-T gradient node is the loss's derivative]
   \label{thm:convnext_loss_grad}
   \lean{Proofs.CnxTieGB.cnx_net_lossGrad, Proofs.CnxTieGB.cnx_net_lossGrad_smoothedCE, Proofs.CnxTieGB.cnxNetB_eq_convNextForwardTCh,
@@ -11937,8 +11970,8 @@ codegen. Because that path differentiates with
 \texttt{jax.value\_and\_grad}, only the forward had to be written, and
 the backward comes for free. The spec mirrors
 \texttt{jax/MainConvNeXtImagenet.lean}, its recipe quoted as the run below
-trained it (the file today carries the official rows, the marker's, for the
-rerun):
+trained it (the file in the tree carries the official rows the marker
+after Table~\ref{tab:cnx_paths} describes):
 
 \begin{verbatim}
 -- Faithful patchify stem, stage/downsample backbone, 1000 classes.
@@ -11970,7 +12003,7 @@ def convNeXtTinyImagenetConfig : TrainConfig where
   wdExcludeNormBias := true         -- timm no_weight_decay: skip norm g/b, bias, LayerScale
   cnxInit           := true         -- ConvNeXt _init_weights: trunc_normal(0.02) on every conv
   cosineDecay       := true
-  warmupEpochs      := 20           -- ConvNeXt paper warmup (was 5)
+  warmupEpochs      := 20           -- ConvNeXt paper warmup
   gradClipNorm      := 1.0          -- ours: the paper does not clip
   augment           := true
   useRandAugment    := true         -- geometric RandAugment N=2, M=9, mstd0.5, inc1
@@ -12149,10 +12182,11 @@ they prove different things.}
 bit-exactly against its single-device peer. That gate hands both
 replicas the same rows, so it is structurally blind to a shard-offset
 bug, and \texttt{tests/TestConvNeXtShardCheck.lean} closes exactly that
-hole by giving the replicas genuinely different data. ConvNeXt is where
-the shard check was written before being generalized to the other nets,
-so this is the one chapter where both gates are native rather than
-inherited.
+hole by giving the replicas genuinely different data. Both gates run on
+this chapter's own specs, \texttt{convnext} and \texttt{convnextin}, and
+together they are the empirical half of what
+Theorem~\ref{thm:convnext_step_tie} leaves unstated: that the all-reduced
+step is one device's step on the global batch.
 
 \medskip\noindent\textbf{The regularizer knobs are render variants, and
 the run carries three of the four.} Weight-decay exclusion, stochastic
@@ -12175,8 +12209,8 @@ lake run cnx-default-4gpu
 \end{verbatim}
 
 \noindent Table~\ref{tab:cnx_pjrt} is the run. The chapter's row in
-\texttt{lake run imagenet} is no longer that job but
-\texttt{cnx-default-emabf16-4gpu}, the official recipe; the marker after
+\texttt{lake run imagenet} is \texttt{cnx-default-emabf16-4gpu}, the
+official recipe, not this job; the marker after
 Table~\ref{tab:cnx_paths} says what that changes and what is owed.
 
 \begin{table}[H]
@@ -13873,6 +13907,18 @@ of the lifted block and the head (those take \(\varepsilon > 0\); the tie
 itself does not); see \leandocref{Proofs.ViTTieGB.vit\_net\_tiedGB}.
 \end{proof}
 
+\medskip\noindent\textbf{Stated at one replica, and what the data-parallel
+render adds.} As for ConvNeXt: the \texttt{replicas} $> 1$ renders wrap
+each of these 200 nodes in an all-reduce mean, which denotes the mean of
+the replicas' nodes (\leandocref{Proofs.den\_allReduceMeanF\_eq\_dpMean});
+ViT has no BatchNorm, so its batch loss is a mean of per-example losses
+and that mean is the gradient at the combined batch
+(\leandocref{Proofs.dpMeanGrad\_eq\_globalBatchGrad\_of\_perExample}). The
+composition with these nodes is not stated as a theorem --- the five
+BatchNorm nets carry one because their statistics all-reduce makes it
+non-trivial --- and the collectives are gated by the checks of
+\S\ref{sec:vit_imagenet} instead.
+
 \begin{theorem}[Every ViT-Tiny gradient node is the loss's derivative]
   \label{thm:vit_loss_grad}
   \lean{Proofs.ViTTieGB.vit_net_lossGrad, Proofs.ViTTieGB.vit_net_lossGrad_smoothedCE, Proofs.ViTTieGB.vitNetB_eq_vitForwardKV,
@@ -14497,8 +14543,8 @@ replicas the same rows, where the all-reduce mean is an
 identity. ViT has no BatchNorm, so that identity is exact rather than
 approximate. But a gate built on duplicated rows is structurally blind
 to a shard-offset bug, and the check that closes that hole works by
-giving the replicas genuinely different data. That one now covers the
-Imagenette \texttt{vit} spec, and it does not yet cover \texttt{vitin}.
+giving the replicas genuinely different data. That one covers the
+Imagenette \texttt{vit} spec and not \texttt{vitin}.
 Two gates that sound alike are not one property, and this chapter has
 one and a half of them rather than ConvNeXt's two.
 
@@ -14532,7 +14578,7 @@ and moves a step's result by less than the render's own f32 error
 ($2.9\times10^{-4}$ from an f64 reference, against $3.0\times10^{-4}$
 without the shift). Theorem~\ref{thm:vit_step_tie} is stated on the
 unshifted chain; each shifted node is proved to denote its unshifted peer,
-but the tie has not been restated on the \texttt{smx} render, so on this
+but the tie is not restated on the \texttt{smx} render, so on this
 pair the step is the render's through that equality rather than a
 theorem's, with the EMA tail outside it as before. It runs with:
 
@@ -15603,8 +15649,8 @@ SqueezeNet 1.1 & 3$\times$3 stride 2 (64 ch), earlier downsample & 1.24M \\
 \end{table}
 
 Both paper-exact, plus a tiny fixture. SqueezeNet 1.1 is the
-default for downstream use --- same accuracy at $\sim$2$\times$
-fewer FLOPs --- and is what the first book trained.
+default for downstream use: same accuracy at $\sim$2$\times$
+fewer FLOPs.
 
 \begin{verbatim}
 def squeezeNet1_1 : NetSpec where
@@ -17462,7 +17508,7 @@ change relative to the classifiers, segmentation nets and detectors so far:
   \item \textbf{The backbone is the segmentation UNet, conditioned on $t$.} One
     network must denoise at every level, so $t$ is fed in: this demo
     concatenates it as an extra channel (hence \texttt{.unetDown 2 16} --- one
-    image channel plus one time channel), and the CIFAR variant embeds it with
+    image channel plus one time channel), and the archived CIFAR variant embeds it with
     the positional-encoding primitive NeRF introduced. Diffusion adds
     only the conditioning.
   \item \textbf{Inference is an iterative loop, not one forward pass.} What that
@@ -17494,9 +17540,8 @@ unstructured pixels                &  4/10 & $58.47\%$ & $0.3674$ \;($231\times$
 \end{table}
 
 \noindent The instrument scores $98.66\%$ on the real split, which is the check
-that its weights loaded. Its first run caught a broken checkpoint --- pixels
-over $[-4.9, 11.9]$ where the data is $[0,1]$, from a trainer that never centred
-to $[-1,1]$ and defaulted to 3 epochs against a documented 50.
+that its weights loaded. A checkpoint that writes pixels outside $[0,1]$
+fails the bracket before anyone looks at a grid.
 $\triangleright$ And read the confidence column against the others: noise still
 posts $58\%$, so the usable range is $58$--$99$ rather than $0$--$100$, and on
 its own it is the metric most likely to mislead.
@@ -18905,9 +18950,9 @@ $3 \times 3$, 155k at $4 \times 4$. Three things change relative to Pong's DQN:
     $g / B$ exactly --- the gradient of the batch-mean AlphaZero loss. Zero new
     codegen, the move the neural-quantum-state demo (\S~\ref{sec:bestiary_beyond})
     makes with its energy gradient.
-  \item \textbf{Not the bestiary's tower.} The first run used
-    \texttt{Bestiary/AlphaZero.lean}'s convolution--BatchNorm--residual body and
-    diverged at iteration 11. BatchNorm's batch statistics over nine binary cells
+  \item \textbf{Not the bestiary's tower.}
+    \texttt{Bestiary/AlphaZero.lean}'s convolution--BatchNorm--residual body is
+    the wrong instrument here. BatchNorm's batch statistics over nine binary cells
     are a liability, and with BatchNorm the eval forward the loss reads and the
     train step's forward are different functions. Pong made the same
     choice for the same reason.
@@ -19021,7 +19066,7 @@ the agent plays and lines it never would. Three things change relative to AlphaZ
     backward has to hand a cotangent to the previous step and $h$'s receives the sum of
     everything downstream. \texttt{MlirCodegen.generateVjp} is the existing backward
     walk with the first layer's input gradient --- every convolution already emits one
-    through \texttt{conv2dHasVJP3}; it was dead --- returned instead of dropped, and no
+    through \texttt{conv2dHasVJP3}, returned rather than dropped, with no
     optimizer tail; \texttt{generateApplyAdam} is the existing Adam update on its own.
     The trainer composes the gradient by hand, in reverse over the unroll, with the
     min--max's VJP and the paper's two scalings on the host. Gated before any game code:
@@ -20486,8 +20531,7 @@ scripts/gen_shims.sh
 \end{verbatim}
 
 Each net names its own shim, and the driver refuses to start if the named file
-is absent rather than falling back to another net's, because an earlier
-fallback silently gave every net ResNet-34's augmentation.
+is absent.
 
 \section*{Running one}
 
