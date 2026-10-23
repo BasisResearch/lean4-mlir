@@ -6479,6 +6479,42 @@ and excluded shapes rewrite the scalar child; see
 \leandocref{Proofs.StableHLO.lamb\_triple\_faithful}.
 \end{proof}
 
+\begin{theorem}[Accumulation is the step at the mean]
+  \label{thm:accum_mean_step}
+  \lean{Proofs.accumCycle_sum, Proofs.momVNext_mu_zero, Proofs.adamWStepAcc_eq_mean,
+        Proofs.adamWStepAcc_accumulate, Proofs.lambStepAcc_eq_mean,
+        Proofs.lambStepAcc_accumulate}
+  \leanok
+  \Prove{} for the accumulating renders (\texttt{acc}\(k\)\texttt{x} and
+  \texttt{lambacc}\(k\)\texttt{x}; A3 is \(k = 4\)), one graph serves both
+  phases and two runtime scalars decide which:
+  \begin{enumerate}
+    \item the accumulator \(G_t = \mathrm{keep}\cdot G + g\) is the
+          momentum op at \(\mu = \mathrm{keep}\). At \(\mathrm{keep} = 0\)
+          the cycle resets by arithmetic, and after \(k\) micro-batches
+          \(G_t\) is their sum;
+    \item on an accumulate micro-batch, \(\beta = 1\) on both moments and
+          \(\mathrm{lr} = 0\): the moments and the parameter pass through
+          unchanged, for AdamW and for LAMB alike;
+    \item on the apply micro-batch, the scalar pair \((1 - \beta_1)/k\)
+          and \((1 - \beta_2)/k^2\) applied to the sum \(G_t\) gives
+          exactly the plain step of
+          Theorem~\ref{thm:optimizer_tails_faithful}
+          or~\ref{thm:lamb_clip_faithful} at the mean \(G_t/k\), the
+          \(k^2\) because the second moment squares its gradient.
+  \end{enumerate}
+  The typed graph reads the two moment scalars as \(\beta\) and
+  \(1 - \beta\); the pair with \(k\) folded in is the one hand-written
+  block of the step, the one its banner names. Item 3 is the identity
+  that lets the faithful ops be read at the mean.
+\end{theorem}
+
+\begin{proof}
+\leanok
+Ring identities over the reals, item 1 by induction over the cycle; see
+\leandocref{Proofs.adamWStepAcc\_eq\_mean}.
+\end{proof}
+
 \section{Example: ResNet-34 on Imagenette}
 \label{sec:residual_r34_example}
 
@@ -7551,7 +7587,8 @@ decay, LAMB's gradient clip at \texttt{timm}'s default (after the all-reduce
 and the accumulation, at threshold $kC$,
 \texttt{Proofs.clipFactor\_accum}), and the \texttt{no\_weight\_decay} group
 left out of layer adaptation; all three are
-Theorem~\ref{thm:lamb_clip_faithful}. The optimizer is also tied to the
+Theorem~\ref{thm:lamb_clip_faithful}, and the four-fold accumulation is
+Theorem~\ref{thm:accum_mean_step}. The optimizer is also tied to the
 reference numerically, at the update as well as the gradient, seven
 variants to $\sim\!10^{-7}$. Both
 paths run $625$ steps an epoch and leave $0.08\%$ of it unused, because
@@ -8511,6 +8548,28 @@ each of the two differences is one \texttt{ring}; see
 \leandocref{Proofs.StableHLO.rmsPropTf\_triple\_faithful}.
 \end{proof}
 
+\begin{theorem}[The EMA shadow is the decayed average of the updated weights]
+  \label{thm:ema_faithful}
+  \lean{Proofs.StableHLO.emaShadow_faithful, Proofs.emaNext_lag, Proofs.emaNext_one,
+        Proofs.emaNext_zero}
+  \leanok
+  \Prove{} in every render carrying \texttt{ema}, the one extra op per
+  parameter denotes \(e' = d\,e + (1 - d)\,\theta'\), with \(\theta'\) the
+  parameter the optimizer tail has just produced, not the one it read,
+  and the decay \(d\) a runtime scalar. The shadow's distance to the live
+  weight shrinks by the factor \(d\) a step; at \(d = 1\) it is frozen and
+  at \(d = 0\) it is the live weight. The warmup-corrected schedule of
+  \(d\) and the second shadow over the BatchNorm buffers are the
+  driver's, outside the graph.
+\end{theorem}
+
+\begin{proof}
+\leanok
+The op is Adam's first-moment update at \(\beta_1 = d\) on the updated
+weight, so its faithfulness is that op's, by \texttt{rfl}; see
+\leandocref{Proofs.StableHLO.emaShadow\_faithful}.
+\end{proof}
+
 \begin{theorem}[Every MobileNetV2 gradient node is the loss's derivative]
   \label{thm:mobilenetv2_loss_grad}
   \lean{Proofs.MobileNetV2TieB.mnv2_net_lossGrad, Proofs.MobileNetV2TieB.mnv2_net_lossGrad_smoothedCE,
@@ -9257,7 +9316,8 @@ classifier dropout $0.2$ (\texttt{do}), label smoothing $0.1$, BatchNorm at
 TF-slim's $0.997$ / $10^{-3}$ with the running statistics read at that
 $\varepsilon$ by its eval graph
 \texttt{mobilenetv2in\_fwd\_eval\_eps0001}, the weight average at $0.9999$
-in TF's warmup-corrected form (\texttt{ema}), which is what is scored, bf16
+in TF's warmup-corrected form (\texttt{ema},
+Theorem~\ref{thm:ema_faithful}), which is what is scored, bf16
 convolution under an fp32 classifier head, data-parallel over four replicas
 of $64$ with each of the $52$ BatchNorms all-reducing its mean and variance
 across them, so the statistic group is the global $256$. Slim's
@@ -10799,8 +10859,8 @@ out, and the two forms part by a little at every step of the staircase;
 the trainer carries TF~1's (Theorem~\ref{thm:rmsprop_faithful}).
 
 \textbf{The EMA shadows the BatchNorm buffers as well as the weights.}
-The paper's weight EMA (decay $0.9999$) averages the parameters;
-evaluation then has to pair those averaged weights with equally-lagged
+The paper's weight EMA (decay $0.9999$) averages the parameters
+(Theorem~\ref{thm:ema_faithful}); evaluation then has to pair those averaged weights with equally-lagged
 normalization statistics, so the trainer carries a second shadow over the
 BN running mean and variance (\texttt{ema\_bn}) and evaluates the pair.
 Averaged weights against live BN statistics is a mismatch large enough to
@@ -19843,7 +19903,7 @@ parameter, that an emitted optimizer update is its update law, or that
 one SGD step decreases the loss. A theorem that
 only restates a counted one at fixed dimensions or over the committed
 spec is not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
-\textbf{9 witnesses} and \textbf{40 step certificates}. Even Chapter~1's
+\textbf{9 witnesses} and \textbf{42 step certificates}. Even Chapter~1's
 toolkit is used straight away by a proven model, so no chapter is pure
 scaffolding.
 
@@ -19866,9 +19926,9 @@ Chapter & Contracts & Witnesses & Steps & New primitive / result \\
 7 (EfficientNet)  & 5  & --- & 4 & swish, sigmoid, SE, whole-net at representative depth, \textbf{full B0} (16 \mbox{MBConv} blocks); step tied, sync-BN twin, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
 8 (ConvNeXt)      & 6  & --- & 3 & GELU (tanh and exact, one record), LayerNorm, layer-scale, the $4 \times 4$/s4 patchify conv, whole-net at representative depth, \textbf{full ConvNeXt-T} (18 blocks); step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
 9 (ViT)           & 6  & --- & 4 & MHSA, block, vector LayerNorm and its block, \textbf{every depth $k$} (ViT-Tiny is $k = 12$), \texttt{vitFull}; the emitted graph denotes the tower, step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
-4--6 (optimizers) & --- & --- & 3 & Nesterov momentum and AdamW (Chapter~\ref{chap:bn}), LAMB and the global-norm clip (Chapter~\ref{chap:residual}), RMSProp in TensorFlow's form (Chapter~\ref{chap:depthwise}): each emitted update denotes its update law on the gradient node it consumes \\
+4--6 (optimizers) & --- & --- & 5 & Nesterov momentum and AdamW (Chapter~\ref{chap:bn}), LAMB, the global-norm clip and gradient accumulation (Chapter~\ref{chap:residual}), RMSProp in TensorFlow's form and the EMA shadow (Chapter~\ref{chap:depthwise}): each emitted update denotes its update law on the gradient node it consumes \\
 \hline
-                  & \textbf{44} & \textbf{9} & \textbf{40} & total \textbf{93} \\
+                  & \textbf{44} & \textbf{9} & \textbf{42} & total \textbf{95} \\
 \hline
 \end{tabular}
 \end{table}
@@ -19890,7 +19950,7 @@ The Verified VJP Proofs suite proves the \textbf{44 VJP contracts and
 9 witnesses} of Table~\ref{tab:theorem_budget}, each
 asserting backward \(= \sum_j \pdiv f\,x\,i\,j \cdot dy_j\), with their
 restatements at fixed dimensions and over the committed specs; the
-\textbf{40 step certificates} that tie the emitted programs to them, the
+\textbf{42 step certificates} that tie the emitted programs to them, the
 optimizer updates among them; on
 top of the foundation \(\pdiv\) calculus and the
 differentiability/forward/witness machinery they rest on --- and

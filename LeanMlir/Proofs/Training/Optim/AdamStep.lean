@@ -85,4 +85,33 @@ theorem adam_denom_pos {β₂ ε bc₂ : ℝ} (hε : 0 < ε) {v g : Vec n} (i : 
     0 < Real.sqrt (adamVNext β₂ v g i / bc₂) + ε :=
   add_pos_of_nonneg_of_pos (Real.sqrt_nonneg _) hε
 
+-- ════════════════════════════════════════════════════════════════
+-- § The model-EMA shadow
+-- ════════════════════════════════════════════════════════════════
+
+/-- **The model-EMA shadow**, `e' = d·e + (1 − d)·θ'`, read against the UPDATED parameter `θ'`.
+
+    It is `adamMNext` at `β₁ := d`, and the render emits it as exactly that op
+    (`RenderKit.optOne`'s `emaTail`: `adamMNextF` at `(%emad, %oemad)` on the optimizer's own
+    output), so no new `SHlo` constructor and no new faithfulness proof were needed —
+    `StableHLO.emaShadow_faithful` is `adamMNextF_faithful` at that instance. The decay `d` is a
+    runtime scalar because the reference warmup-corrects it, `d = min(decay, (1 + t)/(10 + t))`;
+    that schedule is the driver's and is not stated here. -/
+def emaNext (d : ℝ) (e θ' : Vec n) : Vec n := adamMNext d e θ'
+
+theorem emaNext_apply (d : ℝ) (e θ' : Vec n) (i : Fin n) :
+    emaNext d e θ' i = d * e i + (1 - d) * θ' i := rfl
+
+/-- The shadow's distance to the live weight shrinks by the factor `d` per step. -/
+theorem emaNext_lag (d : ℝ) (e θ' : Vec n) (i : Fin n) :
+    emaNext d e θ' i - θ' i = d * (e i - θ' i) := by
+  simp only [emaNext_apply]; ring
+
+/-- At `d = 1` the shadow is frozen; at `d = 0` it is the live weight. -/
+theorem emaNext_one (e θ' : Vec n) : emaNext 1 e θ' = e := by
+  funext i; simp [emaNext_apply]
+
+theorem emaNext_zero (e θ' : Vec n) : emaNext 0 e θ' = θ' := by
+  funext i; simp [emaNext_apply]
+
 end Proofs

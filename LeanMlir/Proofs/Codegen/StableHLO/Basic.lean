@@ -12,6 +12,7 @@ public import LeanMlir.Proofs.Architectures.Attention
 -- and `gradSumSq` — the per-leaf squared norm is SHARED with the clip rather than re-derived, so
 -- the two features cannot drift on what a norm is.
 public import LeanMlir.Proofs.Training.Optim.Lamb
+public import LeanMlir.Proofs.Training.Optim.Accum
 -- RmsPropStep imports only the two above, so this adds no cycle either.
 public import LeanMlir.Proofs.Training.Optim.RmsPropStep
 -- DropPath imports only Architectures.LayerNorm (for `layerScale`, which this file already has in
@@ -3472,6 +3473,15 @@ of to the SGD tail changes nothing about what is computed. The batched AdamW ren
 @[simp] theorem adamVNextF_faithful {n : Nat} (vN b2N ob2N : String) (ds : List Nat)
     (β₂ : ℝ) (v : Vec n) (e : SHlo n) :
     den (.adamVNextF vN b2N ob2N ds β₂ v e) = adamVNext β₂ v (den e) := rfl
+
+/-- **The model-EMA shadow is `adamMNextF` at the decay, reading the UPDATED parameter.**
+    `RenderKit.optOne`'s `emaTail` emits `adamMNextF` at `(%emad, %oemad)` with the optimizer's
+    own output `θ'` as its child; its denotation is `Proofs.emaNext d e θ' = d·e + (1 − d)·θ'`,
+    by `rfl`. The decay is a runtime scalar (warmup-corrected by the driver), so one render serves
+    the whole schedule, as for `%lr`. -/
+@[simp] theorem emaShadow_faithful {n : Nat} (eN dN odN θN : String) (ds : List Nat)
+    (d : ℝ) (e θ' : Vec n) :
+    den (.adamMNextF eN dN odN ds d e (.operand θN θ')) = emaNext d e θ' := rfl
 
 /-- **AdamW parameter-step faithfulness.** The node's denotation is `Proofs.adamWParam` of the
     child's gradient (by definition of `den`), so ties stated over `den` can use it; the 26-op
