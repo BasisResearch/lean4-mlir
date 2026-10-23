@@ -270,28 +270,28 @@ Let's find out.
 \chapter*{How this book is organized}
 \addcontentsline{toc}{chapter}{How this book is organized}
 
-A short \emph{Foundations} chapter comes first: what a derivative is in
+\emph{Getting started} comes next: four install steps, then one command per
+tier. A short \emph{Foundations} chapter follows it: what a derivative is in
 Mathlib, why the book tracks vector--Jacobian products rather than
-Jacobians, and what training adds to inference. Everything after assumes it.
+Jacobians, and what training adds to inference. Everything after assumes
+both.
 
 \textbf{Part 1: The framework (Chapters 1--9).} One new primitive per
 chapter, proved correct as we go. The first half pins down the
 composition rules (chain, additive fan-in, product) on dense layers,
 convolution, and normalization. The second half climbs the ladder to ViT.
-The chapters are also the book's runnable spine: \texttt{lake run mnist},
-\texttt{lake run cifar}, \texttt{lake run imagenette} and \texttt{lake run
-imagenet} train them in this order, one tier per scale, and ``Getting
-started'' is where those commands live.
+Each chapter opens by running its network and closes with a recap, and
+between them are the theorems, the example on real data, and the MLIR.
+From Chapter~\ref{chap:residual} on, each chapter also carries an ImageNet
+recipe, trained once through the JAX reference and once through the
+verified trainer, and the two scored against each other.
 
 \begin{itemize}
   \item \textbf{Chapter 1: MNIST: linear classifier.} Chain rule, sum
-    rule, and product rule for partial derivatives. Every backward in the
-    book is a VJP (vector-Jacobian product) composed from these. This is
-    the book's densest chapter, because it builds the whole pipeline
-    (foundation calculus \(\to\) VJP framework \(\to\)
-    forward/loss/backward/SGD \(\to\) GPU) and then uses it on the MNIST
-    linear classifier, proven and trained. Everything after is just
-    adding a layer.
+    rule, and product rule for partial derivatives, the VJP framework,
+    and the whole forward / loss / backward / SGD / GPU pipeline, used
+    straight away on the linear classifier. The densest chapter in the
+    book. Everything after is adding a layer.
   \item \textbf{Chapter 2: MNIST: 1D MLP.} ReLU and hidden layers on top
     of Chapter 1's dense layer, which gives us the first multi-layer
     backward pass.
@@ -316,11 +316,6 @@ started'' is where those commands live.
     capstone. ViT-S and B are the side quest.
 \end{itemize}
 
-From Chapter~\ref{chap:residual} on, each chapter also closes with an
-ImageNet pair: the paper's recipe trained once through the JAX reference
-and once through the verified trainer, and the two scored against each
-other.
-
 \textbf{Part 2: The bestiary (Chapter 10).} Forty-six further
 architectures, from U-Net to Mamba to Stable Diffusion, each written as
 a \texttt{NetSpec} in about fifteen lines of Lean and led by how many new
@@ -332,148 +327,56 @@ groups carry a demo trained on data from that field. A closing section
 on game theory trains Pong, Leduc poker and tic-tac-toe against their
 exact solutions, with the AlphaGo family and Deep CFR as its catalogue.
 
-\textbf{Appendices.} Toolchain setup (A), how every claim is checked
-(B), the ImageNet tier (C), and data availability (D).
+\textbf{Appendices.} The rest of the toolchain and the six GPU platforms
+(A), how every claim is checked, with the tally of what each chapter
+proves (B), the ImageNet tier (C), and data availability (D).
 
-\subsection*{Theorem and definition budget per chapter}
-
-If you're planning how much of the book to read, here is the size of what
-each chapter proves about gradients. Each one proves a handful of VJP
-contracts, which are machine-checked theorems that a layer's backward
-function computes the right gradient. Formally that means
-\(\texttt{backward}\,x\,dy\,i = \sum_j \pdiv f\,x\,i\,j \cdot dy_j\), so
-the backward equals that layer's \(\pdiv\)-Jacobian contracted against
-the incoming cotangent, which the Foundations chapter builds up from
-scratch. A \emph{contract} is that theorem with the weights of \(f\) left
-as variables, so it holds at every weight setting; there is one per
-function, where a function is a layer, an operator, a block, or a whole
-network at a stated depth (a network at two depths, or per example and at
-batch statistics, is two functions). A \emph{witness} is the same theorem
-at one fixed set of weights: a hand-built tiny instance, a live-shaped one
-at \(224 \times 224\), or the weights a training run produced. It shows
-the contract's hypotheses can be met, and is kept in its own column rather
-than counted as a contract. A \emph{step certificate} is a theorem about
-the program rather than the math alone: that the train step the book emits
-denotes the certified gradient step (a fold for the small nets, a step tie
-at full width), that a hand-written backward chain is the VJP it was
-written to be, that a data-parallel render's step is one device's step on
-the global batch, that a gradient node is the loss's derivative in its
-parameter, or that one SGD step decreases the loss. A theorem that
-only restates a counted one at fixed dimensions or over the committed
-spec is not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
-\textbf{9 witnesses} and \textbf{37 step certificates}. Even Chapter~1's
-toolkit is used straight away by a proven model, so no chapter is pure
-scaffolding. Table~\ref{tab:theorem_budget} is the count, chapter by chapter.
-
-\begin{table}[H]
-\centering
-\caption{Theorems per chapter: contracts, witnesses and step certificates, and the primitive or result each chapter adds.}
-\label{tab:theorem_budget}
-\small
-\begin{tabular}{l c c c p{8cm}}
-\hline
-Chapter & Contracts & Witnesses & Steps & New primitive / result \\
-\hline
-1 (MNIST: linear) & 1  & --- & 2 & dense, softmax-CE, \texttt{mnistLinear}: the whole classifier; the emitted step is the certified step; one SGD step descends \\
-2 (MNIST: 1D)     & 2  & 2   & 2 & ReLU, MLP; witnesses hand-built and at trained weights; the six emitted updates are the certified step; SGD descends on \(W_0\) \\
-3 (MNIST: 2D)     & 3  & 1   & 2 & conv2d, maxPool2, whole-net MNIST CNN; witness at trained weights; the four conv updates are the certified steps; SGD descends on \(W_2\) \\
-4 (CIFAR: BN)     & 6  & 1   & 5 & per-channel BN (flat $+$ NCHW) and BN at batch statistics; CIFAR whole-nets at 2 convs and at 8 convs $\pm$BN; a hand-built tiny witness; conv and BN updates tied, the 8-conv step tied with and without BN; SGD descends at the last conv \\
-5 (ResNet-34)     & 9  & 3   & 7 & residual ($+$proj), GAP, stride-2 conv ($+$its weight grad), the $3 \times 3$/s2 stem pool, whole-net \texttt{cnn}; \textbf{full-depth ResNet-34 and ResNet-50} at batch statistics; witnesses: a hand-built BN CNN, and the full-width ResNet-34 and ResNet-50 at $224 \times 224$ (ResNet-50 also at 160) with a non-zero backward; both batched steps tied (ResNet-50 also at BCE), both sync-BN twins, the ResNet-50 backward chain is the VJP, both steps' gradient nodes are the loss's derivative \\
-6 (MobileNetV2)   & 6  & 2   & 8 & ReLU6, depthwise (stride 1$+$2); \texttt{mobilenetv2} at representative depth and at \textbf{all 17 blocks} at batch statistics; \textbf{\mbox{MobileNetV4}} at full depth; witnesses: full-width V2 and V4 at $224 \times 224$ with a non-zero backward; both steps tied, both sync-BN twins, both backward chains are the VJP, both steps' gradient nodes are the loss's derivative \\
-7 (EfficientNet)  & 5  & --- & 4 & swish, sigmoid, SE, whole-net at representative depth, \textbf{full B0} (16 \mbox{MBConv} blocks); step tied, sync-BN twin, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
-8 (ConvNeXt)      & 6  & --- & 3 & GELU (tanh and exact, one record), LayerNorm, layer-scale, the $4 \times 4$/s4 patchify conv, whole-net at representative depth, \textbf{full ConvNeXt-T} (18 blocks); step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
-9 (ViT)           & 6  & --- & 4 & MHSA, block, vector LayerNorm and its block, \textbf{every depth $k$} (ViT-Tiny is $k = 12$), \texttt{vitFull}; the emitted graph denotes the tower, step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
-\hline
-                  & \textbf{44} & \textbf{9} & \textbf{37} & total \textbf{90} \\
-\hline
-\end{tabular}
-\end{table}
-
-That's the ladder at a glance. Every chapter's theorems section opens
-with its dependency graph, every box a Lean theorem and a link, and
-Figure~\ref{fig:spines} in Chapter~\ref{chap:tensor} follows the five
-chapter networks' certificates back to the Chapter~1 calculus, chapter by
-chapter. The per-chapter detail lives where the work does, because each
-chapter names its contracts as it proves them. Appendix~\ref{app:verification}
-covers how those claims get checked, through the audits, the bridge
-theorems, and the hardware oracles. It reads most naturally once you've
-been through a few chapters, so it's safe to skip on a first pass.
-
-\subsection*{Roadmap: skip to your target architecture}
+\section*{Roadmap: skip to your target architecture}
 
 Every theorem and definition in the book carries a
 \texttt{\textbackslash uses\{\}} annotation, so the path from ``which
 architecture do I care about?'' back to the pieces you need is explicit.
-It comes free from doing the proofs in Lean. Chapter~1 is the one chapter
-every target reads in full: the foundation rules, the dense layer and the
-loss. The real decision is which later chapters to read, and whether you
-need Chapter~9's matrix-machinery section.
+It comes free from doing the proofs in Lean, and
+Table~\ref{tab:roadmap} reads it off. Chapter~1 is the one chapter every
+target reads in full: the foundation rules, the dense layer and the loss.
 
-\textbf{Target: MLP (Ch~\ref{chap:mlp}).} Ch~1 + Ch~\ref{chap:mlp}.
-The MLP backward pass uses chain rule, additive fan-in, identity,
-and the Dense Jacobians, all of them Chapter~1's.
+ResNet-34 is a great stopping point. It was state of the art for years
+and still routinely gets 90\% on Imagenette, and its bigger brother
+ResNet-50 is the standard benchmark for production image classification.
+If your destination is a real image classifier that works,
+Chapters~1--\ref{chap:residual} are the whole reading list and
+Chapters~\ref{chap:depthwise}--\ref{chap:attention} are optional.
 
-\textbf{Target: CNN, with or without BN (Ch \ref{chap:cnn}--\ref{chap:bn}).}
-Ch~1 + Ch~\ref{chap:mlp}--\ref{chap:bn}. CNN adds the Conv2d and MaxPool
-VJPs, proved from Chapter~1's rules, and BN adds the inverse-stddev
-smoothness chain.
+\begin{table}[H]
+\centering
+\caption{What each target architecture needs, read off the
+\texttt{\textbackslash uses} graph. Figure~\ref{fig:chapter_map} in
+Appendix~\ref{app:verification} draws the same graph at the scale of
+chapters.}
+\label{tab:roadmap}
+\small
+\begin{tabular}{@{}l p{3.4cm} p{7.6cm}@{}}
+\textbf{Target} & \textbf{Read} & \textbf{What it adds} \\[2pt]
+\hline \\[-6pt]
+MLP & Ch~1, \ref{chap:mlp} & ReLU on Chapter~1's dense layer; the first multi-layer backward pass \\[3pt]
+CNN, with or without BN & Ch~1--\ref{chap:bn} & the Conv2d and MaxPool VJPs; BN's inverse-stddev smoothness chain \\[3pt]
+ResNet-34 & Ch~1--\ref{chap:residual} & residual fan-in, global average pooling, the stride-2 convolution and the stem pool; one batch-lifting lemma borrowed from \S\ref{sec:matrix_machinery} and taken as read \\[3pt]
+MobileNetV2 & Ch~1--\ref{chap:bn}, \ref{chap:depthwise} & depthwise conv, the Chapter~\ref{chap:cnn} recipe with one fewer summation level; nothing from Chapter~\ref{chap:residual} \\[3pt]
+EfficientNet & Ch~1--\ref{chap:bn}, \ref{chap:depthwise}, \ref{chap:se}, and Chapter~\ref{chap:residual}'s residual VJP & squeeze-and-excitation as an elementwise product over a global pool and $1\times1$ convs \\[3pt]
+ConvNeXt & Ch~1--\ref{chap:depthwise}, \ref{chap:layernorm} & GELU and LayerNorm, both from Chapter~1's rules; the \(7 \times 7\) depthwise kernel is Chapter~\ref{chap:depthwise}'s; nothing from Chapter~\ref{chap:se} \\[3pt]
+Attention / ViT & Ch~1, \ref{chap:bn}'s inverse-stddev chain, \ref{chap:layernorm}'s GELU and LayerNorm, \ref{chap:attention} & the matrix-level machinery of \S\ref{sec:matrix_machinery} and the attention proofs; no convolution chapter on its chain \\
+\end{tabular}
+\end{table}
 
-\textbf{Target: ResNet-34 (Ch~\ref{chap:residual}).} Ch~1--\ref{chap:residual}.
-Adds the residual additive fan-in, global average pooling, the stride-2
-convolution and the stem pool on top of CNN+BN. The one borrowed piece is
-the lemma that lifts a per-example backward over the rows of a batch,
-proved in \S\ref{sec:matrix_machinery} and taken as read here. This is a
-great stopping point. ResNet-34 was state of the
-art for years and still routinely gets 90\% on Imagenette, and its
-bigger brother ResNet-50 is the standard benchmark for
-production image classification. If your destination is a real
-image classifier that works, Ch~1--\ref{chap:residual} is a complete
-reading list and Chs \ref{chap:depthwise}--\ref{chap:attention} are
-strictly skippable.
-
-\textbf{Target: MobileNetV2 (Ch~\ref{chap:depthwise}).} CNN+BN
-subset $+$ Ch~\ref{chap:depthwise}; nothing from
-Chapter~\ref{chap:residual} is cited. Adds depthwise conv VJPs, the same
-recipe as Ch~\ref{chap:cnn} with one fewer summation level.
-
-\textbf{Target: EfficientNet (Ch~\ref{chap:se}).} MobileNet subset
-$+$ Chapter~\ref{chap:residual}'s residual VJP $+$ Ch~\ref{chap:se}.
-Adds the SE block VJP, which is squeeze-and-excitation as an elementwise
-product over global pool and 1$\times$1 convs.
-
-\textbf{Target: ConvNeXt (Ch~\ref{chap:layernorm}).} ResNet and
-MobileNet subsets $+$ Ch~\ref{chap:layernorm}; nothing from
-Chapter~\ref{chap:se} is cited. Adds GELU and LayerNorm as new operator
-primitives, both proved from Ch~1 foundation rules; the \(7 \times 7\)
-depthwise kernel is Chapter~\ref{chap:depthwise}'s.
-
-\textbf{Target: Attention / ViT (Ch~\ref{chap:attention}).}
-Ch~1 $+$ Ch~\ref{chap:bn}'s inverse-stddev chain $+$
-Ch~\ref{chap:layernorm}'s GELU and LayerNorm $+$ Ch~\ref{chap:attention};
-no convolution chapter is on its chain. Chapter~\ref{chap:attention}
-proves the matrix-level machinery --- matmul Jacobians and VJPs in both
-factor positions, transpose, scalar-scale, row-wise lifting, and 3D
-extensions --- in \S\ref{sec:matrix_machinery}, just before the attention
-proofs that use it.
-
-These chains are read off the \texttt{\textbackslash uses} graph;
-Figure~\ref{fig:chapter_map} in Appendix~\ref{app:verification} draws
-the same graph at the scale of chapters.
-
-If you're unsure: read Ch~1 carefully, pick an
-architecture target that fits your interest, follow the chapter
-chain to it. You can always extend the read list later as new
+If you're unsure: read Chapter~1 carefully, pick a target that fits your
+interest, and follow its row. You can always extend the list later as new
 architectures catch your eye.
 
-\subsection*{For readers of the first book}
+\section*{For readers of the first book}
 
-If you're coming to this book from \emph{Convolutional Neural
-Networks with Swift for TensorFlow}, you already know most of the
-architectures and the forward-pass intuition. VGG, ResNet,
-MobileNet, and EfficientNet are all familiar, and you've built and
-trained them at least once.
-
-Chapters~\ref{chap:layernorm} and~\ref{chap:attention} will be new
+If you're coming from \emph{Convolutional Neural Networks with Swift for
+TensorFlow}, you know the architectures of Chapters~2--7 and have trained
+them. Chapters~\ref{chap:layernorm} and~\ref{chap:attention} will be new
 even on the forward-pass side. I shipped the final draft of the first
 book in July 2020. In late August the grapevine started whispering that
 something attention-shaped was coming, and the ViT paper landed on arXiv
@@ -481,46 +384,129 @@ that October. Everything here that looks like a transformer postdates the
 first book: LayerNorm, GELU, multi-head attention. Otherwise this is the
 same architectures, with the backward pass now formally checked.
 
-Concretely, that means:
+What changes for you:
 
 \begin{itemize}
-\item \textbf{The architecture introductions in chapters 2-7 will
-  feel redundant.} The primary sequence is a trimmed version of the
-  first-book progression, kept so the chapters stay consistent.
-  Head straight for the \texttt{*HasVJP} theorems and the
-  \texttt{\textbackslash uses\{\}} annotations that pin down the
-  backward pass.
-
-\item \textbf{Chapter 1 is the new material for you.} Its first
-  half --- the calculus every later chapter composes --- is what the
-  first book didn't have. It's where the gradients get formalized. If you only read one chapter
-  thoroughly, make it this one.
-
-\item \textbf{Training recipe upgraded.} The first book's codegen
-  trained with SGD (momentum 0.9, learning rate 0.002) and no other
-  tricks, one recipe held constant across architectures for
-  consistency. This book adopts the modern recipe. Adam, cosine
-  decay, linear warmup, weight decay, label smoothing, and basic
-  data augmentation are how this book's Imagenette results were
-  achieved. That full recipe is assembled and ablated in
-  Chapter~\ref{chap:residual} (ResNet) and ran against each
-  architecture after as a common baseline. The ImageNet recipes from
-  Chapter~\ref{chap:residual} on keep each paper's own optimizer instead
-  --- SGD for the ResNets, RMSProp for MobileNetV2 and EfficientNet-B0,
-  AdamW for ConvNeXt and ViT --- trained through paired Lean 4 \(\to\)
-  JAX and Lean 4 \(\to\) PJRT trainers, with modern data augmentations.
-
-\item \textbf{The codegen is new.} The first book's Swift-for-TensorFlow
-  pipeline is replaced with Lean 4 \(\to\) StableHLO MLIR \(\to\) XLA
-  \(\to\) GPU. That mostly doesn't affect the math. It changes where the
-  gradients are computed, at codegen time in Lean rather than at runtime
-  by a framework.
+\item \textbf{Chapter 1 is the new material.} Its first half, the
+  calculus every later chapter composes, is what the first book didn't
+  have. If you read one chapter thoroughly, make it this one.
+\item \textbf{The architecture introductions in Chapters 2--7 will feel
+  redundant.} Head for the \texttt{*HasVJP} theorems and the
+  \texttt{\textbackslash uses\{\}} annotations that pin down the backward
+  pass.
+\item \textbf{The training recipe is modern.} Adam, cosine decay, warmup,
+  weight decay, label smoothing and augmentation, assembled and ablated
+  in Chapter~\ref{chap:residual} and run as the common Imagenette
+  baseline; the ImageNet recipes keep each paper's own optimizer.
+\item \textbf{The codegen is new.} Lean 4 \(\to\) StableHLO \(\to\) XLA
+  \(\to\) GPU replaces Swift for TensorFlow. The math is unchanged; the
+  gradients are now computed at codegen time in Lean rather than at
+  runtime by a framework.
 \end{itemize}
 
 Practical reading style: work through Chapter~\ref{chap:tensor}
 slowly, then skim the rest at the pace of ``forward pass I know
 \(\to\) new \texttt{*HasVJP} theorem \(\to\) see what theorems it
 cites \(\to\) move on.'' The dependency DAG is your friend.
+
+\chapter*{Getting started}
+\addcontentsline{toc}{chapter}{Getting started}
+
+Install first, read while it downloads. Four steps put a trained network on
+your GPU, and after that every chapter opens with a command you can run. This
+is the default path, XLA through PJRT, and the one every number in this book
+was measured on. There is no compiler to build. The proofs-only track, the
+six GPU platforms, the second lowerer and troubleshooting are
+Appendix~\ref{app:getting_started}; ImageNet-1k is
+Appendix~\ref{app:imagenet_tier}.
+
+\section*{Install}
+
+\begin{enumerate}
+  \item \textbf{Install Lean 4.} Uses \texttt{elan} (like \texttt{rustup} for
+    Rust) to manage toolchain versions.
+\begin{verbatim}
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+  -sSf | sh
+\end{verbatim}
+
+  \item \textbf{Get an XLA PJRT plugin}, one prebuilt shared library. It
+    ships under a JAX name because that is the only place XLA's GPU plugins are
+    packaged, but these wheels carry the plugin and nothing else (not
+    \texttt{jax}, not \texttt{jaxlib}), and the shim opens the \texttt{.so}
+    directly through the PJRT C API, so no interpreter runs at training time.
+\begin{verbatim}
+python3 -m venv .venv && . .venv/bin/activate
+pip install jax-cuda12-pjrt     # NVIDIA, CUDA 12 -- the PJRT plugin ONLY
+pip install jax-rocm7-pjrt      # AMD            -- no jax, no jaxlib
+\end{verbatim}
+    The shim looks under
+    \texttt{.venv/lib/python3.12/site-packages/jax\_plugins/}, which is where
+    that command puts it on a Python 3.12 venv. On any other Python, or for
+    a plugin anywhere else (a CUDA 13 card's \texttt{jax-cuda13-pjrt}, for
+    one), \texttt{\$PJRT\_PLUGIN} names the \texttt{.so} and always wins. The
+    plugin is version-matched to your CUDA/ROCm install: a 500\,MB download,
+    not a build.
+
+  \item \textbf{Build the FFI shim} (needs only libc and \texttt{dlopen}):
+\begin{verbatim}
+gcc -fPIC -O2 -shared ffi/pjrt_ffi.c -ldl -o ffi/libpjrt_ffi.so
+\end{verbatim}
+
+  \item \textbf{Fetch data} for the tier(s) you want:
+\begin{verbatim}
+./scripts/datasets/download_mnist.sh       # MNIST       (mnist tier)
+./scripts/datasets/download_cifar.sh       # CIFAR-10    (cifar tier)
+./scripts/datasets/download_imagenette.sh  # Imagenette 320px, 330 MB (imagenette tier)
+\end{verbatim}
+
+  \item \textbf{Build and run a trainer.} No backend selection: XLA finds
+    the device. The linear MNIST classifier of Chapter~\ref{chap:tensor}
+    trains in seconds:
+\begin{verbatim}
+lake build mnist-linear-verified
+.lake/build/bin/mnist-linear-verified data
+\end{verbatim}
+    The trainers take the data root as their one argument and default to
+    \texttt{data}. The Imagenette nets build the same way
+    (\texttt{lake build resnet34-verified-adam}) and run for the better part
+    of an hour each; the tiers below bundle them.
+\end{enumerate}
+
+\section*{One command per tier}
+\label{sec:getting_started_track3}
+
+With the install in place, one command builds and runs a time-budgeted
+group of verified trainers.
+
+\begin{verbatim}
+lake run mnist        # verified MNIST: linear, MLP, CNN              (~1 min)
+lake run cifar        # ch.4 cifar8w: SGD/momentum/AdamW x bn/no-bn  (~6 min)
+lake run imagenette   # the Part-I nets at 224^2, 80-epoch AdamW      (~6 h)
+lake run imagenet     # ImageNet-1k on 4 GPUs: plans; `start` runs it (Appendix C)
+\end{verbatim}
+
+The three times are XLA wall-clocks on one RTX 4060 Ti, resident; the fourth
+tier is weeks of four-card time and has Appendix~\ref{app:imagenet_tier} to
+itself. The Imagenette figure is the five chapter nets at their chapters'
+times, about 3.7 hours between them, plus ResNet-50 (about an hour and a
+half) and MobileNetV4 (under an hour), which ride in the same tier. Each
+trainer's transcript is teed to \texttt{runs/<date>-<trainer>/}. Each tier
+also has an \texttt{-iree} twin, which is Appendix~\ref{app:getting_started}'s
+business. The tiers bundle these targets, and any one builds on its own:
+
+\begin{itemize}
+  \item \texttt{mnist}: \texttt{mnist-linear-verified},
+    \texttt{mnist-mlp-verified}, \texttt{mnist-cnn-verified}
+  \item \texttt{cifar}: \texttt{cifar8w-ablation} and
+    \texttt{cifar8w-bn-ablation}, each running SGD / momentum / AdamW in
+    sequence --- six arms in two binaries
+  \item \begingroup\raggedright \texttt{imagenette}, in chapter order, each side
+    quest after the chapter it belongs to: \texttt{resnet34-verified-adam},
+    \texttt{resnet50-verified-adam}, \texttt{mobilenetv2-verified-adam},
+    \texttt{mobilenetv4-verified-adam}, \texttt{efficientnet-verified-adam},
+    \texttt{convnext-verified-adam}, \texttt{vit-verified-adam}\par\endgroup
+\end{itemize}
 
 \chapter*{Foundations}
 \addcontentsline{toc}{chapter}{Foundations}
@@ -2313,8 +2299,7 @@ to the same driver. Only the spec changes. That is the framework pitch
 in concrete form: once the driver is written and the layers are proved
 one at a time, every architecture in the book runs through it with no
 further infrastructure code. It all runs on your hardware, and
-Appendix~\ref{app:getting_started} walks you through the toolchain
-setup.
+\emph{Getting started}, at the front of the book, is the install.
 \section{MLIR: Training Step}
 \label{sec:mlir_training_step}
 
@@ -19484,12 +19469,13 @@ def muZeroGoPredictionValue : NetSpec where
 \setbookmarksdepth{1}
 \appendix
 
-\chapter{Getting started}
+\chapter{Toolchain and platforms}
 \label{app:getting_started}
 
-If you want to just see it run, meaning train a real neural network end to
-end with the Lean $\to$ MLIR $\to$ GPU pipeline from Part 1, this appendix is
-the smallest path from zero to a trained model.
+\emph{Getting started}, at the front of the book, is the smallest path from
+zero to a trained model. This appendix is the rest of the toolchain: the
+proofs-only track, the six GPU platforms, troubleshooting, and the second
+lowerer.
 
 Table~\ref{tab:getting_started_tracks} is the scale. What you install depends on
 how far up it you want to go, and the steps are not evenly spaced.
@@ -19498,12 +19484,12 @@ how far up it you want to go, and the steps are not evenly spaced.
 \centering
 \caption{The four tracks: what each lets you do and what it needs.}
 \label{tab:getting_started_tracks}
-\begin{tabular}{@{}lll@{}}
-\textbf{What you want} & \textbf{What you need} & \textbf{Track} \\[2pt]
+\begin{tabular}{@{}llll@{}}
+\textbf{What you want} & \textbf{What you need} & \textbf{Track} & \textbf{Where} \\[2pt]
 \hline \\[-6pt]
-Read and check the proofs      & Lean. No GPU.                    & 1 \\
-MNIST / CIFAR / Imagenette     & Lean + one plugin file.          & 2, 3 \\
-Full ImageNet-1k               & the above, plus Python + tfds.   & 4, Appendix~\ref{app:imagenet_tier} \\
+Read and check the proofs      & Lean. No GPU.                    & 1    & below \\
+MNIST / CIFAR / Imagenette     & Lean + one plugin file.          & 2, 3 & \emph{Getting started} \\
+Full ImageNet-1k               & the above, plus Python + tfds.   & 4    & Appendix~\ref{app:imagenet_tier} \\
 \end{tabular}
 \end{table}
 
@@ -19559,103 +19545,6 @@ why thirteen of them are stated in a file that imports nothing but Mathlib,
 and what the run adds to \texttt{\#print axioms} is \S\ref{sec:comparator}
 in Appendix~\ref{app:verification}.
 
-\section*{Track 2: Native install (XLA/PJRT)}
-
-This is the default path and the one every number in this book was measured
-on. There is no compiler to build.
-
-\begin{enumerate}
-  \item \textbf{Install Lean 4.} Uses \texttt{elan} (like \texttt{rustup} for
-    Rust) to manage toolchain versions.
-\begin{verbatim}
-curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
-  -sSf | sh
-\end{verbatim}
-
-  \item \textbf{Get an XLA PJRT plugin}, one prebuilt shared library. It
-    ships under a JAX name because that is the only place XLA's GPU plugins are
-    packaged, but these wheels carry the plugin and nothing else (not
-    \texttt{jax}, not \texttt{jaxlib}), and the shim opens the \texttt{.so}
-    directly through the PJRT C API, so no interpreter runs at training time.
-\begin{verbatim}
-python3 -m venv .venv && . .venv/bin/activate
-pip install jax-cuda12-pjrt     # NVIDIA, CUDA 12 -- the PJRT plugin ONLY
-pip install jax-rocm7-pjrt      # AMD            -- no jax, no jaxlib
-\end{verbatim}
-    The shim looks under
-    \texttt{.venv/lib/python3.12/site-packages/jax\_plugins/}, which is where
-    that command puts it on a Python 3.12 venv. On any other Python, or for
-    a plugin anywhere else (a CUDA 13 card's \texttt{jax-cuda13-pjrt}, for
-    one), \texttt{\$PJRT\_PLUGIN} names the \texttt{.so} and always wins. The
-    plugin is version-matched to your CUDA/ROCm install: a 500\,MB download,
-    not a build.
-
-  \item \textbf{Build the FFI shim} (needs only libc and \texttt{dlopen}):
-\begin{verbatim}
-gcc -fPIC -O2 -shared ffi/pjrt_ffi.c -ldl -o ffi/libpjrt_ffi.so
-\end{verbatim}
-
-  \item \textbf{Fetch data} for the tier(s) you want:
-\begin{verbatim}
-./scripts/datasets/download_mnist.sh       # MNIST       (mnist tier)
-./scripts/datasets/download_cifar.sh       # CIFAR-10    (cifar tier)
-./scripts/datasets/download_imagenette.sh  # Imagenette 320px, 330 MB (imagenette tier)
-\end{verbatim}
-
-  \item \textbf{Build and run a trainer.} No backend selection: XLA finds
-    the device. The linear MNIST classifier of Chapter~\ref{chap:tensor}
-    trains in seconds:
-\begin{verbatim}
-lake build mnist-linear-verified
-.lake/build/bin/mnist-linear-verified data
-\end{verbatim}
-    The trainers take the data root as their one argument and default to
-    \texttt{data}. The Imagenette nets build the same way
-    (\texttt{lake build resnet34-verified-adam}) and run for the better part
-    of an hour each; Track 3 bundles them. Parameters stay on the device
-    between steps by default, and the tiers below are timed that way.
-    \texttt{PJRT\_FFI\_RESIDENT=0} forces the copying path, which the
-    residency gate uses as its control: the same run is 1.3--3$\times$
-    slower and its numerics are unchanged. Pick a card with
-    \texttt{CUDA\_VISIBLE\_DEVICES}, \texttt{HIP\_VISIBLE\_DEVICES} or, on
-    the Arc, \texttt{ZE\_AFFINITY\_MASK}, as with any GPU program.
-\end{enumerate}
-
-\section*{Track 3: One-command demo tiers}
-\label{sec:getting_started_track3}
-
-With Track 2 in place, one command builds and runs a time-budgeted group of
-verified trainers.
-
-\begin{verbatim}
-lake run mnist        # verified MNIST: linear, MLP, CNN              (~1 min)
-lake run cifar        # ch.4 cifar8w: SGD/momentum/AdamW x bn/no-bn  (~6 min)
-lake run imagenette   # the Part-I nets at 224^2, 80-epoch AdamW      (~6 h)
-lake run imagenet     # ImageNet-1k on 4 GPUs: plans; `start` runs it (Appendix C)
-\end{verbatim}
-
-The three times are XLA wall-clocks on one RTX 4060 Ti, resident; the fourth
-tier is weeks of four-card time and has Appendix~\ref{app:imagenet_tier} to
-itself. The Imagenette figure is the five chapter nets at their chapters'
-times, about 3.7 hours between them, plus ResNet-50 (about an hour and a
-half) and MobileNetV4 (under an hour), which ride in the same tier. Each
-trainer's transcript is teed to \texttt{runs/<date>-<trainer>/}. Each tier
-also has an \texttt{-iree} twin --- see \emph{The second lowerer} at the
-end. The tiers bundle these targets, and any one builds on its own:
-
-\begin{itemize}
-  \item \texttt{mnist}: \texttt{mnist-linear-verified},
-    \texttt{mnist-mlp-verified}, \texttt{mnist-cnn-verified}
-  \item \texttt{cifar}: \texttt{cifar8w-ablation} and
-    \texttt{cifar8w-bn-ablation}, each running SGD / momentum / AdamW in
-    sequence --- six arms in two binaries
-  \item \begingroup\raggedright \texttt{imagenette}, in chapter order, each side
-    quest after the chapter it belongs to: \texttt{resnet34-verified-adam},
-    \texttt{resnet50-verified-adam}, \texttt{mobilenetv2-verified-adam},
-    \texttt{mobilenetv4-verified-adam}, \texttt{efficientnet-verified-adam},
-    \texttt{convnext-verified-adam}, \texttt{vit-verified-adam}\par\endgroup
-\end{itemize}
-
 \section*{Platforms}
 \label{sec:getting_started_platforms}
 
@@ -19674,7 +19563,7 @@ variable away from the same Lean binaries, the plugin pinned per platform.
 \hline \\[-6pt]
 \cellleft NVIDIA, CUDA 12 & \cellleft \texttt{jax-cuda12-pjrt} 0.11.0 (CUDA 12.9, cuDNN 9.23) & \cellleft the book's numbers; Tracks 1--4 \\[4pt]
 \cellleft NVIDIA, CUDA 13 & \cellleft \texttt{jax-cuda13-pjrt} 0.11.1 (CUDA 13.3, cuDNN 9.24) & \cellleft Track 4 on record: the four-card ImageNet runs \\[4pt]
-\cellleft AMD, ROCm 7.2 & \cellleft \texttt{jax-rocm7-pjrt} 0.11.0 (Track 2's second line) & \cellleft in the code (\texttt{HIP\_VISIBLE\_DEVICES}, the suite's \texttt{--backend rocm}) \\[4pt]
+\cellleft AMD, ROCm 7.2 & \cellleft \texttt{jax-rocm7-pjrt} 0.11.0 (the second \texttt{pip} line of \emph{Getting started}) & \cellleft in the code (\texttt{HIP\_VISIBLE\_DEVICES}, the suite's \texttt{--backend rocm}) \\[4pt]
 \cellleft Jetson Orin Nano 8\,GB, JetPack 6.2 & \cellleft jax 0.11.1 built for sm\_87 against cuDNN 9.12, per \texttt{deploy/ORIN.md} & \cellleft Track 2 on record, and of Track 3 the MNIST CNN, the CIFAR tier and ViT-Tiny over 80 epochs; \texttt{lake run imagenette-orin}, the six-row Imagenette tier at the board's memory, is the next run \\[4pt]
 \cellleft Apple Silicon, Metal (M1 MacBook Air, 16\,GB, macOS 26) & \cellleft \texttt{jax-graft} 0.0.5 (\texttt{metal-pjrt-core}, platform \texttt{mtl}: jaxlib 0.11.2's XLA with a Metal backend), per \texttt{deploy/MAC.md} & \cellleft Track 2 and the MNIST tier of Track 3 on record in \texttt{deploy/MAC.md} (92.10 / 97.79 / 98.71\%, against CUDA's medians 92.10 / 97.78 / 98.78); CIFAR and ResNet-34 train, their full runs to come \\[4pt]
 \cellleft Intel Arc Pro B50, oneAPI (16\,GB, Battlemage, kernel 7.0) & \cellleft \texttt{jax-oneapi-pjrt} 0.11.2 (Intel's OpenXLA plugin, platform \texttt{oneapi}, its oneAPI runtime as wheels), per \texttt{deploy/ARC\_B50.md} & \cellleft Track 2 and the MNIST and CIFAR tiers of Track 3 on record, matching CUDA (92.10 / 97.83 / 98.74\%; CIFAR 76.77\%), bf16 included; all seven Imagenette nets train, their full runs to come \\
@@ -19704,15 +19593,23 @@ empty, as the Mac's are, the runbook is the record.
 \begin{itemize}
   \item \textbf{\texttt{no lowerer shim could be loaded}.} No
     \texttt{ffi/libpjrt\_ffi.so}. Build it with the \texttt{gcc} line in
-    Track 2, which needs nothing but libc. (Under
+    \emph{Getting started}, which needs nothing but libc. (Under
     \texttt{LEAN\_MLIR\_LOWERER=iree} the same message says
     \texttt{wanted: iree}, and the shim it wants is
     \texttt{libiree\_ffi.so}.)
   \item \textbf{\texttt{\$PJRT\_PLUGIN is set but did not load}}, or no plugin
     found. The XLA plugin is missing or is built for a different CUDA/ROCm
     version than the one installed. Installing the plugin wheel into the repo's
-    own \texttt{.venv} on Python 3.12, as in Track 2, puts it where the shim
-    looks by default; anywhere else, set \texttt{\$PJRT\_PLUGIN}.
+    own \texttt{.venv} on Python 3.12, as in \emph{Getting started}, puts it
+    where the shim looks by default; anywhere else, set
+    \texttt{\$PJRT\_PLUGIN}.
+  \item \textbf{Picking a card, and parameter residency.} As with any GPU
+    program, the card is chosen by \texttt{CUDA\_VISIBLE\_DEVICES} on
+    NVIDIA, \texttt{HIP\_VISIBLE\_DEVICES} on AMD, and
+    \texttt{ZE\_AFFINITY\_MASK} on the Arc. Parameters stay on the device
+    between steps by default, and the tiers are timed that way. \texttt{PJRT\_FFI\_RESIDENT=0} forces the copying
+    path, which the residency gate uses as its control: the same run is
+    1.3--3$\times$ slower and its numerics are unchanged.
   \item \textbf{\texttt{lake build} fails with Mathlib cache errors.} Run
     \texttt{lake exe cache get} to populate the local cache. Without it the
     first build compiles all of Mathlib from source ($\sim$45 min), and with it
@@ -19753,7 +19650,7 @@ run wants both, and \S\ref{sec:jax_pipeline} is where the second one earns its
 place.
 
 \medskip\noindent Selecting it is \texttt{LEAN\_MLIR\_LOWERER=iree}, and every
-Track 3 tier has an \texttt{-iree} twin that does so (\texttt{lake run}
+tier of \emph{Getting started} has an \texttt{-iree} twin that does so (\texttt{lake run}
 \texttt{mnist-iree}, and so on); the Imagenette twin runs five of the seven
 nets, since ResNet-50 and MobileNetV4 have no IREE driver. It additionally
 needs \texttt{iree-compile} on \texttt{\$PATH}, the runtime built per
@@ -19819,6 +19716,67 @@ later than it is used, softmax's derivative. Every box is a link.}
 \label{fig:chapter_map}
 \end{figure}
 
+\section{What each chapter proves}
+\label{sec:theorem_budget}
+
+Table~\ref{tab:theorem_budget} is the size of what each chapter proves
+about gradients, chapter by chapter. Its three columns are these. Each
+chapter proves a handful of VJP contracts, which are machine-checked theorems that a layer's backward
+function computes the right gradient. Formally that means
+\(\texttt{backward}\,x\,dy\,i = \sum_j \pdiv f\,x\,i\,j \cdot dy_j\), so
+the backward equals that layer's \(\pdiv\)-Jacobian contracted against
+the incoming cotangent, which the Foundations chapter builds up from
+scratch. A \emph{contract} is that theorem with the weights of \(f\) left
+as variables, so it holds at every weight setting; there is one per
+function, where a function is a layer, an operator, a block, or a whole
+network at a stated depth (a network at two depths, or per example and at
+batch statistics, is two functions). A \emph{witness} is the same theorem
+at one fixed set of weights: a hand-built tiny instance, a live-shaped one
+at \(224 \times 224\), or the weights a training run produced. It shows
+the contract's hypotheses can be met, and is kept in its own column rather
+than counted as a contract. A \emph{step certificate} is a theorem about
+the program rather than the math alone: that the train step the book emits
+denotes the certified gradient step (a fold for the small nets, a step tie
+at full width), that a hand-written backward chain is the VJP it was
+written to be, that a data-parallel render's step is one device's step on
+the global batch, that a gradient node is the loss's derivative in its
+parameter, or that one SGD step decreases the loss. A theorem that
+only restates a counted one at fixed dimensions or over the committed
+spec is not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
+\textbf{9 witnesses} and \textbf{37 step certificates}. Even Chapter~1's
+toolkit is used straight away by a proven model, so no chapter is pure
+scaffolding.
+
+\clearpage
+\begin{table}[H]
+\centering
+\caption{Theorems per chapter: contracts, witnesses and step certificates, and the primitive or result each chapter adds.}
+\label{tab:theorem_budget}
+\small
+\begin{tabular}{l c c c p{8cm}}
+\hline
+Chapter & Contracts & Witnesses & Steps & New primitive / result \\
+\hline
+1 (MNIST: linear) & 1  & --- & 2 & dense, softmax-CE, \texttt{mnistLinear}: the whole classifier; the emitted step is the certified step; one SGD step descends \\
+2 (MNIST: 1D)     & 2  & 2   & 2 & ReLU, MLP; witnesses hand-built and at trained weights; the six emitted updates are the certified step; SGD descends on \(W_0\) \\
+3 (MNIST: 2D)     & 3  & 1   & 2 & conv2d, maxPool2, whole-net MNIST CNN; witness at trained weights; the four conv updates are the certified steps; SGD descends on \(W_2\) \\
+4 (CIFAR: BN)     & 6  & 1   & 5 & per-channel BN (flat $+$ NCHW) and BN at batch statistics; CIFAR whole-nets at 2 convs and at 8 convs $\pm$BN; a hand-built tiny witness; conv and BN updates tied, the 8-conv step tied with and without BN; SGD descends at the last conv \\
+5 (ResNet-34)     & 9  & 3   & 7 & residual ($+$proj), GAP, stride-2 conv ($+$its weight grad), the $3 \times 3$/s2 stem pool, whole-net \texttt{cnn}; \textbf{full-depth ResNet-34 and ResNet-50} at batch statistics; witnesses: a hand-built BN CNN, and the full-width ResNet-34 and ResNet-50 at $224 \times 224$ (ResNet-50 also at 160) with a non-zero backward; both batched steps tied (ResNet-50 also at BCE), both sync-BN twins, the ResNet-50 backward chain is the VJP, both steps' gradient nodes are the loss's derivative \\
+6 (MobileNetV2)   & 6  & 2   & 8 & ReLU6, depthwise (stride 1$+$2); \texttt{mobilenetv2} at representative depth and at \textbf{all 17 blocks} at batch statistics; \textbf{\mbox{MobileNetV4}} at full depth; witnesses: full-width V2 and V4 at $224 \times 224$ with a non-zero backward; both steps tied, both sync-BN twins, both backward chains are the VJP, both steps' gradient nodes are the loss's derivative \\
+7 (EfficientNet)  & 5  & --- & 4 & swish, sigmoid, SE, whole-net at representative depth, \textbf{full B0} (16 \mbox{MBConv} blocks); step tied, sync-BN twin, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
+8 (ConvNeXt)      & 6  & --- & 3 & GELU (tanh and exact, one record), LayerNorm, layer-scale, the $4 \times 4$/s4 patchify conv, whole-net at representative depth, \textbf{full ConvNeXt-T} (18 blocks); step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
+9 (ViT)           & 6  & --- & 4 & MHSA, block, vector LayerNorm and its block, \textbf{every depth $k$} (ViT-Tiny is $k = 12$), \texttt{vitFull}; the emitted graph denotes the tower, step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
+\hline
+                  & \textbf{44} & \textbf{9} & \textbf{37} & total \textbf{90} \\
+\hline
+\end{tabular}
+\end{table}
+
+Every chapter's theorems section opens with its own dependency graph,
+every box a Lean theorem and a link, and each chapter names its contracts
+as it proves them. The rest of this appendix is how those claims get
+checked: the audits, the bridge theorems, and the hardware oracles.
+
 \section{Proven: the math is right}
 
 Two mechanisms make the deductive layer trustworthy: the proofs
@@ -19828,7 +19786,7 @@ just the elaborator, accepts them with no project axioms.
 \subsection{The axiom audit}
 
 The Verified VJP Proofs suite proves the \textbf{44 VJP contracts and
-9 witnesses} of the table in \emph{How this book is organized}, each
+9 witnesses} of Table~\ref{tab:theorem_budget}, each
 asserting backward \(= \sum_j \pdiv f\,x\,i\,j \cdot dy_j\), with their
 restatements at fixed dimensions and over the committed specs; the
 \textbf{37 step certificates} that tie the emitted programs to them; on
@@ -20515,7 +20473,7 @@ are what training actually looks like.
 
 Track 4 of Table~\ref{tab:getting_started_tracks}, the scale tier. Six
 networks train on full ImageNet-1k off the same certified renderer as their
-Imagenette counterparts, in the chapter order Track 3 uses. Every row trains
+Imagenette counterparts, in the chapter order the \texttt{imagenette} tier uses. Every row trains
 on four 16\,GB cards; a 12\,GB card runs all but ConvNeXt-B and ViT-B, whose
 steps peak above it. A row is a (network, recipe) pair rather than a network
 --- ResNet-50 has a row per recipe --- and the recipe is the middle field of
