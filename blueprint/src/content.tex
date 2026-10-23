@@ -551,7 +551,7 @@ of this function at this point.''
 Mathlib supplies it as the Fréchet derivative, \(\fderiv\). It is the
 best linear approximation, the continuous linear map \(D\) with
 \(f(x+h) \approx f(x) + D\,h\), and it is defined over any normed space
-rather than only \(\R^n\). For a layer \(f : \Vect{n} \to \Vect{m}\),
+rather than only \(\R^n\). For a layer \(f : \Vect{m} \to \Vect{n}\),
 \(\fderiv\,\R\,f\,x\) is the linear map whose matrix is the Jacobian.
 
 We read individual partials off it. A single \((i,j)\) Jacobian entry is
@@ -633,8 +633,11 @@ default at a corner is never consulted again.
 
 If you've taken multivariable calculus, the natural object to track
 through a network is the \emph{Jacobian}. For
-$f : \Vect{n} \to \Vect{m}$, that's the $m \times n$ matrix of
-partial derivatives $J_{i,j} = \pdiv\, f\, x\, i\, j$. The chain rule
+$f : \Vect{m} \to \Vect{n}$, that's the $n \times m$ matrix of
+partial derivatives, one row per output and one column per input, and
+in the accessor above it is $J_{j,i} = \pdiv\, f\, x\, i\, j$: $i$ is
+always the input index and $j$ the output, the order the Lean definition
+fixes. The chain rule
 for a composition $h = g \circ f$ is matrix multiplication:
 $J_h = J_g \cdot J_f$. So if your network is $L$ layers stacked, the
 Jacobian of the output with respect to the input is the matrix
@@ -649,12 +652,12 @@ you never need.
 
 The fix is to notice what you actually want. Training minimizes a
 scalar loss $\mathcal{L}$, so the only output gradient you ever need
-is $\nabla \mathcal{L} \in \Vect{m}$, a single vector. Apply that
+is $\nabla \mathcal{L} \in \Vect{n}$, a single vector. Apply that
 vector to the chain on the left:
 \[
   (\nabla \mathcal{L})^T \cdot J_L \cdot J_{L-1} \cdots J_1.
 \]
-Read this right-to-left. Start with one $m$-dimensional vector.
+Read this right-to-left. Start with one $n$-dimensional vector.
 Multiply on the right by $J_L$, get a vector. Multiply by $J_{L-1}$,
 get a vector. Continue. At every step you carry a vector and never a
 matrix, and its dimension matches the layer's input or output
@@ -666,7 +669,11 @@ The single step
 \]
 is the \emph{vector--Jacobian product}, or \textbf{VJP}. It takes the
 gradient flowing in from above and produces the gradient flowing out
-below. The cost is $O(mn)$ per layer instead of $O(d^3)$ for a
+below. The vector flowing in is called the \emph{cotangent}, written
+$dy$ from here on: the loss's gradient in the layer's output, one entry
+per output. The VJP returns the cotangent one layer down, the loss's
+gradient in the layer's input, one entry per input. The cost is
+$O(mn)$ per layer instead of $O(d^3)$ for a
 matrix--matrix product, and you never form $J_f$ at all. You just
 need a function that, given $v$, returns $v^T J_f$. That function
 is the \textbf{backward function}, and together with $f$ itself it
@@ -680,13 +687,17 @@ the number of layers.
 \textbf{What \(\HasVJP\) packages.} A \(\HasVJP\) record for $f$ holds
 two things:
 \begin{itemize}
-  \item a \texttt{backward} function, taking the input $x$ and a
-  cotangent $dy \in \Vect{n}$ to a vector in $\Vect{m}$
+  \item a \texttt{backward} function, taking the input $x$ and the
+  cotangent $dy \in \Vect{n}$ to the cotangent below, in $\Vect{m}$
   \item a \texttt{correct} field, which is a proof that
   $\mathrm{backward}(x, dy)_i = \sum_j \pdiv\, f\, x\, i\, j \cdot dy_j$,
   meaning that the function really does compute $dy^T J_f$
 \end{itemize}
-In Lean that's the whole definition:
+In Lean that's the whole definition. Two spellings recur in every Lean
+block of the book: \texttt{Vec n} is a function from the indices below
+\(n\) to the reals, so a vector is read by applying it to an index, and
+\texttt{Fin n} is that index type, so \(\sum\) over \texttt{Fin n} is a
+plain sum of \(n\) terms.
 \begin{verbatim}
 @[ext] structure HasVJP {m n : Nat} (f : Vec m → Vec n) where
   backward : Vec m → Vec n → Vec m
@@ -753,6 +764,71 @@ Chapter~\ref{chap:tensor} builds the function for a single matrix
 multiply, proves it, compiles it to one GPU kernel and runs the loop;
 \S\ref{sec:mlp_inside_train} is the loop as Lean and
 \S\ref{sec:mlir_training_step} is the compiled function.
+
+\section*{What the theorems cover, and what they leave to the run}
+
+Five things every later chapter leans on are settled here, so that no
+chapter has to stop and settle them.
+
+\textbf{Parameters are inputs.} The \(\HasVJP\) record differentiates
+in \(x\), and training needs the derivative in \(\theta\). There is no
+second record. A layer is a function of both, \(\mathrm{dense}(W, b)\,x\),
+and holding \(x\) fixed while \(W\) varies gives another function of a
+vector, the flattened weights, to which the same definition applies.
+Theorem~\ref{ax:pdiv_dense_W} is the first instance, the dense layer's
+Jacobian in its weights, and Theorem~\ref{thm:denseWeightGrad_correct}
+reads the familiar outer product off it: \(dW = x \otimes dy\). Every
+weight gradient in the book is that move, the record applied along the
+parameter axis.
+
+\textbf{The theorems are over \(\R\); the card computes in floats.}
+\(\fderiv\) lives in a normed space, and every statement in Part~1 is
+about real numbers: exact arithmetic, no rounding. The GPU runs bf16
+convolutions under an fp32 classifier head. Nothing in Lean speaks about
+that gap, and nothing here pretends to. What carries a theorem across it
+is a second kind of evidence: the StableHLO the GPU runs is printed from
+the same datatype the proofs reason about, so the code cannot drift from
+the math, and what the hardware then does with it is cross-checked
+against independent oracles. Appendix~\ref{app:verification} names the
+three kinds of certainty, proven, by construction and cross-checked, and
+\S\ref{sec:precision} is the rounding budget. When a verified run matches
+its reference, or misses it, a wrong gradient is not among the
+explanations; a rounding story might be.
+
+\textbf{One example at a time, then the batch.} Every record above is
+per example: one \(x\) in, one \(dy\) back. The loss is a mean over the
+batch, so the batch gradient is the sum of the per-example VJPs scaled by
+\(1/N\), and the compiled step of \S\ref{sec:mlir_training_step} does
+exactly that. The batch is an axis the per-example theorem is lifted
+over, not a new theorem. The one exception is BatchNorm, which normalizes
+each example by statistics of the whole batch, so the batch enters the
+function itself and the per-example theorem no longer describes it.
+Chapter~\ref{chap:bn} proves it twice, per example and at batch
+statistics, which is why the budget table counts those as two functions.
+
+\textbf{The gradient is where the proofs stop.} The update above is plain
+SGD, and it is the only update the book proves anything about: one step
+decreases the loss, Chapter~\ref{chap:tensor}, with the binary32 gradient
+allowed in place of the exact one. Everything after the gradient ---
+momentum, Adam, the cosine schedule, warmup, weight decay, label
+smoothing, an average of the weights --- is recipe, chosen because it
+trains well, and \S\ref{sec:r34_recipe} assembles and ablates it. A recipe
+is a specification, and the book treats it as one, but convergence is a
+measurement, never a theorem.
+
+\textbf{Two trainers from one spec.} Every run in the chapters, MNIST
+through Imagenette, is the \emph{verified path}: Lean emitting StableHLO
+from the proven backward, handed to the GPU through PJRT with no
+interpreter in the loop. \S\ref{sec:verified_trainer_pattern} is that
+trainer's shape, which every chapter reuses. The ImageNet runs, from
+Chapter~\ref{chap:residual} on, are trained twice. The second trainer is
+the \emph{reference}, Lean emitting a JAX program from the same spec and
+the same recipe, differentiated by JAX's own autograd and run from Python.
+The reference is the oracle the verified path has to match, and each
+ImageNet section's table puts the two side by side, first at
+Table~\ref{tab:r34_paths}, with the rows that differ above a rule and the
+rows held equal by construction between the rules, so that a gap, when
+there is one, has one place to come from.
 
 \chapter{MNIST: linear classifier}
 \label{chap:tensor}
