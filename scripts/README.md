@@ -15,6 +15,7 @@ Every script says what it does in its first lines. Run them from the repo root.
 | [`probes/`](probes/) | one-off measurements behind a specific result: the detector and segmentation loss checks, bf16 probes, perturbation studies |
 | [`lib/`](lib/) | helpers the others import or source: `_iree.py`, `_mnist_io.py`, `_stats.py`, `lean_graph.py`, the shell libraries |
 | [`audit_census/`](audit_census/) | the declaration-level audit tooling |
+| [`stats/`](stats/) | the CI summary's statistics tables: declarations per proof file from the elaborated environment, lines from `scc` |
 
 The files left at this level are the ones running jobs call: `supervise.sh`, `gen_shims.sh`,
 `det_shim.sh`, `shim_wiring_gate.py`, and the two regeneration scripts

@@ -29,6 +29,7 @@ on:
       - 'lean-toolchain'
       - 'lake-manifest.json'
       - '.github/workflows/proofs.yml'
+      - 'scripts/stats/**'
   pull_request:
     paths:
       - 'LeanMlir/**'
@@ -52,6 +53,7 @@ on:
       - 'lean-toolchain'
       - 'lake-manifest.json'
       - '.github/workflows/proofs.yml'
+      - 'scripts/stats/**'
   workflow_dispatch:
 
 concurrency:
@@ -695,6 +697,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ **\`vit-fwd-b-tie\`**, **\`convnext-fwd-b-tie\`** — the per-example chains emit the committed (batched-chain) forward and train step." >> $GITHUB_STEP_SUMMARY
 
+      - name: Install scc
+        # scc counts code / comment / blank lines per file (Lean's nested `/- -/` included) for
+        # scripts/stats/summary.py. Pinned release, checksum-verified.
+        run: |
+          curl -sSfL -o /tmp/scc.tgz https://github.com/boyter/scc/releases/download/v3.5.0/scc_Linux_x86_64.tar.gz
+          echo "6c31f4d0cf3b7a8c5ca910fa4e451949434798f6541ec5dea4b83f4973e13772  /tmp/scc.tgz" | sha256sum -c -
+          sudo tar xzf /tmp/scc.tgz -C /usr/local/bin scc
+
       - name: Summary
         run: |
           echo "## Proof Verification" >> $GITHUB_STEP_SUMMARY
@@ -720,28 +730,6 @@ jobs:
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Build Statistics" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| File | Theorems / Defs | Axioms | Lines |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-----------------|--------|-------|" >> $GITHUB_STEP_SUMMARY
-          # Count all top-level theorems and (noncomputable) defs — broader
-          # than a VJP-keyword filter, catches structural lemmas too.
-          THM_PAT='^(theorem|noncomputable def|def) '
-          TOTAL_THMS=0
-          TOTAL_AXMS=0
-          for f in $(find LeanMlir/Proofs -name "*.lean" -not -path "*/.lake/*" | sort); do
-            name=${f#LeanMlir/Proofs/}
-            thms=$(grep -cE "$THM_PAT" "$f" || true)
-            axms=$(grep -c "^axiom " "$f" || true)
-            lines=$(wc -l < "$f")
-            echo "| \`${name}\` | ${thms} | ${axms} | ${lines} |" >> $GITHUB_STEP_SUMMARY
-            TOTAL_THMS=$((TOTAL_THMS + thms))
-            TOTAL_AXMS=$((TOTAL_AXMS + axms))
-          done
-          TOTAL_LINES=$(find LeanMlir/Proofs -name "*.lean" -not -path "*/.lake/*" -print0 | xargs -0 cat | wc -l)
-          echo "| **Total** | **${TOTAL_THMS}** | **${TOTAL_AXMS}** | **${TOTAL_LINES}** |" >> $GITHUB_STEP_SUMMARY
-
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Numerical Gradient Checks" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Axiom | Max Error | Status |" >> $GITHUB_STEP_SUMMARY
@@ -758,53 +746,7 @@ jobs:
           # Fail CI if gradient checks fail
           python3 LeanMlir/Proofs/check_jacobians.py
 
+          # Bestiary + Codebase tables (scc over git ls-files). The per-proof-file declaration
+          # table needs the whole corpus built, so it lives in certs.yml's summary.
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Bestiary Entries" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| File | Variants | Lines |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          total_variants=0
-          total_bestiary_lines=0
-          total_bestiary_files=0
-          for f in Bestiary/*.lean; do
-            base=$(basename "$f")
-            # Each `def X : NetSpec` is a variant (architecture + sizes + tiny fixtures)
-            variants=$(grep -cE '^def [a-zA-Z0-9_]+ : NetSpec' "$f" || true)
-            lines=$(wc -l < "$f")
-            echo "| \`${base}\` | ${variants} | ${lines} |" >> $GITHUB_STEP_SUMMARY
-            total_variants=$((total_variants + variants))
-            total_bestiary_lines=$((total_bestiary_lines + lines))
-            total_bestiary_files=$((total_bestiary_files + 1))
-          done
-          echo "| **Total (${total_bestiary_files} files)** | **${total_variants}** | **${total_bestiary_lines}** |" >> $GITHUB_STEP_SUMMARY
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Codebase Statistics" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Component | Files | Lines |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          # Rows partition the Lean tree and sum to Total Lean. Each is a `find` that excludes
-          # any nested .lake build tree (e.g. tests/comparator/.lake/packages/mathlib — which a
-          # plain `*.lean` walk would otherwise add ~millions of Mathlib lines for).
-          lf() { find "$@" -name "*.lean" -not -path "*/.lake/*" 2>/dev/null | wc -l; }      # file count
-          ll() { find "$@" -name "*.lean" -not -path "*/.lake/*" -print0 2>/dev/null | xargs -0 cat 2>/dev/null | wc -l; }  # line count
-          # Core Library = LeanMlir/ minus the Proofs/ subtree, plus the root umbrella.
-          core() { find LeanMlir -name "*.lean" -not -path "LeanMlir/Proofs/*" -not -path "*/.lake/*"; ls LeanMlir.lean 2>/dev/null; }
-          echo "| Proofs | $(lf LeanMlir/Proofs) | $(ll LeanMlir/Proofs) |" >> $GITHUB_STEP_SUMMARY
-          # Per-bucket breakdown of the Proofs row (the seven subdirectories; Nets/ holds one directory per net family).
-          for d in Foundation Architectures Nets Float Codegen Certificates Training; do
-            echo "| — $d | $(lf LeanMlir/Proofs/$d) | $(ll LeanMlir/Proofs/$d) |" >> $GITHUB_STEP_SUMMARY
-          done
-          echo "| Core Library | $(core | wc -l) | $(core | xargs cat 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Bestiary | $(lf Bestiary) | $(ll Bestiary) |" >> $GITHUB_STEP_SUMMARY
-          # Trainers = apps/**/Main*.lean (all backends/optimizers) + the historical/ trainers.
-          echo "| Trainers | $(find apps historical -name 'Main*.lean' 2>/dev/null | wc -l) | $(find apps historical -name 'Main*.lean' -exec cat {} + 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Demos | $(ls demos/*.lean 2>/dev/null | wc -l) | $(cat demos/*.lean 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | $(lf tests) | $(ll tests) |" >> $GITHUB_STEP_SUMMARY
-          echo "| FFI (C) | $(ls ffi/*.c ffi/*.h 2>/dev/null | wc -l) | $(cat ffi/*.c ffi/*.h 2>/dev/null | wc -l) |" >> $GITHUB_STEP_SUMMARY
-          # Total Lean: every *.lean except build files (lakefile.lean), any nested .lake tree,
-          # and the jax/ + phase-1 historical/mnist-lean4/ subprojects.
-          total_lean=$(find . -name "*.lean" -not -name "lakefile.lean" -not -path "*/.lake/*" -not -path "./jax/*" -not -path "./historical/mnist-lean4/*" -print0 | xargs -0 cat 2>/dev/null | wc -l)
-          total_c=$(cat ffi/*.c ffi/*.h 2>/dev/null | wc -l)
-          echo "| **Total Lean** | | **${total_lean}** |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Total C** | | **${total_c}** |" >> $GITHUB_STEP_SUMMARY
+          python3 scripts/stats/summary.py >> $GITHUB_STEP_SUMMARY
