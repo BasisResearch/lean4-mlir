@@ -133,6 +133,10 @@ const CHAPTER_OF = {
 // Insertion order is document order, but nothing below may rely on that:
 // the leaf-cluster order comes from SECTION_INDEX, generated from the same
 // tree, so a chapter's sections stack the way the book prints them.
+// A node takes the innermost heading above it: its \subsection when the
+// theorems section is split into subsections (chapter 9's "Matrix-level
+// machinery" / "Attention proofs"), else its \section. Sections are emitted
+// first and subsections after, so the later key overrides.
 const SECTION_OF = {
 {%- for ch in document.getElementsByTagName('chapter') %}
 {%- for sec in ch.getElementsByTagName('section') %}
@@ -143,6 +147,15 @@ const SECTION_OF = {
 {%- endif %}
 {%- endfor %}
 {%- endfor %}
+{%- for sub in sec.getElementsByTagName('subsection') %}
+{%- for tt in document.userdata['dep_graph']['thm_types'] %}
+{%- for nd in sub.getElementsByTagName(tt) %}
+{%- if nd.id %}
+  "{{ nd.id }}": "{{ sub.title.textContent.replace('"', '') }}",
+{%- endif %}
+{%- endfor %}
+{%- endfor %}
+{%- endfor %}
 {%- endfor %}
 {%- endfor %}
 };
@@ -151,11 +164,19 @@ const SECTION_OF = {
 // than by which of their nodes plasTeX happened to emit first — which is
 // what put the matrix machinery under the attention proofs on every other
 // rebuild of chapter 9.
+// Sections and their subsections share one running count per chapter, so a
+// subsection sorts after its section and before the next one.
 const SECTION_INDEX = {
 {%- for ch in document.getElementsByTagName('chapter') %}
 {%- set chloop = loop %}
+{%- set ns = namespace(i=0) %}
 {%- for sec in ch.getElementsByTagName('section') %}
-  "{{ chloop.index0 }}|{{ sec.title.textContent.replace('"', '') }}": {{ loop.index0 }},
+  "{{ chloop.index0 }}|{{ sec.title.textContent.replace('"', '') }}": {{ ns.i }},
+{%- set ns.i = ns.i + 1 %}
+{%- for sub in sec.getElementsByTagName('subsection') %}
+  "{{ chloop.index0 }}|{{ sub.title.textContent.replace('"', '') }}": {{ ns.i }},
+{%- set ns.i = ns.i + 1 %}
+{%- endfor %}
 {%- endfor %}
 {%- endfor %}
 };
@@ -172,9 +193,11 @@ const CHAPTER_NUM = {
 
 // Chapters whose entries are catalog listings rather than proof nodes —
 // dropped from the graph entirely so it reads as the proof tree alone.
-// (The Bestiary's entries declare no \uses edges; if that ever changes,
-// remove it from this list and its cluster reappears.)
-const EXCLUDED_CHAPTERS = ["Bestiary of Architectures"];
+// (The bestiary's kit entries declare no \uses edges; if that ever changes,
+// remove the chapter from this list and its cluster reappears. Matched by
+// title, so a rename of Chapter 10 must be mirrored here.)
+const EXCLUDED_CHAPTERS = ["The kit", "The chapter nets at work",
+                           "Beyond recognition", "Game theory"];
 // A statement used by this many OTHER chapters is drawn once, at home.
 const AMBIENT_CHAPTERS = 4;
 
