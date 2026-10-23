@@ -1,0 +1,366 @@
+════════ cifar8wb-bbn (batch-statistics BN) f32 — SGD (lr 0.1) ════════
+  ▸ .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s3.bin is the finished 40-epoch run — scoring it instead of training. To train again, set LEAN_MLIR_CKPT_TAG=<name>, or move it and its .epoch marker aside.
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  SCORING A CHECKPOINT — no training. CIFAR-CNN8-wide-BN-batchstat sgd, .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s3.bin
+  region 0 of 3 (the live weights), 374010 params
+  BN: 8 layers from .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s3.bin.bn — the running stats
+I1023 01:55:43.103666  218228 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1023 01:55:43.120083  218228 service.cc:154] XLA service 0x7a7a9a48fb80 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1023 01:55:43.120098  218228 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1023 01:55:43.120108  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120333  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120364  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120392  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120419  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120446  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120474  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120501  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120528  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120555  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120606  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120633  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120660  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120687  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120714  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120742  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120769  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.120796  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.122372  218228 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 01:55:43.122393  218228 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1023 01:55:43.131967  218228 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 156 ms
+I1023 01:55:43.631102  218305 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.631341  218305 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+I1023 01:55:43.647181  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.769383  218306 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.773855  218305 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  checkpoint: acc = 7574/10000 = 75.740000%  top5 = 9853/10000 = 98.530000%  [95% CI 74.89–76.57]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3.bin (10000 bytes) — pair two of these with scripts/demos/mcnemar.py
+════════ cifar8wb-bbn (batch-statistics BN) f32 — Nesterov momentum (μ.9, lr 0.02) ════════
+  ▸ .lake/build/cifar8wb_bbn_mom_ckpt_xla_s3.bin is the finished 40-epoch run — scoring it instead of training. To train again, set LEAN_MLIR_CKPT_TAG=<name>, or move it and its .epoch marker aside.
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  SCORING A CHECKPOINT — no training. CIFAR-CNN8-wide-BN-batchstat mom, .lake/build/cifar8wb_bbn_mom_ckpt_xla_s3.bin
+  region 0 of 3 (the live weights), 374010 params
+  BN: 8 layers from .lake/build/cifar8wb_bbn_mom_ckpt_xla_s3.bin.bn — the running stats
+I1023 01:55:43.928721  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929038  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929149  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929177  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929301  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929367  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929396  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929425  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929455  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929482  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929510  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929537  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929565  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929592  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929620  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929648  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929676  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929703  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:43.929904  218228 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 01:55:43.929916  218228 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 137 ms
+I1023 01:55:44.390638  218355 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.390908  218355 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+I1023 01:55:44.401799  218356 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.403377  218355 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  checkpoint: acc = 7576/10000 = 75.760000%  top5 = 9799/10000 = 97.990000%  [95% CI 74.91–76.59]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3.bin (10000 bytes) — pair two of these with scripts/demos/mcnemar.py
+════════ cifar8wb-bbn (batch-statistics BN) f32 — AdamW (lr 1e-3) ════════
+  ▸ .lake/build/cifar8wb_bbn_adam_ckpt_xla_s3.bin is the finished 40-epoch run — scoring it instead of training. To train again, set LEAN_MLIR_CKPT_TAG=<name>, or move it and its .epoch marker aside.
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  SCORING A CHECKPOINT — no training. CIFAR-CNN8-wide-BN-batchstat adam, .lake/build/cifar8wb_bbn_adam_ckpt_xla_s3.bin
+  region 0 of 3 (the live weights), 374010 params
+  BN: 8 layers from .lake/build/cifar8wb_bbn_adam_ckpt_xla_s3.bin.bn — the running stats
+I1023 01:55:44.554506  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.554803  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.554871  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.554900  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.554929  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.554958  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.554986  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555015  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555044  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555071  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555099  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555127  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555155  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555182  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555223  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555253  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555282  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555310  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:44.555483  218228 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 01:55:44.555503  218228 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 131 ms
+I1023 01:55:45.002132  218392 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.002460  218392 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+I1023 01:55:45.013667  218393 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.016587  218392 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  checkpoint: acc = 7637/10000 = 76.370000%  top5 = 9823/10000 = 98.230000%  [95% CI 75.53–77.19]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3.bin (10000 bytes) — pair two of these with scripts/demos/mcnemar.py
+════════ cifar8wb-bbn (batch-statistics BN) bf16 — SGD (lr 0.1) ════════
+  ▸ .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s3.bin is the finished 40-epoch run — scoring it instead of training. To train again, set LEAN_MLIR_CKPT_TAG=<name>, or move it and its .epoch marker aside.
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  SCORING A CHECKPOINT — no training. CIFAR-CNN8-wide-BN-batchstat bf16sgd, .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s3.bin
+  region 0 of 3 (the live weights), 374010 params
+  BN: 8 layers from .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s3.bin.bn — the running stats
+I1023 01:55:45.167132  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167458  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167526  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167555  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167584  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167618  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167646  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167674  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167704  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167731  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167760  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167787  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167815  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167843  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167871  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.167899  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.168017  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.168045  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.168239  218228 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 01:55:45.168254  218228 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 127 ms
+I1023 01:55:45.617541  218439 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.617842  218439 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+I1023 01:55:45.629095  218439 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.630888  218440 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  checkpoint: acc = 7593/10000 = 75.930000%  top5 = 9859/10000 = 98.590000%  [95% CI 75.08–76.76]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3.bin (10000 bytes) — pair two of these with scripts/demos/mcnemar.py
+════════ cifar8wb-bbn (batch-statistics BN) bf16 — Nesterov momentum (μ.9, lr 0.02) ════════
+  ▸ .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s3.bin is the finished 40-epoch run — scoring it instead of training. To train again, set LEAN_MLIR_CKPT_TAG=<name>, or move it and its .epoch marker aside.
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  SCORING A CHECKPOINT — no training. CIFAR-CNN8-wide-BN-batchstat bf16mom, .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s3.bin
+  region 0 of 3 (the live weights), 374010 params
+  BN: 8 layers from .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s3.bin.bn — the running stats
+I1023 01:55:45.817943  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818192  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818456  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818486  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818515  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818544  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818572  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818600  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818629  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818657  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818685  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818714  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818742  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818770  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818887  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818915  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818945  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.818973  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:45.819151  218228 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 01:55:45.819163  218228 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 128 ms
+I1023 01:55:46.269805  218486 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.270104  218486 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+I1023 01:55:46.281626  218486 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.284394  218487 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  checkpoint: acc = 7742/10000 = 77.420000%  top5 = 9855/10000 = 98.550000%  [95% CI 76.59–78.23]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3.bin (10000 bytes) — pair two of these with scripts/demos/mcnemar.py
+I1023 01:55:46.450433  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.450755  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.450822  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.450850  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.450880  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.450910  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.450938  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.450967  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.450995  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451024  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451052  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451079  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451107  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451135  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451163  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451191  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451224  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451254  218228 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:46.451455  218228 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 01:55:46.451467  218228 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_bf16adam_train_step.mlir (@cifar8wb_bbn_bf16adam_train_step, 133 outputs, 1 replica) in 838 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd.mlir (@cifar8wb_bbn_fwd, 1 outputs, 1 replica) in 172 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 134 ms
+════════ cifar8wb-bbn (batch-statistics BN) bf16 — AdamW (lr 1e-3) ════════
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cifar8wb_bbn_bf16adam_train_step.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN-batchstat bf16adam (constant lr 0.001000), He init
+  running-stats BN: 8 layers, 384 stat floats → eval via @cifar8wb_bbn_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+  ▸ resuming from checkpoint at epoch 29
+  ▸ resumed BN running stats + ema_bn from .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (hash 6584118250841348526)
+I1023 01:55:48.250650  218558 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:48.250919  218558 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_bf16adam_train_step holds 114 parameter tensors (4.3 MB) on 1 device; they stop crossing PCIe from here
+I1023 01:55:48.762806  218559 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:48.763330  218560 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:48.766426  218562 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 01:55:48.766863  218561 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/390: loss=0.200567
+  step 1/390: loss=0.399181
+  step 2/390: loss=0.254155
+  step 100/390: loss=0.349290
+  step 200/390: loss=0.311218
+  step 300/390: loss=0.273699
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 30/40: loss=0.341287 lr=0.001000
+  epoch 30: test_acc = 7596/10000 = 75.960000%  top5 = 9819/10000 = 98.190000%  [95% CI 75.11–76.79]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e30.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 16928922913732478699)
+  step 0/390: loss=0.237806
+  step 1/390: loss=0.214255
+  step 2/390: loss=0.339052
+  step 100/390: loss=0.325094
+  step 200/390: loss=0.243986
+  step 300/390: loss=0.303159
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 31/40: loss=0.336139 lr=0.001000
+  epoch 31: test_acc = 7707/10000 = 77.070000%  top5 = 9819/10000 = 98.190000%  [95% CI 76.24–77.88]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e31.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 7001761605514348055)
+  step 0/390: loss=0.244029
+  step 1/390: loss=0.247161
+  step 2/390: loss=0.259540
+  step 100/390: loss=0.350805
+  step 200/390: loss=0.317510
+  step 300/390: loss=0.319081
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 32/40: loss=0.322278 lr=0.001000
+  epoch 32: test_acc = 7629/10000 = 76.290000%  top5 = 9809/10000 = 98.090000%  [95% CI 75.45–77.11]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e32.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 10115242507196707216)
+  step 0/390: loss=0.307921
+  step 1/390: loss=0.308971
+  step 2/390: loss=0.322395
+  step 100/390: loss=0.405902
+  step 200/390: loss=0.319118
+  step 300/390: loss=0.317830
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 33/40: loss=0.313131 lr=0.001000
+  epoch 33: test_acc = 7493/10000 = 74.930000%  top5 = 9802/10000 = 98.020000%  [95% CI 74.07–75.77]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e33.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 15989168057068206957)
+  step 0/390: loss=0.257076
+  step 1/390: loss=0.297741
+  step 2/390: loss=0.285551
+  step 100/390: loss=0.321589
+  step 200/390: loss=0.344421
+  step 300/390: loss=0.345020
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 34/40: loss=0.301920 lr=0.001000
+  epoch 34: test_acc = 7614/10000 = 76.140000%  top5 = 9818/10000 = 98.180000%  [95% CI 75.29–76.97]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e34.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 2403627385943352467)
+  step 0/390: loss=0.280570
+  step 1/390: loss=0.232991
+  step 2/390: loss=0.231379
+  step 100/390: loss=0.234132
+  step 200/390: loss=0.203305
+  step 300/390: loss=0.284382
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 35/40: loss=0.302035 lr=0.001000
+  epoch 35: test_acc = 7406/10000 = 74.060000%  top5 = 9800/10000 = 98.000000%  [95% CI 73.19–74.91]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e35.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 6962101445300981595)
+  step 0/390: loss=0.248740
+  step 1/390: loss=0.325597
+  step 2/390: loss=0.264595
+  step 100/390: loss=0.296063
+  step 200/390: loss=0.261036
+  step 300/390: loss=0.333400
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 36/40: loss=0.289935 lr=0.001000
+  epoch 36: test_acc = 7590/10000 = 75.900000%  top5 = 9785/10000 = 97.850000%  [95% CI 75.05–76.73]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e36.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 17582802617309215449)
+  step 0/390: loss=0.272624
+  step 1/390: loss=0.210958
+  step 2/390: loss=0.239795
+  step 100/390: loss=0.331437
+  step 200/390: loss=0.259865
+  step 300/390: loss=0.234839
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 37/40: loss=0.273138 lr=0.001000
+  epoch 37: test_acc = 7576/10000 = 75.760000%  top5 = 9816/10000 = 98.160000%  [95% CI 74.91–76.59]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e37.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 6979838404413311152)
+  step 0/390: loss=0.262005
+  step 1/390: loss=0.220481
+  step 2/390: loss=0.268953
+  step 100/390: loss=0.415768
+  step 200/390: loss=0.332817
+  step 300/390: loss=0.264456
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 38/40: loss=0.274443 lr=0.001000
+  epoch 38: test_acc = 7606/10000 = 76.060000%  top5 = 9805/10000 = 98.050000%  [95% CI 75.21–76.89]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e38.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 10647703983980090534)
+  step 0/390: loss=0.205759
+  step 1/390: loss=0.217655
+  step 2/390: loss=0.264608
+  step 100/390: loss=0.184335
+  step 200/390: loss=0.251939
+  step 300/390: loss=0.199859
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 39/40: loss=0.258510 lr=0.001000
+  epoch 39: test_acc = 7467/10000 = 74.670000%  top5 = 9785/10000 = 97.850000%  [95% CI 73.81–75.51]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e39.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 8585242078873881818)
+  step 0/390: loss=0.248682
+  step 1/390: loss=0.230849
+  step 2/390: loss=0.279978
+  step 100/390: loss=0.205849
+  step 200/390: loss=0.309528
+  step 300/390: loss=0.182427
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 40/40: loss=0.249849 lr=0.001000
+  epoch 40: test_acc = 7543/10000 = 75.430000%  top5 = 9814/10000 = 98.140000%  [95% CI 74.58–76.26]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s3_bf16adam_e40.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s3.bin.bn (384 floats x 2, hash 11726108661555109340)
+done (trained CIFAR-CNN8-wide-BN-batchstat bf16adam + constant lr via packed threading).

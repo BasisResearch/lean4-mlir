@@ -1,0 +1,2903 @@
+I1022 23:58:34.163736  133796 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1022 23:58:34.179221  133796 service.cc:154] XLA service 0x78f19e490540 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1022 23:58:34.179236  133796 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1022 23:58:34.179246  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179460  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179490  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179518  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179546  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179573  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179600  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179627  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179655  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179682  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179719  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179746  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179773  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179801  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179828  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179856  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179883  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.179910  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:34.181472  133796 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1022 23:58:34.181494  133796 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1022 23:58:34.194455  133796 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_sgd_train_step.mlir (@cifar8wb_bbn_sgd_train_step, 133 outputs, 1 replica) in 606 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd.mlir (@cifar8wb_bbn_fwd, 1 outputs, 1 replica) in 167 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 125 ms
+════════ cifar8wb-bbn (batch-statistics BN) f32 — SGD (lr 0.1) ════════
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cifar8wb_bbn_sgd_train_step.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN-batchstat sgd (constant lr 0.100000), He init
+  running-stats BN: 8 layers, 384 stat floats → eval via @cifar8wb_bbn_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1022 23:58:35.717782  133894 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:35.718013  133894 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_sgd_train_step holds 114 parameter tensors (4.3 MB) on 1 device; they stop crossing PCIe from here
+I1022 23:58:35.748435  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:36.386371  133910 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:36.387060  133939 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:36.387366  133940 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1022 23:58:36.387484  133911 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/390: loss=2.431526
+  step 1/390: loss=2.327667
+  step 2/390: loss=2.350080
+  step 100/390: loss=1.661440
+  step 200/390: loss=1.378709
+  step 300/390: loss=1.433797
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/40: loss=1.521266 lr=0.100000
+  epoch 1: test_acc = 4302/10000 = 43.020000%  top5 = 9138/10000 = 91.380000%  [95% CI 42.05–43.99]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e1.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 8507261334563621980)
+  step 0/390: loss=1.230986
+  step 1/390: loss=1.347607
+  step 2/390: loss=1.249556
+  step 100/390: loss=1.229804
+  step 200/390: loss=1.032478
+  step 300/390: loss=1.141380
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/40: loss=1.155722 lr=0.100000
+  epoch 2: test_acc = 4980/10000 = 49.800000%  top5 = 9175/10000 = 91.750000%  [95% CI 48.82–50.78]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e2.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1914480923678117212)
+  step 0/390: loss=0.964981
+  step 1/390: loss=1.155730
+  step 2/390: loss=0.875469
+  step 100/390: loss=0.958171
+  step 200/390: loss=1.026987
+  step 300/390: loss=0.977716
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/40: loss=0.996177 lr=0.100000
+  epoch 3: test_acc = 5903/10000 = 59.030000%  top5 = 9573/10000 = 95.730000%  [95% CI 58.06–59.99]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e3.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2772096424829377144)
+  step 0/390: loss=1.065370
+  step 1/390: loss=1.078761
+  step 2/390: loss=0.821524
+  step 100/390: loss=0.906218
+  step 200/390: loss=0.830702
+  step 300/390: loss=0.861783
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/40: loss=0.894371 lr=0.100000
+  epoch 4: test_acc = 4906/10000 = 49.060000%  top5 = 9226/10000 = 92.260000%  [95% CI 48.08–50.04]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e4.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 3703383530136540735)
+  step 0/390: loss=0.838832
+  step 1/390: loss=0.974569
+  step 2/390: loss=0.898375
+  step 100/390: loss=0.691541
+  step 200/390: loss=0.751064
+  step 300/390: loss=0.638229
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/40: loss=0.822450 lr=0.100000
+  epoch 5: test_acc = 5083/10000 = 50.830000%  top5 = 8786/10000 = 87.860000%  [95% CI 49.85–51.81]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e5.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1981956758658374055)
+  step 0/390: loss=0.797807
+  step 1/390: loss=0.555588
+  step 2/390: loss=0.858806
+  step 100/390: loss=0.743296
+  step 200/390: loss=0.780725
+  step 300/390: loss=0.748974
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 6/40: loss=0.768094 lr=0.100000
+  epoch 6: test_acc = 6731/10000 = 67.310000%  top5 = 9756/10000 = 97.560000%  [95% CI 66.38–68.22]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e6.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16971379846391175134)
+  step 0/390: loss=0.614745
+  step 1/390: loss=0.657102
+  step 2/390: loss=0.750460
+  step 100/390: loss=0.694531
+  step 200/390: loss=0.636810
+  step 300/390: loss=0.801831
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 7/40: loss=0.722698 lr=0.100000
+  epoch 7: test_acc = 6937/10000 = 69.370000%  top5 = 9771/10000 = 97.710000%  [95% CI 68.46–70.27]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e7.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2703833315906531936)
+  step 0/390: loss=0.734191
+  step 1/390: loss=0.659240
+  step 2/390: loss=0.591856
+  step 100/390: loss=0.659776
+  step 200/390: loss=0.587126
+  step 300/390: loss=0.724926
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 8/40: loss=0.689626 lr=0.100000
+  epoch 8: test_acc = 7186/10000 = 71.860000%  top5 = 9800/10000 = 98.000000%  [95% CI 70.97–72.73]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e8.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 95408573170698390)
+  step 0/390: loss=0.629898
+  step 1/390: loss=0.624569
+  step 2/390: loss=0.538270
+  step 100/390: loss=0.660967
+  step 200/390: loss=0.681105
+  step 300/390: loss=0.638841
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 9/40: loss=0.659464 lr=0.100000
+  epoch 9: test_acc = 7030/10000 = 70.300000%  top5 = 9773/10000 = 97.730000%  [95% CI 69.40–71.19]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e9.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16940698274703281658)
+  step 0/390: loss=0.605390
+  step 1/390: loss=0.646107
+  step 2/390: loss=0.538640
+  step 100/390: loss=0.674196
+  step 200/390: loss=0.830589
+  step 300/390: loss=0.529901
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 10/40: loss=0.632535 lr=0.100000
+  epoch 10: test_acc = 7183/10000 = 71.830000%  top5 = 9775/10000 = 97.750000%  [95% CI 70.94–72.70]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e10.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13731579474403166602)
+  step 0/390: loss=0.462126
+  step 1/390: loss=0.593727
+  step 2/390: loss=0.620324
+  step 100/390: loss=0.602504
+  step 200/390: loss=0.668875
+  step 300/390: loss=0.573697
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 11/40: loss=0.610772 lr=0.100000
+  epoch 11: test_acc = 7405/10000 = 74.050000%  top5 = 9808/10000 = 98.080000%  [95% CI 73.18–74.90]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e11.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15953129750403016991)
+  step 0/390: loss=0.518581
+  step 1/390: loss=0.628647
+  step 2/390: loss=0.576385
+  step 100/390: loss=0.628379
+  step 200/390: loss=0.608313
+  step 300/390: loss=0.720564
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 12/40: loss=0.590661 lr=0.100000
+  epoch 12: test_acc = 7049/10000 = 70.490000%  top5 = 9768/10000 = 97.680000%  [95% CI 69.59–71.38]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e12.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11582345037998781260)
+  step 0/390: loss=0.626977
+  step 1/390: loss=0.629332
+  step 2/390: loss=0.519975
+  step 100/390: loss=0.707403
+  step 200/390: loss=0.596123
+  step 300/390: loss=0.715049
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 13/40: loss=0.571608 lr=0.100000
+  epoch 13: test_acc = 7300/10000 = 73.000000%  top5 = 9804/10000 = 98.040000%  [95% CI 72.12–73.86]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e13.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13335025690562095633)
+  step 0/390: loss=0.521675
+  step 1/390: loss=0.413401
+  step 2/390: loss=0.648951
+  step 100/390: loss=0.590526
+  step 200/390: loss=0.488835
+  step 300/390: loss=0.477082
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 14/40: loss=0.553954 lr=0.100000
+  epoch 14: test_acc = 7230/10000 = 72.300000%  top5 = 9820/10000 = 98.200000%  [95% CI 71.41–73.17]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e14.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14446391817503459353)
+  step 0/390: loss=0.451890
+  step 1/390: loss=0.510108
+  step 2/390: loss=0.631411
+  step 100/390: loss=0.581545
+  step 200/390: loss=0.598652
+  step 300/390: loss=0.506354
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 15/40: loss=0.538180 lr=0.100000
+  epoch 15: test_acc = 7234/10000 = 72.340000%  top5 = 9782/10000 = 97.820000%  [95% CI 71.45–73.21]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e15.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16618298688958094041)
+  step 0/390: loss=0.385226
+  step 1/390: loss=0.400590
+  step 2/390: loss=0.551028
+  step 100/390: loss=0.444852
+  step 200/390: loss=0.534251
+  step 300/390: loss=0.519676
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 16/40: loss=0.520531 lr=0.100000
+  epoch 16: test_acc = 7377/10000 = 73.770000%  top5 = 9811/10000 = 98.110000%  [95% CI 72.90–74.62]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e16.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11715817600318827959)
+  step 0/390: loss=0.518546
+  step 1/390: loss=0.416647
+  step 2/390: loss=0.636536
+  step 100/390: loss=0.536611
+  step 200/390: loss=0.526656
+  step 300/390: loss=0.494471
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 17/40: loss=0.512780 lr=0.100000
+  epoch 17: test_acc = 7233/10000 = 72.330000%  top5 = 9764/10000 = 97.640000%  [95% CI 71.44–73.20]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e17.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 965138570309409882)
+  step 0/390: loss=0.493459
+  step 1/390: loss=0.549143
+  step 2/390: loss=0.394774
+  step 100/390: loss=0.440526
+  step 200/390: loss=0.491385
+  step 300/390: loss=0.441202
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 18/40: loss=0.497987 lr=0.100000
+  epoch 18: test_acc = 7519/10000 = 75.190000%  top5 = 9807/10000 = 98.070000%  [95% CI 74.33–76.03]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e18.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5011934865538187417)
+  step 0/390: loss=0.471854
+  step 1/390: loss=0.596470
+  step 2/390: loss=0.371748
+  step 100/390: loss=0.425846
+  step 200/390: loss=0.327796
+  step 300/390: loss=0.470290
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 19/40: loss=0.486908 lr=0.100000
+  epoch 19: test_acc = 7574/10000 = 75.740000%  top5 = 9824/10000 = 98.240000%  [95% CI 74.89–76.57]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e19.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 3797854286406695604)
+  step 0/390: loss=0.588424
+  step 1/390: loss=0.379744
+  step 2/390: loss=0.298449
+  step 100/390: loss=0.551967
+  step 200/390: loss=0.448680
+  step 300/390: loss=0.393226
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 20/40: loss=0.472682 lr=0.100000
+  epoch 20: test_acc = 7495/10000 = 74.950000%  top5 = 9800/10000 = 98.000000%  [95% CI 74.09–75.79]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e20.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 18016756921436868780)
+  step 0/390: loss=0.427793
+  step 1/390: loss=0.457731
+  step 2/390: loss=0.362728
+  step 100/390: loss=0.373659
+  step 200/390: loss=0.383284
+  step 300/390: loss=0.430288
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 21/40: loss=0.464291 lr=0.100000
+  epoch 21: test_acc = 7458/10000 = 74.580000%  top5 = 9809/10000 = 98.090000%  [95% CI 73.72–75.42]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e21.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5262853814000518913)
+  step 0/390: loss=0.302261
+  step 1/390: loss=0.394460
+  step 2/390: loss=0.480899
+  step 100/390: loss=0.475363
+  step 200/390: loss=0.515627
+  step 300/390: loss=0.484410
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 22/40: loss=0.454238 lr=0.100000
+  epoch 22: test_acc = 7457/10000 = 74.570000%  top5 = 9817/10000 = 98.170000%  [95% CI 73.71–75.41]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e22.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9628362864142724512)
+  step 0/390: loss=0.403843
+  step 1/390: loss=0.555492
+  step 2/390: loss=0.437646
+  step 100/390: loss=0.349366
+  step 200/390: loss=0.546346
+  step 300/390: loss=0.464844
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 23/40: loss=0.439278 lr=0.100000
+  epoch 23: test_acc = 7248/10000 = 72.480000%  top5 = 9797/10000 = 97.970000%  [95% CI 71.60–73.35]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e23.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15457792761621177798)
+  step 0/390: loss=0.402965
+  step 1/390: loss=0.362320
+  step 2/390: loss=0.315487
+  step 100/390: loss=0.330056
+  step 200/390: loss=0.360614
+  step 300/390: loss=0.577131
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 24/40: loss=0.428213 lr=0.100000
+  epoch 24: test_acc = 7526/10000 = 75.260000%  top5 = 9780/10000 = 97.800000%  [95% CI 74.40–76.10]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e24.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 8762813260577958504)
+  step 0/390: loss=0.443499
+  step 1/390: loss=0.573476
+  step 2/390: loss=0.388436
+  step 100/390: loss=0.471475
+  step 200/390: loss=0.441631
+  step 300/390: loss=0.366280
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 25/40: loss=0.423427 lr=0.100000
+  epoch 25: test_acc = 7640/10000 = 76.400000%  top5 = 9825/10000 = 98.250000%  [95% CI 75.56–77.22]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e25.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17667411557724914273)
+  step 0/390: loss=0.408323
+  step 1/390: loss=0.408329
+  step 2/390: loss=0.500325
+  step 100/390: loss=0.355462
+  step 200/390: loss=0.443381
+  step 300/390: loss=0.475559
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 26/40: loss=0.413386 lr=0.100000
+  epoch 26: test_acc = 7656/10000 = 76.560000%  top5 = 9830/10000 = 98.300000%  [95% CI 75.72–77.38]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e26.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1185587760718194878)
+  step 0/390: loss=0.330017
+  step 1/390: loss=0.331994
+  step 2/390: loss=0.437521
+  step 100/390: loss=0.479277
+  step 200/390: loss=0.473226
+  step 300/390: loss=0.246456
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 27/40: loss=0.403310 lr=0.100000
+  epoch 27: test_acc = 7500/10000 = 75.000000%  top5 = 9824/10000 = 98.240000%  [95% CI 74.14–75.84]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e27.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1236856968696422882)
+  step 0/390: loss=0.448188
+  step 1/390: loss=0.448096
+  step 2/390: loss=0.407655
+  step 100/390: loss=0.427605
+  step 200/390: loss=0.294959
+  step 300/390: loss=0.447939
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 28/40: loss=0.396071 lr=0.100000
+  epoch 28: test_acc = 7729/10000 = 77.290000%  top5 = 9855/10000 = 98.550000%  [95% CI 76.46–78.10]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e28.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10922202558375477557)
+  step 0/390: loss=0.496384
+  step 1/390: loss=0.336422
+  step 2/390: loss=0.276524
+  step 100/390: loss=0.415548
+  step 200/390: loss=0.372997
+  step 300/390: loss=0.345770
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 29/40: loss=0.389001 lr=0.100000
+  epoch 29: test_acc = 7542/10000 = 75.420000%  top5 = 9846/10000 = 98.460000%  [95% CI 74.57–76.25]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e29.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12591790603238662209)
+  step 0/390: loss=0.346248
+  step 1/390: loss=0.380802
+  step 2/390: loss=0.479169
+  step 100/390: loss=0.263800
+  step 200/390: loss=0.359554
+  step 300/390: loss=0.440544
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 30/40: loss=0.383134 lr=0.100000
+  epoch 30: test_acc = 7711/10000 = 77.110000%  top5 = 9861/10000 = 98.610000%  [95% CI 76.28–77.92]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e30.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9262011008388190545)
+  step 0/390: loss=0.335381
+  step 1/390: loss=0.387126
+  step 2/390: loss=0.288123
+  step 100/390: loss=0.486544
+  step 200/390: loss=0.430904
+  step 300/390: loss=0.308752
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 31/40: loss=0.366292 lr=0.100000
+  epoch 31: test_acc = 7516/10000 = 75.160000%  top5 = 9826/10000 = 98.260000%  [95% CI 74.30–76.00]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e31.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12430352587203591869)
+  step 0/390: loss=0.398613
+  step 1/390: loss=0.365777
+  step 2/390: loss=0.306901
+  step 100/390: loss=0.229995
+  step 200/390: loss=0.420131
+  step 300/390: loss=0.282095
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 32/40: loss=0.366783 lr=0.100000
+  epoch 32: test_acc = 7711/10000 = 77.110000%  top5 = 9818/10000 = 98.180000%  [95% CI 76.28–77.92]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e32.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7682445636661342550)
+  step 0/390: loss=0.262751
+  step 1/390: loss=0.474700
+  step 2/390: loss=0.350998
+  step 100/390: loss=0.382504
+  step 200/390: loss=0.398487
+  step 300/390: loss=0.429147
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 33/40: loss=0.353878 lr=0.100000
+  epoch 33: test_acc = 7663/10000 = 76.630000%  top5 = 9848/10000 = 98.480000%  [95% CI 75.79–77.45]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e33.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5151662312852073074)
+  step 0/390: loss=0.339712
+  step 1/390: loss=0.270174
+  step 2/390: loss=0.250215
+  step 100/390: loss=0.293834
+  step 200/390: loss=0.436834
+  step 300/390: loss=0.347535
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 34/40: loss=0.351272 lr=0.100000
+  epoch 34: test_acc = 7647/10000 = 76.470000%  top5 = 9850/10000 = 98.500000%  [95% CI 75.63–77.29]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e34.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1178817086869619908)
+  step 0/390: loss=0.301323
+  step 1/390: loss=0.310743
+  step 2/390: loss=0.361552
+  step 100/390: loss=0.314019
+  step 200/390: loss=0.206374
+  step 300/390: loss=0.457164
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 35/40: loss=0.343362 lr=0.100000
+  epoch 35: test_acc = 7683/10000 = 76.830000%  top5 = 9838/10000 = 98.380000%  [95% CI 75.99–77.65]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e35.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9060113441515875020)
+  step 0/390: loss=0.370652
+  step 1/390: loss=0.294459
+  step 2/390: loss=0.334954
+  step 100/390: loss=0.301948
+  step 200/390: loss=0.359855
+  step 300/390: loss=0.329941
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 36/40: loss=0.334227 lr=0.100000
+  epoch 36: test_acc = 7727/10000 = 77.270000%  top5 = 9832/10000 = 98.320000%  [95% CI 76.44–78.08]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e36.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7831382577178625640)
+  step 0/390: loss=0.275751
+  step 1/390: loss=0.262999
+  step 2/390: loss=0.312431
+  step 100/390: loss=0.355874
+  step 200/390: loss=0.280516
+  step 300/390: loss=0.319801
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 37/40: loss=0.325224 lr=0.100000
+  epoch 37: test_acc = 7623/10000 = 76.230000%  top5 = 9797/10000 = 97.970000%  [95% CI 75.39–77.05]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e37.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2573848796970409920)
+  step 0/390: loss=0.294468
+  step 1/390: loss=0.313384
+  step 2/390: loss=0.319946
+  step 100/390: loss=0.425993
+  step 200/390: loss=0.341339
+  step 300/390: loss=0.304663
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 38/40: loss=0.318420 lr=0.100000
+  epoch 38: test_acc = 7755/10000 = 77.550000%  top5 = 9831/10000 = 98.310000%  [95% CI 76.72–78.36]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e38.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15261921375600771106)
+  step 0/390: loss=0.260684
+  step 1/390: loss=0.295839
+  step 2/390: loss=0.265083
+  step 100/390: loss=0.246329
+  step 200/390: loss=0.343222
+  step 300/390: loss=0.292839
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 39/40: loss=0.313414 lr=0.100000
+  epoch 39: test_acc = 7527/10000 = 75.270000%  top5 = 9828/10000 = 98.280000%  [95% CI 74.41–76.11]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e39.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 3205693870845795700)
+  step 0/390: loss=0.254266
+  step 1/390: loss=0.331669
+  step 2/390: loss=0.287181
+  step 100/390: loss=0.222183
+  step 200/390: loss=0.361290
+  step 300/390: loss=0.344586
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 40/40: loss=0.300513 lr=0.100000
+  epoch 40: test_acc = 7717/10000 = 77.170000%  top5 = 9848/10000 = 98.480000%  [95% CI 76.34–77.98]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_sgd_e40.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14071228101891185920)
+I1023 00:01:44.076014  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076570  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076603  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076637  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076666  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076697  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076727  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076756  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076788  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076817  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076895  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076924  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076952  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.076980  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.077009  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.077037  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.077066  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.077095  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:44.077297  133796 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 00:01:44.077312  133796 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_mom_train_step.mlir (@cifar8wb_bbn_mom_train_step, 133 outputs, 1 replica) in 586 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd.mlir (@cifar8wb_bbn_fwd, 1 outputs, 1 replica) in 178 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 131 ms
+done (trained CIFAR-CNN8-wide-BN-batchstat sgd + constant lr via packed threading).
+════════ cifar8wb-bbn (batch-statistics BN) f32 — Nesterov momentum (μ.9, lr 0.02) ════════
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cifar8wb_bbn_mom_train_step.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN-batchstat mom (constant lr 0.020000), He init
+  running-stats BN: 8 layers, 384 stat floats → eval via @cifar8wb_bbn_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1023 00:01:45.622392  136194 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:45.622640  136194 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_mom_train_step holds 114 parameter tensors (4.3 MB) on 1 device; they stop crossing PCIe from here
+I1023 00:01:45.690561  136195 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:45.691233  136237 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:45.691408  136208 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:01:45.691461  136215 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/390: loss=2.431526
+  step 1/390: loss=2.338085
+  step 2/390: loss=2.304580
+  step 100/390: loss=1.553020
+  step 200/390: loss=1.230866
+  step 300/390: loss=1.322784
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/40: loss=1.406085 lr=0.020000
+  epoch 1: test_acc = 5222/10000 = 52.220000%  top5 = 9364/10000 = 93.640000%  [95% CI 51.24–53.20]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e1.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15631933351732448102)
+  step 0/390: loss=1.096976
+  step 1/390: loss=1.156240
+  step 2/390: loss=1.104458
+  step 100/390: loss=1.064027
+  step 200/390: loss=0.935167
+  step 300/390: loss=0.985988
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/40: loss=1.012377 lr=0.020000
+  epoch 2: test_acc = 5973/10000 = 59.730000%  top5 = 9471/10000 = 94.710000%  [95% CI 58.77–60.69]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e2.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14006700870363660837)
+  step 0/390: loss=0.862802
+  step 1/390: loss=1.083639
+  step 2/390: loss=0.745287
+  step 100/390: loss=0.778679
+  step 200/390: loss=0.775494
+  step 300/390: loss=0.877227
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/40: loss=0.866649 lr=0.020000
+  epoch 3: test_acc = 6495/10000 = 64.950000%  top5 = 9698/10000 = 96.980000%  [95% CI 64.01–65.88]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e3.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16633986830569524508)
+  step 0/390: loss=0.960422
+  step 1/390: loss=0.879934
+  step 2/390: loss=0.676492
+  step 100/390: loss=0.693640
+  step 200/390: loss=0.926250
+  step 300/390: loss=0.795647
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/40: loss=0.779714 lr=0.020000
+  epoch 4: test_acc = 7074/10000 = 70.740000%  top5 = 9767/10000 = 97.670000%  [95% CI 69.84–71.62]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e4.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9446958045730401576)
+  step 0/390: loss=0.674708
+  step 1/390: loss=0.851426
+  step 2/390: loss=0.703833
+  step 100/390: loss=0.574717
+  step 200/390: loss=0.601951
+  step 300/390: loss=0.524563
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/40: loss=0.718811 lr=0.020000
+  epoch 5: test_acc = 6381/10000 = 63.810000%  top5 = 9400/10000 = 94.000000%  [95% CI 62.86–64.75]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e5.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10742997066430542264)
+  step 0/390: loss=0.810734
+  step 1/390: loss=0.544242
+  step 2/390: loss=0.698357
+  step 100/390: loss=0.570607
+  step 200/390: loss=0.781559
+  step 300/390: loss=0.632041
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 6/40: loss=0.671314 lr=0.020000
+  epoch 6: test_acc = 6999/10000 = 69.990000%  top5 = 9795/10000 = 97.950000%  [95% CI 69.08–70.88]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e6.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2558191308381172867)
+  step 0/390: loss=0.535362
+  step 1/390: loss=0.580579
+  step 2/390: loss=0.618869
+  step 100/390: loss=0.637196
+  step 200/390: loss=0.496006
+  step 300/390: loss=0.717045
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 7/40: loss=0.641480 lr=0.020000
+  epoch 7: test_acc = 7190/10000 = 71.900000%  top5 = 9750/10000 = 97.500000%  [95% CI 71.01–72.77]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e7.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16813005807779292736)
+  step 0/390: loss=0.633989
+  step 1/390: loss=0.468294
+  step 2/390: loss=0.462665
+  step 100/390: loss=0.516807
+  step 200/390: loss=0.520516
+  step 300/390: loss=0.567726
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 8/40: loss=0.606758 lr=0.020000
+  epoch 8: test_acc = 6900/10000 = 69.000000%  top5 = 9669/10000 = 96.690000%  [95% CI 68.09–69.90]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e8.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11501926887793903857)
+  step 0/390: loss=0.589622
+  step 1/390: loss=0.522717
+  step 2/390: loss=0.429656
+  step 100/390: loss=0.491034
+  step 200/390: loss=0.555057
+  step 300/390: loss=0.617548
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 9/40: loss=0.583007 lr=0.020000
+  epoch 9: test_acc = 7138/10000 = 71.380000%  top5 = 9793/10000 = 97.930000%  [95% CI 70.49–72.26]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e9.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6102432219588964391)
+  step 0/390: loss=0.533291
+  step 1/390: loss=0.604310
+  step 2/390: loss=0.511766
+  step 100/390: loss=0.617886
+  step 200/390: loss=0.774530
+  step 300/390: loss=0.438316
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 10/40: loss=0.561663 lr=0.020000
+  epoch 10: test_acc = 7158/10000 = 71.580000%  top5 = 9771/10000 = 97.710000%  [95% CI 70.69–72.46]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e10.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5816932591688895786)
+  step 0/390: loss=0.382244
+  step 1/390: loss=0.532131
+  step 2/390: loss=0.542775
+  step 100/390: loss=0.578459
+  step 200/390: loss=0.566983
+  step 300/390: loss=0.534084
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 11/40: loss=0.541345 lr=0.020000
+  epoch 11: test_acc = 7496/10000 = 74.960000%  top5 = 9822/10000 = 98.220000%  [95% CI 74.10–75.80]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e11.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 18140226864419948378)
+  step 0/390: loss=0.340824
+  step 1/390: loss=0.482964
+  step 2/390: loss=0.479242
+  step 100/390: loss=0.551625
+  step 200/390: loss=0.525092
+  step 300/390: loss=0.647254
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 12/40: loss=0.523657 lr=0.020000
+  epoch 12: test_acc = 7674/10000 = 76.740000%  top5 = 9855/10000 = 98.550000%  [95% CI 75.90–77.56]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e12.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7891421980468979983)
+  step 0/390: loss=0.543098
+  step 1/390: loss=0.641769
+  step 2/390: loss=0.557028
+  step 100/390: loss=0.597460
+  step 200/390: loss=0.498450
+  step 300/390: loss=0.666182
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 13/40: loss=0.511976 lr=0.020000
+  epoch 13: test_acc = 7230/10000 = 72.300000%  top5 = 9812/10000 = 98.120000%  [95% CI 71.41–73.17]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e13.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12485915713915094997)
+  step 0/390: loss=0.546480
+  step 1/390: loss=0.423329
+  step 2/390: loss=0.678763
+  step 100/390: loss=0.437620
+  step 200/390: loss=0.386616
+  step 300/390: loss=0.416977
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 14/40: loss=0.493040 lr=0.020000
+  epoch 14: test_acc = 7545/10000 = 75.450000%  top5 = 9814/10000 = 98.140000%  [95% CI 74.60–76.28]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e14.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4920412605368276554)
+  step 0/390: loss=0.446833
+  step 1/390: loss=0.482065
+  step 2/390: loss=0.487391
+  step 100/390: loss=0.490287
+  step 200/390: loss=0.550503
+  step 300/390: loss=0.413815
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 15/40: loss=0.472534 lr=0.020000
+  epoch 15: test_acc = 7320/10000 = 73.200000%  top5 = 9824/10000 = 98.240000%  [95% CI 72.32–74.06]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e15.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2504912851969912074)
+  step 0/390: loss=0.360826
+  step 1/390: loss=0.291415
+  step 2/390: loss=0.534744
+  step 100/390: loss=0.431511
+  step 200/390: loss=0.489566
+  step 300/390: loss=0.527533
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 16/40: loss=0.464095 lr=0.020000
+  epoch 16: test_acc = 7193/10000 = 71.930000%  top5 = 9729/10000 = 97.290000%  [95% CI 71.04–72.80]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e16.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13380271815015312266)
+  step 0/390: loss=0.433834
+  step 1/390: loss=0.401412
+  step 2/390: loss=0.480742
+  step 100/390: loss=0.388548
+  step 200/390: loss=0.397269
+  step 300/390: loss=0.460584
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 17/40: loss=0.452529 lr=0.020000
+  epoch 17: test_acc = 7674/10000 = 76.740000%  top5 = 9853/10000 = 98.530000%  [95% CI 75.90–77.56]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e17.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9166731133486597563)
+  step 0/390: loss=0.456400
+  step 1/390: loss=0.478211
+  step 2/390: loss=0.401712
+  step 100/390: loss=0.463337
+  step 200/390: loss=0.477933
+  step 300/390: loss=0.415246
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 18/40: loss=0.440268 lr=0.020000
+  epoch 18: test_acc = 7798/10000 = 77.980000%  top5 = 9881/10000 = 98.810000%  [95% CI 77.16–78.78]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e18.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17493924235788168689)
+  step 0/390: loss=0.435171
+  step 1/390: loss=0.467239
+  step 2/390: loss=0.328231
+  step 100/390: loss=0.413045
+  step 200/390: loss=0.295193
+  step 300/390: loss=0.403744
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 19/40: loss=0.426559 lr=0.020000
+  epoch 19: test_acc = 7661/10000 = 76.610000%  top5 = 9852/10000 = 98.520000%  [95% CI 75.77–77.43]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e19.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4286915759243060608)
+  step 0/390: loss=0.566939
+  step 1/390: loss=0.402243
+  step 2/390: loss=0.304523
+  step 100/390: loss=0.376091
+  step 200/390: loss=0.357600
+  step 300/390: loss=0.410352
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 20/40: loss=0.416432 lr=0.020000
+  epoch 20: test_acc = 7688/10000 = 76.880000%  top5 = 9844/10000 = 98.440000%  [95% CI 76.04–77.70]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e20.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13021166905498781894)
+  step 0/390: loss=0.428372
+  step 1/390: loss=0.380001
+  step 2/390: loss=0.317099
+  step 100/390: loss=0.336579
+  step 200/390: loss=0.404371
+  step 300/390: loss=0.403584
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 21/40: loss=0.408195 lr=0.020000
+  epoch 21: test_acc = 7763/10000 = 77.630000%  top5 = 9844/10000 = 98.440000%  [95% CI 76.80–78.44]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e21.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1365710369220601615)
+  step 0/390: loss=0.317013
+  step 1/390: loss=0.332078
+  step 2/390: loss=0.434093
+  step 100/390: loss=0.453429
+  step 200/390: loss=0.386357
+  step 300/390: loss=0.373504
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 22/40: loss=0.392273 lr=0.020000
+  epoch 22: test_acc = 7597/10000 = 75.970000%  top5 = 9824/10000 = 98.240000%  [95% CI 75.12–76.80]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e22.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10254261690716296089)
+  step 0/390: loss=0.340827
+  step 1/390: loss=0.419854
+  step 2/390: loss=0.349525
+  step 100/390: loss=0.306710
+  step 200/390: loss=0.418306
+  step 300/390: loss=0.415411
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 23/40: loss=0.385606 lr=0.020000
+  epoch 23: test_acc = 7896/10000 = 78.960000%  top5 = 9874/10000 = 98.740000%  [95% CI 78.15–79.75]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e23.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7600181839151157486)
+  step 0/390: loss=0.337830
+  step 1/390: loss=0.332374
+  step 2/390: loss=0.423781
+  step 100/390: loss=0.364549
+  step 200/390: loss=0.356480
+  step 300/390: loss=0.452396
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 24/40: loss=0.378994 lr=0.020000
+  epoch 24: test_acc = 7388/10000 = 73.880000%  top5 = 9760/10000 = 97.600000%  [95% CI 73.01–74.73]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e24.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9015279927408904540)
+  step 0/390: loss=0.321982
+  step 1/390: loss=0.443942
+  step 2/390: loss=0.372750
+  step 100/390: loss=0.422871
+  step 200/390: loss=0.413760
+  step 300/390: loss=0.438697
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 25/40: loss=0.371883 lr=0.020000
+  epoch 25: test_acc = 7809/10000 = 78.090000%  top5 = 9867/10000 = 98.670000%  [95% CI 77.27–78.89]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e25.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 8736680676658442207)
+  step 0/390: loss=0.454854
+  step 1/390: loss=0.466529
+  step 2/390: loss=0.415316
+  step 100/390: loss=0.305803
+  step 200/390: loss=0.357628
+  step 300/390: loss=0.351237
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 26/40: loss=0.359248 lr=0.020000
+  epoch 26: test_acc = 7726/10000 = 77.260000%  top5 = 9812/10000 = 98.120000%  [95% CI 76.43–78.07]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e26.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9874950950607621188)
+  step 0/390: loss=0.253395
+  step 1/390: loss=0.251076
+  step 2/390: loss=0.379372
+  step 100/390: loss=0.546154
+  step 200/390: loss=0.369820
+  step 300/390: loss=0.298710
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 27/40: loss=0.350658 lr=0.020000
+  epoch 27: test_acc = 7719/10000 = 77.190000%  top5 = 9857/10000 = 98.570000%  [95% CI 76.36–78.00]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e27.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5881838570557857003)
+  step 0/390: loss=0.278138
+  step 1/390: loss=0.340274
+  step 2/390: loss=0.255154
+  step 100/390: loss=0.341949
+  step 200/390: loss=0.223489
+  step 300/390: loss=0.411889
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 28/40: loss=0.343069 lr=0.020000
+  epoch 28: test_acc = 7429/10000 = 74.290000%  top5 = 9783/10000 = 97.830000%  [95% CI 73.42–75.14]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e28.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 8141570171143817256)
+  step 0/390: loss=0.321153
+  step 1/390: loss=0.273569
+  step 2/390: loss=0.260494
+  step 100/390: loss=0.269933
+  step 200/390: loss=0.318410
+  step 300/390: loss=0.297499
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 29/40: loss=0.335935 lr=0.020000
+  epoch 29: test_acc = 7775/10000 = 77.750000%  top5 = 9856/10000 = 98.560000%  [95% CI 76.92–78.55]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e29.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15495774263722591999)
+  step 0/390: loss=0.231741
+  step 1/390: loss=0.371952
+  step 2/390: loss=0.388176
+  step 100/390: loss=0.283905
+  step 200/390: loss=0.302076
+  step 300/390: loss=0.259009
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 30/40: loss=0.330111 lr=0.020000
+  epoch 30: test_acc = 7802/10000 = 78.020000%  top5 = 9851/10000 = 98.510000%  [95% CI 77.20–78.82]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e30.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9956186239383988120)
+  step 0/390: loss=0.294556
+  step 1/390: loss=0.376442
+  step 2/390: loss=0.392866
+  step 100/390: loss=0.338161
+  step 200/390: loss=0.363109
+  step 300/390: loss=0.249938
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 31/40: loss=0.317037 lr=0.020000
+  epoch 31: test_acc = 7809/10000 = 78.090000%  top5 = 9824/10000 = 98.240000%  [95% CI 77.27–78.89]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e31.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4081957002056317251)
+  step 0/390: loss=0.250879
+  step 1/390: loss=0.282175
+  step 2/390: loss=0.249017
+  step 100/390: loss=0.236314
+  step 200/390: loss=0.266584
+  step 300/390: loss=0.290845
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 32/40: loss=0.315952 lr=0.020000
+  epoch 32: test_acc = 7512/10000 = 75.120000%  top5 = 9816/10000 = 98.160000%  [95% CI 74.26–75.96]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e32.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9547181343184496936)
+  step 0/390: loss=0.312289
+  step 1/390: loss=0.283656
+  step 2/390: loss=0.349641
+  step 100/390: loss=0.226586
+  step 200/390: loss=0.300964
+  step 300/390: loss=0.435574
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 33/40: loss=0.300032 lr=0.020000
+  epoch 33: test_acc = 7747/10000 = 77.470000%  top5 = 9843/10000 = 98.430000%  [95% CI 76.64–78.28]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e33.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9480608956316671261)
+  step 0/390: loss=0.227982
+  step 1/390: loss=0.279821
+  step 2/390: loss=0.266536
+  step 100/390: loss=0.304459
+  step 200/390: loss=0.539065
+  step 300/390: loss=0.343362
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 34/40: loss=0.300563 lr=0.020000
+  epoch 34: test_acc = 7762/10000 = 77.620000%  top5 = 9862/10000 = 98.620000%  [95% CI 76.79–78.43]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e34.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13821618741208006547)
+  step 0/390: loss=0.186437
+  step 1/390: loss=0.259702
+  step 2/390: loss=0.237169
+  step 100/390: loss=0.348861
+  step 200/390: loss=0.139184
+  step 300/390: loss=0.372339
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 35/40: loss=0.290502 lr=0.020000
+  epoch 35: test_acc = 7754/10000 = 77.540000%  top5 = 9842/10000 = 98.420000%  [95% CI 76.71–78.35]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e35.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6349653175326945846)
+  step 0/390: loss=0.343516
+  step 1/390: loss=0.228423
+  step 2/390: loss=0.274694
+  step 100/390: loss=0.345097
+  step 200/390: loss=0.284669
+  step 300/390: loss=0.442815
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 36/40: loss=0.286850 lr=0.020000
+  epoch 36: test_acc = 7855/10000 = 78.550000%  top5 = 9851/10000 = 98.510000%  [95% CI 77.73–79.34]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e36.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4207075394739876810)
+  step 0/390: loss=0.316563
+  step 1/390: loss=0.159361
+  step 2/390: loss=0.325185
+  step 100/390: loss=0.299095
+  step 200/390: loss=0.269517
+  step 300/390: loss=0.318320
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 37/40: loss=0.276997 lr=0.020000
+  epoch 37: test_acc = 7643/10000 = 76.430000%  top5 = 9768/10000 = 97.680000%  [95% CI 75.59–77.25]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e37.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16757208726514902780)
+  step 0/390: loss=0.202305
+  step 1/390: loss=0.293469
+  step 2/390: loss=0.242952
+  step 100/390: loss=0.396348
+  step 200/390: loss=0.241601
+  step 300/390: loss=0.238329
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 38/40: loss=0.264184 lr=0.020000
+  epoch 38: test_acc = 7779/10000 = 77.790000%  top5 = 9847/10000 = 98.470000%  [95% CI 76.96–78.59]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e38.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 8259480899403807449)
+  step 0/390: loss=0.195497
+  step 1/390: loss=0.294386
+  step 2/390: loss=0.293719
+  step 100/390: loss=0.182669
+  step 200/390: loss=0.194467
+  step 300/390: loss=0.266309
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 39/40: loss=0.265613 lr=0.020000
+  epoch 39: test_acc = 7851/10000 = 78.510000%  top5 = 9858/10000 = 98.580000%  [95% CI 77.69–79.30]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e39.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2263903484173841687)
+  step 0/390: loss=0.198635
+  step 1/390: loss=0.207078
+  step 2/390: loss=0.246300
+  step 100/390: loss=0.249959
+  step 200/390: loss=0.243589
+  step 300/390: loss=0.367742
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 40/40: loss=0.256050 lr=0.020000
+  epoch 40: test_acc = 7722/10000 = 77.220000%  top5 = 9854/10000 = 98.540000%  [95% CI 76.39–78.03]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_mom_e40.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15103058411993362675)
+I1023 00:04:52.699179  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.699779  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.699848  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.699878  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.699908  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.699938  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.699967  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.699996  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700026  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700054  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700084  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700113  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700146  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700176  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700221  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700287  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700317  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700345  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:52.700542  133796 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 00:04:52.700557  133796 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_adam_train_step.mlir (@cifar8wb_bbn_adam_train_step, 133 outputs, 1 replica) in 729 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd.mlir (@cifar8wb_bbn_fwd, 1 outputs, 1 replica) in 164 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 131 ms
+done (trained CIFAR-CNN8-wide-BN-batchstat mom + constant lr via packed threading).
+════════ cifar8wb-bbn (batch-statistics BN) f32 — AdamW (lr 1e-3) ════════
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cifar8wb_bbn_adam_train_step.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN-batchstat adam (constant lr 0.001000), He init
+  running-stats BN: 8 layers, 384 stat floats → eval via @cifar8wb_bbn_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1023 00:04:54.353576  138401 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:54.353875  138401 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_adam_train_step holds 114 parameter tensors (4.3 MB) on 1 device; they stop crossing PCIe from here
+I1023 00:04:54.395903  138401 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:54.396055  138446 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:54.396557  138413 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:04:54.396714  138415 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/390: loss=2.431526
+  step 1/390: loss=2.367816
+  step 2/390: loss=2.291911
+  step 100/390: loss=1.576274
+  step 200/390: loss=1.404924
+  step 300/390: loss=1.285965
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/40: loss=1.448300 lr=0.001000
+  epoch 1: test_acc = 5015/10000 = 50.150000%  top5 = 9293/10000 = 92.930000%  [95% CI 49.17–51.13]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e1.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16687976099323714633)
+  step 0/390: loss=1.047863
+  step 1/390: loss=1.180917
+  step 2/390: loss=1.190460
+  step 100/390: loss=1.038895
+  step 200/390: loss=1.030063
+  step 300/390: loss=1.019540
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/40: loss=1.079111 lr=0.001000
+  epoch 2: test_acc = 6113/10000 = 61.130000%  top5 = 9587/10000 = 95.870000%  [95% CI 60.17–62.08]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e2.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5212039362879617345)
+  step 0/390: loss=0.917273
+  step 1/390: loss=1.249877
+  step 2/390: loss=0.883645
+  step 100/390: loss=0.906074
+  step 200/390: loss=0.961510
+  step 300/390: loss=0.904378
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/40: loss=0.941822 lr=0.001000
+  epoch 3: test_acc = 6341/10000 = 63.410000%  top5 = 9638/10000 = 96.380000%  [95% CI 62.46–64.35]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e3.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10746015732473130536)
+  step 0/390: loss=1.056402
+  step 1/390: loss=0.990898
+  step 2/390: loss=0.774606
+  step 100/390: loss=0.866466
+  step 200/390: loss=0.852446
+  step 300/390: loss=0.889649
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/40: loss=0.848728 lr=0.001000
+  epoch 4: test_acc = 6577/10000 = 65.770000%  top5 = 9631/10000 = 96.310000%  [95% CI 64.83–66.69]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e4.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17327758843038247908)
+  step 0/390: loss=0.652271
+  step 1/390: loss=0.957917
+  step 2/390: loss=0.779355
+  step 100/390: loss=0.729981
+  step 200/390: loss=0.691760
+  step 300/390: loss=0.624376
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/40: loss=0.783858 lr=0.001000
+  epoch 5: test_acc = 5568/10000 = 55.680000%  top5 = 9105/10000 = 91.050000%  [95% CI 54.70–56.65]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e5.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11362083772830732572)
+  step 0/390: loss=0.815129
+  step 1/390: loss=0.587815
+  step 2/390: loss=0.824830
+  step 100/390: loss=0.669181
+  step 200/390: loss=0.749266
+  step 300/390: loss=0.731306
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 6/40: loss=0.730707 lr=0.001000
+  epoch 6: test_acc = 6935/10000 = 69.350000%  top5 = 9738/10000 = 97.380000%  [95% CI 68.44–70.25]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e6.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 153830905839234186)
+  step 0/390: loss=0.697143
+  step 1/390: loss=0.660582
+  step 2/390: loss=0.754398
+  step 100/390: loss=0.720052
+  step 200/390: loss=0.738890
+  step 300/390: loss=0.718203
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 7/40: loss=0.695775 lr=0.001000
+  epoch 7: test_acc = 7011/10000 = 70.110000%  top5 = 9747/10000 = 97.470000%  [95% CI 69.21–71.00]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e7.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 51024830716878137)
+  step 0/390: loss=0.719376
+  step 1/390: loss=0.633363
+  step 2/390: loss=0.572226
+  step 100/390: loss=0.568700
+  step 200/390: loss=0.704471
+  step 300/390: loss=0.691531
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 8/40: loss=0.659648 lr=0.001000
+  epoch 8: test_acc = 7082/10000 = 70.820000%  top5 = 9784/10000 = 97.840000%  [95% CI 69.92–71.70]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e8.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7614938044627449997)
+  step 0/390: loss=0.570934
+  step 1/390: loss=0.675251
+  step 2/390: loss=0.453536
+  step 100/390: loss=0.627526
+  step 200/390: loss=0.518351
+  step 300/390: loss=0.684384
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 9/40: loss=0.634294 lr=0.001000
+  epoch 9: test_acc = 7173/10000 = 71.730000%  top5 = 9742/10000 = 97.420000%  [95% CI 70.84–72.60]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e9.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15198686505174557701)
+  step 0/390: loss=0.577312
+  step 1/390: loss=0.658107
+  step 2/390: loss=0.572226
+  step 100/390: loss=0.626542
+  step 200/390: loss=0.658410
+  step 300/390: loss=0.487160
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 10/40: loss=0.609117 lr=0.001000
+  epoch 10: test_acc = 7422/10000 = 74.220000%  top5 = 9830/10000 = 98.300000%  [95% CI 73.35–75.07]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e10.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11532626423874124893)
+  step 0/390: loss=0.415236
+  step 1/390: loss=0.573331
+  step 2/390: loss=0.541910
+  step 100/390: loss=0.530133
+  step 200/390: loss=0.588074
+  step 300/390: loss=0.584798
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 11/40: loss=0.587215 lr=0.001000
+  epoch 11: test_acc = 7339/10000 = 73.390000%  top5 = 9797/10000 = 97.970000%  [95% CI 72.51–74.25]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e11.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12563177063873560059)
+  step 0/390: loss=0.618814
+  step 1/390: loss=0.500459
+  step 2/390: loss=0.560274
+  step 100/390: loss=0.592817
+  step 200/390: loss=0.579685
+  step 300/390: loss=0.599140
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 12/40: loss=0.564215 lr=0.001000
+  epoch 12: test_acc = 7368/10000 = 73.680000%  top5 = 9770/10000 = 97.700000%  [95% CI 72.81–74.53]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e12.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4756707188179265882)
+  step 0/390: loss=0.572163
+  step 1/390: loss=0.543218
+  step 2/390: loss=0.499932
+  step 100/390: loss=0.506747
+  step 200/390: loss=0.598497
+  step 300/390: loss=0.670356
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 13/40: loss=0.550541 lr=0.001000
+  epoch 13: test_acc = 7306/10000 = 73.060000%  top5 = 9809/10000 = 98.090000%  [95% CI 72.18–73.92]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e13.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 332613007994876325)
+  step 0/390: loss=0.521074
+  step 1/390: loss=0.472302
+  step 2/390: loss=0.606625
+  step 100/390: loss=0.499854
+  step 200/390: loss=0.437507
+  step 300/390: loss=0.603946
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 14/40: loss=0.529688 lr=0.001000
+  epoch 14: test_acc = 7381/10000 = 73.810000%  top5 = 9808/10000 = 98.080000%  [95% CI 72.94–74.66]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e14.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 18114211051003695494)
+  step 0/390: loss=0.456080
+  step 1/390: loss=0.483057
+  step 2/390: loss=0.568349
+  step 100/390: loss=0.393133
+  step 200/390: loss=0.569790
+  step 300/390: loss=0.478003
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 15/40: loss=0.508610 lr=0.001000
+  epoch 15: test_acc = 7478/10000 = 74.780000%  top5 = 9822/10000 = 98.220000%  [95% CI 73.92–75.62]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e15.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10709215040116460554)
+  step 0/390: loss=0.343488
+  step 1/390: loss=0.357479
+  step 2/390: loss=0.513929
+  step 100/390: loss=0.483945
+  step 200/390: loss=0.547704
+  step 300/390: loss=0.587682
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 16/40: loss=0.492199 lr=0.001000
+  epoch 16: test_acc = 7275/10000 = 72.750000%  top5 = 9739/10000 = 97.390000%  [95% CI 71.87–73.61]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e16.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15368672501658897356)
+  step 0/390: loss=0.435334
+  step 1/390: loss=0.474980
+  step 2/390: loss=0.539027
+  step 100/390: loss=0.430920
+  step 200/390: loss=0.441754
+  step 300/390: loss=0.427280
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 17/40: loss=0.479279 lr=0.001000
+  epoch 17: test_acc = 7649/10000 = 76.490000%  top5 = 9844/10000 = 98.440000%  [95% CI 75.65–77.31]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e17.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12429625603183514488)
+  step 0/390: loss=0.452740
+  step 1/390: loss=0.512650
+  step 2/390: loss=0.387421
+  step 100/390: loss=0.406442
+  step 200/390: loss=0.490021
+  step 300/390: loss=0.532598
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 18/40: loss=0.464264 lr=0.001000
+  epoch 18: test_acc = 7577/10000 = 75.770000%  top5 = 9822/10000 = 98.220000%  [95% CI 74.92–76.60]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e18.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4328929757684986082)
+  step 0/390: loss=0.453431
+  step 1/390: loss=0.495457
+  step 2/390: loss=0.398953
+  step 100/390: loss=0.494519
+  step 200/390: loss=0.295334
+  step 300/390: loss=0.521465
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 19/40: loss=0.450562 lr=0.001000
+  epoch 19: test_acc = 7578/10000 = 75.780000%  top5 = 9814/10000 = 98.140000%  [95% CI 74.93–76.61]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e19.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4379776011818923521)
+  step 0/390: loss=0.437173
+  step 1/390: loss=0.336128
+  step 2/390: loss=0.314028
+  step 100/390: loss=0.428354
+  step 200/390: loss=0.500951
+  step 300/390: loss=0.447827
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 20/40: loss=0.435722 lr=0.001000
+  epoch 20: test_acc = 7642/10000 = 76.420000%  top5 = 9830/10000 = 98.300000%  [95% CI 75.58–77.24]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e20.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14093875817611500243)
+  step 0/390: loss=0.430505
+  step 1/390: loss=0.391763
+  step 2/390: loss=0.369145
+  step 100/390: loss=0.377506
+  step 200/390: loss=0.432449
+  step 300/390: loss=0.394337
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 21/40: loss=0.428783 lr=0.001000
+  epoch 21: test_acc = 7470/10000 = 74.700000%  top5 = 9800/10000 = 98.000000%  [95% CI 73.84–75.54]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e21.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9224338931349263298)
+  step 0/390: loss=0.397437
+  step 1/390: loss=0.356281
+  step 2/390: loss=0.445203
+  step 100/390: loss=0.520602
+  step 200/390: loss=0.485773
+  step 300/390: loss=0.326260
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 22/40: loss=0.416040 lr=0.001000
+  epoch 22: test_acc = 7325/10000 = 73.250000%  top5 = 9771/10000 = 97.710000%  [95% CI 72.37–74.11]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e22.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17610218381776836499)
+  step 0/390: loss=0.297421
+  step 1/390: loss=0.519097
+  step 2/390: loss=0.360056
+  step 100/390: loss=0.341270
+  step 200/390: loss=0.425076
+  step 300/390: loss=0.388948
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 23/40: loss=0.403142 lr=0.001000
+  epoch 23: test_acc = 7722/10000 = 77.220000%  top5 = 9837/10000 = 98.370000%  [95% CI 76.39–78.03]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e23.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 733105741486837243)
+  step 0/390: loss=0.355222
+  step 1/390: loss=0.356638
+  step 2/390: loss=0.326845
+  step 100/390: loss=0.372322
+  step 200/390: loss=0.339107
+  step 300/390: loss=0.373194
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 24/40: loss=0.387300 lr=0.001000
+  epoch 24: test_acc = 7501/10000 = 75.010000%  top5 = 9799/10000 = 97.990000%  [95% CI 74.15–75.85]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e24.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15247417777507883613)
+  step 0/390: loss=0.350562
+  step 1/390: loss=0.440852
+  step 2/390: loss=0.458998
+  step 100/390: loss=0.455454
+  step 200/390: loss=0.443480
+  step 300/390: loss=0.402407
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 25/40: loss=0.378764 lr=0.001000
+  epoch 25: test_acc = 7434/10000 = 74.340000%  top5 = 9765/10000 = 97.650000%  [95% CI 73.47–75.19]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e25.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17455142021181352467)
+  step 0/390: loss=0.397255
+  step 1/390: loss=0.437343
+  step 2/390: loss=0.412356
+  step 100/390: loss=0.300721
+  step 200/390: loss=0.345690
+  step 300/390: loss=0.341211
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 26/40: loss=0.367950 lr=0.001000
+  epoch 26: test_acc = 7676/10000 = 76.760000%  top5 = 9829/10000 = 98.290000%  [95% CI 75.92–77.58]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e26.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13225072768692771814)
+  step 0/390: loss=0.307856
+  step 1/390: loss=0.285584
+  step 2/390: loss=0.386450
+  step 100/390: loss=0.445683
+  step 200/390: loss=0.425471
+  step 300/390: loss=0.260149
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 27/40: loss=0.353758 lr=0.001000
+  epoch 27: test_acc = 7422/10000 = 74.220000%  top5 = 9780/10000 = 97.800000%  [95% CI 73.35–75.07]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e27.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11487703540727614258)
+  step 0/390: loss=0.297928
+  step 1/390: loss=0.284478
+  step 2/390: loss=0.354252
+  step 100/390: loss=0.392290
+  step 200/390: loss=0.247410
+  step 300/390: loss=0.298738
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 28/40: loss=0.347302 lr=0.001000
+  epoch 28: test_acc = 7563/10000 = 75.630000%  top5 = 9840/10000 = 98.400000%  [95% CI 74.78–76.46]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e28.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4859239707454533872)
+  step 0/390: loss=0.290077
+  step 1/390: loss=0.340955
+  step 2/390: loss=0.276113
+  step 100/390: loss=0.269412
+  step 200/390: loss=0.408133
+  step 300/390: loss=0.224297
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 29/40: loss=0.333537 lr=0.001000
+  epoch 29: test_acc = 7571/10000 = 75.710000%  top5 = 9786/10000 = 97.860000%  [95% CI 74.86–76.54]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e29.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13274195580618539320)
+  step 0/390: loss=0.315207
+  step 1/390: loss=0.417812
+  step 2/390: loss=0.315985
+  step 100/390: loss=0.253687
+  step 200/390: loss=0.329560
+  step 300/390: loss=0.359539
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 30/40: loss=0.324866 lr=0.001000
+  epoch 30: test_acc = 6996/10000 = 69.960000%  top5 = 9606/10000 = 96.060000%  [95% CI 69.05–70.85]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e30.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15897941899546429591)
+  step 0/390: loss=0.269787
+  step 1/390: loss=0.355999
+  step 2/390: loss=0.261080
+  step 100/390: loss=0.488326
+  step 200/390: loss=0.274392
+  step 300/390: loss=0.405715
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 31/40: loss=0.310305 lr=0.001000
+  epoch 31: test_acc = 7537/10000 = 75.370000%  top5 = 9808/10000 = 98.080000%  [95% CI 74.52–76.20]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e31.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 859511838937501509)
+  step 0/390: loss=0.232854
+  step 1/390: loss=0.258656
+  step 2/390: loss=0.367081
+  step 100/390: loss=0.238671
+  step 200/390: loss=0.349290
+  step 300/390: loss=0.240026
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 32/40: loss=0.306492 lr=0.001000
+  epoch 32: test_acc = 7308/10000 = 73.080000%  top5 = 9711/10000 = 97.110000%  [95% CI 72.20–73.94]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e32.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7302897817377470213)
+  step 0/390: loss=0.308914
+  step 1/390: loss=0.363200
+  step 2/390: loss=0.384395
+  step 100/390: loss=0.276893
+  step 200/390: loss=0.209505
+  step 300/390: loss=0.302688
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 33/40: loss=0.290534 lr=0.001000
+  epoch 33: test_acc = 7450/10000 = 74.500000%  top5 = 9794/10000 = 97.940000%  [95% CI 73.64–75.34]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e33.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1368615634911303734)
+  step 0/390: loss=0.203487
+  step 1/390: loss=0.207334
+  step 2/390: loss=0.230549
+  step 100/390: loss=0.249540
+  step 200/390: loss=0.282690
+  step 300/390: loss=0.271647
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 34/40: loss=0.282453 lr=0.001000
+  epoch 34: test_acc = 7435/10000 = 74.350000%  top5 = 9734/10000 = 97.340000%  [95% CI 73.48–75.20]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e34.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5810374663315049710)
+  step 0/390: loss=0.271543
+  step 1/390: loss=0.276494
+  step 2/390: loss=0.330080
+  step 100/390: loss=0.213002
+  step 200/390: loss=0.236144
+  step 300/390: loss=0.303339
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 35/40: loss=0.274694 lr=0.001000
+  epoch 35: test_acc = 7720/10000 = 77.200000%  top5 = 9810/10000 = 98.100000%  [95% CI 76.37–78.01]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e35.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 18409615773289665395)
+  step 0/390: loss=0.254912
+  step 1/390: loss=0.282412
+  step 2/390: loss=0.262563
+  step 100/390: loss=0.209323
+  step 200/390: loss=0.368391
+  step 300/390: loss=0.293009
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 36/40: loss=0.267236 lr=0.001000
+  epoch 36: test_acc = 7586/10000 = 75.860000%  top5 = 9812/10000 = 98.120000%  [95% CI 75.01–76.69]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e36.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1093949942945997)
+  step 0/390: loss=0.348559
+  step 1/390: loss=0.219143
+  step 2/390: loss=0.235197
+  step 100/390: loss=0.247290
+  step 200/390: loss=0.422102
+  step 300/390: loss=0.243836
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 37/40: loss=0.256241 lr=0.001000
+  epoch 37: test_acc = 7592/10000 = 75.920000%  top5 = 9787/10000 = 97.870000%  [95% CI 75.07–76.75]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e37.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1559806143002372496)
+  step 0/390: loss=0.239367
+  step 1/390: loss=0.312505
+  step 2/390: loss=0.174545
+  step 100/390: loss=0.327397
+  step 200/390: loss=0.266521
+  step 300/390: loss=0.311609
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 38/40: loss=0.244888 lr=0.001000
+  epoch 38: test_acc = 7650/10000 = 76.500000%  top5 = 9824/10000 = 98.240000%  [95% CI 75.66–77.32]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e38.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7211225958956166749)
+  step 0/390: loss=0.273570
+  step 1/390: loss=0.317920
+  step 2/390: loss=0.213373
+  step 100/390: loss=0.234714
+  step 200/390: loss=0.162793
+  step 300/390: loss=0.236787
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 39/40: loss=0.239379 lr=0.001000
+  epoch 39: test_acc = 7774/10000 = 77.740000%  top5 = 9828/10000 = 98.280000%  [95% CI 76.91–78.54]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e39.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7289661099383606708)
+  step 0/390: loss=0.182252
+  step 1/390: loss=0.167333
+  step 2/390: loss=0.205034
+  step 100/390: loss=0.298471
+  step 200/390: loss=0.345008
+  step 300/390: loss=0.259578
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 40/40: loss=0.241580 lr=0.001000
+  epoch 40: test_acc = 7534/10000 = 75.340000%  top5 = 9748/10000 = 97.480000%  [95% CI 74.49–76.17]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_adam_e40.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13450874059829245577)
+I1023 00:08:01.694035  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694665  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694735  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694814  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694845  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694875  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694905  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694934  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694965  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.694994  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695022  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695051  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695079  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695108  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695137  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695165  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695195  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695628  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:01.695827  133796 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 00:08:01.695841  133796 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_bf16sgd_train_step.mlir (@cifar8wb_bbn_bf16sgd_train_step, 133 outputs, 1 replica) in 621 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd.mlir (@cifar8wb_bbn_fwd, 1 outputs, 1 replica) in 182 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 143 ms
+done (trained CIFAR-CNN8-wide-BN-batchstat adam + constant lr via packed threading).
+════════ cifar8wb-bbn (batch-statistics BN) bf16 — SGD (lr 0.1) ════════
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cifar8wb_bbn_bf16sgd_train_step.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN-batchstat bf16sgd (constant lr 0.100000), He init
+  running-stats BN: 8 layers, 384 stat floats → eval via @cifar8wb_bbn_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1023 00:08:03.302405  140670 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:03.302719  140670 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_bf16sgd_train_step holds 114 parameter tensors (4.3 MB) on 1 device; they stop crossing PCIe from here
+I1023 00:08:06.035384  140693 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:06.035480  140695 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:06.035550  140694 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:08:06.036407  140723 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/390: loss=2.432202
+  step 1/390: loss=2.335715
+  step 2/390: loss=2.347320
+  step 100/390: loss=1.652300
+  step 200/390: loss=1.414499
+  step 300/390: loss=1.397218
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/40: loss=1.520528 lr=0.100000
+  epoch 1: test_acc = 4083/10000 = 40.830000%  top5 = 8892/10000 = 88.920000%  [95% CI 39.87–41.80]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e1.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10223409787496205780)
+  step 0/390: loss=1.278797
+  step 1/390: loss=1.313598
+  step 2/390: loss=1.209865
+  step 100/390: loss=1.248221
+  step 200/390: loss=1.084341
+  step 300/390: loss=1.157118
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/40: loss=1.150957 lr=0.100000
+  epoch 2: test_acc = 5039/10000 = 50.390000%  top5 = 9344/10000 = 93.440000%  [95% CI 49.41–51.37]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e2.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6001286775559360677)
+  step 0/390: loss=0.987709
+  step 1/390: loss=1.164376
+  step 2/390: loss=0.905799
+  step 100/390: loss=0.991643
+  step 200/390: loss=1.056839
+  step 300/390: loss=0.947342
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/40: loss=1.000828 lr=0.100000
+  epoch 3: test_acc = 6264/10000 = 62.640000%  top5 = 9647/10000 = 96.470000%  [95% CI 61.69–63.58]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e3.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14779909089721603456)
+  step 0/390: loss=1.082558
+  step 1/390: loss=1.004319
+  step 2/390: loss=0.775749
+  step 100/390: loss=0.828671
+  step 200/390: loss=0.873454
+  step 300/390: loss=0.860133
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/40: loss=0.897612 lr=0.100000
+  epoch 4: test_acc = 6232/10000 = 62.320000%  top5 = 9636/10000 = 96.360000%  [95% CI 61.37–63.26]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e4.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15036070799930935012)
+  step 0/390: loss=0.751924
+  step 1/390: loss=1.013908
+  step 2/390: loss=0.905800
+  step 100/390: loss=0.771402
+  step 200/390: loss=0.787539
+  step 300/390: loss=0.642464
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/40: loss=0.823867 lr=0.100000
+  epoch 5: test_acc = 5498/10000 = 54.980000%  top5 = 9189/10000 = 91.890000%  [95% CI 54.00–55.95]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e5.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5091158829236265350)
+  step 0/390: loss=0.833840
+  step 1/390: loss=0.548360
+  step 2/390: loss=0.754176
+  step 100/390: loss=0.789189
+  step 200/390: loss=0.755473
+  step 300/390: loss=0.750667
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 6/40: loss=0.768743 lr=0.100000
+  epoch 6: test_acc = 6413/10000 = 64.130000%  top5 = 9689/10000 = 96.890000%  [95% CI 63.18–65.06]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e6.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13345574346856446273)
+  step 0/390: loss=0.636640
+  step 1/390: loss=0.735769
+  step 2/390: loss=0.687138
+  step 100/390: loss=0.794978
+  step 200/390: loss=0.567622
+  step 300/390: loss=0.704320
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 7/40: loss=0.729395 lr=0.100000
+  epoch 7: test_acc = 6829/10000 = 68.290000%  top5 = 9708/10000 = 97.080000%  [95% CI 67.37–69.19]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e7.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11674709125726458206)
+  step 0/390: loss=0.788144
+  step 1/390: loss=0.650447
+  step 2/390: loss=0.522710
+  step 100/390: loss=0.604061
+  step 200/390: loss=0.650729
+  step 300/390: loss=0.750070
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 8/40: loss=0.691003 lr=0.100000
+  epoch 8: test_acc = 6768/10000 = 67.680000%  top5 = 9685/10000 = 96.850000%  [95% CI 66.76–68.59]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e8.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14981208470365176791)
+  step 0/390: loss=0.627930
+  step 1/390: loss=0.654789
+  step 2/390: loss=0.594566
+  step 100/390: loss=0.648363
+  step 200/390: loss=0.767425
+  step 300/390: loss=0.841820
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 9/40: loss=0.662455 lr=0.100000
+  epoch 9: test_acc = 6775/10000 = 67.750000%  top5 = 9750/10000 = 97.500000%  [95% CI 66.83–68.66]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e9.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11675635716536254906)
+  step 0/390: loss=0.673517
+  step 1/390: loss=0.778465
+  step 2/390: loss=0.512965
+  step 100/390: loss=0.667903
+  step 200/390: loss=0.760501
+  step 300/390: loss=0.534746
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 10/40: loss=0.639023 lr=0.100000
+  epoch 10: test_acc = 7219/10000 = 72.190000%  top5 = 9773/10000 = 97.730000%  [95% CI 71.30–73.06]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e10.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7464273191283770462)
+  step 0/390: loss=0.560843
+  step 1/390: loss=0.557431
+  step 2/390: loss=0.678833
+  step 100/390: loss=0.728891
+  step 200/390: loss=0.658004
+  step 300/390: loss=0.583429
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 11/40: loss=0.615853 lr=0.100000
+  epoch 11: test_acc = 7228/10000 = 72.280000%  top5 = 9764/10000 = 97.640000%  [95% CI 71.39–73.15]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e11.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10886347042960775758)
+  step 0/390: loss=0.498862
+  step 1/390: loss=0.583205
+  step 2/390: loss=0.663328
+  step 100/390: loss=0.595050
+  step 200/390: loss=0.566919
+  step 300/390: loss=0.643263
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 12/40: loss=0.597356 lr=0.100000
+  epoch 12: test_acc = 7208/10000 = 72.080000%  top5 = 9801/10000 = 98.010000%  [95% CI 71.19–72.95]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e12.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13467912720463631856)
+  step 0/390: loss=0.605605
+  step 1/390: loss=0.637857
+  step 2/390: loss=0.570415
+  step 100/390: loss=0.721397
+  step 200/390: loss=0.555162
+  step 300/390: loss=0.742406
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 13/40: loss=0.576034 lr=0.100000
+  epoch 13: test_acc = 7490/10000 = 74.900000%  top5 = 9846/10000 = 98.460000%  [95% CI 74.04–75.74]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e13.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16662135633629227430)
+  step 0/390: loss=0.599746
+  step 1/390: loss=0.461527
+  step 2/390: loss=0.614927
+  step 100/390: loss=0.545690
+  step 200/390: loss=0.423444
+  step 300/390: loss=0.516594
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 14/40: loss=0.558423 lr=0.100000
+  epoch 14: test_acc = 7408/10000 = 74.080000%  top5 = 9824/10000 = 98.240000%  [95% CI 73.21–74.93]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e14.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11603523198808510333)
+  step 0/390: loss=0.491251
+  step 1/390: loss=0.510338
+  step 2/390: loss=0.650862
+  step 100/390: loss=0.547187
+  step 200/390: loss=0.661504
+  step 300/390: loss=0.506278
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 15/40: loss=0.545882 lr=0.100000
+  epoch 15: test_acc = 7477/10000 = 74.770000%  top5 = 9834/10000 = 98.340000%  [95% CI 73.91–75.61]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e15.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 111625632136511192)
+  step 0/390: loss=0.339233
+  step 1/390: loss=0.360121
+  step 2/390: loss=0.586690
+  step 100/390: loss=0.596588
+  step 200/390: loss=0.609852
+  step 300/390: loss=0.504380
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 16/40: loss=0.530322 lr=0.100000
+  epoch 16: test_acc = 7487/10000 = 74.870000%  top5 = 9826/10000 = 98.260000%  [95% CI 74.01–75.71]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e16.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9961282032731179041)
+  step 0/390: loss=0.438446
+  step 1/390: loss=0.505263
+  step 2/390: loss=0.512709
+  step 100/390: loss=0.473731
+  step 200/390: loss=0.546830
+  step 300/390: loss=0.665935
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 17/40: loss=0.516105 lr=0.100000
+  epoch 17: test_acc = 7245/10000 = 72.450000%  top5 = 9807/10000 = 98.070000%  [95% CI 71.57–73.32]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e17.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15713408557660791369)
+  step 0/390: loss=0.434866
+  step 1/390: loss=0.486255
+  step 2/390: loss=0.505061
+  step 100/390: loss=0.492662
+  step 200/390: loss=0.487753
+  step 300/390: loss=0.557377
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 18/40: loss=0.504841 lr=0.100000
+  epoch 18: test_acc = 7516/10000 = 75.160000%  top5 = 9836/10000 = 98.360000%  [95% CI 74.30–76.00]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e18.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4932424287873795734)
+  step 0/390: loss=0.493562
+  step 1/390: loss=0.544933
+  step 2/390: loss=0.424297
+  step 100/390: loss=0.464492
+  step 200/390: loss=0.384485
+  step 300/390: loss=0.490070
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 19/40: loss=0.496390 lr=0.100000
+  epoch 19: test_acc = 7430/10000 = 74.300000%  top5 = 9798/10000 = 97.980000%  [95% CI 73.43–75.15]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e19.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 18250941668864689651)
+  step 0/390: loss=0.535636
+  step 1/390: loss=0.456395
+  step 2/390: loss=0.269414
+  step 100/390: loss=0.450935
+  step 200/390: loss=0.465562
+  step 300/390: loss=0.478570
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 20/40: loss=0.484483 lr=0.100000
+  epoch 20: test_acc = 7697/10000 = 76.970000%  top5 = 9825/10000 = 98.250000%  [95% CI 76.13–77.78]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e20.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15001058889405177632)
+  step 0/390: loss=0.481028
+  step 1/390: loss=0.467742
+  step 2/390: loss=0.472549
+  step 100/390: loss=0.353533
+  step 200/390: loss=0.373133
+  step 300/390: loss=0.501966
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 21/40: loss=0.475755 lr=0.100000
+  epoch 21: test_acc = 7529/10000 = 75.290000%  top5 = 9787/10000 = 97.870000%  [95% CI 74.44–76.13]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e21.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10626142525728577365)
+  step 0/390: loss=0.448039
+  step 1/390: loss=0.492121
+  step 2/390: loss=0.462347
+  step 100/390: loss=0.537854
+  step 200/390: loss=0.449993
+  step 300/390: loss=0.490106
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 22/40: loss=0.461579 lr=0.100000
+  epoch 22: test_acc = 7532/10000 = 75.320000%  top5 = 9834/10000 = 98.340000%  [95% CI 74.47–76.16]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e22.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 8294294424349288814)
+  step 0/390: loss=0.397256
+  step 1/390: loss=0.600015
+  step 2/390: loss=0.393969
+  step 100/390: loss=0.328627
+  step 200/390: loss=0.568789
+  step 300/390: loss=0.504833
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 23/40: loss=0.448800 lr=0.100000
+  epoch 23: test_acc = 7488/10000 = 74.880000%  top5 = 9826/10000 = 98.260000%  [95% CI 74.02–75.72]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e23.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14088831656374962605)
+  step 0/390: loss=0.396132
+  step 1/390: loss=0.399124
+  step 2/390: loss=0.377311
+  step 100/390: loss=0.353605
+  step 200/390: loss=0.313866
+  step 300/390: loss=0.534366
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 24/40: loss=0.438572 lr=0.100000
+  epoch 24: test_acc = 7590/10000 = 75.900000%  top5 = 9838/10000 = 98.380000%  [95% CI 75.05–76.73]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e24.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2010828760021015414)
+  step 0/390: loss=0.367127
+  step 1/390: loss=0.499856
+  step 2/390: loss=0.488489
+  step 100/390: loss=0.523352
+  step 200/390: loss=0.347482
+  step 300/390: loss=0.433015
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 25/40: loss=0.433402 lr=0.100000
+  epoch 25: test_acc = 7416/10000 = 74.160000%  top5 = 9820/10000 = 98.200000%  [95% CI 73.29–75.01]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e25.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1565406052234449824)
+  step 0/390: loss=0.450585
+  step 1/390: loss=0.374643
+  step 2/390: loss=0.465489
+  step 100/390: loss=0.380290
+  step 200/390: loss=0.343684
+  step 300/390: loss=0.402952
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 26/40: loss=0.422411 lr=0.100000
+  epoch 26: test_acc = 7753/10000 = 77.530000%  top5 = 9829/10000 = 98.290000%  [95% CI 76.70–78.34]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e26.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11752905876046278149)
+  step 0/390: loss=0.372935
+  step 1/390: loss=0.377703
+  step 2/390: loss=0.375208
+  step 100/390: loss=0.577159
+  step 200/390: loss=0.497210
+  step 300/390: loss=0.343839
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 27/40: loss=0.415060 lr=0.100000
+  epoch 27: test_acc = 7573/10000 = 75.730000%  top5 = 9834/10000 = 98.340000%  [95% CI 74.88–76.56]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e27.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12621160551699975834)
+  step 0/390: loss=0.368036
+  step 1/390: loss=0.357174
+  step 2/390: loss=0.310400
+  step 100/390: loss=0.415550
+  step 200/390: loss=0.299227
+  step 300/390: loss=0.492630
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 28/40: loss=0.404425 lr=0.100000
+  epoch 28: test_acc = 7815/10000 = 78.150000%  top5 = 9853/10000 = 98.530000%  [95% CI 77.33–78.95]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e28.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 3965900152059362575)
+  step 0/390: loss=0.401469
+  step 1/390: loss=0.360195
+  step 2/390: loss=0.361779
+  step 100/390: loss=0.399006
+  step 200/390: loss=0.315499
+  step 300/390: loss=0.276519
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 29/40: loss=0.393126 lr=0.100000
+  epoch 29: test_acc = 7808/10000 = 78.080000%  top5 = 9845/10000 = 98.450000%  [95% CI 77.26–78.88]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e29.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13310311105851656187)
+  step 0/390: loss=0.305548
+  step 1/390: loss=0.480561
+  step 2/390: loss=0.492324
+  step 100/390: loss=0.338796
+  step 200/390: loss=0.357383
+  step 300/390: loss=0.540742
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 30/40: loss=0.389740 lr=0.100000
+  epoch 30: test_acc = 7781/10000 = 77.810000%  top5 = 9827/10000 = 98.270000%  [95% CI 76.98–78.61]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e30.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7367585331226150810)
+  step 0/390: loss=0.375795
+  step 1/390: loss=0.382832
+  step 2/390: loss=0.308953
+  step 100/390: loss=0.501479
+  step 200/390: loss=0.385216
+  step 300/390: loss=0.361291
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 31/40: loss=0.377571 lr=0.100000
+  epoch 31: test_acc = 7569/10000 = 75.690000%  top5 = 9817/10000 = 98.170000%  [95% CI 74.84–76.52]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e31.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17818274161537512629)
+  step 0/390: loss=0.427564
+  step 1/390: loss=0.318353
+  step 2/390: loss=0.378839
+  step 100/390: loss=0.222825
+  step 200/390: loss=0.402786
+  step 300/390: loss=0.205465
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 32/40: loss=0.374639 lr=0.100000
+  epoch 32: test_acc = 7660/10000 = 76.600000%  top5 = 9822/10000 = 98.220000%  [95% CI 75.76–77.42]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e32.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17864045715879849533)
+  step 0/390: loss=0.348009
+  step 1/390: loss=0.476287
+  step 2/390: loss=0.441556
+  step 100/390: loss=0.272777
+  step 200/390: loss=0.353043
+  step 300/390: loss=0.512120
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 33/40: loss=0.365373 lr=0.100000
+  epoch 33: test_acc = 7685/10000 = 76.850000%  top5 = 9795/10000 = 97.950000%  [95% CI 76.01–77.67]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e33.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17566331070126568117)
+  step 0/390: loss=0.338306
+  step 1/390: loss=0.306995
+  step 2/390: loss=0.298900
+  step 100/390: loss=0.355940
+  step 200/390: loss=0.594595
+  step 300/390: loss=0.282082
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 34/40: loss=0.359419 lr=0.100000
+  epoch 34: test_acc = 7495/10000 = 74.950000%  top5 = 9815/10000 = 98.150000%  [95% CI 74.09–75.79]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e34.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17455493669770165443)
+  step 0/390: loss=0.309855
+  step 1/390: loss=0.285212
+  step 2/390: loss=0.318699
+  step 100/390: loss=0.262674
+  step 200/390: loss=0.230078
+  step 300/390: loss=0.413236
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 35/40: loss=0.348602 lr=0.100000
+  epoch 35: test_acc = 7642/10000 = 76.420000%  top5 = 9842/10000 = 98.420000%  [95% CI 75.58–77.24]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e35.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13070345498394116529)
+  step 0/390: loss=0.311529
+  step 1/390: loss=0.380480
+  step 2/390: loss=0.393164
+  step 100/390: loss=0.378132
+  step 200/390: loss=0.319005
+  step 300/390: loss=0.353083
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 36/40: loss=0.343851 lr=0.100000
+  epoch 36: test_acc = 7646/10000 = 76.460000%  top5 = 9846/10000 = 98.460000%  [95% CI 75.62–77.28]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e36.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16658064237314108151)
+  step 0/390: loss=0.328113
+  step 1/390: loss=0.240591
+  step 2/390: loss=0.354710
+  step 100/390: loss=0.452714
+  step 200/390: loss=0.384024
+  step 300/390: loss=0.273392
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 37/40: loss=0.335443 lr=0.100000
+  epoch 37: test_acc = 7433/10000 = 74.330000%  top5 = 9772/10000 = 97.720000%  [95% CI 73.46–75.18]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e37.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6240315377142383545)
+  step 0/390: loss=0.309103
+  step 1/390: loss=0.284300
+  step 2/390: loss=0.313977
+  step 100/390: loss=0.437101
+  step 200/390: loss=0.373160
+  step 300/390: loss=0.238130
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 38/40: loss=0.330161 lr=0.100000
+  epoch 38: test_acc = 7718/10000 = 77.180000%  top5 = 9827/10000 = 98.270000%  [95% CI 76.35–77.99]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e38.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2504884664330812389)
+  step 0/390: loss=0.284209
+  step 1/390: loss=0.295618
+  step 2/390: loss=0.276943
+  step 100/390: loss=0.272076
+  step 200/390: loss=0.372207
+  step 300/390: loss=0.323047
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 39/40: loss=0.323553 lr=0.100000
+  epoch 39: test_acc = 7642/10000 = 76.420000%  top5 = 9789/10000 = 97.890000%  [95% CI 75.58–77.24]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e39.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1947975198407645749)
+  step 0/390: loss=0.148846
+  step 1/390: loss=0.351272
+  step 2/390: loss=0.223325
+  step 100/390: loss=0.340316
+  step 200/390: loss=0.368604
+  step 300/390: loss=0.395926
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 40/40: loss=0.314595 lr=0.100000
+  epoch 40: test_acc = 7411/10000 = 74.110000%  top5 = 9797/10000 = 97.970000%  [95% CI 73.24–74.96]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16sgd_e40.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16sgd_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10821480679056123092)
+I1023 00:10:58.574830  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575466  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575536  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575565  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575595  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575627  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575656  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575685  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575717  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575747  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575777  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575806  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575837  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575867  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.575897  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.576018  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.576051  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.576080  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:10:58.576379  133796 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 00:10:58.576396  133796 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_bf16mom_train_step.mlir (@cifar8wb_bbn_bf16mom_train_step, 133 outputs, 1 replica) in 670 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd.mlir (@cifar8wb_bbn_fwd, 1 outputs, 1 replica) in 180 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 136 ms
+done (trained CIFAR-CNN8-wide-BN-batchstat bf16sgd + constant lr via packed threading).
+════════ cifar8wb-bbn (batch-statistics BN) bf16 — Nesterov momentum (μ.9, lr 0.02) ════════
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cifar8wb_bbn_bf16mom_train_step.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN-batchstat bf16mom (constant lr 0.020000), He init
+  running-stats BN: 8 layers, 384 stat floats → eval via @cifar8wb_bbn_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1023 00:11:00.216004  142681 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:11:00.216371  142681 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_bf16mom_train_step holds 114 parameter tensors (4.3 MB) on 1 device; they stop crossing PCIe from here
+I1023 00:11:00.438219  142681 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:11:00.438415  142683 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:11:00.438845  142684 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:11:00.439058  142688 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/390: loss=2.432202
+  step 1/390: loss=2.330436
+  step 2/390: loss=2.308316
+  step 100/390: loss=1.426871
+  step 200/390: loss=1.147473
+  step 300/390: loss=1.228720
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/40: loss=1.384500 lr=0.020000
+  epoch 1: test_acc = 4745/10000 = 47.450000%  top5 = 9063/10000 = 90.630000%  [95% CI 46.47–48.43]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e1.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12739913452733728755)
+  step 0/390: loss=1.059899
+  step 1/390: loss=1.081134
+  step 2/390: loss=1.090529
+  step 100/390: loss=0.974804
+  step 200/390: loss=1.043708
+  step 300/390: loss=0.959126
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/40: loss=1.005787 lr=0.020000
+  epoch 2: test_acc = 5999/10000 = 59.990000%  top5 = 9549/10000 = 95.490000%  [95% CI 59.03–60.95]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e2.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1078964393538830882)
+  step 0/390: loss=0.815515
+  step 1/390: loss=1.164238
+  step 2/390: loss=0.741512
+  step 100/390: loss=0.861482
+  step 200/390: loss=0.810464
+  step 300/390: loss=0.836433
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/40: loss=0.870926 lr=0.020000
+  epoch 3: test_acc = 6266/10000 = 62.660000%  top5 = 9617/10000 = 96.170000%  [95% CI 61.71–63.60]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e3.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12074062969526952870)
+  step 0/390: loss=0.885516
+  step 1/390: loss=0.869626
+  step 2/390: loss=0.669930
+  step 100/390: loss=0.783638
+  step 200/390: loss=0.779956
+  step 300/390: loss=0.828725
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/40: loss=0.784226 lr=0.020000
+  epoch 4: test_acc = 6349/10000 = 63.490000%  top5 = 9482/10000 = 94.820000%  [95% CI 62.54–64.43]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e4.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10017955569580354682)
+  step 0/390: loss=0.665663
+  step 1/390: loss=0.886181
+  step 2/390: loss=0.749124
+  step 100/390: loss=0.592587
+  step 200/390: loss=0.591527
+  step 300/390: loss=0.536143
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/40: loss=0.723544 lr=0.020000
+  epoch 5: test_acc = 6133/10000 = 61.330000%  top5 = 9289/10000 = 92.890000%  [95% CI 60.37–62.28]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e5.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 18374251471950982272)
+  step 0/390: loss=0.716731
+  step 1/390: loss=0.526857
+  step 2/390: loss=0.718909
+  step 100/390: loss=0.633168
+  step 200/390: loss=0.820593
+  step 300/390: loss=0.638451
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 6/40: loss=0.677300 lr=0.020000
+  epoch 6: test_acc = 7040/10000 = 70.400000%  top5 = 9776/10000 = 97.760000%  [95% CI 69.50–71.29]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e6.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2325245023320701826)
+  step 0/390: loss=0.542614
+  step 1/390: loss=0.600593
+  step 2/390: loss=0.646177
+  step 100/390: loss=0.613134
+  step 200/390: loss=0.557355
+  step 300/390: loss=0.673972
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 7/40: loss=0.644791 lr=0.020000
+  epoch 7: test_acc = 7324/10000 = 73.240000%  top5 = 9825/10000 = 98.250000%  [95% CI 72.36–74.10]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e7.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10496970400870103528)
+  step 0/390: loss=0.677380
+  step 1/390: loss=0.547018
+  step 2/390: loss=0.461603
+  step 100/390: loss=0.641099
+  step 200/390: loss=0.593991
+  step 300/390: loss=0.655755
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 8/40: loss=0.613752 lr=0.020000
+  epoch 8: test_acc = 7219/10000 = 72.190000%  top5 = 9775/10000 = 97.750000%  [95% CI 71.30–73.06]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e8.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6996244547228303392)
+  step 0/390: loss=0.539523
+  step 1/390: loss=0.468257
+  step 2/390: loss=0.484942
+  step 100/390: loss=0.595944
+  step 200/390: loss=0.554291
+  step 300/390: loss=0.686584
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 9/40: loss=0.587725 lr=0.020000
+  epoch 9: test_acc = 6886/10000 = 68.860000%  top5 = 9769/10000 = 97.690000%  [95% CI 67.95–69.76]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e9.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17578935079394877677)
+  step 0/390: loss=0.554317
+  step 1/390: loss=0.651664
+  step 2/390: loss=0.508615
+  step 100/390: loss=0.716378
+  step 200/390: loss=0.772687
+  step 300/390: loss=0.440624
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 10/40: loss=0.566733 lr=0.020000
+  epoch 10: test_acc = 7462/10000 = 74.620000%  top5 = 9836/10000 = 98.360000%  [95% CI 73.76–75.46]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e10.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5114811080157065145)
+  step 0/390: loss=0.411025
+  step 1/390: loss=0.486008
+  step 2/390: loss=0.564600
+  step 100/390: loss=0.502459
+  step 200/390: loss=0.561147
+  step 300/390: loss=0.539026
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 11/40: loss=0.543433 lr=0.020000
+  epoch 11: test_acc = 7002/10000 = 70.020000%  top5 = 9682/10000 = 96.820000%  [95% CI 69.11–70.91]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e11.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 841840588961904510)
+  step 0/390: loss=0.434376
+  step 1/390: loss=0.494826
+  step 2/390: loss=0.539945
+  step 100/390: loss=0.469597
+  step 200/390: loss=0.506496
+  step 300/390: loss=0.485974
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 12/40: loss=0.526354 lr=0.020000
+  epoch 12: test_acc = 7364/10000 = 73.640000%  top5 = 9824/10000 = 98.240000%  [95% CI 72.77–74.49]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e12.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5301148795194071798)
+  step 0/390: loss=0.649660
+  step 1/390: loss=0.486114
+  step 2/390: loss=0.436037
+  step 100/390: loss=0.598913
+  step 200/390: loss=0.457291
+  step 300/390: loss=0.624567
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 13/40: loss=0.510910 lr=0.020000
+  epoch 13: test_acc = 7282/10000 = 72.820000%  top5 = 9794/10000 = 97.940000%  [95% CI 71.94–73.68]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e13.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13071126882669366705)
+  step 0/390: loss=0.560820
+  step 1/390: loss=0.432222
+  step 2/390: loss=0.600762
+  step 100/390: loss=0.453445
+  step 200/390: loss=0.471795
+  step 300/390: loss=0.429106
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 14/40: loss=0.496896 lr=0.020000
+  epoch 14: test_acc = 7504/10000 = 75.040000%  top5 = 9846/10000 = 98.460000%  [95% CI 74.18–75.88]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e14.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10010304966919817712)
+  step 0/390: loss=0.422018
+  step 1/390: loss=0.417729
+  step 2/390: loss=0.467312
+  step 100/390: loss=0.394206
+  step 200/390: loss=0.612878
+  step 300/390: loss=0.524729
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 15/40: loss=0.478593 lr=0.020000
+  epoch 15: test_acc = 7536/10000 = 75.360000%  top5 = 9816/10000 = 98.160000%  [95% CI 74.51–76.19]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e15.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7448494960903284448)
+  step 0/390: loss=0.358656
+  step 1/390: loss=0.403380
+  step 2/390: loss=0.486050
+  step 100/390: loss=0.446643
+  step 200/390: loss=0.567267
+  step 300/390: loss=0.399122
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 16/40: loss=0.464274 lr=0.020000
+  epoch 16: test_acc = 7574/10000 = 75.740000%  top5 = 9797/10000 = 97.970000%  [95% CI 74.89–76.57]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e16.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 18367446974177452483)
+  step 0/390: loss=0.355742
+  step 1/390: loss=0.443171
+  step 2/390: loss=0.523782
+  step 100/390: loss=0.402308
+  step 200/390: loss=0.439786
+  step 300/390: loss=0.487838
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 17/40: loss=0.449611 lr=0.020000
+  epoch 17: test_acc = 7731/10000 = 77.310000%  top5 = 9842/10000 = 98.420000%  [95% CI 76.48–78.12]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e17.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 435148858562084011)
+  step 0/390: loss=0.361361
+  step 1/390: loss=0.442188
+  step 2/390: loss=0.351070
+  step 100/390: loss=0.386779
+  step 200/390: loss=0.469400
+  step 300/390: loss=0.390098
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 18/40: loss=0.438240 lr=0.020000
+  epoch 18: test_acc = 7421/10000 = 74.210000%  top5 = 9781/10000 = 97.810000%  [95% CI 73.34–75.06]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e18.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17955930804040216671)
+  step 0/390: loss=0.374479
+  step 1/390: loss=0.510180
+  step 2/390: loss=0.345719
+  step 100/390: loss=0.421152
+  step 200/390: loss=0.260507
+  step 300/390: loss=0.367182
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 19/40: loss=0.428985 lr=0.020000
+  epoch 19: test_acc = 7769/10000 = 77.690000%  top5 = 9826/10000 = 98.260000%  [95% CI 76.86–78.50]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e19.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17070184124388631740)
+  step 0/390: loss=0.517191
+  step 1/390: loss=0.311595
+  step 2/390: loss=0.266360
+  step 100/390: loss=0.390527
+  step 200/390: loss=0.384897
+  step 300/390: loss=0.408220
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 20/40: loss=0.419401 lr=0.020000
+  epoch 20: test_acc = 7766/10000 = 77.660000%  top5 = 9848/10000 = 98.480000%  [95% CI 76.83–78.47]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e20.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14510986220293967444)
+  step 0/390: loss=0.456357
+  step 1/390: loss=0.368955
+  step 2/390: loss=0.345998
+  step 100/390: loss=0.252016
+  step 200/390: loss=0.427045
+  step 300/390: loss=0.391638
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 21/40: loss=0.405611 lr=0.020000
+  epoch 21: test_acc = 7654/10000 = 76.540000%  top5 = 9837/10000 = 98.370000%  [95% CI 75.70–77.36]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e21.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5830065199241281860)
+  step 0/390: loss=0.332409
+  step 1/390: loss=0.321401
+  step 2/390: loss=0.421794
+  step 100/390: loss=0.458847
+  step 200/390: loss=0.436583
+  step 300/390: loss=0.399822
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 22/40: loss=0.393790 lr=0.020000
+  epoch 22: test_acc = 7748/10000 = 77.480000%  top5 = 9864/10000 = 98.640000%  [95% CI 76.65–78.29]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e22.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13722510758514033828)
+  step 0/390: loss=0.304980
+  step 1/390: loss=0.399854
+  step 2/390: loss=0.268717
+  step 100/390: loss=0.280865
+  step 200/390: loss=0.519501
+  step 300/390: loss=0.469506
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 23/40: loss=0.384612 lr=0.020000
+  epoch 23: test_acc = 7749/10000 = 77.490000%  top5 = 9849/10000 = 98.490000%  [95% CI 76.66–78.30]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e23.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16090689784614801591)
+  step 0/390: loss=0.335706
+  step 1/390: loss=0.295314
+  step 2/390: loss=0.430088
+  step 100/390: loss=0.308135
+  step 200/390: loss=0.310258
+  step 300/390: loss=0.448285
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 24/40: loss=0.373892 lr=0.020000
+  epoch 24: test_acc = 7617/10000 = 76.170000%  top5 = 9823/10000 = 98.230000%  [95% CI 75.33–76.99]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e24.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14603235240470101315)
+  step 0/390: loss=0.266078
+  step 1/390: loss=0.443683
+  step 2/390: loss=0.333991
+  step 100/390: loss=0.459684
+  step 200/390: loss=0.401255
+  step 300/390: loss=0.297733
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 25/40: loss=0.363261 lr=0.020000
+  epoch 25: test_acc = 7429/10000 = 74.290000%  top5 = 9800/10000 = 98.000000%  [95% CI 73.42–75.14]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e25.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17821240002568146610)
+  step 0/390: loss=0.403907
+  step 1/390: loss=0.378254
+  step 2/390: loss=0.401334
+  step 100/390: loss=0.354682
+  step 200/390: loss=0.376205
+  step 300/390: loss=0.343010
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 26/40: loss=0.358864 lr=0.020000
+  epoch 26: test_acc = 7514/10000 = 75.140000%  top5 = 9810/10000 = 98.100000%  [95% CI 74.28–75.98]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e26.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2237171111362256270)
+  step 0/390: loss=0.374493
+  step 1/390: loss=0.354347
+  step 2/390: loss=0.365883
+  step 100/390: loss=0.395844
+  step 200/390: loss=0.335372
+  step 300/390: loss=0.285826
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 27/40: loss=0.349600 lr=0.020000
+  epoch 27: test_acc = 7699/10000 = 76.990000%  top5 = 9848/10000 = 98.480000%  [95% CI 76.15–77.80]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e27.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15552192940580630510)
+  step 0/390: loss=0.270900
+  step 1/390: loss=0.348521
+  step 2/390: loss=0.291710
+  step 100/390: loss=0.359111
+  step 200/390: loss=0.214223
+  step 300/390: loss=0.409666
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 28/40: loss=0.338658 lr=0.020000
+  epoch 28: test_acc = 7764/10000 = 77.640000%  top5 = 9842/10000 = 98.420000%  [95% CI 76.81–78.45]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e28.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12835580439180068654)
+  step 0/390: loss=0.405403
+  step 1/390: loss=0.334623
+  step 2/390: loss=0.255808
+  step 100/390: loss=0.205959
+  step 200/390: loss=0.324788
+  step 300/390: loss=0.235794
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 29/40: loss=0.330868 lr=0.020000
+  epoch 29: test_acc = 7726/10000 = 77.260000%  top5 = 9826/10000 = 98.260000%  [95% CI 76.43–78.07]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e29.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 13734224996225251227)
+  step 0/390: loss=0.251118
+  step 1/390: loss=0.406816
+  step 2/390: loss=0.380440
+  step 100/390: loss=0.319271
+  step 200/390: loss=0.292295
+  step 300/390: loss=0.305411
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 30/40: loss=0.323932 lr=0.020000
+  epoch 30: test_acc = 7670/10000 = 76.700000%  top5 = 9827/10000 = 98.270000%  [95% CI 75.86–77.52]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e30.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2133284311657349656)
+  step 0/390: loss=0.288778
+  step 1/390: loss=0.334394
+  step 2/390: loss=0.282566
+  step 100/390: loss=0.333934
+  step 200/390: loss=0.241356
+  step 300/390: loss=0.289540
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 31/40: loss=0.315618 lr=0.020000
+  epoch 31: test_acc = 7783/10000 = 77.830000%  top5 = 9836/10000 = 98.360000%  [95% CI 77.01–78.63]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e31.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16559536044508911066)
+  step 0/390: loss=0.335294
+  step 1/390: loss=0.262348
+  step 2/390: loss=0.265097
+  step 100/390: loss=0.236236
+  step 200/390: loss=0.260391
+  step 300/390: loss=0.253508
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 32/40: loss=0.310518 lr=0.020000
+  epoch 32: test_acc = 7371/10000 = 73.710000%  top5 = 9706/10000 = 97.060000%  [95% CI 72.84–74.56]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e32.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16080526801806619820)
+  step 0/390: loss=0.269924
+  step 1/390: loss=0.407828
+  step 2/390: loss=0.306661
+  step 100/390: loss=0.399959
+  step 200/390: loss=0.282703
+  step 300/390: loss=0.510135
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 33/40: loss=0.303345 lr=0.020000
+  epoch 33: test_acc = 7738/10000 = 77.380000%  top5 = 9844/10000 = 98.440000%  [95% CI 76.55–78.19]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e33.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 163570549490486841)
+  step 0/390: loss=0.289056
+  step 1/390: loss=0.186993
+  step 2/390: loss=0.210115
+  step 100/390: loss=0.272049
+  step 200/390: loss=0.354876
+  step 300/390: loss=0.320609
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 34/40: loss=0.293254 lr=0.020000
+  epoch 34: test_acc = 7450/10000 = 74.500000%  top5 = 9744/10000 = 97.440000%  [95% CI 73.64–75.34]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e34.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6820499558843351531)
+  step 0/390: loss=0.354422
+  step 1/390: loss=0.237442
+  step 2/390: loss=0.312030
+  step 100/390: loss=0.296720
+  step 200/390: loss=0.246577
+  step 300/390: loss=0.369701
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 35/40: loss=0.289418 lr=0.020000
+  epoch 35: test_acc = 7855/10000 = 78.550000%  top5 = 9846/10000 = 98.460000%  [95% CI 77.73–79.34]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e35.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16902314905163568956)
+  step 0/390: loss=0.280618
+  step 1/390: loss=0.350646
+  step 2/390: loss=0.309860
+  step 100/390: loss=0.262388
+  step 200/390: loss=0.203255
+  step 300/390: loss=0.306915
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 36/40: loss=0.277182 lr=0.020000
+  epoch 36: test_acc = 7787/10000 = 77.870000%  top5 = 9846/10000 = 98.460000%  [95% CI 77.05–78.67]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e36.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17997763151384972478)
+  step 0/390: loss=0.226027
+  step 1/390: loss=0.215654
+  step 2/390: loss=0.351287
+  step 100/390: loss=0.227289
+  step 200/390: loss=0.363948
+  step 300/390: loss=0.271900
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 37/40: loss=0.272481 lr=0.020000
+  epoch 37: test_acc = 7651/10000 = 76.510000%  top5 = 9834/10000 = 98.340000%  [95% CI 75.67–77.33]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e37.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 3261573374174616511)
+  step 0/390: loss=0.218343
+  step 1/390: loss=0.319088
+  step 2/390: loss=0.307994
+  step 100/390: loss=0.284307
+  step 200/390: loss=0.205237
+  step 300/390: loss=0.292031
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 38/40: loss=0.260609 lr=0.020000
+  epoch 38: test_acc = 7531/10000 = 75.310000%  top5 = 9816/10000 = 98.160000%  [95% CI 74.46–76.15]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e38.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1928841761352056003)
+  step 0/390: loss=0.201596
+  step 1/390: loss=0.302107
+  step 2/390: loss=0.214440
+  step 100/390: loss=0.204937
+  step 200/390: loss=0.178620
+  step 300/390: loss=0.381647
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 39/40: loss=0.257147 lr=0.020000
+  epoch 39: test_acc = 7737/10000 = 77.370000%  top5 = 9837/10000 = 98.370000%  [95% CI 76.54–78.18]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e39.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 14106733573439179595)
+  step 0/390: loss=0.230536
+  step 1/390: loss=0.223838
+  step 2/390: loss=0.224488
+  step 100/390: loss=0.210469
+  step 200/390: loss=0.187458
+  step 300/390: loss=0.330119
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 40/40: loss=0.250130 lr=0.020000
+  epoch 40: test_acc = 7714/10000 = 77.140000%  top5 = 9829/10000 = 98.290000%  [95% CI 76.31–77.95]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16mom_e40.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16mom_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1357691799658394614)
+I1023 00:13:52.049839  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050589  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050658  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050687  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050717  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050747  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050776  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050805  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050836  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050864  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050894  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050923  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050952  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.050981  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.051009  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.051037  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.051067  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.051109  133796 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:52.051399  133796 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 00:13:52.051415  133796 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_bf16adam_train_step.mlir (@cifar8wb_bbn_bf16adam_train_step, 133 outputs, 1 replica) in 819 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd.mlir (@cifar8wb_bbn_fwd, 1 outputs, 1 replica) in 174 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 135 ms
+done (trained CIFAR-CNN8-wide-BN-batchstat bf16mom + constant lr via packed threading).
+════════ cifar8wb-bbn (batch-statistics BN) bf16 — AdamW (lr 1e-3) ════════
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics (8 convs, BATCHED op family, d1=512, running-stat eval) via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cifar8wb_bbn_bf16adam_train_step.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN-batchstat bf16adam (constant lr 0.001000), He init
+  running-stats BN: 8 layers, 384 stat floats → eval via @cifar8wb_bbn_fwd_eval
+     decay 0.990000 (TF sense; = PyTorch/timm momentum 0.010000), new-batch weight 0.010000
+I1023 00:13:53.806331  144987 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:53.806596  144987 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_bf16adam_train_step holds 114 parameter tensors (4.3 MB) on 1 device; they stop crossing PCIe from here
+I1023 00:13:54.020812  145001 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:54.021480  144988 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:54.021589  144990 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 00:13:54.022235  144991 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  step 0/390: loss=2.432202
+  step 1/390: loss=2.361687
+  step 2/390: loss=2.290531
+  step 100/390: loss=1.511271
+  step 200/390: loss=1.388841
+  step 300/390: loss=1.319335
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 1/40: loss=1.446807 lr=0.001000
+  epoch 1: test_acc = 3724/10000 = 37.240000%  top5 = 8594/10000 = 85.940000%  [95% CI 36.30–38.19]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e1.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10147351821511536184)
+  step 0/390: loss=1.089564
+  step 1/390: loss=1.204355
+  step 2/390: loss=1.181086
+  step 100/390: loss=1.135733
+  step 200/390: loss=1.075928
+  step 300/390: loss=1.081907
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 2/40: loss=1.083643 lr=0.001000
+  epoch 2: test_acc = 5614/10000 = 56.140000%  top5 = 9378/10000 = 93.780000%  [95% CI 55.17–57.11]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e2.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12179077005231985163)
+  step 0/390: loss=0.958292
+  step 1/390: loss=1.188920
+  step 2/390: loss=0.889062
+  step 100/390: loss=0.870046
+  step 200/390: loss=1.010621
+  step 300/390: loss=0.974779
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 3/40: loss=0.946466 lr=0.001000
+  epoch 3: test_acc = 6212/10000 = 62.120000%  top5 = 9654/10000 = 96.540000%  [95% CI 61.16–63.07]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e3.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1903846901320514909)
+  step 0/390: loss=0.956603
+  step 1/390: loss=1.018962
+  step 2/390: loss=0.721687
+  step 100/390: loss=0.858148
+  step 200/390: loss=0.811807
+  step 300/390: loss=0.965756
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 4/40: loss=0.862971 lr=0.001000
+  epoch 4: test_acc = 6411/10000 = 64.110000%  top5 = 9629/10000 = 96.290000%  [95% CI 63.16–65.04]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e4.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12837244546551148404)
+  step 0/390: loss=0.738107
+  step 1/390: loss=0.956783
+  step 2/390: loss=0.836684
+  step 100/390: loss=0.615184
+  step 200/390: loss=0.757931
+  step 300/390: loss=0.693415
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 5/40: loss=0.797098 lr=0.001000
+  epoch 5: test_acc = 5831/10000 = 58.310000%  top5 = 9149/10000 = 91.490000%  [95% CI 57.34–59.27]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e5.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1642546235122969635)
+  step 0/390: loss=0.799777
+  step 1/390: loss=0.639967
+  step 2/390: loss=0.783884
+  step 100/390: loss=0.695041
+  step 200/390: loss=0.833353
+  step 300/390: loss=0.794781
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 6/40: loss=0.742939 lr=0.001000
+  epoch 6: test_acc = 6952/10000 = 69.520000%  top5 = 9789/10000 = 97.890000%  [95% CI 68.61–70.41]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e6.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5387164957815396604)
+  step 0/390: loss=0.584814
+  step 1/390: loss=0.673542
+  step 2/390: loss=0.795418
+  step 100/390: loss=0.717935
+  step 200/390: loss=0.651442
+  step 300/390: loss=0.738099
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 7/40: loss=0.700738 lr=0.001000
+  epoch 7: test_acc = 7209/10000 = 72.090000%  top5 = 9820/10000 = 98.200000%  [95% CI 71.20–72.96]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e7.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4588598951949655301)
+  step 0/390: loss=0.728739
+  step 1/390: loss=0.666628
+  step 2/390: loss=0.544882
+  step 100/390: loss=0.618297
+  step 200/390: loss=0.652069
+  step 300/390: loss=0.795865
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 8/40: loss=0.666843 lr=0.001000
+  epoch 8: test_acc = 7252/10000 = 72.520000%  top5 = 9806/10000 = 98.060000%  [95% CI 71.64–73.39]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e8.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 15962776484712256592)
+  step 0/390: loss=0.540318
+  step 1/390: loss=0.526722
+  step 2/390: loss=0.549829
+  step 100/390: loss=0.577076
+  step 200/390: loss=0.575141
+  step 300/390: loss=0.655406
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 9/40: loss=0.638424 lr=0.001000
+  epoch 9: test_acc = 7242/10000 = 72.420000%  top5 = 9751/10000 = 97.510000%  [95% CI 71.54–73.29]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e9.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4559574835249357065)
+  step 0/390: loss=0.580300
+  step 1/390: loss=0.627149
+  step 2/390: loss=0.581145
+  step 100/390: loss=0.743509
+  step 200/390: loss=0.817474
+  step 300/390: loss=0.543817
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 10/40: loss=0.611581 lr=0.001000
+  epoch 10: test_acc = 7112/10000 = 71.120000%  top5 = 9769/10000 = 97.690000%  [95% CI 70.22–72.00]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e10.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10529808108485564399)
+  step 0/390: loss=0.513340
+  step 1/390: loss=0.529842
+  step 2/390: loss=0.441163
+  step 100/390: loss=0.651751
+  step 200/390: loss=0.654848
+  step 300/390: loss=0.547737
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 11/40: loss=0.591563 lr=0.001000
+  epoch 11: test_acc = 7419/10000 = 74.190000%  top5 = 9806/10000 = 98.060000%  [95% CI 73.32–75.04]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e11.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6015489357124811501)
+  step 0/390: loss=0.484483
+  step 1/390: loss=0.491252
+  step 2/390: loss=0.526289
+  step 100/390: loss=0.619546
+  step 200/390: loss=0.615953
+  step 300/390: loss=0.608754
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 12/40: loss=0.571431 lr=0.001000
+  epoch 12: test_acc = 7263/10000 = 72.630000%  top5 = 9808/10000 = 98.080000%  [95% CI 71.75–73.50]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e12.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 16449365298451565586)
+  step 0/390: loss=0.586338
+  step 1/390: loss=0.551139
+  step 2/390: loss=0.539693
+  step 100/390: loss=0.553547
+  step 200/390: loss=0.539117
+  step 300/390: loss=0.677533
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 13/40: loss=0.553459 lr=0.001000
+  epoch 13: test_acc = 7196/10000 = 71.960000%  top5 = 9779/10000 = 97.790000%  [95% CI 71.07–72.83]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e13.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 4511287664667462396)
+  step 0/390: loss=0.538637
+  step 1/390: loss=0.485399
+  step 2/390: loss=0.559361
+  step 100/390: loss=0.462286
+  step 200/390: loss=0.464945
+  step 300/390: loss=0.511888
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 14/40: loss=0.533309 lr=0.001000
+  epoch 14: test_acc = 7566/10000 = 75.660000%  top5 = 9831/10000 = 98.310000%  [95% CI 74.81–76.49]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e14.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 546505899449394287)
+  step 0/390: loss=0.476099
+  step 1/390: loss=0.521893
+  step 2/390: loss=0.605117
+  step 100/390: loss=0.491009
+  step 200/390: loss=0.586860
+  step 300/390: loss=0.481649
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 15/40: loss=0.512838 lr=0.001000
+  epoch 15: test_acc = 7098/10000 = 70.980000%  top5 = 9785/10000 = 97.850000%  [95% CI 70.08–71.86]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e15.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12676128908121069113)
+  step 0/390: loss=0.404292
+  step 1/390: loss=0.381041
+  step 2/390: loss=0.457135
+  step 100/390: loss=0.430375
+  step 200/390: loss=0.553655
+  step 300/390: loss=0.451304
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 16/40: loss=0.495300 lr=0.001000
+  epoch 16: test_acc = 7592/10000 = 75.920000%  top5 = 9840/10000 = 98.400000%  [95% CI 75.07–76.75]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e16.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12088231568818604418)
+  step 0/390: loss=0.465603
+  step 1/390: loss=0.441083
+  step 2/390: loss=0.495535
+  step 100/390: loss=0.556712
+  step 200/390: loss=0.392988
+  step 300/390: loss=0.544088
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 17/40: loss=0.488355 lr=0.001000
+  epoch 17: test_acc = 7534/10000 = 75.340000%  top5 = 9814/10000 = 98.140000%  [95% CI 74.49–76.17]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e17.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12901536213598880608)
+  step 0/390: loss=0.431360
+  step 1/390: loss=0.503338
+  step 2/390: loss=0.373924
+  step 100/390: loss=0.445771
+  step 200/390: loss=0.477989
+  step 300/390: loss=0.424830
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 18/40: loss=0.469803 lr=0.001000
+  epoch 18: test_acc = 7532/10000 = 75.320000%  top5 = 9842/10000 = 98.420000%  [95% CI 74.47–76.16]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e18.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6355317429865423670)
+  step 0/390: loss=0.496585
+  step 1/390: loss=0.455122
+  step 2/390: loss=0.440919
+  step 100/390: loss=0.564667
+  step 200/390: loss=0.391698
+  step 300/390: loss=0.356018
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 19/40: loss=0.460025 lr=0.001000
+  epoch 19: test_acc = 7516/10000 = 75.160000%  top5 = 9771/10000 = 97.710000%  [95% CI 74.30–76.00]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e19.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6939198196629912309)
+  step 0/390: loss=0.618555
+  step 1/390: loss=0.386206
+  step 2/390: loss=0.304244
+  step 100/390: loss=0.407925
+  step 200/390: loss=0.444043
+  step 300/390: loss=0.455072
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 20/40: loss=0.440125 lr=0.001000
+  epoch 20: test_acc = 7666/10000 = 76.660000%  top5 = 9823/10000 = 98.230000%  [95% CI 75.82–77.48]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e20.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7930515353704276366)
+  step 0/390: loss=0.401372
+  step 1/390: loss=0.400994
+  step 2/390: loss=0.400948
+  step 100/390: loss=0.292185
+  step 200/390: loss=0.377520
+  step 300/390: loss=0.362365
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 21/40: loss=0.426994 lr=0.001000
+  epoch 21: test_acc = 7562/10000 = 75.620000%  top5 = 9833/10000 = 98.330000%  [95% CI 74.77–76.45]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e21.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2458052846046743492)
+  step 0/390: loss=0.431881
+  step 1/390: loss=0.398861
+  step 2/390: loss=0.537514
+  step 100/390: loss=0.461811
+  step 200/390: loss=0.452113
+  step 300/390: loss=0.407650
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 22/40: loss=0.414467 lr=0.001000
+  epoch 22: test_acc = 7455/10000 = 74.550000%  top5 = 9804/10000 = 98.040000%  [95% CI 73.69–75.39]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e22.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 2301915070467938149)
+  step 0/390: loss=0.306064
+  step 1/390: loss=0.366903
+  step 2/390: loss=0.289529
+  step 100/390: loss=0.371329
+  step 200/390: loss=0.471593
+  step 300/390: loss=0.452189
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 23/40: loss=0.406048 lr=0.001000
+  epoch 23: test_acc = 7464/10000 = 74.640000%  top5 = 9797/10000 = 97.970000%  [95% CI 73.78–75.48]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e23.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11127752328415882294)
+  step 0/390: loss=0.413155
+  step 1/390: loss=0.461804
+  step 2/390: loss=0.328342
+  step 100/390: loss=0.341027
+  step 200/390: loss=0.361029
+  step 300/390: loss=0.483482
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 24/40: loss=0.397054 lr=0.001000
+  epoch 24: test_acc = 7651/10000 = 76.510000%  top5 = 9857/10000 = 98.570000%  [95% CI 75.67–77.33]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e24.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 6714164501050872918)
+  step 0/390: loss=0.312751
+  step 1/390: loss=0.521742
+  step 2/390: loss=0.401648
+  step 100/390: loss=0.444236
+  step 200/390: loss=0.388326
+  step 300/390: loss=0.392336
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 25/40: loss=0.381246 lr=0.001000
+  epoch 25: test_acc = 7619/10000 = 76.190000%  top5 = 9840/10000 = 98.400000%  [95% CI 75.35–77.01]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e25.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 10555024621551659835)
+  step 0/390: loss=0.458251
+  step 1/390: loss=0.466764
+  step 2/390: loss=0.529253
+  step 100/390: loss=0.396130
+  step 200/390: loss=0.332530
+  step 300/390: loss=0.388990
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 26/40: loss=0.371997 lr=0.001000
+  epoch 26: test_acc = 7361/10000 = 73.610000%  top5 = 9715/10000 = 97.150000%  [95% CI 72.74–74.46]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e26.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 651837272865775069)
+  step 0/390: loss=0.349741
+  step 1/390: loss=0.281217
+  step 2/390: loss=0.336260
+  step 100/390: loss=0.428739
+  step 200/390: loss=0.330768
+  step 300/390: loss=0.216280
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 27/40: loss=0.354469 lr=0.001000
+  epoch 27: test_acc = 7448/10000 = 74.480000%  top5 = 9799/10000 = 97.990000%  [95% CI 73.62–75.32]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e27.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 629877091703392388)
+  step 0/390: loss=0.339804
+  step 1/390: loss=0.435815
+  step 2/390: loss=0.296628
+  step 100/390: loss=0.308767
+  step 200/390: loss=0.254219
+  step 300/390: loss=0.384398
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 28/40: loss=0.349243 lr=0.001000
+  epoch 28: test_acc = 7586/10000 = 75.860000%  top5 = 9820/10000 = 98.200000%  [95% CI 75.01–76.69]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e28.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17640352386554566996)
+  step 0/390: loss=0.441081
+  step 1/390: loss=0.395594
+  step 2/390: loss=0.214729
+  step 100/390: loss=0.296001
+  step 200/390: loss=0.396333
+  step 300/390: loss=0.281727
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 29/40: loss=0.337216 lr=0.001000
+  epoch 29: test_acc = 7677/10000 = 76.770000%  top5 = 9842/10000 = 98.420000%  [95% CI 75.93–77.59]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e29.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17530218712698443561)
+  step 0/390: loss=0.271001
+  step 1/390: loss=0.434909
+  step 2/390: loss=0.343864
+  step 100/390: loss=0.212395
+  step 200/390: loss=0.367622
+  step 300/390: loss=0.336764
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 30/40: loss=0.330459 lr=0.001000
+  epoch 30: test_acc = 7681/10000 = 76.810000%  top5 = 9819/10000 = 98.190000%  [95% CI 75.97–77.63]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e30.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 5639293047946845613)
+  step 0/390: loss=0.340897
+  step 1/390: loss=0.401148
+  step 2/390: loss=0.220115
+  step 100/390: loss=0.419443
+  step 200/390: loss=0.267155
+  step 300/390: loss=0.353407
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 31/40: loss=0.315243 lr=0.001000
+  epoch 31: test_acc = 7712/10000 = 77.120000%  top5 = 9846/10000 = 98.460000%  [95% CI 76.29–77.93]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e31.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 9986648509375813208)
+  step 0/390: loss=0.298603
+  step 1/390: loss=0.254934
+  step 2/390: loss=0.230417
+  step 100/390: loss=0.292999
+  step 200/390: loss=0.293872
+  step 300/390: loss=0.230237
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 32/40: loss=0.310852 lr=0.001000
+  epoch 32: test_acc = 7658/10000 = 76.580000%  top5 = 9827/10000 = 98.270000%  [95% CI 75.74–77.40]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e32.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 8684671798090682436)
+  step 0/390: loss=0.361006
+  step 1/390: loss=0.485716
+  step 2/390: loss=0.312812
+  step 100/390: loss=0.325477
+  step 200/390: loss=0.324278
+  step 300/390: loss=0.380327
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 33/40: loss=0.298170 lr=0.001000
+  epoch 33: test_acc = 7622/10000 = 76.220000%  top5 = 9826/10000 = 98.260000%  [95% CI 75.38–77.04]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e33.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 11814059264068207863)
+  step 0/390: loss=0.303793
+  step 1/390: loss=0.256135
+  step 2/390: loss=0.211996
+  step 100/390: loss=0.292988
+  step 200/390: loss=0.231309
+  step 300/390: loss=0.286500
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 34/40: loss=0.288803 lr=0.001000
+  epoch 34: test_acc = 7719/10000 = 77.190000%  top5 = 9811/10000 = 98.110000%  [95% CI 76.36–78.00]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e34.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 7014286088686944367)
+  step 0/390: loss=0.204817
+  step 1/390: loss=0.352023
+  step 2/390: loss=0.200946
+  step 100/390: loss=0.211309
+  step 200/390: loss=0.212512
+  step 300/390: loss=0.296963
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 35/40: loss=0.284768 lr=0.001000
+  epoch 35: test_acc = 7664/10000 = 76.640000%  top5 = 9824/10000 = 98.240000%  [95% CI 75.80–77.46]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e35.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 80567515811381136)
+  step 0/390: loss=0.311501
+  step 1/390: loss=0.318348
+  step 2/390: loss=0.271950
+  step 100/390: loss=0.217773
+  step 200/390: loss=0.254645
+  step 300/390: loss=0.262494
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 36/40: loss=0.271227 lr=0.001000
+  epoch 36: test_acc = 7589/10000 = 75.890000%  top5 = 9821/10000 = 98.210000%  [95% CI 75.04–76.72]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e36.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 3841510969114197679)
+  step 0/390: loss=0.265089
+  step 1/390: loss=0.200528
+  step 2/390: loss=0.224326
+  step 100/390: loss=0.284260
+  step 200/390: loss=0.320487
+  step 300/390: loss=0.213147
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 37/40: loss=0.257161 lr=0.001000
+  epoch 37: test_acc = 7690/10000 = 76.900000%  top5 = 9824/10000 = 98.240000%  [95% CI 76.06–77.72]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e37.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 17724875113873254753)
+  step 0/390: loss=0.209426
+  step 1/390: loss=0.261561
+  step 2/390: loss=0.188330
+  step 100/390: loss=0.214976
+  step 200/390: loss=0.264674
+  step 300/390: loss=0.221850
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 38/40: loss=0.251870 lr=0.001000
+  epoch 38: test_acc = 7620/10000 = 76.200000%  top5 = 9807/10000 = 98.070000%  [95% CI 75.36–77.02]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e38.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1331041782744846396)
+  step 0/390: loss=0.152942
+  step 1/390: loss=0.286832
+  step 2/390: loss=0.262968
+  step 100/390: loss=0.208924
+  step 200/390: loss=0.222980
+  step 300/390: loss=0.307779
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 39/40: loss=0.244319 lr=0.001000
+  epoch 39: test_acc = 7731/10000 = 77.310000%  top5 = 9826/10000 = 98.260000%  [95% CI 76.48–78.12]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e39.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 1042811007989952593)
+  step 0/390: loss=0.151930
+  step 1/390: loss=0.183219
+  step 2/390: loss=0.158347
+  step 100/390: loss=0.314492
+  step 200/390: loss=0.305039
+  step 300/390: loss=0.218186
+[pjrt_ffi] RESIDENT: @cifar8wb_bbn_fwd_eval holds 54 parameter tensors (1.4 MB) on 1 device; they stop crossing PCIe from here
+Epoch 40/40: loss=0.239373 lr=0.001000
+  epoch 40: test_acc = 7693/10000 = 76.930000%  top5 = 9825/10000 = 98.250000%  [95% CI 76.09–77.75]
+    per-example top-1 bitmap -> runs/2026-10-22-bbn-seeds/bitmaps/cifar8wb_bbn_s1_bf16adam_e40.bin (10000 bytes)
+    BN companion -> .lake/build/cifar8wb_bbn_bf16adam_ckpt_xla_s1.bin.bn (384 floats x 2, hash 12219045180235438024)
+done (trained CIFAR-CNN8-wide-BN-batchstat bf16adam + constant lr via packed threading).
