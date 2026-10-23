@@ -33,7 +33,7 @@ HUB = 8             # a source feeding this many boxes of its own figure keeps i
 def parse(tex):
     chapters, nodes, edges = [], {}, []
     ch, sec, num, nums = -1, '', 0, {}
-    tok = re.compile(r'\\chapter(\*?)\{([^}]*)\}|\\section\*?\{([^}]*)\}|\\begin\{(%s)\}(.*?)\\end\{\4\}|\\appendix' % '|'.join(ENVS), re.S)
+    tok = re.compile(r'\\chapter(\*?)\{([^}]*)\}|\\(?:sub)?section\*?\{([^}]*)\}|\\begin\{(%s)\}(.*?)\\end\{\4\}|\\appendix' % '|'.join(ENVS), re.S)
     for m in tok.finditer(tex):
         if m.group(0) == '\\appendix': num = -1000; continue
         if m.group(2) is not None:
@@ -218,7 +218,7 @@ def book(chapters, nums, nodes, edges, tex, textwidth_pt=460.0, textheight_pt=38
     def order(u): return nums.get(u[1]) if u[0] == 'ch' else 4.5      # the machinery reads between 4 and 5
     def lines(u):
         if u[0] == 'ch': return ['Ch %s  %s' % (nums.get(u[1]), chapters[u[1]]), '%d statements' % size[u]]
-        return ['\\S9.2  %s' % u[1], '%d statements' % size[u]]
+        return ['\\S9.2.1  %s' % u[1], '%d statements' % size[u]]
     def ref(u): return chlab[chapters[u[1]]] if u[0] == 'ch' else SPLIT[u[1]]
     us = sorted(size, key=order)
     name = {u: 'u%d' % i for i, u in enumerate(us)}
@@ -303,7 +303,7 @@ def spines(chapters, nums, nodes, edges, tex, textwidth_pt=460.0):
         n = nodes[l]
         return ('sec', n['sec']) if n['sec'] in SPLIT else ('ch', n['ch'])
     def order(u): return nums.get(u[1]) if u[0] == 'ch' else 8.5     # rows in text order here
-    def title(u): return 'Ch %s  %s' % (nums.get(u[1]), chapters[u[1]]) if u[0] == 'ch' else '\\S9.2  %s' % u[1]
+    def title(u): return 'Ch %s  %s' % (nums.get(u[1]), chapters[u[1]]) if u[0] == 'ch' else '\\S9.2.1  %s' % u[1]
     def ref(u): return chlab[chapters[u[1]]] if u[0] == 'ch' else SPLIT[u[1]]
     pred = defaultdict(set)
     for a, b in edges: pred[b].add(a)

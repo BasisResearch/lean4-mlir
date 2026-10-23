@@ -807,6 +807,8 @@ Table~\ref{tab:r34_paths}, with the rows that differ above a rule and the
 rows held equal by construction between the rules, so that a gap, when
 there is one, has one place to come from.
 
+\part{The framework}
+
 \chapter{MNIST: linear classifier}
 \label{chap:tensor}
 
@@ -2981,7 +2983,7 @@ its per-epoch training loss, on a log scale.
 
 Both numbers come off the same binary this chapter's theorems describe.
 
-\section{Return on width}
+\subsection*{Return on width}
 
 The $512{\to}512$ hidden size is a convention, not a measurement. The
 verified renderer is parametric in the layer dimensions and
@@ -5109,7 +5111,7 @@ prefix as its input; see
 \leandocref{Proofs.cifar8\_lastConv\_sgd\_descends}.
 \end{proof}
 
-\section{Example: training dynamics on CIFAR}
+\section{Example: the eight-conv CNN on CIFAR-10}
 \label{sec:bn_cifar_example}
 
 Chapter~\ref{chap:cnn} did MNIST with two convolutions and a
@@ -6704,7 +6706,9 @@ own (\texttt{r34DownCotIn\_eq\_vjp}).
     32; the same seven nodes repeat for all sixteen.
 \end{itemize}
 
-\section{What's in the production recipe?}
+\section{The recipe}
+
+\subsection{What's in it}
 \label{sec:r34_recipe}
 
 Six ingredients first appear here, none of which are layers. They
@@ -6776,7 +6780,7 @@ $-0.91 \log 0.91 - 9 \cdot 0.01 \log 0.01 \approx 0.500$.
 Every chapter after this one uses the same six ingredients. The
 \texttt{NetSpec} changes, and the recipe stays.
 
-\section{Ablation: what each ingredient contributes}
+\subsection{Ablation: what each ingredient contributes}
 \label{sec:r34_ablation}
 
 So how much does each ingredient actually earn? Figure~\ref{fig:r34_ablation} is
@@ -6960,6 +6964,8 @@ without the random crop and flip the model overfits hard. Most of what the rest
 of the recipe gets credit for is augmentation.
 
 \section{ImageNet recipe}
+
+\subsection{ResNet-34: the 2018 recipe}
 
 The Imagenette runs above all trained on $\sim$9.5K images for 80
 epochs. This section is the same 21.8M-parameter network on 1.28M images
@@ -7314,7 +7320,7 @@ the AlphaGo Zero paper
 reinforcement learning with a large residual network of
 convolutions.
 
-\section{ResNet-50 on ImageNet: the 2018 recipe and RSB-A3}
+\subsection{ResNet-50: the 2018 recipe and RSB-A3}
 
 The basic block ResNet-34 is built from generalizes to the
 \emph{bottleneck} block of ResNet-50 --- a $1\times1$ down, a $3\times3$, a
@@ -7680,7 +7686,7 @@ $\Delta$              & $+1.18$ & $+4.59$ & $+11.36$ & $+4.12$ & $-0.98$ & $+1.2
 \label{fig:r50_paths_curves}
 \end{figure}
 
-\subsection*{What A3 changes from the 2018 recipe}
+\subsubsection*{What A3 changes from the 2018 recipe}
 \label{sec:r50_a3_vs_2018}
 
 The 2018-recipe row above is the original paper's SGD-with-momentum plus the
@@ -11012,41 +11018,6 @@ depth, and averaged weights supplying the regularization. It is also a
 reminder that ``the paper recipe'' includes the optimizer's exact
 semantics, not just its hyperparameters.
 
-\section{Further reading}
-\label{sec:enet_side_quests}
-
-Three EfficientNet follow-ups extended the family in orthogonal
-directions:
-
-\textbf{Noisy Student}
-(\href{https://arxiv.org/abs/1911.04252}{Xie et al.\ 2019}).
-Semi-supervised distillation that pushed EfficientNet-L2 to
-$88.4\%$ top-1 on ImageNet, a state-of-the-art mark at the time. The
-recipe: train a teacher on labeled ImageNet, use the teacher to
-pseudo-label JFT-300M ($\sim$300M unlabeled images), then train a
-larger student on the combined dataset with heavy augmentation
-(RandAugment, dropout, stochastic depth), which is the ``noise'' the
-title refers to. Iterate.
-
-\textbf{EfficientDet}
-(\href{https://arxiv.org/abs/1911.09070}{Tan et al.\ 2020}).
-EfficientNet backbone plus \emph{BiFPN} (bidirectional feature
-pyramid) for object detection. BiFPN aggregates multi-scale
-features by fusing each spatial resolution with both its coarser
-and finer neighbors via weighted-sum cross-scale connections. The
-detection head is a small per-anchor MLP predicting class plus box
-coordinates, applied at every BiFPN output level.
-
-\textbf{EfficientNetV2}
-(\href{https://arxiv.org/abs/2104.00298}{Tan \& Le 2021}).
-\emph{Fused MBConv} replaces the early stages' expand-$1\times1$ plus
-depthwise $k\times k$ with a single regular $k\times k$ convolution ---
-more FLOPs, less wall clock, because depthwise convolution is cheap in
-arithmetic and expensive in memory traffic, and at low resolution the
-traffic dominates. The fused block is already in
-the kit as \texttt{.fusedMbConvNB} --- it is MobileNetV4's stage 0
-(\S\ref{sec:mnv4_side_quest}) --- so V2 needs no new primitive, only a spec.
-
 \section{Recap}
 
 Three operations and the end of a hypothesis. The squeeze-and-excitation
@@ -11059,6 +11030,27 @@ blocks, with its backward proved at every input, where every network before
 it had to name a point and assume the activations stayed off their corners.
 The step is tied (Theorem~\ref{thm:efficientnet_step_tie}) and the
 data-parallel twin holds.
+
+Three follow-ups extended the family in orthogonal directions, and none
+needs a new primitive. \textbf{Noisy Student}
+(\href{https://arxiv.org/abs/1911.04252}{Xie et al.\ 2019}) is
+semi-supervised distillation: a teacher trained on labeled ImageNet
+pseudo-labels JFT-300M, a larger student trains on both under heavy
+augmentation (RandAugment, dropout, stochastic depth, the ``noise'' of
+the title), and the loop repeats, which took EfficientNet-L2 to $88.4\%$
+top-1. \textbf{EfficientDet}
+(\href{https://arxiv.org/abs/1911.09070}{Tan et al.\ 2020}) puts the
+backbone under a bidirectional feature pyramid, BiFPN, which fuses each
+resolution with its coarser and finer neighbours by weighted sums, and a
+small per-anchor MLP predicts class and box at every pyramid level.
+\textbf{EfficientNetV2}
+(\href{https://arxiv.org/abs/2104.00298}{Tan \& Le 2021}) replaces the
+early stages' expand-$1\times1$ plus depthwise $k\times k$ with one
+regular $k\times k$ convolution, \emph{Fused MBConv}: more FLOPs, less
+wall clock, because depthwise convolution is cheap in arithmetic and
+expensive in memory traffic. The fused block is already in the kit as
+\texttt{.fusedMbConvNB}, MobileNetV4's stage 0
+(\S\ref{sec:mnv4_side_quest}), so V2 is a spec away.
 
 The chapter's other lesson is that a recipe is a specification, not a list
 of hyperparameters: RMSProp in TensorFlow's form, the EMA shadowing the
@@ -12780,7 +12772,9 @@ too small for a transformer's lack of inductive bias. That's
 informative on its own terms: the data-hungry-transformer story
 made concrete.
 
-\section{Matrix-level machinery}
+\section{The theorems}
+
+\subsection{Matrix-level machinery}
 \label{sec:matrix_machinery}
 
 Figure~\ref{fig:depgraph_matrix} is the dependency graph of this section.
@@ -13173,7 +13167,7 @@ Jacobian (Theorem~\ref{thm:pdivMat_transpose}) with \(dY\):
 \end{enumerate}
 \end{proof}
 
-\section{Attention proofs}
+\subsection{Attention proofs}
 \label{sec:attention_proofs}
 
 Figures~\ref{fig:depgraph_attention_1} and~\ref{fig:depgraph_attention_2} are
@@ -14940,6 +14934,8 @@ of primitives and tours how they compose into every well-known
 modern architecture, a survey of the field expressed in the
 proven kit, with a small library of bundled idioms for the patterns
 that recur.
+
+\part{The bestiary}
 
 \chapter{Bestiary of Architectures}
 \label{chap:bestiary}
@@ -19468,6 +19464,8 @@ def muZeroGoPredictionValue : NetSpec where
 \addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
 \setbookmarksdepth{1}
 \appendix
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
 
 \chapter{Toolchain and platforms}
 \label{app:getting_started}

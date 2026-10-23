@@ -37,6 +37,8 @@
 % to a captioned, labelled float.
 \usepackage[font=small, labelsep=period]{caption}
 \captionsetup[table]{position=top}
+% "Part 1", as the prose says, not "Part I".
+\renewcommand{\thepart}{\arabic{part}}
 \renewcommand{\thefigure}{\ifnum\value{chapter}>0 \thechapter-\fi\arabic{figure}}
 \renewcommand{\thetable}{\ifnum\value{chapter}>0 \thechapter-\fi\arabic{table}}
 
