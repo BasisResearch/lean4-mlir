@@ -7,7 +7,7 @@ Each check is one sentence pattern in blueprint/src/content.tex and the thing it
 
   * bestiary files            "Forty-six further architectures", "bestiary's 46 architecture families"
                               against the number of Bestiary/*.lean files;
-  * demo groups               "twelve of the groups carry a demo" against the `--- demo:` subsections;
+  * demo groups               "twelve of the groups carry a demo" against the `--- demo:` sections;
   * comparator                "re-runs ... over N theorems", "The N theorems split across three files", "The N are not the whole
                               proof suite", "What the N add" against the three tests/comparator/config*.json
                               name lists; "The last N are ChallengeTier.lean" and "the N-theorem tie"
@@ -43,10 +43,10 @@ def main():
                 bad.append(f'{what}: the book says {h!r}, the tree has {actual}')
 
     n_bestiary = len(glob.glob('Bestiary/*.lean'))
-    expect(r'\\textbf\{Part 2: The bestiary \(Chapter 10\)\.\} ([A-Za-z-]+) further\s+architectures', n_bestiary, 'bestiary count (Part 2 blurb)')
+    expect(r'\\textbf\{Part 2: The bestiary \(Chapters 10--13\)\.\} ([A-Za-z-]+) further\s+architectures', n_bestiary, 'bestiary count (Part 2 blurb)')
     expect(r"bestiary's (\d+) architecture families", n_bestiary, 'bestiary count (appendix)')
 
-    n_demo = len(re.findall(r'^\\subsection\{[^\n]*--- demo:', tex, re.M))
+    n_demo = len(re.findall(r'^\\section\{[^\n]*--- demo:', tex, re.M))
     expect(r'and ([a-z]+) of the\s+groups carry a demo', n_demo, 'demo groups')
 
     cfg = {c: len(json.load(open(f'tests/comparator/{c}.json'))['theorem_names']) for c in ('config', 'config-arch', 'config-tier')}

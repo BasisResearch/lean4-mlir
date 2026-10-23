@@ -112,7 +112,7 @@ but exploitably structured:
 That's it. Three rules, five tricks. Every architecture in this book is
 some combination of those eight things: the MLP, the CNN, ResNet,
 MobileNet, EfficientNet, ConvNeXt, and the Vision Transformer. So is
-everything in Chapter~\ref{chap:bestiary}'s bestiary: U-Net, YOLO,
+everything in the bestiary of Chapters~\ref{chap:bestiary}--\ref{chap:bestiary_games}: U-Net, YOLO,
 Mamba, GAN, VAE, diffusion, CLIP, and GPT-style decoders. There is no
 ninth.
 
@@ -205,7 +205,7 @@ Each one adds exactly one new primitive. By ViT you've seen every
 primitive in modern vision, and every primitive in modern language models
 too, because a transformer is the same architecture in both.
 
-The bestiary of Chapter~\ref{chap:bestiary} shows the same primitives
+The bestiary of Chapters~\ref{chap:bestiary}--\ref{chap:bestiary_games} shows the same primitives
 covering detection (YOLO), segmentation (U-Net), generation (diffusion
 models), vision--language models (CLIP, LLaVA), and sequence modeling
 (Mamba). Image recognition is the on-ramp. The whole
@@ -316,16 +316,19 @@ verified trainer, and the two scored against each other.
     capstone. ViT-S and B are the side quest.
 \end{itemize}
 
-\textbf{Part 2: The bestiary (Chapter 10).} Forty-six further
+\textbf{Part 2: The bestiary (Chapters 10--13).} Forty-six further
 architectures, from U-Net to Mamba to Stable Diffusion, each written as
 a \texttt{NetSpec} in about fifteen lines of Lean and led by how many new
 primitives it needs beyond Part 1: none for VGG or AlphaZero, one for
-Mamba, never more than three. The entries are grouped by what they are
-for, from vision classifiers through detection, segmentation, language,
-generation, physics and signal processing, and twelve of the
-groups carry a demo trained on data from that field. A closing section
-on game theory trains Pong, Leduc poker and tic-tac-toe against their
-exact solutions, with the AlphaGo family and Deep CFR as its catalogue.
+Mamba, never more than three. Chapter~\ref{chap:bestiary} is the kit,
+the primitives the bestiary adds. The entries are then grouped by what
+they are for, from vision classifiers through detection, segmentation,
+language, generation, physics and signal processing, and twelve of the
+groups carry a demo trained on data from that field: recognition in
+Chapter~\ref{chap:bestiary_nets}, everything else in
+Chapter~\ref{chap:bestiary_beyond}. A closing chapter on game theory
+trains Pong, Leduc poker and tic-tac-toe against their exact solutions,
+with the AlphaGo family and Deep CFR as its catalogue.
 
 \textbf{Appendices.} The rest of the toolchain and the six GPU platforms
 (A), how every claim is checked, with the tally of what each chapter
@@ -7308,7 +7311,7 @@ For the fastest path through this book, the route is roughly:
     (\S\ref{sec:r50_pjrt}; about a day on four cards).
   \item Stop here. Assume Chapters \ref{chap:depthwise}--\ref{chap:attention}
     (MobileNet, EfficientNet, ConvNeXt, ViT) and the Bestiary
-    (Ch~\ref{chap:bestiary}) are correct, because they all reuse the
+    (Chapters~\ref{chap:bestiary}--\ref{chap:bestiary_games}) are correct, because they all reuse the
     same framework with new operators slotting into the same proof
     tree. Appendix~\ref{app:verification} walks through how that
     claim is auditable if you ever want to spot-check it.
@@ -14937,17 +14940,8 @@ that recur.
 
 \part{The bestiary}
 
-\chapter{Bestiary of Architectures}
+\chapter{The kit}
 \label{chap:bestiary}
-
-% The bestiary is a catalogue, not a narrative: its subsection headings are
-% the entries a reader looks up by name, so this chapter alone shows them in
-% the TOC and in the PDF's bookmarks. The first switch is written into the
-% .toc file, which is what the printed contents read; hyperref reads the live
-% tocdepth counter instead, so the bookmark depth is raised separately.
-% Both restored to depth 1 before the appendices below.
-\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
-\setbookmarksdepth{2}
 
 Part 1 introduced a small set of \texttt{NetSpec} primitives across
 chapters 1--9 and proved each one's backward pass:
@@ -15395,26 +15389,26 @@ is pedagogical shape and parameter accounting, not training runs.
   \texttt{structureModule (singleChannels pairChannels nBlocks : Nat)}.
 \end{definition}
 
-\section{Bestiary entries: the chapter nets at work}
-\label{sec:bestiary_entries}
+\chapter{The chapter nets at work}
+\label{chap:bestiary_nets}
 
-The entries are grouped by task domain, in two halves. This half is
+The entries are grouped by task domain, over three chapters. This one is
 recognition: the chapter nets on pictures, at real-world scale and then on
 real problems --- classification backbones first, where every layer is one
 Part 1 proved, then detection, inspection, sign language, leaves and
 tumours, each with a dataset, the field's own baseline to beat, and beside
-the demo the architectures that field uses. The second half
-(\S~\ref{sec:bestiary_beyond_recognition}) leaves recognition behind, and a last
-section (\S~\ref{sec:bestiary_game_theory}) plays games against their exact solutions.
+the demo the architectures that field uses. Chapter~\ref{chap:bestiary_beyond}
+leaves recognition behind, and Chapter~\ref{chap:bestiary_games} plays games
+against their exact solutions.
 
-\subsection{Vision classifiers}
+\section{Vision classifiers}
 
 Image-classification backbones built out of conv / pool / batch-norm /
 residual / attention / patch-embed --- the exact layer kit VJP'd in
 Part 1. If a chapter of Part 1 proved it, a bestiary entry below puts
 it to work.
 
-\subsubsection*{LeNet (\texttt{Bestiary/LeNet.lean})}
+\subsection*{LeNet (\texttt{Bestiary/LeNet.lean})}
 \emph{Zero} new primitives --- just \texttt{conv2d} $+$ \texttt{maxPool}
 $+$ \texttt{dense}. The 1998 original (LeCun et al.\ 1998,
 \href{http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf}{IEEE 1998}).
@@ -15440,7 +15434,7 @@ def leNet5 : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{AlexNet (\texttt{Bestiary/AlexNet.lean})}
+\subsection*{AlexNet (\texttt{Bestiary/AlexNet.lean})}
 \emph{Zero} new primitives --- five convs, three FCs, pools. The 2012
 ImageNet winner that restarted modern deep learning (Krizhevsky et al.\ 2012,
 \href{https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html}{NeurIPS 2012}). Variants:
@@ -15477,7 +15471,7 @@ def alexNet : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{VGG (\texttt{Bestiary/VGG.lean})}
+\subsection*{VGG (\texttt{Bestiary/VGG.lean})}
 \emph{Zero} new primitives --- pure stacks of $3\times 3$ convs +
 max-pool + a heavy dense head. VGG (Simonyan \& Zisserman 2014,
 \href{https://arxiv.org/abs/1409.1556}{arXiv:1409.1556}) was the
@@ -15537,7 +15531,7 @@ extractors (perceptual loss, style transfer) --- those FC features
 turn out to encode useful image structure even after the
 classification head fell out of favor.
 
-\subsubsection*{Highway Networks (\texttt{Bestiary/Highway.lean})}
+\subsection*{Highway Networks (\texttt{Bestiary/Highway.lean})}
 \emph{Zero} new math --- the architecture is built entirely from the
 product rule and additive fan-in (Chapter~\ref{chap:tensor}'s
 toolkit) applied to two parallel dense / conv paths, and \emph{zero}
@@ -15584,7 +15578,7 @@ six months later that the gate could be a constant and you'd save the
 parameters. ResNet won by simplifying away $T$, but the underlying
 calculus is identical --- product + additive fan-in either way.
 
-\subsubsection*{ResNet (\texttt{Bestiary/ResNet.lean})}
+\subsection*{ResNet (\texttt{Bestiary/ResNet.lean})}
 \emph{Zero} new primitives: Chapter~\ref{chap:residual} proves and
 trains both block forms, the basic block as ResNet-34 and the bottleneck
 as ResNet-50, so \texttt{.bottleneckBlock} is a chapter net's primitive
@@ -15649,7 +15643,7 @@ this exact ResNet-50, with its step tie, seal and data-parallel tie
 (Theorems~\ref{thm:resnet50_step_tie}, \ref{thm:resnet50_seal}
 and~\ref{thm:resnet50_sync_tie}) beside ResNet-34's.
 
-\subsubsection*{WRN (Wide ResNet) (\texttt{Bestiary/WRN.lean})}
+\subsection*{WRN (Wide ResNet) (\texttt{Bestiary/WRN.lean})}
 \emph{Zero} new primitives --- the residual block of
 Chapter~\ref{chap:residual}, just widened. Zagoruyko \& Komodakis
 2016 (\href{https://arxiv.org/abs/1605.07146}{arXiv:1605.07146})
@@ -15700,7 +15694,7 @@ residual block, which we omit (static-graph scope --- no per-step
 masks). The dropout-free WRN variant is also reported in the
 paper and lands within $\sim$0.3\% of the dropout one on CIFAR-10.
 
-\subsubsection*{SqueezeNet (\texttt{Bestiary/SqueezeNet.lean})}
+\subsection*{SqueezeNet (\texttt{Bestiary/SqueezeNet.lean})}
 \emph{One} new primitive (\texttt{.fireModule}). AlexNet-level accuracy in 1.25M params
 via the fire module (Iandola et al.\ 2016,
 \href{https://arxiv.org/abs/1602.07360}{arXiv:1602.07360}): squeeze 1$\times$1 conv followed by parallel
@@ -15749,7 +15743,7 @@ def squeezeNet1_1 : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{GoogLeNet / Inception v1 (\texttt{Bestiary/Inception.lean})}
+\subsection*{GoogLeNet / Inception v1 (\texttt{Bestiary/Inception.lean})}
 \emph{One} new primitive (\S~\ref{layer:inceptionModule}). The
 parallel-branch architecture that won ImageNet 2014 (Szegedy et
 al.\ 2014, \href{https://arxiv.org/abs/1409.4842}{arXiv:1409.4842}).
@@ -15806,7 +15800,7 @@ def googLeNet : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Inception v3 / v4 (\texttt{Bestiary/Inception.lean})}
+\subsection*{Inception v3 / v4 (\texttt{Bestiary/Inception.lean})}
 \emph{Zero} new primitives --- reuses
 \S~\ref{layer:inceptionModule}. Inception v3 (Szegedy et al.\ 2015,
 \href{https://arxiv.org/abs/1512.00567}{arXiv:1512.00567}) and v4
@@ -15841,7 +15835,7 @@ Inception-v3 (23.8M, paper 23M), Inception-v4 (33M, paper 42M ---
 a bit low because our unified \texttt{.inceptionModule} primitive
 approximates v3/v4's richer module catalog).
 
-\subsubsection*{Xception (\texttt{Bestiary/Xception.lean})}
+\subsection*{Xception (\texttt{Bestiary/Xception.lean})}
 \emph{One} new primitive (\texttt{.separableConv}).
 ``Extreme Inception'' (Chollet 2017,
 \href{https://arxiv.org/abs/1610.02357}{arXiv:1610.02357}): every conv
@@ -15886,7 +15880,7 @@ def xception : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{DenseNet (\texttt{Bestiary/DenseNet.lean})}
+\subsection*{DenseNet (\texttt{Bestiary/DenseNet.lean})}
 \emph{Two} new primitives (\texttt{.denseBlock}, \texttt{.transitionLayer}).
 DenseNet (Huang et al.\ 2017,
 \href{https://arxiv.org/abs/1608.06993}{arXiv:1608.06993}) takes the
@@ -15954,7 +15948,7 @@ the concatenation. Modern CNN architectures (EfficientNet, ConvNeXt)
 took the per-layer-parameter-efficiency lesson but dropped the
 all-pairs concatenation in favor of standard residual paths.
 
-\subsubsection*{ShuffleNet (\texttt{Bestiary/ShuffleNet.lean})}
+\subsection*{ShuffleNet (\texttt{Bestiary/ShuffleNet.lean})}
 \emph{One} new primitive (\S~\ref{layer:shuffleBlock}). Grouped
 1$\times$1 convs + channel shuffle (Zhang et al.\ 2017,
 \href{https://arxiv.org/abs/1707.01083}{arXiv:1707.01083}).
@@ -15977,7 +15971,7 @@ def shuffleNet1x : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{ShuffleNet v2 (\texttt{Bestiary/ShuffleNetV2.lean})}
+\subsection*{ShuffleNet v2 (\texttt{Bestiary/ShuffleNetV2.lean})}
 \emph{One} new primitive (\S~\ref{layer:shuffleV2Block}). The
 efficient-CNN paper (Ma et al.\ 2018,
 \href{https://arxiv.org/abs/1807.11164}{arXiv:1807.11164}) that called
@@ -16008,7 +16002,7 @@ def shuffleV2_1_0 : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{MobileViT (\texttt{Bestiary/MobileViT.lean})}
+\subsection*{MobileViT (\texttt{Bestiary/MobileViT.lean})}
 \emph{One} new primitive (\S~\ref{layer:mobileVitBlock}); reuses existing
 \texttt{invertedResidual} for the MV2 stages. Hybrid mobile backbone
 (Mehta \& Rastegari 2022,
@@ -16041,7 +16035,7 @@ def mobileViTS : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Swin Transformer (\texttt{Bestiary/SwinT.lean})}
+\subsection*{Swin Transformer (\texttt{Bestiary/SwinT.lean})}
 \emph{Two} new primitives (\S~\ref{layer:swinStage},
 \S~\ref{layer:patchMerging}). Variants: Swin-T / -S / -B / tiny.
 Swin-T lands at 28.6M params against the paper's 28M (Liu et al.\ 2021,
@@ -16066,7 +16060,7 @@ def swinT : NetSpec where
   ]
 \end{verbatim}
 
-\subsection{Object detection --- demo: R34+FPN on VisDrone}
+\section{Object detection --- demo: R34+FPN on VisDrone}
 \label{sec:bestiary_detection}
 
 Localize and classify. Detection heads are where the linear
@@ -16159,7 +16153,7 @@ higher resolution, full augmentation and COCO pretraining. \textbf{The distance
 to the field is recipe, not architecture}, and one item of that recipe closes
 $31\%$ of it.
 
-\subsubsection*{YOLO v1/v3/v5/v8/v11 (\texttt{Bestiary/YOLO.lean})}
+\subsection*{YOLO v1/v3/v5/v8/v11 (\texttt{Bestiary/YOLO.lean})}
 v1 (Redmon et al.\ 2016,
 \href{https://arxiv.org/abs/1506.02640}{arXiv:1506.02640}) uses
 \emph{zero} new primitives (\texttt{conv2d} + \texttt{maxPool} +
@@ -16212,7 +16206,7 @@ def yolo : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Mask R-CNN (\texttt{Bestiary/MaskRCNN.lean})}
+\subsection*{Mask R-CNN (\texttt{Bestiary/MaskRCNN.lean})}
 \emph{One} new primitive (\S~\ref{layer:fpnModule}); the \texttt{.bottleneckBlock} backbone is Chapter~\ref{chap:residual}'s ResNet-50. The canonical two-stage detector +
 instance segmentation reference (He et al.\ 2017,
 \href{https://arxiv.org/abs/1703.06870}{arXiv:1703.06870}). Five architectural
@@ -16246,7 +16240,7 @@ def maskRCNNBackboneR101 : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{DETR (\texttt{Bestiary/DETR.lean})}
+\subsection*{DETR (\texttt{Bestiary/DETR.lean})}
 \emph{Two} new primitives (\S~\ref{layer:transformerDecoder},
 \S~\ref{layer:detrHeads}; Carion et al.\ 2020,
 \href{https://arxiv.org/abs/2005.12872}{arXiv:2005.12872}); reuses
@@ -16276,7 +16270,7 @@ def detrR50 : NetSpec where
   ]
 \end{verbatim}
 
-\subsection{Industrial inspection --- demo: the same detector on NEU-DET steel defects}
+\section{Industrial inspection --- demo: the same detector on NEU-DET steel defects}
 \label{sec:bestiary_inspection}
 
 The detector of the previous section, unchanged --- backbone, neck, heads,
@@ -16377,7 +16371,7 @@ full frame at a mean IoU of $0.52$, and the head has to regress the rest.
 Both are levers the detector already has; neither was pulled, because the
 comparison the section makes needs the detector to be the detector.
 
-\subsection{People watching --- demo: Arabic sign-language letters on ArASL}
+\section{People watching --- demo: Arabic sign-language letters on ArASL}
 \label{sec:bestiary_people}
 
 Networks whose input is a person: a face, a gait, a hand. The demo is
@@ -16500,7 +16494,7 @@ classifier is not: it reads one static handshape per frame ---
 fingerspelling, no motion, no grammar, no continuous signing --- and the
 honest number for even that task on new hands is the right-hand column.
 
-\subsection{Agriculture --- demo: lab leaves to field leaves on PlantVillage and PlantDoc}
+\section{Agriculture --- demo: lab leaves to field leaves on PlantVillage and PlantDoc}
 \label{sec:bestiary_agriculture}
 
 Networks that look at crops. The demo trains a leaf-disease classifier on
@@ -16630,7 +16624,7 @@ leaf at one moment --- no severity, no spread across a field, no symptom
 before the lesion shows --- and the honest number for even that, on a
 photograph a grower would take, is the right-hand column.
 
-\subsection{Remote sensing --- demo: which wavelengths travel, EuroSAT to the Amazon and the Cerrado}
+\section{Remote sensing --- demo: which wavelengths travel, EuroSAT to the Amazon and the Cerrado}
 \label{sec:bestiary_remote_sensing}
 
 Networks that look down. The demo trains the chapter-4 CNN on satellite
@@ -16767,7 +16761,7 @@ or how much of it is gone. The Bahia chips are the first half of the
 instrument that could say the last two: the same square on two dates, and
 the difference between them.
 
-\subsection{Semantic segmentation --- demo: UNet on BraTS}
+\section{Semantic segmentation --- demo: UNet on BraTS}
 \label{sec:bestiary_segmentation}
 
 Pixel-level labeling. Symmetric encoder/decoder with skip connections
@@ -16995,7 +16989,7 @@ and the same two primitives
 carry that subsection's generative pipeline. The layer kit is shared;
 only the loss and the inference procedure change.
 
-\subsubsection*{UNet (\texttt{Bestiary/UNet.lean})}
+\subsection*{UNet (\texttt{Bestiary/UNet.lean})}
 \emph{Two} new primitives (\S~\ref{layer:unetDown},
 \S~\ref{layer:unetUp}). Skip connections are implicit --- the $i$-th \texttt{unetUp} from the bottom
 pairs with the $i$-th \texttt{unetDown} from the top. Variants:
@@ -17023,7 +17017,7 @@ def unet : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{DeepLab v3+ (\texttt{Bestiary/DeepLabV3Plus.lean})}
+\subsection*{DeepLab v3+ (\texttt{Bestiary/DeepLabV3Plus.lean})}
 \emph{One} new primitive (\S~\ref{layer:asppModule}). The pre-transformer segmentation
 workhorse (Chen et al.\ 2018,
 \href{https://arxiv.org/abs/1802.02611}{arXiv:1802.02611}) --- still deployed widely in remote
@@ -17061,7 +17055,7 @@ def deeplabv3plusResnet101 : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{SegFormer (\texttt{Bestiary/SegFormer.lean})}
+\subsection*{SegFormer (\texttt{Bestiary/SegFormer.lean})}
 \emph{One} new primitive (\S~\ref{layer:patchMerging}). Semantic segmentation (Xie et al.\ 2021,
 \href{https://arxiv.org/abs/2105.15203}{arXiv:2105.15203}) via a
 hierarchical transformer pyramid (MiT encoder: 4 stages of
@@ -17102,7 +17096,7 @@ def segformerB2 : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{SAM (\texttt{Bestiary/SAM.lean})}
+\subsection*{SAM (\texttt{Bestiary/SAM.lean})}
 \emph{One} new primitive (\S~\ref{layer:transformerDecoder}). Promptable segmentation (Kirillov et
 al.\ 2023, \href{https://arxiv.org/abs/2304.02643}{arXiv:2304.02643}): a ViT image encoder runs once per image, a tiny prompt
 encoder tokenizes clicks / boxes / masks, a lightweight transformer
@@ -17129,8 +17123,8 @@ def samEncoderH : NetSpec where
   ]
 \end{verbatim}
 
-\section{Bestiary entries: beyond recognition}
-\label{sec:bestiary_beyond_recognition}
+\chapter{Beyond recognition}
+\label{chap:bestiary_beyond}
 
 The training signal stops being a label. It is the next token, the noise
 added to an image, a density, a chirp buried in detector noise, an energy,
@@ -17140,9 +17134,9 @@ chain, or a blind competition's table, the demo is scored against it rather
 than against a held-out set. The networks are the same kit; what
 changes is the outer loop, and the catalogue beside each demo is that
 domain's architectures. The games, whose signal is a reward and whose
-answers are theorems about the rules, are \S~\ref{sec:bestiary_game_theory}.
+answers are theorems about the rules, are Chapter~\ref{chap:bestiary_games}.
 
-\subsection{Natural language processing --- demo: TinyGPT on Shakespeare}
+\section{Natural language processing --- demo: TinyGPT on Shakespeare}
 \label{sec:bestiary_nlp}
 
 The architectures here all consume a sequence of token IDs and emit
@@ -17268,7 +17262,7 @@ sampling) or ``BERT shape'' (encoder-only, bidirectional attention,
 classification head); the architectural differences between them are
 smaller than the chapter-to-chapter deltas in Part~1.
 
-\subsubsection*{Mamba (\texttt{Bestiary/Mamba.lean})}
+\subsection*{Mamba (\texttt{Bestiary/Mamba.lean})}
 \emph{One} new primitive (\S~\ref{layer:mambaBlock}). Variants: Mamba-130M / 370M / 790M /
 tiny, matching Gu \& Dao's (2023,
 \href{https://arxiv.org/abs/2312.00752}{arXiv:2312.00752}) param counts
@@ -17286,7 +17280,7 @@ def mamba130M : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{BERT / RoBERTa (\texttt{Bestiary/BERT.lean})}
+\subsection*{BERT / RoBERTa (\texttt{Bestiary/BERT.lean})}
 \emph{Zero} new primitives --- uses \texttt{.transformerEncoder}, same kit as
 ViT / DETR, plus \texttt{.dense vocab$\to$dim} standing in for the
 token-embedding table (faithful param count, shape semantics cheat
@@ -17317,7 +17311,7 @@ def bertBase : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{GPT-1 / GPT-2 (\texttt{Bestiary/GPT.lean})}
+\subsection*{GPT-1 / GPT-2 (\texttt{Bestiary/GPT.lean})}
 \emph{Zero} new primitives. GPT-1 (Radford et al.\ 2018,
 \href{https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf}{OpenAI TR})
 and GPT-2 (Radford et al.\ 2019,
@@ -17348,7 +17342,7 @@ def gpt2Small : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{QANet (\texttt{Bestiary/QANet.lean})}
+\subsection*{QANet (\texttt{Bestiary/QANet.lean})}
 \emph{One} new primitive (\texttt{.separableConv}). The 2018 reading-comprehension
 architecture that killed the BiLSTM for SQuAD-style tasks (Yu et al.\ 2018,
 \href{https://arxiv.org/abs/1804.09541}{arXiv:1804.09541}). Core contribution: an encoder block combining 4 depthwise-
@@ -17386,7 +17380,7 @@ def qanetEncoderBlock : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Nyströmformer (\texttt{Bestiary/Nystromformer.lean})}
+\subsection*{Nyströmformer (\texttt{Bestiary/Nystromformer.lean})}
 \emph{Zero} new primitives. An efficient-attention transformer
 (Xiong et al.\ 2021,
 \href{https://arxiv.org/abs/2102.03902}{arXiv:2102.03902}) that
@@ -17420,14 +17414,14 @@ def nystromformerBase : NetSpec where
   ]
 \end{verbatim}
 
-\subsection{Image generation}
+\section{Image generation}
 
 Networks whose output is a novel image. Two families covered here:
 variational autoencoders and GANs. Backbones overlap heavily with
 segmentation (UNet again). Diffusion models, also generative, are the
 subsection after this one.
 
-\subsubsection*{VAE (\texttt{Bestiary/VAE.lean})}
+\subsection*{VAE (\texttt{Bestiary/VAE.lean})}
 \emph{One} new primitive (\S~\ref{layer:unetUp}). The classical variational autoencoder
 (Kingma \& Welling 2013, \href{https://arxiv.org/abs/1312.6114}{arXiv:1312.6114}): encoder outputs
 $(\mu, \log \sigma^2)$ (represented as a single tensor with doubled
@@ -17458,7 +17452,7 @@ def mnistVAEEncoder : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{DCGAN (\texttt{Bestiary/DCGAN.lean})}
+\subsection*{DCGAN (\texttt{Bestiary/DCGAN.lean})}
 \emph{Zero} new primitives. Deep Convolutional GAN (Radford et
 al.\ 2015, \href{https://arxiv.org/abs/1511.06434}{arXiv:1511.06434}) --- the paper that made GAN training reliably work. Eight
 design guidelines (strided convs instead of pooling, BN everywhere
@@ -17489,7 +17483,7 @@ def dcganGenerator : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Pix2Pix (\texttt{Bestiary/Pix2Pix.lean})}
+\subsection*{Pix2Pix (\texttt{Bestiary/Pix2Pix.lean})}
 \emph{Two} new primitives (\S~\ref{layer:unetDown}, \S~\ref{layer:unetUp}). The paired-data ancestor of CycleGAN,
 from the same lab 9 months earlier (Isola et al.\ 2017,
 \href{https://arxiv.org/abs/1611.07004}{arXiv:1611.07004}). UNet
@@ -17524,7 +17518,7 @@ def pix2pixGenerator : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{CycleGAN (\texttt{Bestiary/CycleGAN.lean})}
+\subsection*{CycleGAN (\texttt{Bestiary/CycleGAN.lean})}
 \emph{Zero} new primitives. Unpaired image translation (Zhu et
 al.\ 2017, \href{https://arxiv.org/abs/1703.10593}{arXiv:1703.10593}): two generators $G : X \to Y$ and $F : Y \to X$ plus two
 PatchGAN discriminators, trained with adversarial loss + cycle
@@ -17556,7 +17550,7 @@ def cycleganGenerator : NetSpec where
   ]
 \end{verbatim}
 
-\subsection{Diffusion --- demo: DDPM on MNIST}
+\section{Diffusion --- demo: DDPM on MNIST}
 \label{sec:bestiary_diffusion}
 
 Generative models that predict the noise added to a clean image, with inference
@@ -17689,7 +17683,7 @@ at CIFAR scale, and Stable Diffusion is the same UNet on VAE latents with text
 cross-attention spliced in. Encoder-decoder-with-skips plus a sampling loop is
 the whole generative pipeline.
 
-\subsubsection*{DDPM (\texttt{Bestiary/Diffusion.lean})}
+\subsection*{DDPM (\texttt{Bestiary/Diffusion.lean})}
 \emph{Three} new primitives (\S~\ref{layer:unetDown}, \S~\ref{layer:unetUp}, \S~\ref{layer:positionalEncoding}). The denoiser in Ho et al.'s DDPM (2020,
 \href{https://arxiv.org/abs/2006.11239}{arXiv:2006.11239}) is a UNet
 --- literally the same \S~\ref{layer:unetDown} and
@@ -17726,7 +17720,7 @@ def ddpmCifar : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Stable Diffusion (\texttt{Bestiary/StableDiffusion.lean})}
+\subsection*{Stable Diffusion (\texttt{Bestiary/StableDiffusion.lean})}
 \emph{Three} new primitives (\S~\ref{layer:unetDown}, \S~\ref{layer:unetUp}, \S~\ref{layer:transformerDecoder}). The paper that made generative image
 models consumer-reachable (Rombach et al.\ 2022,
 \href{https://arxiv.org/abs/2112.10752}{arXiv:2112.10752}). Two architectural
@@ -17771,7 +17765,7 @@ def sdUNet15 : NetSpec where
   ]
 \end{verbatim}
 
-\subsection{Physics --- demo: Boltzmann generator on M\"uller--Brown}
+\section{Physics --- demo: Boltzmann generator on M\"uller--Brown}
 \label{sec:bestiary_boltzmann}
 
 Networks whose target is a physical law rather than a labelled set: a
@@ -17929,7 +17923,7 @@ $4.9\times$ the floor where the independent coupling needs ten. The price is
 the ceiling: both straightened arms plateau above it at NFE 50, because their
 training set is the first model's output, biases included.
 
-\subsubsection*{Boltzmann generator (\texttt{Bestiary/BoltzmannGenerator.lean})}
+\subsection*{Boltzmann generator (\texttt{Bestiary/BoltzmannGenerator.lean})}
 \emph{Zero} new primitives for the flow-matching version, \emph{one} if the
 original is shown. No\'e et al.'s network is RealNVP (Dinh et al.\ 2017,
 \href{https://arxiv.org/abs/1605.08803}{arXiv:1605.08803}): a stack of affine
@@ -17959,7 +17953,7 @@ def boltzmannVelocityNet : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Physics-informed neural network (\texttt{Bestiary/PINN.lean})}
+\subsection*{Physics-informed neural network (\texttt{Bestiary/PINN.lean})}
 \emph{Zero} new primitives. Raissi, Perdikaris \& Karniadakis (2019,
 \href{https://doi.org/10.1016/j.jcp.2018.10.045}{J.\ Comput.\ Phys.\ 378};
 \href{https://arxiv.org/abs/1711.10561}{arXiv:1711.10561}): the network is a
@@ -17997,7 +17991,7 @@ def pinnBurgers : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Fourier neural operator (\texttt{Bestiary/FNO.lean})}
+\subsection*{Fourier neural operator (\texttt{Bestiary/FNO.lean})}
 \emph{One} new primitive, not shown. Li et al.\ (2021,
 \href{https://arxiv.org/abs/2010.08895}{arXiv:2010.08895}) learn the solution
 operator of a PDE family rather than one solution: initial condition
@@ -18031,7 +18025,7 @@ def fno2dNavierStokes : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{FourCastNet (\texttt{Bestiary/FourCastNet.lean})}
+\subsection*{FourCastNet (\texttt{Bestiary/FourCastNet.lean})}
 \emph{One} new primitive, shown with the primitive it replaces. Pathak et
 al.\ (2022, \href{https://arxiv.org/abs/2202.11214}{arXiv:2202.11214}) put a
 ViT on ERA5's $0.25^\circ$ grid --- $720 \times 1440$ pixels, 20 variables, $8
@@ -18061,7 +18055,7 @@ def fourCastNet : NetSpec where
   ]
 \end{verbatim}
 
-\subsection{Signal processing --- demo: gravitational-wave detection on LIGO strain}
+\section{Signal processing --- demo: gravitational-wave detection on LIGO strain}
 \label{sec:bestiary_signal}
 
 Networks whose input is a waveform: strain from an interferometer, raw
@@ -18196,7 +18190,7 @@ teaches the glitch tail. % TODO Phase 4: the catalogue table (which GWTC
 % events the trained model flags, beside their published SNR) and the
 % Gravity Spy glitch row.
 
-\subsubsection*{WaveNet (\texttt{Bestiary/WaveNet.lean})}
+\subsection*{WaveNet (\texttt{Bestiary/WaveNet.lean})}
 \emph{One} new primitive (\S~\ref{layer:waveNetBlock}). Dilated causal
 convolutions for raw audio sample prediction (van den Oord et al.\
 2016, \href{https://arxiv.org/abs/1609.03499}{arXiv:1609.03499}): exponential receptive field, linear parameter
@@ -18223,7 +18217,7 @@ def waveNet : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{Whisper (\texttt{Bestiary/Whisper.lean})}
+\subsection*{Whisper (\texttt{Bestiary/Whisper.lean})}
 \emph{One} new primitive (\S~\ref{layer:transformerDecoder}). Encoder-decoder transformer over log-mel
 spectrograms (Radford et al.\ 2022,
 \href{https://arxiv.org/abs/2212.04356}{arXiv:2212.04356}). Encoder is
@@ -18253,7 +18247,7 @@ def whisperSmall : NetSpec where
   ]
 \end{verbatim}
 
-\subsection{Beyond vision --- demo: neural quantum states on the Ising chain}
+\section{Beyond vision --- demo: neural quantum states on the Ising chain}
 \label{sec:bestiary_beyond}
 
 Architectures where the task domain is neither a 2D image nor a token
@@ -18433,7 +18427,7 @@ where the ansatz says it does. The trainer is
 \texttt{demos/MainNqsIsing.lean}; the closed forms, the Lanczos ceiling and
 every table are \texttt{scripts/demos/\allowbreak nqs\_metrics.py}.
 
-\subsubsection*{NeRF (\texttt{Bestiary/NeRF.lean})}
+\subsection*{NeRF (\texttt{Bestiary/NeRF.lean})}
 \emph{Two} new primitives (\S~\ref{layer:positionalEncoding},
 \S~\ref{layer:nerfMLP}). The "it's literally just an MLP" paper
 (Mildenhall et al.\ 2020,
@@ -18457,7 +18451,7 @@ def nerf : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{CLIP (\texttt{Bestiary/CLIP.lean})}
+\subsection*{CLIP (\texttt{Bestiary/CLIP.lean})}
 \emph{Zero} new primitives. Two textbook encoders glued together by a
 contrastive loss (Radford et al.\ 2021,
 \href{https://arxiv.org/abs/2103.00020}{arXiv:2103.00020}): a ResNet-50 or ViT-B for images, a 12-layer causal
@@ -18481,7 +18475,7 @@ def clipViTB32ImageEncoder : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{LLaVA / LLaVA-1.5 (\texttt{Bestiary/LLaVA.lean})}
+\subsection*{LLaVA / LLaVA-1.5 (\texttt{Bestiary/LLaVA.lean})}
 \emph{Zero} new primitives. The cleanest exhibit of the modern
 vision-language pattern (Liu et al.\ 2023,
 \href{https://arxiv.org/abs/2304.08485}{arXiv:2304.08485}; LLaVA-1.5:
@@ -18515,7 +18509,7 @@ def llava15Projector : NetSpec where
   ]
 \end{verbatim}
 
-\subsection{Structure --- demo: a distogram ResNet against the CASP16 field}
+\section{Structure --- demo: a distogram ResNet against the CASP16 field}
 \label{sec:bestiary_structure}
 
 Networks whose input is a protein's sequence and whose output is its
@@ -18730,7 +18724,7 @@ and packing are \texttt{scripts/datasets/\allowbreak casp16\_*.py}, the
 fold, scoring, table and figures \texttt{scripts/demos/\allowbreak
 casp16\_*.py}.
 
-\subsubsection*{AlphaFold 2 Evoformer (\texttt{Bestiary/Evoformer.lean})}
+\subsection*{AlphaFold 2 Evoformer (\texttt{Bestiary/Evoformer.lean})}
 \emph{Two} new primitives (\S~\ref{layer:evoformerBlock},
 \S~\ref{layer:structureModule}). Dual-representation (MSA + pair)
 doesn't fit a linear \texttt{NetSpec} cleanly; the bestiary shows the
@@ -18786,8 +18780,8 @@ representation and the cross-stage handoff. \S~\ref{layer:evoformerBlock}
 and \S~\ref{layer:structureModule} document the bundling explicitly.
 
 
-\section{Bestiary entries: game theory}
-\label{sec:bestiary_game_theory}
+\chapter{Game theory}
+\label{chap:bestiary_games}
 
 Three games written in Lean, each with its own exact instrument, on one loop: the
 reward is the game's, the data is manufactured by playing it, the target is the model's
@@ -18800,7 +18794,7 @@ with a host-built target, and none of it is new codegen. The catalogue beside th
 demos is the AlphaGo family and Deep CFR, the same loops at the scale that made them
 famous.
 
-\subsection{Pong --- DQN from pixels against the six-number state}
+\section{Pong --- DQN from pixels against the six-number state}
 \label{sec:game_pong}
 
 \texttt{demos/MainPongDqn.lean} is Mnih et al.'s DQN (2015,
@@ -18874,7 +18868,7 @@ was 24 milliseconds, twenty of them the shim re-pushing 20~MB of parameters and 
 moments every step; with that state resident on the device
 (\texttt{trainStepAdamF32DdpmR}) it is 14.6, and a pixel run 27 minutes on one card.
 
-\subsection{Poker --- Deep CFR against the exact best response}
+\section{Poker --- Deep CFR against the exact best response}
 \label{sec:game_leduc}
 
 \texttt{demos/MainDeepCfrLeduc.lean} is Brown, Lerer, Gross and Sandholm's loop (Deep CFR,
@@ -18996,7 +18990,7 @@ response exists to score against and the paper's numbers are against abstraction
 head-to-head; no-limit and multi-way poker (Pluribus) are another scale again, and
 exploitability is not computable there.
 
-\subsection{Tic-tac-toe --- AlphaZero against the solved game}
+\section{Tic-tac-toe --- AlphaZero against the solved game}
 \label{sec:game_ttt}
 
 The \texttt{demos/MainAlphaZeroTtt.lean}
@@ -19109,7 +19103,7 @@ sample is 92.1\% over the exhaustive opening, every position with at most three
 stones: it is best where the theory is. On this board the search is what closes the
 second player's games, and it has not closed them yet.
 
-\subsection{Tic-tac-toe without the rules --- MuZero against the solved game}
+\section{Tic-tac-toe without the rules --- MuZero against the solved game}
 \label{sec:game_muzero_ttt}
 
 The \texttt{demos/MainMuZeroTtt.lean} trainer is Schrittwieser et al.'s MuZero
@@ -19267,11 +19261,13 @@ cost O games on two of three initialisations; at $4 \times 4$ the search errs wh
 the network alone does not at 3 starts in 19,961, one of them with a phantom win, and
 holds at 100 simulations on every initialisation.
 
+\section{The catalogue: the AlphaGo family and Deep CFR}
+
 The entries below are these loops at the scale that made them famous: the network is
 a residual tower, the game is Go or chess, and the target is still the model's own
 later estimate.
 
-\subsubsection*{Deep CFR (\texttt{Bestiary/DeepCFR.lean})}
+\subsection*{Deep CFR (\texttt{Bestiary/DeepCFR.lean})}
 \emph{Zero} new primitives. Counterfactual regret minimisation with the two tables
 replaced by networks (Brown, Lerer, Gross and Sandholm 2019): an advantage network per
 player regresses the sampled counterfactual regrets of an information set and regret
@@ -19299,7 +19295,7 @@ def deepCfrLeducNet (r : Nat := 3) : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{AlphaGo (\texttt{Bestiary/AlphaGo.lean})}
+\subsection*{AlphaGo (\texttt{Bestiary/AlphaGo.lean})}
 \emph{Zero} new primitives. The original 2016 Lee Sedol system
 (Silver et al.\ 2016,
 \href{https://www.nature.com/articles/nature16961}{Nature}).
@@ -19335,7 +19331,7 @@ def alphaGoPolicyNet : NetSpec where
   ]
 \end{verbatim}
 
-\subsubsection*{AlphaZero (\texttt{Bestiary/AlphaZero.lean})}
+\subsection*{AlphaZero (\texttt{Bestiary/AlphaZero.lean})}
 \phantomsection\label{bestiary:alphagozero}
 \emph{Zero} new primitives --- \texttt{convBn} + \texttt{residualBlock}
 + \texttt{dense}. Two-headed (policy + value) network
@@ -19386,7 +19382,7 @@ al.\ 2018: a convolution to 73 move planes, flattened into the 4672
 logits, with no dense layer. The tiny fixture is 17 planes, 3 blocks, a
 \(9 \times 9\) board.
 
-\subsubsection*{MuZero (\texttt{Bestiary/MuZero.lean})}
+\subsection*{MuZero (\texttt{Bestiary/MuZero.lean})}
 \emph{Zero} new primitives --- three ResNet-style networks (representation,
 dynamics, prediction) reusing \texttt{convBn} + \texttt{residualBlock}
 + \texttt{dense}. The architectural novelty is the three-network
@@ -19461,8 +19457,6 @@ def muZeroGoPredictionValue : NetSpec where
   ]
 \end{verbatim}
 
-\addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
-\setbookmarksdepth{1}
 \appendix
 \part*{Appendices}
 \addcontentsline{toc}{part}{Appendices}
