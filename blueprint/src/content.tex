@@ -2415,7 +2415,7 @@ from 1,001 StableHLO operations under SGD to 2,293 under AdamW, because the firs
 enter and leave the signature and an \texttt{rsqrt} appears. Size is not
 the deciding reason, though. Both optimizers are proved \emph{faithful},
 each emitted update certified to be its own update law applied to the
-same proven gradient. Only SGD also gets a \emph{descent} theorem, that
+same proven gradient (Theorem~\ref{thm:optimizer_tails_faithful}). Only SGD also gets a \emph{descent} theorem, that
 the step decreases the loss --- and Adam cannot have one, because it is
 not monotone. That is a fact about Adam, the AMSGrad counterexample, and
 not a gap in the formalization. SGD is the optimizer here where both
@@ -5114,6 +5114,45 @@ prefix as its input; see
 \leandocref{Proofs.cifar8\_lastConv\_sgd\_descends}.
 \end{proof}
 
+\begin{theorem}[The optimizer tails are their update laws]
+  \label{thm:optimizer_tails_faithful}
+  \lean{Proofs.StableHLO.mom_pair_faithful, Proofs.StableHLO.adamW_triple_faithful,
+        Proofs.adam_denom_pos, Proofs.momParam_heavyBall_diff}
+  \leanok
+  \Prove{} the per-parameter update operations the renders of
+  \S\ref{sec:bn_cifar_example} emit denote the update laws of that
+  ablation, applied to whatever gradient node \(g\) they consume, with the
+  learning rate a runtime argument:
+  \begin{enumerate}
+    \item Nesterov momentum: the two emitted ops denote
+          \((\theta - \mathrm{lr}\,(g + \mu v'),\; v')\) with
+          \(v' = \mu v + g\). The heavy-ball step \(\theta - \mathrm{lr}\,v'\)
+          differs from it by exactly \(\mathrm{lr}\,\mu\,(v' - v)\) per
+          coordinate.
+    \item AdamW: the three emitted ops denote \((\theta', m', v')\) with
+          \(m' = \beta_1 m + (1 - \beta_1)\,g\),
+          \(v' = \beta_2 v + (1 - \beta_2)\,g^2\) and
+          \[
+            \theta' = \theta
+              - \mathrm{lr}\,\frac{m'/b_1}{\sqrt{v'/b_2} + \varepsilon}
+              - \mathrm{lr}\,\mathrm{wd}\,\theta ,
+          \]
+          the bias corrections \(b_1, b_2\) host-computed per step. The
+          denominator is positive for every \(\varepsilon > 0\).
+  \end{enumerate}
+  Plain SGD's single fused op is inside
+  Theorems~\ref{thm:cifar8_step_tie} and~\ref{thm:cifar8bn_step_tie}
+  already. Neither law here comes with a descent bound; the claim is that
+  the emitted arithmetic is the law, and nothing about where it goes.
+\end{theorem}
+
+\begin{proof}
+\leanok
+Both faithfulness statements are \texttt{rfl}: the denotation of the
+emitted ops is, term for term, the definition of the step; see
+\leandocref{Proofs.StableHLO.adamW\_triple\_faithful}.
+\end{proof}
+
 \section{Example: the eight-conv CNN on CIFAR-10}
 \label{sec:bn_cifar_example}
 
@@ -5473,7 +5512,8 @@ final per-parameter update op changes:
   \item \textbf{Momentum (Nesterov)}: $v \leftarrow \mu v + g$, then
     $\theta \leftarrow \theta - \mathrm{lr}\,(\mu v + g)$.
   \item \textbf{AdamW}: the bias-corrected first/second-moment step,
-    rendered op-for-op as \texttt{Proofs.adamWParam}.
+    rendered op-for-op as \texttt{Proofs.adamWParam}
+    (Theorem~\ref{thm:optimizer_tails_faithful}).
 \end{itemize}
 
 \noindent Each tail is emitted onto the same certified gradient
@@ -6402,6 +6442,41 @@ its shard, so its node is the global node's sum over that shard, scaled by
 \begin{proof}
 \leanok
 As for ResNet-34; see \leandocref{Proofs.ResNet50SyncTieB.r50\_net\_syncTiedB}.
+\end{proof}
+
+\begin{theorem}[The A3 optimizer is LAMB, and its clip is global]
+  \label{thm:lamb_clip_faithful}
+  \lean{Proofs.StableHLO.lamb_triple_faithful, Proofs.StableHLO.lamb_triple_faithful_committed,
+        Proofs.StableHLO.lamb_triple_faithful_excluded, Proofs.StableHLO.clipGrad_faithful,
+        Proofs.StableHLO.clipShared_faithful, Proofs.clipFactor_le_one, Proofs.clipFactor_accum,
+        Proofs.lambTrust_nonneg}
+  \leanok
+  \Prove{} in the RSB-A3 render of \S\ref{sec:r50_a3_vs_2018}:
+  \begin{enumerate}
+    \item the clip: the emitted scale op denotes
+          \(g \cdot \min\bigl(1,\; c / (\sqrt{s} + \varepsilon)\bigr)\), where
+          \(s\) is the sum of squares folded across every parameter, one
+          scalar shared by every leaf. The factor never exceeds one, and at
+          threshold \(kc\), \(k\varepsilon\) and \(k^2 s\) it equals the
+          factor at \(c\), \(\varepsilon\), \(s\), which is what lets the
+          clip run after \(k\)-fold accumulation;
+    \item LAMB: the four emitted ops denote
+          \((\theta - \mathrm{lr}\,\tau\,r,\; m',\; v')\), with \(m', v'\)
+          Adam's moments,
+          \(r = \frac{m'/b_1}{\sqrt{v'/b_2} + \varepsilon} + \mathrm{wd}\,\theta\)
+          the decayed direction, and \(\tau = \|\theta\| / \|r\|\) the trust
+          ratio, one when either norm is zero, computed from this
+          parameter's own norm and no other's. For the
+          \texttt{no\_weight\_decay} group the render passes a zero norm,
+          and the step is the plain Adam step \(\theta - \mathrm{lr}\,r\).
+  \end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\leanok
+The two triples are \texttt{rfl} against the definitions; the committed
+and excluded shapes rewrite the scalar child; see
+\leandocref{Proofs.StableHLO.lamb\_triple\_faithful}.
 \end{proof}
 
 \section{Example: ResNet-34 on Imagenette}
@@ -7475,8 +7550,10 @@ transcription would miss: BN $\gamma/\beta$ and biases excluded from weight
 decay, LAMB's gradient clip at \texttt{timm}'s default (after the all-reduce
 and the accumulation, at threshold $kC$,
 \texttt{Proofs.clipFactor\_accum}), and the \texttt{no\_weight\_decay} group
-left out of layer adaptation. The optimizer is tied to the reference at the
-update as well as the gradient, seven variants to $\sim\!10^{-7}$. Both
+left out of layer adaptation; all three are
+Theorem~\ref{thm:lamb_clip_faithful}. The optimizer is also tied to the
+reference numerically, at the update as well as the gradient, seven
+variants to $\sim\!10^{-7}$. Both
 paths run $625$ steps an epoch and leave $0.08\%$ of it unused, because
 $4 \nmid 2{,}502$. One thing differs from the reference: Mixup's $\lambda$
 is drawn host-side, once per $512$-image micro-batch where the reference
@@ -8368,7 +8445,6 @@ As for MobileNetV2; see \leandocref{Proofs.mnv4InputGradB\_eq\_mnv4B\_full\_vjp}
 \begin{theorem}[Emitted MobileNetV2 step is the certified step]
   \label{thm:mobilenetv2_step_tie}
   \lean{Proofs.MobileNetV2TieB.mnv2_net_tiedB, Proofs.MobileNetV2TieB.mnv2_lossCot_is_smoothedCE_grad,
-        Proofs.StableHLO.rmsPropTf_triple_faithful,
         Proofs.MobileNetV2TieB.mnv2NoExpCotIn_eq_vjp, Proofs.MobileNetV2TieB.mnv2ExpOnlyCotIn_eq_vjp,
         Proofs.MobileNetV2TieB.mnv2ResidCotIn_eq_vjp, Proofs.MobileNetV2TieB.mnv2StridedCotIn_eq_vjp,
         Proofs.MobileNetV2TieB.mnv2StemCotC_eq_vjp, Proofs.MobileNetV2TieB.mnv2HeadCotBlk_eq_vjp}
@@ -8392,9 +8468,8 @@ As for MobileNetV2; see \leandocref{Proofs.mnv4InputGradB\_eq\_mnv4B\_full\_vjp}
   run's, among them --- where the dense weight node reads the dropped
   activation and the cotangent handed down to the pooling passes through
   the mask. Instantiated at the label-smoothed cross-entropy for targets summing to one. The optimizer
-  that consumes the nodes is outside the tie; the three operations the
-  render emits for TF~1's RMSProp denote its step, the rate inside the
-  momentum buffer.
+  that consumes the nodes is outside the tie and is
+  Theorem~\ref{thm:rmsprop_faithful}.
 \end{theorem}
 
 \begin{proof}
@@ -8402,6 +8477,38 @@ As for MobileNetV2; see \leandocref{Proofs.mnv4InputGradB\_eq\_mnv4B\_full\_vjp}
 A fold over the 158 nodes, the chain's cotangents the certified backwards
 of the four block kinds, the stem and the head; see
 \leandocref{Proofs.MobileNetV2TieB.mnv2\_net\_tiedB}.
+\end{proof}
+
+\begin{theorem}[The RMSProp tail is TensorFlow's RMSProp]
+  \label{thm:rmsprop_faithful}
+  \lean{Proofs.StableHLO.rmsPropTf_triple_faithful, Proofs.StableHLO.rmsProp_triple_faithful,
+        Proofs.rms_denom_pos, Proofs.rmsBufNext_eps_placement_at_zero,
+        Proofs.rmsPropTfStep_theta_lr_change}
+  \leanok
+  \Prove{} the three operations the MobileNetV2 and EfficientNet renders
+  emit per parameter denote the TF~1 step \((\theta - b',\; b',\; s')\) with
+  \(s' = \rho s + (1 - \rho)\,g^2\) and
+  \(b' = \mu b + \mathrm{lr}\, g / \sqrt{s' + \varepsilon}\): the learning
+  rate inside the momentum buffer and \(\varepsilon\) inside the root. The
+  \texttt{rms} renders, with the rate applied on the way out, denote the
+  same step with \(b' = \mu b + g / \sqrt{s' + \varepsilon}\) and
+  \(\theta - \mathrm{lr}\,b'\). The root is positive for
+  \(\varepsilon > 0\) and a nonnegative mean-square, which the
+  initialization at one supplies from step zero. Two differences the
+  numeric ties are built to see: at a zero second moment the textbook
+  placement \(g / (\sqrt{s'} + \varepsilon)\) is the rendered
+  \(g / \sqrt{s' + \varepsilon}\) divided by \(\sqrt{\varepsilon}\), about
+  \(30\times\) larger at B0's \(\varepsilon = 10^{-3}\); and a buffer built
+  at rate \(\mathrm{lr}_0\) and stepped at \(\mathrm{lr}_1\) lands
+  \(\mu\, b\,(\mathrm{lr}_1 - \mathrm{lr}_0)\) from the rate-outside step,
+  per coordinate, so the two forms part at every step of a staircase.
+\end{theorem}
+
+\begin{proof}
+\leanok
+The TF triple is \texttt{rfl} once the baked unit rate is unfolded, and
+each of the two differences is one \texttt{ring}; see
+\leandocref{Proofs.StableHLO.rmsPropTf\_triple\_faithful}.
 \end{proof}
 
 \begin{theorem}[Every MobileNetV2 gradient node is the loss's derivative]
@@ -10689,7 +10796,7 @@ trains stably at the paper's $\mathrm{lr}=0.016$ with no gradient
 clipping and no lowered peak. TF~1's \texttt{ApplyRMSProp} also folds the
 learning rate into the momentum buffer rather than applying it on the way
 out, and the two forms part by a little at every step of the staircase;
-the trainer carries TF~1's.
+the trainer carries TF~1's (Theorem~\ref{thm:rmsprop_faithful}).
 
 \textbf{The EMA shadows the BatchNorm buffers as well as the weights.}
 The paper's weight EMA (decay $0.9999$) averages the parameters;
@@ -19732,10 +19839,11 @@ denotes the certified gradient step (a fold for the small nets, a step tie
 at full width), that a hand-written backward chain is the VJP it was
 written to be, that a data-parallel render's step is one device's step on
 the global batch, that a gradient node is the loss's derivative in its
-parameter, or that one SGD step decreases the loss. A theorem that
+parameter, that an emitted optimizer update is its update law, or that
+one SGD step decreases the loss. A theorem that
 only restates a counted one at fixed dimensions or over the committed
 spec is not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
-\textbf{9 witnesses} and \textbf{37 step certificates}. Even Chapter~1's
+\textbf{9 witnesses} and \textbf{40 step certificates}. Even Chapter~1's
 toolkit is used straight away by a proven model, so no chapter is pure
 scaffolding.
 
@@ -19758,8 +19866,9 @@ Chapter & Contracts & Witnesses & Steps & New primitive / result \\
 7 (EfficientNet)  & 5  & --- & 4 & swish, sigmoid, SE, whole-net at representative depth, \textbf{full B0} (16 \mbox{MBConv} blocks); step tied, sync-BN twin, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
 8 (ConvNeXt)      & 6  & --- & 3 & GELU (tanh and exact, one record), LayerNorm, layer-scale, the $4 \times 4$/s4 patchify conv, whole-net at representative depth, \textbf{full ConvNeXt-T} (18 blocks); step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
 9 (ViT)           & 6  & --- & 4 & MHSA, block, vector LayerNorm and its block, \textbf{every depth $k$} (ViT-Tiny is $k = 12$), \texttt{vitFull}; the emitted graph denotes the tower, step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
+4--6 (optimizers) & --- & --- & 3 & Nesterov momentum and AdamW (Chapter~\ref{chap:bn}), LAMB and the global-norm clip (Chapter~\ref{chap:residual}), RMSProp in TensorFlow's form (Chapter~\ref{chap:depthwise}): each emitted update denotes its update law on the gradient node it consumes \\
 \hline
-                  & \textbf{44} & \textbf{9} & \textbf{37} & total \textbf{90} \\
+                  & \textbf{44} & \textbf{9} & \textbf{40} & total \textbf{93} \\
 \hline
 \end{tabular}
 \end{table}
@@ -19781,7 +19890,8 @@ The Verified VJP Proofs suite proves the \textbf{44 VJP contracts and
 9 witnesses} of Table~\ref{tab:theorem_budget}, each
 asserting backward \(= \sum_j \pdiv f\,x\,i\,j \cdot dy_j\), with their
 restatements at fixed dimensions and over the committed specs; the
-\textbf{37 step certificates} that tie the emitted programs to them; on
+\textbf{40 step certificates} that tie the emitted programs to them, the
+optimizer updates among them; on
 top of the foundation \(\pdiv\) calculus and the
 differentiability/forward/witness machinery they rest on --- and
 \textbf{zero project axioms} anywhere in it. (The bestiary's 46 architecture families are \texttt{NetSpec} values the
