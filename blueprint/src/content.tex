@@ -431,11 +431,12 @@ Ch~1 + Ch~\ref{chap:mlp}--\ref{chap:bn}. CNN adds the Conv2d and MaxPool
 VJPs, proved from Chapter~1's rules, and BN adds the inverse-stddev
 smoothness chain.
 
-\textbf{Target: ResNet-34 (Ch~\ref{chap:residual}).} Ch~1--\ref{chap:residual},
-plus the matrix-level machinery of \S\ref{sec:matrix_machinery}, which
-this chapter is the first to cite. Adds the residual additive fan-in,
-global average pooling, the stride-2 convolution and the stem pool on top
-of CNN+BN. This is a great stopping point. ResNet-34 was state of the
+\textbf{Target: ResNet-34 (Ch~\ref{chap:residual}).} Ch~1--\ref{chap:residual}.
+Adds the residual additive fan-in, global average pooling, the stride-2
+convolution and the stem pool on top of CNN+BN. The one borrowed piece is
+the lemma that lifts a per-example backward over the rows of a batch,
+proved in \S\ref{sec:matrix_machinery} and taken as read here. This is a
+great stopping point. ResNet-34 was state of the
 art for years and still routinely gets 90\% on Imagenette, and its
 bigger brother ResNet-50 is the standard benchmark for
 production image classification. If your destination is a real
@@ -800,7 +801,12 @@ per example: one \(x\) in, one \(dy\) back. The loss is a mean over the
 batch, so the batch gradient is the sum of the per-example VJPs scaled by
 \(1/N\), and the compiled step of \S\ref{sec:mlir_training_step} does
 exactly that. The batch is an axis the per-example theorem is lifted
-over, not a new theorem. The one exception is BatchNorm, which normalizes
+over, not a new theorem. Two statements do the lifting for every
+certificate in the book, the matrix form of the VJP record and the lemma
+that applies a per-example backward to each row of a batch; they are
+proved in \S\ref{sec:matrix_machinery}, and because they are bookkeeping
+rather than content, the chapter maps of Figures~\ref{fig:spines}
+and~\ref{fig:chapter_map} leave them out. The one exception is BatchNorm, which normalizes
 each example by statistics of the whole batch, so the batch enters the
 function itself and the per-example theorem no longer describes it.
 Chapter~\ref{chap:bn} proves it twice, per example and at batch
@@ -930,13 +936,16 @@ deep end, here is the shape of what's coming, at the scale of chapters:
 stands on. A column follows one certificate's proof up through every statement it
 cites, transitively; the circle at a chapter is how many of that chapter's
 statements it reaches, the double circle marks the chapter that proves it,
-and every box is a link. All five reach this chapter's calculus,
-Chapter~\ref{chap:bn}'s normalisation lemmas and
-\S\ref{sec:matrix_machinery}'s matrix-level machinery, because every
-certificate is stated in the batched form and proved row by row.
+and every box is a link. All five reach this chapter's calculus and
+Chapter~\ref{chap:bn}'s normalisation lemmas. The three convolutional
+nets stop at their own chapter; the two LayerNorm nets go on to
+Chapter~\ref{chap:layernorm} and the matrix-level machinery of
+\S\ref{sec:matrix_machinery}, and their chains are twice the length.
 EfficientNet-B0 and ConvNeXt-T reach Chapter~\ref{chap:residual}'s
 residual; ViT-Tiny alone reaches Chapter~\ref{chap:attention}'s attention
-proofs, and its chain is the longest in the book by a factor of two.}
+proofs. Not counted are the two statements every certificate passes
+through to be stated for a batch rather than one example, the matrix form
+of the VJP record and its row-wise lifting (\S\ref{sec:matrix_machinery}).}
 \label{fig:spines}
 \end{figure}
 
@@ -972,7 +981,14 @@ applies to all of them.
 \begin{figure}[H]
 \centering
 \input{figures/depgraph/ch1}
-\caption{Dependency graph of this chapter's theorems. Each box is a statement in this section and a link to it; a dashed box is a dependency that lives elsewhere.}
+\caption{Dependency graph of this chapter's theorems. Each box is a
+statement in this section and a link to it; a dashed box is a dependency
+that lives elsewhere. Every chapter's figure is drawn this way: the
+chapter's own statements and the edges among them. A statement that every
+later chapter cites --- \(\pdiv\) and its rules, the VJP records,
+composition --- is not redrawn where it is used; the
+\texttt{\textbackslash uses} line under each statement has them all, and
+Figure~\ref{fig:chapter_map} is the same graph at the scale of chapters.}
 \label{fig:depgraph_tensor}
 \end{figure}
 
@@ -19806,12 +19822,14 @@ themselves.
 \caption{The same fact at the scale of chapters. Each box is a chapter and
 the number of statements it proves; an arrow from one box to another means
 the second's proofs cite the first's, and its width grows with the count,
-\depgraphCitations{} citations in all. The double-bordered box is cited by every
-chapter after it --- Chapter~\ref{chap:tensor}, \depgraphCitesTensor{} times, for \(\pdiv\)
+\depgraphCitations{} citations in all, the two batch-lifting statements of
+\S\ref{sec:matrix_machinery} set aside as in Figure~\ref{fig:spines}. The
+double-bordered box is cited by every chapter after it ---
+Chapter~\ref{chap:tensor}, \depgraphCitesTensor{} times, for \(\pdiv\)
 and its rules --- so its arrows are left out. The matrix-level machinery of
 \S\ref{sec:matrix_machinery} is proved in Chapter~\ref{chap:attention}
-and sits beside Chapter~\ref{chap:bn}, one row above Chapter~\ref{chap:residual}, where it is
-first used; the dashed arrow is the one statement proved
+and drawn as its own box, one row above Chapter~\ref{chap:layernorm},
+where it is first used; the dashed arrow is the one statement proved
 later than it is used, softmax's derivative. Every box is a link.}
 \label{fig:chapter_map}
 \end{figure}

@@ -191,8 +191,14 @@ def figure(chapters, nums, nodes, edges, unit, allunits, rankdir='TB', textwidth
 
 
 # The chapter-1 map: the ViT chapter's matrix-level machinery is its own box, because
-# chapters 5-8 stand on it and the box belongs where it is used, not where it is proved.
+# chapters 8 and 9 stand on it and the box belongs where it is used, not where it is proved.
 SPLIT = {'Matrix-level machinery': 'sec:matrix_machinery'}
+# The two statements that restate a per-example backward for a batch (the matrix VJP
+# record and its row-wise lifting): every whole-network certificate passes through them,
+# so drawn they would make the machinery look like a second foundation. The two book-scale
+# figures (spines, book) leave their edges out; the per-chapter figures keep them.
+ROWLIFT = {'def:hasvjpmat', 'thm:rowwiseHasVJPMat'}
+ROWS = [[1], [2], [3], [4], [5, 6], [4.5], [7, 8], [9]]   # the chapter-map rows, by chapter number; 4.5 is the machinery box
 EVERY = 6     # a chapter cited by this many later units is drawn double-bordered, its arrows omitted
 
 def book(chapters, nums, nodes, edges, tex, textwidth_pt=460.0, textheight_pt=380.0):
@@ -217,12 +223,12 @@ def book(chapters, nums, nodes, edges, tex, textwidth_pt=460.0, textheight_pt=38
     us = sorted(size, key=order)
     name = {u: 'u%d' % i for i, u in enumerate(us)}
     # Rows follow the reading order, and a row holds two units only when neither cites
-    # the other (chapter 4 and the machinery box, ResNet-34 and MobileNetV2, EfficientNet
-    # and ConvNeXt); the machinery box sits beside chapter 4, one row above chapter 5, where
-    # it is first used. Chapters 2, 3 and 4 each cite the one before, so they stack as a
-    # spine down the left. Dot places within a row and routes the arrows; the rows
-    # themselves are pinned.
-    rows = [[1], [2], [3], [4, 4.5], [5, 6], [7, 8], [9]]
+    # the other (ResNet-34 and MobileNetV2, EfficientNet and ConvNeXt); the machinery box
+    # has a row of its own, one above chapter 8, where it is first used once the row lifts
+    # are set aside (beside chapter 5 and 6 it squeezed the figure to a 4.9 pt font).
+    # Chapters 2, 3 and 4 each cite the one before, so they stack as a spine down the
+    # middle. Dot places within a row and routes the arrows; the rows themselves are pinned.
+    rows = ROWS
     G = pgv.AGraph(directed=True, strict=False, rankdir='TB', ranksep=0.5, nodesep=0.25, splines='true')
     G.node_attr.update(fontsize=1)
     def box(label, fs, n=1): return dict(fixedsize='true', width=(len(label) * 0.62 * fs + 10) / 72.0, height=(fs * 1.25 * n + 5) / 72.0)
@@ -346,8 +352,9 @@ if __name__ == '__main__':
     chapters, nums, nodes, edges = parse(open('blueprint/src/content.tex').read())
     import os; os.makedirs(outdir, exist_ok=True)
     tex = open('blueprint/src/content.tex').read()
-    tikz, w, h, font, count, size, cited = book(chapters, nums, nodes, edges, tex)
-    stikz, sw, sh, sfont, spine_info = spines(chapters, nums, nodes, edges, tex)
+    bedges = [e for e in edges if e[0] not in ROWLIFT and e[1] not in ROWLIFT]
+    tikz, w, h, font, count, size, cited = book(chapters, nums, nodes, bedges, tex)
+    stikz, sw, sh, sfont, spine_info = spines(chapters, nums, nodes, bedges, tex)
     open('%s/spines.tex' % outdir, 'w').write('\\begin{center}\n' + stikz + '\n\\end{center}\n')
     print('%-26s the chapter nets\' certificates and the chapters each stands on  %5.0f x %5.0f pt  font %.1f  %s' % ('spines', sw, sh, sfont, spine_info))
     # The caption's numbers come from here, not by hand: \depgraphCitations and one
