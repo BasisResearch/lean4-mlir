@@ -6171,6 +6171,22 @@ Theorem~\ref{thm:hasGradAt_comp} per stage; see
 \leandocref{Proofs.ResNet34TieB.r34\_net\_lossGrad}.
 \end{proof}
 
+\medskip\noindent\textbf{Twins at the stem pool.} The stem's
+$3 \times 3$/s2 pool is certified together with the ReLU before it
+(\texttt{stemReluPoolLayer}), so an all-zero window is admitted: every
+pre-activation there is negative and the pair is locally constant. What
+the per-example condition (\texttt{StemPoolSmoothAt}) still excludes is a
+window whose positive maximum sits at two cells. Real batches have such
+windows, from two cells reading identical input patches in a flat image
+region. There the network has no derivative in the image, so an
+input-gradient statement cannot hold; but the tied cells are the same
+function of the stem's weights, so the loss gradients in the parameters
+allow them (\texttt{StemPoolTwinAt}), and routing a tied window's
+cotangent to either twin gives the same parameter gradient
+(\texttt{r34Stem\_select\_grads\_eq}). That is the ``up to twins'' in
+the hypothesis above, and why the theorem is instantiated at any routing
+to a maximal cell.
+
 \begin{theorem}[Emitted ResNet-50 step is the certified step]
   \label{thm:resnet50_step_tie}
   \lean{Proofs.ResNet50TieB.r50_net_tiedB, Proofs.ResNet50TieB.r50_lossCot_is_smoothedCE_grad,
@@ -19657,7 +19673,7 @@ runtime, different kernels --- that makes agreement between them evidence of
 anything. Some oracle binaries are IREE-only for that reason and refuse to start
 on the XLA backend. So a training run wants one lowerer and a full verification
 run wants both, and \S\ref{sec:jax_pipeline} is where the second one earns its
-place, including the asymmetry it leaves behind.
+place.
 
 \medskip\noindent Selecting it is \texttt{LEAN\_MLIR\_LOWERER=iree}, and every
 Track 3 tier has an \texttt{-iree} twin that does so (\texttt{lake run}
@@ -19733,10 +19749,9 @@ just the elaborator, accepts them with no project axioms.
 \subsection{The axiom audit}
 
 The Verified VJP Proofs suite proves the \textbf{44 VJP contracts and
-9 witnesses} of the table in \emph{How this book is organized}, their
-restatements at fixed dimensions and over the committed specs, and the
-two smooth-point forms that global theorems superseded, each asserting
-backward \(= \sum_j \pdiv f\,x\,i\,j \cdot dy_j\); the
+9 witnesses} of the table in \emph{How this book is organized}, each
+asserting backward \(= \sum_j \pdiv f\,x\,i\,j \cdot dy_j\), with their
+restatements at fixed dimensions and over the committed specs; the
 \textbf{37 step certificates} that tie the emitted programs to them; on
 top of the foundation \(\pdiv\) calculus and the
 differentiability/forward/witness machinery they rest on --- and
@@ -19750,8 +19765,7 @@ finite-precision results (\S\ref{sec:precision}) --- and every one
 closes under the same three core axioms: \(\texttt{\#print axioms
 vitFullHasVJP}\) shows only Lean core (\texttt{propext},
 \texttt{Classical.choice}, \texttt{Quot.sound}), nothing project-level
-beneath those. That file is the live count, quoted here deliberately as
-a property rather than a number. Nothing is axiomatized to get past an
+beneath those. That file is the live count. Nothing is axiomatized to get past an
 operator with a corner: ReLU, ReLU6 and max-pool are
 \texttt{noncomputable def}s over the canonical \(\fderiv\)-derived
 witness, and the smooth-point caveats in the chapters are the price.
@@ -19815,15 +19829,10 @@ itself. With the four that \texttt{ChallengeArch.lean} already holds,
 these are exactly the declarations \texttt{formalization.yaml} puts
 forward, so the coverage is checkable by diffing two lists.
 
-This is what closes the gap between ``the elaborator accepted my
-proofs'' (which \texttt{lake build} confirms) and ``the kernel
-agrees, audited from a separate process'' (which comparator confirms).
-The 110 are not the whole proof suite --- \texttt{tests/AuditAxioms.lean}
-prints the axiom closure of every headline declaration, and the same allowlist
-applies to all of them, because every theorem in the project closes the
-same way. What the 110 add is a second, non-elaborator opinion, and they
-include every declaration \texttt{formalization.yaml} puts forward as a
-result, together with the calculus floor those rest on.
+The 110 are not the whole proof suite: the axiom audit covers every
+headline declaration under the same allowlist. What the 110 add is a second,
+non-elaborator opinion, on every result \texttt{formalization.yaml}
+puts forward together with the calculus floor those rest on.
 
 \section{By construction: the code is the math}
 
@@ -19841,8 +19850,9 @@ to the emitted string is a code comment. The ``MLIR: \emph{operator}''
 section in each chapter closes that gap for one operator, and this section
 describes the machinery they share.
 
-\medskip\noindent\textbf{Three pieces.} The link from a proof to the GPU is
-built from three components:
+\medskip\noindent\textbf{Two pieces.} The link from a proof to the GPU is
+built from two components, and what they leave open is the empirical
+layer's (\S\ref{sec:cross_checked}):
 
 \begin{itemize}
   \item \textbf{Denoted IR and a bridge theorem.} The emitted backward (and
@@ -19866,19 +19876,7 @@ built from three components:
     text (\texttt{emitTok}) is trusted, and checked by parsing every
     committed artifact as StableHLO
     (\texttt{scripts/gates/parse\_verified\_mlir.py}) and by the trainers
-    executing them. The earlier hand-written printer, \texttt{IRPrint.lean},
-    walked a mirror of \texttt{Back} with names in place of values, and the
-    match between mirror and bridged graph was a reading of two
-    definitions; it is kept as a demonstration that nothing imports, and
-    the per-operator graphs the execution oracle runs are its.
-  \item \textbf{An execution oracle.} A Python harness
-    (\texttt{LeanMlir/Proofs/check\_ir\_codegen.py}) regenerates the
-    \texttt{.mlir} from that printer, compiles it with IREE, runs it, and
-    diffs the result against an independent NumPy reference. The CPU run
-    (\texttt{llvm-cpu}) is the correctness gate, with one caveat
-    \S\ref{sec:exec_oracle} records; the GPU leg is ROCm-only
-    and best-effort, and where it has run (a Radeon RX 7900 XTX, gfx1100)
-    the proof-backed graph matched the reference to roughly $10^{-6}$.
+    executing them.
 \end{itemize}
 
 \medskip\noindent\textbf{Proven versus trusted.} The resulting claim is exact
@@ -19911,16 +19909,14 @@ the unproven surface here is one printer's per-token text, tested end to end, pl
 the hand-written lines each render declares in its own comments (the
 report-only \texttt{\%loss}, for one, and ConvNeXt's GAP-backward block).
 
-\medskip\noindent\textbf{Why it is tractable.} The reason a deep ResNet or a
-transformer block comes under this scheme as a focused engineering build,
-rather than a research project, is the order things were proved in. The VJP
-library is per-operator and generic, proved once over abstract
-dimensions and before any code generation existed, and the whole-network VJPs
-compose those per-operator lemmas through the chain rule. Code generation
-therefore carries no new proof obligation: every architecture's
-operators were proven once, and the emitter reuses them, adding only the
-printer and the numerical check. Build the mathematical foundation
-per-operator and generic, and the code generation becomes mechanical.
+\medskip\noindent\textbf{Why it is tractable.} A deep ResNet or a
+transformer block comes under this scheme as an engineering build rather
+than a research project because the VJP library is per-operator and
+generic: each operator is proved once over abstract dimensions, and the
+whole-network VJPs compose those lemmas through the chain rule. Code
+generation therefore carries no new proof obligation. Every
+architecture's operators are proven once, the emitter reuses them, and
+what it adds is the printer and the numerical check.
 
 \medskip\noindent\textbf{From operators to whole training steps.} The
 per-operator bridge is the demonstration, and the verified trainers run the
@@ -19972,27 +19968,23 @@ not, because an all-zero
 post-ReLU window attains its maximum at every cell, and the whole-net theorems
 carry the pooling clause as a hypothesis at the activations. The ResNets'
 $3 \times 3$/s2 stem pool is certified together with the ReLU before it
-(\texttt{stemReluPoolLayer}), which admits the all-zero windows too: there
-every pre-activation is negative, so the pair is locally constant. What the
-stem still excludes is a window whose positive maximum sits at two positions
-(\texttt{StemPoolSmoothAt}). Real batches have such windows, from two cells
-reading identical input patches in a flat image region; there the network has
-no derivative in the image, so an input-gradient statement cannot hold, but the
-tied cells are the same function of the stem's weights and the loss gradients
-in the parameters allow them (\texttt{StemPoolTwinAt}); routing a tied
-window's cotangent to either twin gives the same parameter gradient
-(\texttt{r34Stem\_select\_grads\_eq}). That set is the
-boundary the smooth-point caveats in the chapter sections refer to.
+(\texttt{stemReluPoolLayer}), which admits the all-zero windows too, and
+the windows it still excludes, a positive maximum at two cells, are the
+twins Chapter~\ref{chap:residual} handles beside
+Theorem~\ref{thm:resnet34_loss_grad}. That set is the boundary the
+smooth-point caveats in the chapter sections refer to.
 
 \subsection{Inside a bridge theorem}
 \label{sec:inside_bridge}
 
 The ``denoted IR and a bridge theorem'' above is worth seeing concretely,
 because it is the step that does the real work, the place where a string of
-emitted code becomes a proposition Lean can check. Take the backward pass. It
-is represented not as text but as a value of an inductive type, a small
-abstract syntax tree whose constructors are exactly the StableHLO operations a
-backward uses:
+emitted code becomes a proposition Lean can check. Take the backward pass,
+in its per-operator form. It is represented not as text but as a value of
+an inductive type, a small abstract syntax tree whose constructors are
+exactly the StableHLO operations a backward uses (\texttt{Back}; the
+whole-step graphs are \texttt{SHlo}, the same idea with every operation a
+train step needs):
 
 \begin{verbatim}
 inductive Back (inp : Nat) : Nat -> Type where
@@ -20074,18 +20066,19 @@ theorems compose into a whole-network VJP: the MLP's
 \texttt{mlp\_whole\_bridge} is four of these substitutions, closed by
 unfolding and \texttt{rfl}.
 
-\medskip\noindent\textbf{Why the datatype is the point.} The \texttt{Back}
-value is the pivot between two arrows. A printer walks it with names in
-place of its values and emits one
-\texttt{stablehlo} operation per constructor (\texttt{dotGeneral} $\mapsto$
-\texttt{stablehlo.dot\_general}, and \texttt{selectPos} $\mapsto$
-\texttt{compare GT 0} plus \texttt{select}), and that arrow is the trusted
-one; the chapter listings are committed renders built this way at batch
-width. The denotation interprets
-the same value into the proofs' \texttt{Vec} type, and the bridge proves
-the result equals the derivative, so that arrow is machine-checked. Because both arrows start from
-one concrete datatype rather than from a string, ``the emitted code computes
-the proven gradient'' is a theorem about a value, not a hope about a comment.
+\medskip\noindent\textbf{Why the datatype is the point.} The graph value
+is the pivot between two arrows. A printer walks it with names in place of
+its values, one \texttt{stablehlo} operation per node
+(\texttt{dotGeneral} $\mapsto$ \texttt{stablehlo.dot\_\allowbreak general}, and
+\texttt{selectPos} $\mapsto$ \texttt{compare GT 0} plus \texttt{select}),
+and that arrow is the trusted one; for the whole-step graphs the printer
+is \texttt{StableHLO.Pretty} over \texttt{SHlo}, and the chapter listings
+are its committed renders at batch width. The denotation interprets the
+same value into the proofs' \texttt{Vec} type, and the bridge proves the
+result equals the derivative, so that arrow is machine-checked. Because
+both arrows start from one concrete datatype rather than from a string,
+``the emitted code computes the proven gradient'' is a theorem about a
+value, not a hope about a comment.
 
 \section{Cross-checked}
 \label{sec:cross_checked}
@@ -20095,14 +20088,14 @@ IEEE specification, so the last stretch from proven math to executed
 kernel is covered by independent oracles that must agree before the
 hardware is believed. Each watches a different failure mode, and the
 first thing to know about any of them is which Lean text it runs, because
-three generators produce StableHLO in this project.
+two generators produce StableHLO in this project.
 \texttt{StableHLO.Pretty} prints the committed \texttt{verified\_mlir/}
 artifacts the trainers load and the theorems are about.
-\texttt{IRPrint.lean} is the legacy per-operator printer, trusted and
-imported by nothing. \texttt{MlirCodegen} is the reference path, which
-lowers a \texttt{NetSpec} to MLIR at run time, hand-written and
-unverified. Table~\ref{tab:oracles} is the roster, and only one row runs
-the first.
+\texttt{MlirCodegen} is the reference path, which lowers a
+\texttt{NetSpec} to MLIR at run time, hand-written and unverified.
+Table~\ref{tab:oracles} is the roster; the verified-path oracle is the
+row that runs the proven text, and the two \texttt{MlirCodegen} rows
+check the reference path against autodiff.
 
 \begin{table}[H]
 \centering
@@ -20113,10 +20106,9 @@ the first.
 \textbf{Oracle} & \textbf{Lean side} & \textbf{Against} & \textbf{A disagreement means} \\[2pt]
 \hline \\[-6pt]
 \cellleft Finite differences, \texttt{check\_\allowbreak jacobians.py} (CI) & \cellleft the Jacobian formulas transcribed to NumPy, float64 & \cellleft centred differences & \cellleft a closed form that is not its forward's derivative \\[4pt]
-\cellleft IREE vs NumPy, \texttt{check\_ir\_\allowbreak codegen.py} & \cellleft \texttt{IRPrint} graphs through IREE \texttt{llvm-cpu} & \cellleft a NumPy reference & \cellleft a printer or a lowerer mis-emitting one operator \\[4pt]
+\cellleft Verified-path oracle, \texttt{run\_\allowbreak verified.sh} (CI) & \cellleft the committed linear, MLP and CNN train steps, through the book's trainers on IREE \texttt{llvm-cpu} & \cellleft JAX, one SGD step, update by update & \cellleft the proven text, lowered and executed, is not the step JAX takes \\[4pt]
 \cellleft Cross-backend traces, \texttt{historical/traces/} & \cellleft \texttt{MlirCodegen} through IREE, ROCm and CUDA & \cellleft JAX on XLA, CPU and CUDA & \cellleft a hand-written backward against autodiff, across two vendors \\[4pt]
 \cellleft VJP oracle, 14 cases, \texttt{tests/\allowbreak vjp\_oracle/\allowbreak run.sh} (CI) & \cellleft \texttt{MlirCodegen} through IREE \texttt{llvm-cpu} & \cellleft JAX \texttt{value\_and\_grad}, one step & \cellleft a hand-written backward against autodiff, per layer family \\[4pt]
-\cellleft Verified-path oracle, \texttt{run\_\allowbreak verified.sh} (CI) & \cellleft the committed linear, MLP and CNN train steps, through the book's trainers on IREE \texttt{llvm-cpu} & \cellleft JAX, one SGD step, update by update & \cellleft the proven text, lowered and executed, is not the step JAX takes \\[4pt]
 \cellleft Platform suite, \texttt{scripts/\allowbreak platform/\allowbreak check.sh} & \cellleft the committed artifacts through the box's plugin & \cellleft XLA:CPU goldens & \cellleft a plugin or a card disagreeing with XLA on a CPU \\[4pt]
 \cellleft Margin probe, \texttt{margin\_probe.py} & \cellleft a NumPy f32 twin of the MNIST MLP & \cellleft its f64 twin & \cellleft a run outside the float theorems' hypotheses \\
 \end{tabular}
@@ -20127,10 +20119,9 @@ the two sides do not share a compiler.} The Lean side of those oracles
 lowers through IREE, and the reference pipeline is JAX, which lowers through XLA.
 Different code generation, different runtime, different kernels, and different
 authors. Agreement between them is evidence precisely because a bug would have
-to occur twice, in the same direction, in two unrelated compilers. This is
-IREE's real job in the project, and it is not the one the runtime-size
-comparison in Appendix~\ref{app:getting_started} might suggest. IREE is not
-kept because it is small. It is kept because it is not XLA.
+to occur twice, in the same direction, in two unrelated compilers; that is
+what the second lowerer is for (Appendix~\ref{app:getting_started},
+\emph{The second lowerer}).
 
 \subsection{Finite-difference gradient checks}
 
@@ -20176,100 +20167,62 @@ what the formula says in Python, and it struggles at
 non-smooth points where the limit definition breaks down. For
 those gaps and for end-to-end pipeline verification, the next oracle takes over.
 
-\subsection{The JAX parallel pipeline}
+\subsection{Against JAX}
 \label{sec:jax_pipeline}
 
-A separate Lean \(\to\) JAX \(\to\) XLA pipeline
-(\texttt{jax/Jax/Codegen.lean}, \(\sim 4400\) lines) produces an
-idiomatic JAX training script from the same \texttt{NetSpec} the
-reference Lean \(\to\) StableHLO MLIR pipeline consumes. XLA is the compiler
-JAX uses to produce GPU code, the same backend that powers
-TensorFlow and other frameworks. For this comparison the Lean side
-is lowered by IREE, so the two stacks are independent end to end,
-with different code generation, different runtime and different
-kernels, and that is why agreement between them is a meaningful
-cross-check. Running both from identical initial parameters on
-identical batches gives us a pair of trace files, one per stack,
-that should agree modulo float32 rounding if both pipelines compute
-the same math.
+The judge for the next three rows is a second trainer. A Lean \(\to\) JAX
+generator (\texttt{jax/Jax/Codegen.lean}) produces an idiomatic JAX
+training script from the same \texttt{NetSpec} the reference Lean
+\(\to\) StableHLO pipeline consumes; JAX differentiates it with
+\texttt{value\_and\_grad} and XLA compiles it. It is the reference every
+ImageNet pair in Chapters~\ref{chap:residual}--\ref{chap:attention} trains
+against, and in these rows the Lean side is lowered through IREE so that
+the two stacks share nothing.
 
-Step 1 is forward-only, and it is tight: for the MNIST MLP the step-1
-losses agree to \(2 \times 10^{-7}\), float32 ULP, between JAX on CPU
-and IREE on ROCm, and IREE's own output is \textbf{bit-identical across
-AMD and NVIDIA hardware} at step 1. Step 2 is the first loss that
-depends on a backward pass, and it agrees to \(2.5 \times 10^{-5}\)
-against JAX on CPU and \(1.3 \times 10^{-4}\) against JAX on CUDA. For
-the MNIST CNN with batch norm, step 2 agrees to \(1.4 \times 10^{-4}\)
-against JAX on CUDA and only \(7 \times 10^{-3}\) against JAX on CPU,
-looser because variance reductions over \(\sim 100\)k-element tensors
-amplify cross-compiler reduction-tree differences; JAX on CPU and JAX on
-CUDA disagree with each other by the same \(7 \times 10^{-3}\) at that
-step, so the gap is the reduction order's, not the backward's. Both
-pipelines do correct math, they just sum it in different orders. Full
-results are committed to the repo as reproducible JSON-Lines traces, in
-\texttt{historical/traces/CROSS\_BACKEND\_RESULTS.md}.
-
-\medskip\noindent\textbf{Two asymmetries, stated plainly.} The trainers in
-this book default to XLA, while the oracles above lower the Lean side through
-IREE. That is deliberate, because an oracle that shared a compiler with its own
-reference would not be checking the compiler at all. The second asymmetry is
-the one to hold on to, and Table~\ref{tab:oracles} already shows it: the Lean side of those oracles is not the proven text.
-The cross-backend traces and the per-operator cases below lower each small net
-at run time through the reference code generator (\texttt{MlirCodegen}, the
-unverified path), so what they check is one hand-written backward against
-another, with autodiff as the judge. The oracle that runs the proven text is
-\texttt{tests/vjp\_oracle/run\_verified.sh}: one SGD step of the committed
-\texttt{linear}, \texttt{mlp} and \texttt{cnn} train steps --- the artifacts
-Theorems~\ref{thm:linear_fold}, \ref{thm:mlp_fold} and~\ref{thm:cnn_fold} are
-about --- through the book's own trainers, against one step of the same nets
+\medskip\noindent\textbf{The verified-path oracle} is the one row that
+runs the proven text. \texttt{tests/vjp\_oracle/run\_verified.sh} takes
+one SGD step of the committed \texttt{linear}, \texttt{mlp} and
+\texttt{cnn} train steps --- the artifacts Theorems~\ref{thm:linear_fold},
+\ref{thm:mlp_fold} and~\ref{thm:cnn_fold} are about --- through the book's
+own trainers on IREE \texttt{llvm-cpu}, against one step of the same nets
 in JAX from the same initial weights on the same batch, compared parameter
-update by parameter update, at a tolerance of $10^{-4}$. It runs beside the
-per-operator cases in the IREE workflow, and its first run (2026-10-19) put
-the worst relative difference over every tensor at $1.3\times10^{-6}$ for
-the linear and MLP steps and $7.4\times10^{-6}$ for the CNN's, float32
-reduction-order noise. Every other layer is unaffected, since the proofs, the
-bridge theorems and the rounding budgets are statements about the graph rather
-than about any compiler, and both lowerers consume the same StableHLO text.
+update by parameter update at a tolerance of $10^{-4}$. The measured
+worst relative difference over every tensor is $1.3\times10^{-6}$ for the
+linear and MLP steps and $7.4\times10^{-6}$ for the CNN's, float32
+reduction-order noise. The deep nets are not in it, and need not be:
+their proofs, bridge theorems and rounding budgets are statements about
+the graph rather than about any compiler, and both lowerers consume the
+same StableHLO text.
 
-Layered on top of the end-to-end trace diff is a per-operator
-differential test in \texttt{tests/vjp\_oracle/}, which compares
-each hand-derived backward pass of the reference code generator against
-JAX's \texttt{value\_and\_grad} autodiff on a minimal one-step training
-run. Fourteen cases each agree with JAX autodiff on the step-2 loss, to
-between \(2 \times 10^{-7}\) and \(10^{-4}\), the wider ones where a
-max-pool's argmax tie-breaks on MNIST's zero pixels or a BatchNorm variance's
-reduction order differ between the compilers: dense,
-dense+ReLU, conv, conv+BN, conv+max-pool, residual, depthwise, global
-average pool, attention, and the SE-gated MBConv, bottleneck, MBConv-V3,
-fused-MBConv and UIB blocks. Any future hand-derived VJP added to
-the Lean proof base can be validated by a one-step comparison
-against JAX, catching algebraic errors that FD would miss (sign
-flips, wrong contraction axis, swapped indices).
+\medskip\noindent\textbf{The two reference-path rows} check the
+hand-written backward of \texttt{MlirCodegen} against autodiff, not the
+proven text. The per-operator oracle (\texttt{tests/vjp\_oracle/}, in CI)
+runs fourteen one-step cases --- dense, dense+ReLU, conv, conv+BN,
+conv+max-pool, residual, depthwise, global average pool, attention, and
+the SE-gated MBConv, bottleneck, MBConv-V3, fused-MBConv and UIB blocks
+--- and each agrees with JAX on the step-2 loss to between
+\(2 \times 10^{-7}\) and \(10^{-4}\), the wider ones where a max-pool's
+argmax tie-breaks on MNIST's zero pixels or a BatchNorm variance's
+reduction order differs between the compilers. The cross-backend traces
+(\texttt{historical/traces/}) run the MNIST MLP and CNN on IREE over ROCm
+and CUDA against JAX on CPU and CUDA: step-1 losses agree to float32 ULP
+and IREE's own output is bit-identical across AMD and NVIDIA; step 2, the
+first loss through a backward, agrees to about \(10^{-4}\), and the CNN's
+\(7 \times 10^{-3}\) against JAX on CPU is the reduction order of a
+variance over \(\sim 100\)k elements, since JAX on CPU and JAX on CUDA
+disagree with each other by the same amount at that step. The traces are
+committed as JSON-Lines, with
+\texttt{historical/traces/CROSS\_BACKEND\_RESULTS.md} the summary.
 
-\subsection{The execution oracle and the margin probe}
-\label{sec:exec_oracle}
-
-Two further watchers close the loop. The \textbf{IREE-versus-NumPy
-oracle} (\S\ref{sec:verified_codegen}) regenerates the per-operator and
-small-network graphs (linear, MLP, CNN, convolution, max-pool, BatchNorm,
-the loss cotangent and a ConvNeXt block) from the legacy per-operator
-printer (\texttt{IRPrint.lean}), compiles them
-for CPU, and diffs the result against an independent NumPy reference,
-which is the one check that reaches past the proofs to IREE's lowering
-itself. Its CPU target is \texttt{llvm-cpu}, and that target has a fault
-worth keeping in view: IREE 3.11's \texttt{llvm-cpu} miscompiles the
-\texttt{select\_and\_scatter} of the batched CIFAR-8 train steps, so the
-CPU gradient gate for those nets
-(\texttt{tests/TestCifar8BbnGradCheck.lean}) runs on IREE's
-\texttt{vmvx} backend instead, and an \texttt{llvm-cpu} mismatch on a
-pooled net means check the lowerer before the render. The GPU runs use
-XLA and are unaffected. And the
-\textbf{margin probe} (\texttt{scripts/certs/\allowbreak margin\_probe.py})
-trains a NumPy twin of the MNIST MLP in coupled \texttt{f32}/\texttt{f64}
-and checks that the run stays inside the float theorems' hypotheses,
-with no flipped ReLU mask and no logit drift past \(\delta\)
-(\S\ref{sec:precision}). It is what keeps the conditional theorems
-honest about training as it happens rather than hypothetical nets.
+\medskip\noindent One fault in the CPU target is worth keeping in view.
+IREE 3.11's \texttt{llvm-cpu} miscompiles the
+\texttt{select\_\allowbreak and\_\allowbreak scatter} of the batched
+CIFAR-8 train steps. The CPU gradient gate for those nets runs on IREE's
+\texttt{vmvx} backend instead
+(\texttt{tests/\allowbreak TestCifar8BbnGradCheck.lean}), and an
+\texttt{llvm-cpu} mismatch on a pooled net means check the lowerer before
+the render. The GPU runs use
+XLA and are unaffected.
 
 \bigskip
 
@@ -20277,7 +20230,8 @@ Each kind fails differently, and overlaying them is the guarantee. A
 deductive proof is blind to a miscompile, an empirical diff is blind to a
 corner it never samples, and a faithful bridge is blind to a wrong formula it
 renders perfectly. Verified code generation straddles two
-of the kinds: its bridge is structural, its oracle empirical. The
+of the kinds: its bridge is structural, its printer's text checked
+empirically. The
 finite-precision theorem layer, next, straddles the other pair: its
 budgets are deductive, its interface constants (\(u\), \(e_{\exp}\),
 \(\delta\)) empirical.
@@ -20288,9 +20242,9 @@ budgets are deductive, its interface constants (\(u\), \(e_{\exp}\),
 Every theorem in this book is over exact reals, and the GPU computes in
 finite precision. The empirical layer closes that gap to float32
 precision, where the oracles agree. A theorem layer closes part of it
-exactly, and it has two halves of different reach. Keeping them apart is
-the honest part --- as is keeping the layer's generality apart from its
-usefulness, which \S\ref{par:precision_reach} below returns to.
+exactly, and it has two halves of different reach; keeping them apart
+matters, as does keeping the layer's generality apart from its usefulness
+(\S\ref{par:precision_reach}).
 The \emph{closeness} half
 (\(|\,\text{float op} - \text{real op}\,| \le\) budget) is
 per-operator: the files under \texttt{LeanMlir/Proofs/Float/} budget
@@ -20299,8 +20253,7 @@ and mixed-precision), max-pool, global average pool, the residual sum,
 BatchNorm, and the softmax cross-entropy head. GELU, LayerNorm, swish,
 sigmoid, squeeze-and-excitation and attention have no float budget, so
 the EfficientNet, ConvNeXt and ViT chapters are covered only through the
-operators they share with the rest. The certified backward ties say each
-net's hand-written gradient chain is the certified one. The
+operators they share with the rest. The
 \emph{descent} half (a rounded step provably decreases the loss)
 closes only for the shallow nets
 (\texttt{LeanMlir/Proofs/Training/SgdDescent/}, one file each for the
@@ -20382,8 +20335,7 @@ backend here lowers, and the one committed fp8 artifact,
 \texttt{cifar8b\_fp8\_adam\_train\_step.mlir}, is a lowering probe with no
 fold of its own.
 
-\medskip\noindent So the honest summary is three sentences, not one. The
-theorems are over \(\mathbb{R}\). The budgets are over an arbitrary
+\medskip\noindent In three sentences, then. The theorems are over \(\mathbb{R}\). The budgets are over an arbitrary
 rounding model, so binary32, bf16-mixed and fp8-E4M3 are instances rather
 than separate theories. And the numbers those budgets produce are worth
 having at fp32 accumulate, worth having at a low-precision leaf over an
@@ -20432,7 +20384,7 @@ CIFAR-8's last conv, proved as an instance of the CNN lemma at its
 frozen earlier features, and that framing is exactly why it stops there.
 The admissible \(\mathrm{lr}\) is a product of per-layer operator-norm
 factors, so each added layer shrinks it geometrically. Full-depth CIFAR and
-all five deep nets stay closeness-only, by design, not for want of effort.
+all five deep nets stay closeness-only, by design.
 
 \paragraph{The corner.}
 Over \(\mathbb{R}\), ReLU forced the hypotheses \(x_k \ne 0\). In
