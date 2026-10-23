@@ -36,18 +36,17 @@ says where those statements live; every box is a link.}
 
 On the next-to-last page of my first book, I wrote that I dreamed of a
 future where we could take our code and compile it for whatever backend
-we desire, via MLIR. I meant it as a wishlist item, something I expected
-to happen eventually but not soon enough to matter for that work.
+we wanted, via MLIR. I meant it as a wish, something that would happen
+eventually but not soon enough to matter for that work.
 
 It turned out ``eventually'' was about five years.
 
 This is the book I wanted to write back then and couldn't. The tools
 weren't ready. Lean 4 was still in development, MLIR was a research
 project, and driving a GPU still meant going through Python. All three
-have shipped, and the thing I wished for is sitting in a GitHub repo: the
-networks of the last decade, ResNet to the Vision Transformer, trained to
-ImageNet on consumer GPUs, from a graph whose every gradient Lean has
-checked against its derivative.
+have shipped. The thing I wished for now sits in a GitHub repo: ten years
+of networks, ResNet through the Vision Transformer, trained on ImageNet
+on a consumer GPU, with every gradient checked by Lean.
 
 \section*{What this book is about}
 
@@ -55,10 +54,9 @@ This book teaches you how backpropagation actually works.
 
 You already know the hand-wave version. Compute gradients, update
 weights, repeat. If you've trained a model you've called
-\texttt{.backward()} a thousand times, but what you probably haven't done
-is open the hood, look at what \texttt{.backward()} is actually
-computing layer by layer, and verify that the computation is
-mathematically correct.
+\texttt{.backward()} a thousand times. What you probably haven't done is
+open the hood, look at what it computes layer by layer, and check that
+the math is right.
 
 That's what we're going to do. We'll take every layer in the modern
 stack: dense, ReLU, convolution, pooling, batch normalization, residual
@@ -75,8 +73,8 @@ normalization, and self-attention. For each one we will:
   \item \textbf{Train the model} on real data, end-to-end, on your hardware.
 \end{enumerate}
 
-Three views of the same computation: the math, the proof, the code that
-runs. They agree, and the entire book is about understanding why.
+Three views of one computation: the math, the proof, and the code that
+runs. They agree, and the book is about why.
 
 \section*{The thesis}
 
@@ -101,8 +99,7 @@ but exploitably structured:
     have a diagonal Jacobian, so the backward pass is one multiply.
   \item \textbf{Sparse Toeplitz.} Convolutions have a block-sparse Jacobian
     with a sliding-window structure, and the backward pass is another
-    convolution with a reversed kernel (for odd kernel sizes; an even
-    kernel is zero-extended to the next odd size first).
+    convolution with a reversed kernel.
   \item \textbf{Binary selection.} Max pooling routes the gradient to whichever input was the max.
   \item \textbf{Rank-1 correction to diagonal.} Softmax, batch norm, and layer
     norm all have dense Jacobians with a clean closed form, because each
@@ -112,17 +109,16 @@ but exploitably structured:
     gradient.
 \end{enumerate}
 
-That's it. Three rules, five tricks. Every architecture in this book
-decomposes into some combination of those eight things, and that includes
-the MLP, the CNN, ResNet, MobileNet, EfficientNet, ConvNeXt, and the
-Vision Transformer. So does every architecture in Chapter~\ref{chap:bestiary}'s
-bestiary, which covers U-Net, YOLO, Mamba, GAN, VAE, diffusion models,
-CLIP, and GPT-style decoders. There is no ninth.
+That's it. Three rules, five tricks. Every architecture in this book is
+some combination of those eight things: the MLP, the CNN, ResNet,
+MobileNet, EfficientNet, ConvNeXt, and the Vision Transformer. So is
+everything in Chapter~\ref{chap:bestiary}'s bestiary: U-Net, YOLO,
+Mamba, GAN, VAE, diffusion, CLIP, and GPT-style decoders. There is no
+ninth.
 
 I didn't set out to prove this. I set out to train a ResNet with verified
-gradients, and by the time I'd done it for enough architectures the
-pattern became impossible to ignore. The framework kept working without
-needing new primitives.
+gradients, and after enough architectures the pattern was impossible to
+ignore. The framework kept working. It never needed a new primitive.
 
 \section*{Who this book is for}
 
@@ -130,23 +126,22 @@ This book assumes you've trained a neural network. Not a fancy one. If
 you've fine-tuned a pretrained model, debugged a NaN loss, or watched a
 model overfit and wondered why, you're the audience.
 
-I'm going to assume you know what a derivative is, what a matrix is, and
-roughly what a convolutional layer does, and I'm not going to assume you
-know Lean, MLIR, formal verification, or compiler theory. If you skip
-every Lean snippet you still get a complete book on the mechanics of
-backpropagation. The Lean is there for the reader who wants to check me.
+I'll assume you know what a derivative is, what a matrix is, and roughly
+what a convolution does. I won't assume you know Lean, MLIR, formal
+verification, or compilers. If you skip every Lean snippet you still get
+a complete book on how backpropagation works. The Lean is there for the
+reader who wants to check me.
 
-This is not a beginner's book. If you're looking for your first
-introduction to neural networks there are several good ones, including my
-first book, fast.ai's free courses, and plenty of good resources all
-over the web. Come back to this one when you've trained something and want to
-understand what you did.
+This is not a beginner's book. If you want a first introduction to neural
+networks there are good ones: my first book, fast.ai's free courses, and
+plenty more on the web. Come back to this one when you've trained
+something and want to understand what you did.
 
-This is also not a research textbook, and I'm not trying to write
-Goodfellow or Bishop. The proofs here are for credibility, not for
-theoretical depth, and if you want the full formal story then Mathlib is
-open-source and you can extend it. What this book adds is the bridge from
-the math to the actual GPU code, and the assurance that they agree.
+It's also not a research textbook. I'm not trying to write Goodfellow or
+Bishop. The proofs are here for credibility, not depth, and if you want
+the full formal story, Mathlib is open source and waiting. What this book
+adds is the bridge from the math to the GPU code, and the assurance that
+they agree.
 
 If you're me from ten years ago, interested in ML, willing to put in the
 work, and not sure where the math stops and the folklore begins, this is
@@ -158,40 +153,36 @@ Three things had to happen before this book was possible, and all three
 happened in the last few years.
 
 \textbf{Lean 4 reached maturity.} Lean is a programming language that is
-also a theorem prover. You write a function in Lean, then you write a
-proof that the function does what you claim, and if that proof compiles
-then the claim is correct. You don't have to trust the author, because
-the compiler checked it. Lean 4 came out in 2023 and is the version that
-made this practical for non-specialists, with a real package manager,
-real tooling, a growing math library called Mathlib, and an active
-community.
+also a theorem prover. You write a function, then a proof that it does
+what you claim, and the compiler checks the proof. Lean 4 came out in
+2023 and is the version that made this practical for non-specialists,
+with a real package manager, real tooling, a growing math library called
+Mathlib, and an active community.
 
-One piece of Mathlib unblocked this book in particular, the
-Fr\'echet-derivative API called \texttt{fderiv}, which gives you the
-chain rule, the product rule, and composition of continuous linear maps.
+One piece of Mathlib unblocked this book in particular: its derivative
+API, \texttt{fderiv}, which supplies the chain rule and the product rule.
 The central claim of this book is that the backward pass equals the true
-Jacobian, and without that API it would not be feasible to prove. Avigad
-contributed the first-order calculus in 2019, and Gou\"ezel stabilized
-the higher-order $C^n$ scaffolding around it over 2019--2025
+Jacobian, and without that API it would not have been provable. Avigad
+contributed the first-order calculus in 2019, and Gou\"ezel built the
+higher-order scaffolding around it over 2019--2025
 (\href{https://arxiv.org/abs/2509.04922}{arXiv:2509.04922}).
 
-\textbf{MLIR and StableHLO stabilized.} MLIR is a compiler infrastructure
-for machine learning, and StableHLO is a portable operation set built on
-MLIR that describes what neural networks compute. Together they let you
-write a training step as a sequence of mathematical operations and
-compile it for CPU, CUDA, or ROCm without writing any backend-specific
-code. This is the layer that turns math on paper into code on the GPU.
+\textbf{MLIR and StableHLO stabilized.} MLIR is compiler infrastructure
+for machine learning, and StableHLO is a portable set of operations built
+on it that says what a network computes. Together they let you write a
+training step as math and compile it for CPU, CUDA, or ROCm without any
+backend-specific code. This is the layer that turns math on paper into
+code on the GPU.
 
 \textbf{XLA got a stable C API.} XLA is the compiler behind JAX and
-TensorFlow and it produces some of the fastest GPU kernels available, but
-for years the only supported way to reach it was from Python. PJRT
-changed that. A backend now ships as an ordinary shared library with a C
-interface, so a program written in any language can open it with
-\texttt{dlopen}, hand it a StableHLO module, and get back something that
-runs on the card. That is what lets a Lean binary train a network on a
-GPU with no interpreter anywhere in the pipeline. This book supports a
-second runtime as well, IREE, which compiles every kernel itself and so
-runs on hardware that no vendor library covers.
+TensorFlow, and it produces some of the fastest GPU kernels there are,
+but for years the only supported way in was Python. PJRT changed that. A
+backend now ships as an ordinary shared library with a C interface. Any
+language can open it, hand it a StableHLO module, and get back something
+that runs on the card. That is what lets a Lean binary train on a GPU
+with no interpreter anywhere in the pipeline. The book supports a second
+runtime too, IREE, which compiles every kernel itself and so runs on
+hardware no vendor library covers.
 
 Put the three together and one person can go $\mathbb{R} \twoheadrightarrow \text{RAM}$. You write
 the network in a language that can state what it's supposed to compute.
@@ -201,19 +192,18 @@ right. That's the pipeline this book is built around.
 
 \section*{Why image recognition}
 
-Same reason as the first book. It's the oldest, most well-understood
-corner of deep learning, which means we can introduce primitives one at a
-time in a logical order.
+Same reason as the first book. It's the oldest, best-understood corner
+of deep learning, so the primitives can arrive one at a time in a
+sensible order.
 
 We start with MNIST (digits, $28 \times 28$ grayscale) and work up
 through CIFAR-10 (color, $32 \times 32$) to Imagenette and then full
 ImageNet-1k (real photos, $224 \times 224$). The architectures form a
 natural progression: MLP $\to$ CNN $\to$ ResNet $\to$ MobileNet $\to$
 EfficientNet $\to$ ConvNeXt $\to$ ViT.
-Each one adds exactly one new structural primitive to the framework. By
-the time you reach ViT you've seen every primitive there is for modern
-vision, and you've also seen every primitive for modern language models,
-because transformers are the same architecture in both domains.
+Each one adds exactly one new primitive. By ViT you've seen every
+primitive in modern vision, and every primitive in modern language models
+too, because a transformer is the same architecture in both.
 
 The bestiary of Chapter~\ref{chap:bestiary} shows the same primitives
 covering detection (YOLO), segmentation (U-Net), generation (diffusion
@@ -241,13 +231,11 @@ paradigm. You need maybe twenty keywords and some notation, and then Lean
 reads like any other typed functional language.
 
 The other reason is that Lean enforces honesty. If I claim the backward
-pass of batch normalization is a specific three-term formula, the Lean
-compiler requires me to prove it, and if that proof compiles then the
-claim is correct. You don't have to trust me, because the type checker
-verified it. There is no hidden hand-waving. Every VJP in this book
-builds with zero \texttt{sorry}s, and that means dense, convolution,
-batch norm, residual, attention, all of them. The compiler is the
-referee.
+pass of batch norm is a specific three-term formula, Lean makes me prove
+it, and if the proof compiles the claim is correct. You don't have to
+trust me. There is no hidden hand-waving. Every VJP in this book builds
+with zero \texttt{sorry}s: dense, convolution, batch norm, residual,
+attention, all of them. The compiler is the referee.
 
 \section*{Let's go}
 
@@ -255,23 +243,23 @@ In 2018 I was on a small team that won the CIFAR-10 track of Stanford's
 DAWNBench competition and trained ImageNet in 3 hours for \$25 on
 commodity hardware. What I took from it was that you didn't need
 powerful tools to change the world, only a firm understanding of what
-was going on behind the scenes.
+was going on under the hood.
 
-The math turns out not to need a PhD. The received wisdom says
-backpropagation is complicated. It isn't. It's three rules, five tricks,
-and a lot of bookkeeping, and the bookkeeping is the part people skip,
-so the math gets taken on faith. This book hands the bookkeeping to the
-computer, not as a calculator but as a referee: every rule and every
-trick is a theorem Lean checks, and what's left for you is bite-sized.
-Nobody has to tell you where the math stops and the folklore begins.
-The line is drawn, and you're holding the result.
+The math doesn't need a PhD. The received wisdom says backpropagation is
+complicated. It isn't. It's three rules, five tricks, and a lot of
+bookkeeping, and the bookkeeping is the part people skip, so the math
+gets taken on faith. This book hands the bookkeeping to the computer, not
+as a calculator but as a referee: every rule and every trick is a theorem
+Lean checks, and what's left for you is bite-sized. Nobody has to tell
+you where the math stops and the folklore begins. The line is drawn, and
+you're holding the result.
 
 Three of my favorite citations of the first book are from high school
-students, and I don't think it's by accident that teenagers are
-publishing results. The barriers to doing real ML research used to be
-infrastructure. Compute, data, institutional access. Those barriers have
-mostly fallen, and what remains is the smaller barrier of understanding
-what you're doing at the level where you can verify it, not just run it.
+students, and I don't think it's an accident that teenagers are
+publishing results. The barriers to real ML research used to be
+infrastructure: compute, data, institutional access. Those have mostly
+fallen. What's left is the smaller barrier of understanding what you're
+doing well enough to verify it, not just run it.
 
 This book is for the person who wants to cross that barrier. It might be
 you. It might be the next kid who picks it up in a library somewhere and
@@ -336,12 +324,12 @@ other.
 \textbf{Part 2: The bestiary (Chapter 10).} Forty-six further
 architectures, from U-Net to Mamba to Stable Diffusion, each written as
 a \texttt{NetSpec} in about fifteen lines of Lean and led by how many new
-primitives it asks for beyond Part 1's toolbox: none for VGG or
-AlphaZero, one for Mamba, never more than three. The entries are grouped
-by what they are for --- vision classifiers, detection, segmentation,
-language, generation, physics, signal processing --- and twelve of the
-groups carry a demo trained on a dataset from that field; a closing section on
-game theory trains three games --- Pong, Leduc poker, tic-tac-toe --- against their
+primitives it needs beyond Part 1: none for VGG or AlphaZero, one for
+Mamba, never more than three. The entries are grouped by what they are
+for, from vision classifiers through detection, segmentation, language,
+generation, physics and signal processing, and twelve of the
+groups carry a demo trained on data from that field. A closing section
+on game theory trains Pong, Leduc poker and tic-tac-toe against their
 exact solutions, with the AlphaGo family and Deep CFR as its catalogue.
 
 \textbf{Appendices.} Toolchain setup (A), how every claim is checked
@@ -414,13 +402,12 @@ been through a few chapters, so it's safe to skip on a first pass.
 \subsection*{Roadmap: skip to your target architecture}
 
 Every theorem and definition in the book carries a
-\texttt{\textbackslash uses\{\}} annotation, so the dependency graph from
-``which target architecture do I care about?'' back to the foundation
-pieces you need is explicit. We get it for free from doing the proofs in
-Lean. Chapter~1 is the one chapter every target reads in full: the
-foundation rules, the dense layer and the loss. The interesting subsetting decision is
-which later chapters to read, and whether you need Chapter~9's
-matrix-machinery section.
+\texttt{\textbackslash uses\{\}} annotation, so the path from ``which
+architecture do I care about?'' back to the pieces you need is explicit.
+It comes free from doing the proofs in Lean. Chapter~1 is the one chapter
+every target reads in full: the foundation rules, the dense layer and the
+loss. The real decision is which later chapters to read, and whether you
+need Chapter~9's matrix-machinery section.
 
 \textbf{Target: MLP (Ch~\ref{chap:mlp}).} Ch~1 + Ch~\ref{chap:mlp}.
 The MLP backward pass uses chain rule, additive fan-in, identity,
@@ -487,14 +474,12 @@ MobileNet, and EfficientNet are all familiar, and you've built and
 trained them at least once.
 
 Chapters~\ref{chap:layernorm} and~\ref{chap:attention} will be new
-material even on the forward-pass side. I shipped the final draft
-of the first book in July 2020. In late August the grapevine started
-whispering that something attention-shaped was coming, and the ViT
-paper landed on arXiv that October. Everything in this book that
-looks like a transformer postdates the first book and will be genuinely
-new for you, including LayerNorm, GELU, and multi-head attention.
-Otherwise, this book is the same architectures brought under the
-additional scrutiny of a formal backward pass.
+even on the forward-pass side. I shipped the final draft of the first
+book in July 2020. In late August the grapevine started whispering that
+something attention-shaped was coming, and the ViT paper landed on arXiv
+that October. Everything here that looks like a transformer postdates the
+first book: LayerNorm, GELU, multi-head attention. Otherwise this is the
+same architectures, with the backward pass now formally checked.
 
 Concretely, that means:
 
