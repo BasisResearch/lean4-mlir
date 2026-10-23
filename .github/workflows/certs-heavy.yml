@@ -43,6 +43,7 @@ on:
       - 'tests/AxiomAudit.lean'
       - 'lakefile.lean'
       - '.github/workflows/certs-heavy.yml'
+      - 'scripts/stats/**'
       # A Lean/Mathlib bump is what can move the per-module memory peaks this job is tuned
       # around; until 2026-09-09 only the fortnightly cron would have noticed one.
       - 'lean-toolchain'
@@ -218,3 +219,18 @@ jobs:
           echo "✅ **All ${total} heavy-corpus theorems closed under [\`propext\`, \`Classical.choice\`, \`Quot.sound\`]**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Full-input scorecards (L2 Tsuzuku, IBP L∞, CROWN, conv IBP): the aggregates state their proved per-image certificates; the measured per-100 counts are in each generated file's header. (Per-pair LipSDP instances kernel-verified locally but CI-disabled — memory; see planning/archive/certs_heavy_psd_memory.md.)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Install scc
+        # scc counts code / comment / blank lines per file (Lean's nested `/- -/` included) for
+        # scripts/stats/summary.py. Pinned release, checksum-verified.
+        run: |
+          curl -sSfL -o /tmp/scc.tgz https://github.com/boyter/scc/releases/download/v3.5.0/scc_Linux_x86_64.tar.gz
+          echo "6c31f4d0cf3b7a8c5ca910fa4e451949434798f6541ec5dea4b83f4973e13772  /tmp/scc.tgz" | sha256sum -c -
+          sudo tar xzf /tmp/scc.tgz -C /usr/local/bin scc
+
+      - name: Declaration / LoC counts (heavy-only files)
+        # The 16 proof files certs.yml's table shows as `—` (in CertsHeavy's closure, not Certs'),
+        # counted from the environment `lake build CertsHeavy` above produced.
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          python3 scripts/stats/summary.py --decls CertsHeavy --except Certs >> $GITHUB_STEP_SUMMARY

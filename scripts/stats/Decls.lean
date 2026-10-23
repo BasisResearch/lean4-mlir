@@ -5,7 +5,7 @@ open Lean
     than by grepping source. `private`, `protected`, attributes on the same line, `lemma`,
     and macro-generated declarations all land here as what Lean made of them.
     `lake env lean --run scripts/stats/Decls.lean <modules.txt> <out.tsv>`.
-    Driven by `scripts/stats/summary.py`, which drops the modules without an olean.
+    Driven by `scripts/stats/summary.py`, which passes the proof modules a lib built.
 
     Kept: constants with a declaration range (the ones a user wrote), minus internal names
     (`match_`, `proof_`, `eq_1`, `_`-prefixed), auxiliary recursors, `noConfusion`, structure
