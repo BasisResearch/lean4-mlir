@@ -176,7 +176,14 @@ resuming a copy of the checkpoint for two more epochs gave 49.48 % and then 65.6
 in the eval, not a fault (CUDA's seeds wobble too, by up to 16 points). **EfficientNet-B0**'s 58.06 %
 is just under its seeds' 58.68 % floor at an epoch where they span nine points; its loss is inside.
 
-**TODO: full runs** of the other six Imagenette nets (~7½ h at the table's rates); a second card
+**Full runs (2026-10-23).** ViT-Tiny, 80 epochs: **68.46 %** (CUDA's seeds 67.82–69.17) in 39 min
+([`runs/2026-10-23-vit-verified-adam/`](../runs/2026-10-23-vit-verified-adam/)). MobileNetV2 reached
+epoch 46 (87.01 %) before the card dropped off the bus at 06:34:38 — one second after
+unattended-upgrades installed liblzma5 and needrestart restarted systemd-udevd, journald and others
+([`runs/2026-10-23-mobilenetv2-verified-adam/`](../runs/2026-10-23-mobilenetv2-verified-adam/):
+`kernel-`, `systemd-`, `apt-06-34.txt`). Its `full` checkpoint at epoch 46 is intact.
+
+**TODO: full runs** of the other five Imagenette nets (MobileNetV2 from epoch 46); a second card
 for the suite's two-device tests and the DP path.
 
 ## What to expect
@@ -197,6 +204,16 @@ for the suite's two-device tests and the DP path.
 - **`run.sh` logs to `runs/<date>-<trainer>/`, so a second run of a trainer on the same day
   overwrites the first one's log.** Set `RUN_LOG_DIR` for a short or side run; the 10-22 five-epoch
   ResNet-34 replaced the full run's log until it was restored.
+- **One process on the card at a time.** Two `muzero-ttt` processes sharing the B50 (2026-10-23)
+  both hung in SYCL — a host task in `DispatchHostTask::waitForEvents → urEventWait`, the card at
+  full clock, no kernel message until they were killed (`guc_exec_queue_timedout_job`, GT0 reset,
+  recovered without a power cycle). A three-process smoke had passed first, and sharing bought
+  ~11 % throughput anyway. The shim's serial copies (§3) order one process's transfers; nothing
+  orders two processes'. Evidence on the `muzero-ttt` branch, `runs/2026-10-23-muzero-ttt-b50/hang-18-24/`.
+- **Turn off automatic upgrades on a box that trains overnight.** needrestart's service restarts
+  after an unattended upgrade took the card off the bus mid-run (MobileNetV2, above). On minerva:
+  `systemctl disable --now unattended-upgrades apt-daily-upgrade.timer apt-daily.timer` and
+  `$nrconf{restart} = 'l'` in `/etc/needrestart/needrestart.conf`.
 
 ## After it runs
 
