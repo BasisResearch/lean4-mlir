@@ -61,9 +61,10 @@ runtime and package versions in `manifest.txt` beside it. Each trainer's own log
   `LD_LIBRARY_PATH`: the plugin finds its oneAPI runtime only through that path. The backend is
   picked by `xpu-smi` on PATH and an Intel display device on the bus; with an AMD card also in the
   box it picks `rocm`, and `PLATFORM_BACKEND=xpu` selects the Arc (`arc_setup.sh` sets it).
-- **`ffi/pjrt_ffi.c`** serializes host-to-device uploads when the plugin's platform name is
-  oneAPI/SYCL/XPU — `h2d_serial()`, §3. Every other platform is unchanged. Its startup line says
-  which: `[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default …)`.
+- **`ffi/pjrt_ffi.c`** serializes host-to-device uploads and device-to-host readbacks when the
+  plugin's platform name is oneAPI/SYCL/XPU — `h2d_serial()` and `d2h_serial()`, §3. Every other
+  platform is unchanged. Its startup lines say which: `[pjrt_ffi] h2d: SERIAL — one upload in
+  flight (oneAPI default …)` and `[pjrt_ffi] d2h: SERIAL — one readback in flight (…)`.
 - **`run.sh`** accepts the `xpu` backend; the GPU index becomes `ZE_AFFINITY_MASK`.
 - **bf16 works.** Tier 2's bf16 rows pass, so the bf16 renders apply. Unlike the Mac there is no
   float32-only restriction.
@@ -273,6 +274,23 @@ The repro and the upstream report are in
 [`runs/2026-10-11-xpu-sycl-race/`](../runs/2026-10-11-xpu-sycl-race/). `repro.sh` sets
 `PJRT_FFI_H2D_SERIAL=0` so that it still reproduces the bug. Drop the default once Intel ships a
 plugin with a fixed runtime and the repro runs clean.
+
+**The same race on readback (2026-10-23).** With uploads serialized, a net that reads many small
+outputs back every step still corrupted the host heap: `cifar8wb_bbn`, the batch-statistics BN
+net, returns its 16 batch statistics, the loss and Adam's two bias corrections — 19 readbacks a
+step — and aborted with `malloc(): … corrupted` about once per 160k steps (3 aborts in the
+2026-10-22 seed sweep, [`runs/2026-10-22-bbn-seeds/crashes/`](../runs/2026-10-22-bbn-seeds/crashes/)).
+The backtrace caught under gdb
+([`stress-old/run21.log`](../runs/2026-10-22-bbn-node-b50/stress-old/run21.log)) is a plugin worker
+thread inside `sycl::queue::submit`, under XLA's `CopyRawDeviceToHostAndReturnEvent`: the shim
+issued the step's `ToHostBuffer` calls back to back, the plugin handed each to its own thread, and
+they submitted to one SYCL queue at once. `d2h_serial()` awaits each readback before issuing the
+next, on the same platforms as `h2d_serial()`; `PJRT_FFI_D2H_SERIAL=0|1` overrides it. The f32
+AdamW arm repeated with fresh seeds: 24 runs (~367k steps) without it, 1 abort; 40 runs (~624k
+steps) with it, 0 — about 4 were expected at the old rate. Per-run time 3.1 → 3.0 min: no cost.
+The BN Imagenette nets are exposed too — ResNet-34 reads back 75 tensors a step (its 72 batch
+statistics and three scalars) — but its full run was 23.6k steps, where ~0.15 aborts were due at
+this rate; the full runs from 2026-10-23 on have `d2h_serial()`.
 
 
 ## §4 The bus drop at Gen4, and Gen3 as the fix

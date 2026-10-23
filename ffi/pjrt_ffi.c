@@ -529,6 +529,27 @@ static int h2d_serial(void) {
   return g_platform_xpu;
 }
 
+// The same race the other way. A batch of ToHostBuffer calls is handed to the plugin's
+// async work queue one thread each, and those threads submit to one SYCL queue at
+// once; on oneAPI that corrupts the host heap every ~150k steps on a net that reads
+// back many small outputs per step (`cifar8wb_bbn`: 16 batch statistics + 3 scalars;
+// runs/2026-10-22-bbn-seeds/crashes/, the backtrace in
+// runs/2026-10-22-bbn-node-b50/stress-old/run21.log: abort inside sycl::queue::submit
+// under CopyRawDeviceToHostAndReturnEvent). Same platforms, same cure: each copy is
+// awaited before the next is issued. `$PJRT_FFI_D2H_SERIAL` = 1 / 0 forces it.
+static int d2h_serial(void) {
+  const char* e = getenv("PJRT_FFI_D2H_SERIAL");
+  if (e && *e) return atoi(e) != 0;
+  return g_platform_xpu;
+}
+
+// d2h_serial()'s per-copy wait: consumes *ev (NULLed, so the batch await skips it).
+static int d2h_settle(PJRT_Event** ev, const char* what) {
+  int rc = 0;
+  if (*ev) { rc = await_event(*ev, what); *ev = NULL; }
+  return rc;
+}
+
 // h2d_serial()'s per-upload wait: consumes *ev (NULLed, so the batch await skips
 // it), then awaits the buffer's ready event.
 static int h2d_settle(PJRT_Event** ev, PJRT_Buffer* buf, const char* what) {
@@ -773,6 +794,11 @@ static int ensure_client(void) {
           getenv("PJRT_FFI_H2D_SERIAL") && *getenv("PJRT_FFI_H2D_SERIAL")
             ? " ($PJRT_FFI_H2D_SERIAL)"
             : (g_platform_xpu ? " (oneAPI default — see h2d_serial())" : " (default)"));
+  fprintf(stderr, "[pjrt_ffi] d2h: %s%s\n",
+          d2h_serial() ? "SERIAL — one readback in flight" : "batched",
+          getenv("PJRT_FFI_D2H_SERIAL") && *getenv("PJRT_FFI_D2H_SERIAL")
+            ? " ($PJRT_FFI_D2H_SERIAL)"
+            : (g_platform_xpu ? " (oneAPI default — see d2h_serial())" : " (default)"));
   // Same rule for residency, and more so since the default flipped to on: a run
   // that says nothing is the resident one, so the copying path must announce
   // itself too.
@@ -1206,6 +1232,7 @@ static int invoke_typed(
       a.dst_size = want;
       if (check(g_api->PJRT_Buffer_ToHostBuffer(&a), "ToHostBuffer")) { failed = 1; break; }
       d2h[i] = a.event;
+      if (d2h_serial() && d2h_settle(&d2h[i], "d2h(serial)")) { failed = 1; break; }
       pin_off += want;
     }
     if (acct) { acct->d2h_issue += now_ms() - td; td = now_ms(); }
@@ -1331,6 +1358,7 @@ static int d2h_gather(iree_ffi_session_t* sess, PJRT_Buffer** out, int n_replica
       a.dst_size = want;
       if (check(g_api->PJRT_Buffer_ToHostBuffer(&a), "ToHostBuffer(gather)")) { rc = 4; break; }
       d2h[(size_t)rep * n_outputs + i] = a.event;
+      if (d2h_serial() && d2h_settle(&d2h[(size_t)rep * n_outputs + i], "d2h(serial,gather)")) { rc = 4; break; }
     }
   }
   if (acct) { acct->d2h_issue += now_ms() - td; td = now_ms(); }
@@ -1541,6 +1569,7 @@ int pjrt_ffi_invoke_f32_dp(
       a.dst_size = want;
       if (check(g_api->PJRT_Buffer_ToHostBuffer(&a), "ToHostBuffer(dp)")) { rc = 4; break; }
       d2h[i] = a.event;
+      if (d2h_serial() && d2h_settle(&d2h[i], "d2h(serial,dp)")) { rc = 4; break; }
     }
     if (acct) { acct->d2h_issue += now_ms() - td; td = now_ms(); }
     for (int i = 0; i < n_outputs; i++)
@@ -1984,6 +2013,7 @@ int pjrt_ffi_invoke_f32_resident_v2(
       a.dst_size = want;
       if (check(g_api->PJRT_Buffer_ToHostBuffer(&a), "ToHostBuffer(res)")) { rc = 4; break; }
       d2h[i] = a.event;
+      if (d2h_serial() && d2h_settle(&d2h[i], "d2h(serial,res)")) { rc = 4; break; }
     }
     if (acct) { acct->d2h_issue += now_ms() - td; td = now_ms(); }
     for (int i = 0; i < n_outputs; i++)
@@ -2044,6 +2074,7 @@ int pjrt_ffi_resident_read(iree_ffi_session_t* sess, int64_t n_floats, float* ds
       failed = 1; break;
     }
     ev[j] = a.event;
+    if (d2h_serial() && d2h_settle(&ev[j], "d2h(serial,resident_read)")) { failed = 1; break; }
     off += r->elems[j];
   }
   for (int j = 0; j < r->n; j++)
@@ -2086,6 +2117,7 @@ int pjrt_ffi_resident_read_prefix(iree_ffi_session_t* sess, int64_t n_floats, fl
       failed = 1; break;
     }
     ev[j] = a.event;
+    if (d2h_serial() && d2h_settle(&ev[j], "d2h(serial,resident_read)")) { failed = 1; break; }
     off += r->elems[j];
   }
   for (int j = 0; j < k; j++)
