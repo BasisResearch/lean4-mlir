@@ -1,0 +1,64 @@
+PJRT_PLUGIN=.venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+I1023 16:05:18.838840    6644 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1023 16:05:18.855521    6644 service.cc:154] XLA service 0x7f6cce4a5fb0 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1023 16:05:18.855535    6644 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1023 16:05:18.855544    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.855685    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.855717    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.855756    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.855866    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.855896    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.855926    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.855955    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.855985    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856014    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856139    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856168    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856198    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856228    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856258    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856288    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856318    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.856347    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:18.857946    6644 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1023 16:05:18.857967    6644 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] d2h: SERIAL — one readback in flight (oneAPI default — see d2h_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1023 16:05:18.868588    6644 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_h_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 39 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_h_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 28 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_h_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 59 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_h_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 58 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_g_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 32 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_g_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 32 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_g_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 53 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_g_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 65 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_f_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 69 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_f_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 54 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_f_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 179 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_f_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 56 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_r_4x4_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 45 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_r_4x4_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 43 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_r_4x4_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 99 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_4x4_smoke_b50_muzero_ttt_r_4x4_c32_adam.mlir (@main, 18 outputs, 1 replica) in 52 ms
+muzero ttt 4x4 (xla): h 56608 + g 74464 + f 5397 + r 4357 = 140826 params, C 32, K 5, 1 iterations of 256 games at 50 sims, batch 64 × 300 steps an iteration over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000 (raw Q), Dir(1.000000) at 0.250000, seed 1 (graphs 169875 ms)
+I1023 16:05:20.123004    6855 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:20.123237    6855 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:20.127610    6644 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:20.296431    6856 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:20.391282    6855 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:20.911313    6856 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1023 16:05:20.913669    6856 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  shape checks passed
+  iter 0: f∘h sweep agree 61.24% value mse 0.6247 sign 64.97%  net alone vs perfect X 0/163/93 O 0/86/170  +search X 0/105/151 O 0/76/180
+  iter 1: f∘h sweep agree 62.07% value mse 0.2860 sign 66.11%  net alone vs perfect X 0/108/148 O 0/81/175  +search X 0/102/154 O 0/67/189
+    self-play 3763 positions (X 73 / draw 118 / O 65), 300 steps over 3763 samples, loss value 0.8845 policy 5.3642 reward 0.0353, 7 clamped latents  (play 3565 train 25253 score 3991 ms)
+trained: 1 iterations, 300 steps, 209172 ms; self-play stood at 3078 of the 9062619 decision positions
+wrote .lake/build/muzero_ttt_4x4_smoke_b50_curve.csv, .lake/build/muzero_ttt_4x4_smoke_b50_params.bin, .lake/build/muzero_ttt_4x4_smoke_b50_seen.bin
+
+real	3m29.341s
+user	3m29.514s
+sys	0m7.515s

@@ -1,0 +1,489 @@
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.ubuntu.com>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=128, cancel=true, abstime=0x0, op=265, expected=9370, futex_word=0x7b1a2bfff990) at ./nptl/futex-internal.c:57
+Thread 45 (Thread 0x7b1a744c5800 (LWP 9368) "iou-sqp-9367"):
+#0  0x0000000000000000 in ?? ()
+Backtrace stopped: Cannot access memory at address 0x0
+Thread 44 (Thread 0x7b1a73ed66c0 (LWP 9369) "muzero-ttt"):
+#0  0x00007b1a7432a170 in __GI_epoll_pwait (epfd=3, events=0x7b1a73ed2d30, maxevents=1024, timeout=-1, set=0x0) at ../sysdeps/unix/sysv/linux/epoll_pwait.c:40
+#1  0x00006401aa023b5d in uv.io_poll ()
+#2  0x00006401aa01f16b in uv_run ()
+#3  0x00006401aa03521d in lean::event_loop_run_loop(lean::event_loop_t*) ()
+#4  0x00006401a9fa701a in lean::lthread::imp::_main(void*) ()
+#5  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#6  0x00007b1a74329ecc in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 43 (Thread 0x7b1a2bfff6c0 (LWP 9370) "muzero-ttt"):
+#0  syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+#1  0x00007b19e393efb8 in absl::lts_20260526::synchronization_internal::FutexWaiter::WaitUntil(std::atomic<int>*, int, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#2  0x00007b19e393f057 in absl::lts_20260526::synchronization_internal::FutexWaiter::Wait(absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#3  0x00007b19e393ec22 in AbslInternalPerThreadSemWait_lts_20260526 () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#4  0x00007b19e393c5e9 in absl::lts_20260526::Mutex::Block(absl::lts_20260526::base_internal::PerThreadSynch*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#5  0x00007b19e393c919 in absl::lts_20260526::Mutex::LockSlowWithDeadline(absl::lts_20260526::MuHowS const*, absl::lts_20260526::Condition const*, absl::lts_20260526::synchronization_internal::KernelTimeout, int) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#6  0x00007b19e393f219 in absl::lts_20260526::Notification::WaitForNotification() const () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19df7189be in tsl::BlockUntilReady(tsl::AsyncValue*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19d59b9aa5 in tsl::internal::FutureBase<absl::lts_20260526::Status, false>::Await() const & () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19d59b998c in pjrt::PJRT_Event_Await(PJRT_Event_Await_Args*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 42 (Thread 0x7b198e9ff6c0 (LWP 9551) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=-1902121824, cancel=true, abstime=0x7b198e9fedb0, op=137, expected=0, futex_word=0x7b1988017880) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=-1902121824, abstime=0x7b198e9fedb0, clockid=31513, expected=0, futex_word=0x7b1988017880) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b1988017880, expected=expected@entry=0, clockid=clockid@entry=1, abstime=abstime@entry=0x7b198e9fedb0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429c1f6 in __pthread_cond_wait_common (abstime=<optimized out>, clockid=<optimized out>, mutex=0x7b1988017888, cond=0x7b1988017858) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_clockwait64 (abstime=<optimized out>, clockid=<optimized out>, mutex=0x7b1988017888, cond=0x7b1988017858) at ./nptl/pthread_cond_wait.c:691
+#5  ___pthread_cond_clockwait64 (cond=0x7b1988017858, mutex=0x7b1988017888, clockid=<optimized out>, abstime=<optimized out>) at ./nptl/pthread_cond_wait.c:679
+#6  0x00007b19a0db1195 in ?? () from /lib/x86_64-linux-gnu/libze_intel_gpu.so.1
+#7  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#8  0x00007b1a74329ecc in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 41 (Thread 0x7b19e8bff6c0 (LWP 9552) "py_xla_execute"):
+#0  syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+#1  0x00007b19e393efb8 in absl::lts_20260526::synchronization_internal::FutexWaiter::WaitUntil(std::atomic<int>*, int, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#2  0x00007b19e393f057 in absl::lts_20260526::synchronization_internal::FutexWaiter::Wait(absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#3  0x00007b19e393ec22 in AbslInternalPerThreadSemWait_lts_20260526 () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#4  0x00007b19e393c5e9 in absl::lts_20260526::Mutex::Block(absl::lts_20260526::base_internal::PerThreadSynch*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#5  0x00007b19e393c9f2 in absl::lts_20260526::Mutex::AwaitCommon(absl::lts_20260526::Condition const&, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#6  0x00007b19d5a4f1b4 in xla::WorkerThread::WorkLoop() () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#9  0x00007b1a74329ecc in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 40 (Thread 0x7b198e1fe6c0 (LWP 9553) "py_xla_callback"):
+#0  syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+#1  0x00007b19e393efb8 in absl::lts_20260526::synchronization_internal::FutexWaiter::WaitUntil(std::atomic<int>*, int, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#2  0x00007b19e393f057 in absl::lts_20260526::synchronization_internal::FutexWaiter::Wait(absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#3  0x00007b19e393ec22 in AbslInternalPerThreadSemWait_lts_20260526 () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#4  0x00007b19e393c5e9 in absl::lts_20260526::Mutex::Block(absl::lts_20260526::base_internal::PerThreadSynch*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#5  0x00007b19e393c9f2 in absl::lts_20260526::Mutex::AwaitCommon(absl::lts_20260526::Condition const&, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#6  0x00007b19d5a4f1b4 in xla::WorkerThread::WorkLoop() () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#9  0x00007b1a74329ecc in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 39 (Thread 0x7b198d9fd6c0 (LWP 9554) "py_xla_cleanup"):
+#0  syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+#1  0x00007b19e393efb8 in absl::lts_20260526::synchronization_internal::FutexWaiter::WaitUntil(std::atomic<int>*, int, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#2  0x00007b19e393f057 in absl::lts_20260526::synchronization_internal::FutexWaiter::Wait(absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#3  0x00007b19e393ec22 in AbslInternalPerThreadSemWait_lts_20260526 () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#4  0x00007b19e393c5e9 in absl::lts_20260526::Mutex::Block(absl::lts_20260526::base_internal::PerThreadSynch*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#5  0x00007b19e393c9f2 in absl::lts_20260526::Mutex::AwaitCommon(absl::lts_20260526::Condition const&, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#6  0x00007b19d5a4f1b4 in xla::WorkerThread::WorkLoop() () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#9  0x00007b1a74329ecc in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 38 (Thread 0x7b198d1fc6c0 (LWP 9555) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68664dc) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68664dc) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68664dc, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866488, cond=0x7b19e68664b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68664b0, mutex=0x7b19e6866488) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 37 (Thread 0x7b198c9fb6c0 (LWP 9556) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866558) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866558) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866558, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866508, cond=0x7b19e6866530) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866530, mutex=0x7b19e6866508) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 36 (Thread 0x7b197ffff6c0 (LWP 9557) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68665d8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68665d8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68665d8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866588, cond=0x7b19e68665b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68665b0, mutex=0x7b19e6866588) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 35 (Thread 0x7b197f7fe6c0 (LWP 9558) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e686665c) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e686665c) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e686665c, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866608, cond=0x7b19e6866630) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866630, mutex=0x7b19e6866608) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 34 (Thread 0x7b197effd6c0 (LWP 9559) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68666d8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68666d8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68666d8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866688, cond=0x7b19e68666b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68666b0, mutex=0x7b19e6866688) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 33 (Thread 0x7b197e7fc6c0 (LWP 9560) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866758) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866758) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866758, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866708, cond=0x7b19e6866730) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866730, mutex=0x7b19e6866708) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 32 (Thread 0x7b197dffb6c0 (LWP 9561) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68667d8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68667d8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68667d8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866788, cond=0x7b19e68667b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68667b0, mutex=0x7b19e6866788) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 31 (Thread 0x7b197d7fa6c0 (LWP 9562) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e686685c) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e686685c) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e686685c, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866808, cond=0x7b19e6866830) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866830, mutex=0x7b19e6866808) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 30 (Thread 0x7b197cff96c0 (LWP 9563) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68668dc) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68668dc) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68668dc, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866888, cond=0x7b19e68668b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68668b0, mutex=0x7b19e6866888) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 29 (Thread 0x7b195bfff6c0 (LWP 9564) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e686695c) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e686695c) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e686695c, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866908, cond=0x7b19e6866930) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866930, mutex=0x7b19e6866908) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 28 (Thread 0x7b195b7fe6c0 (LWP 9565) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68669d8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68669d8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68669d8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866988, cond=0x7b19e68669b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68669b0, mutex=0x7b19e6866988) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 27 (Thread 0x7b195affd6c0 (LWP 9566) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866a5c) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866a5c) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866a5c, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866a08, cond=0x7b19e6866a30) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866a30, mutex=0x7b19e6866a08) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 26 (Thread 0x7b195a7fc6c0 (LWP 9567) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866adc) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866adc) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866adc, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866a88, cond=0x7b19e6866ab0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866ab0, mutex=0x7b19e6866a88) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 25 (Thread 0x7b1959ffb6c0 (LWP 9568) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866b58) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866b58) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866b58, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866b08, cond=0x7b19e6866b30) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866b30, mutex=0x7b19e6866b08) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 24 (Thread 0x7b19597fa6c0 (LWP 9569) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866bdc) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866bdc) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866bdc, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866b88, cond=0x7b19e6866bb0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866bb0, mutex=0x7b19e6866b88) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 23 (Thread 0x7b1958ff96c0 (LWP 9570) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866c5c) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866c5c) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866c5c, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866c08, cond=0x7b19e6866c30) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866c30, mutex=0x7b19e6866c08) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 22 (Thread 0x7b193bfff6c0 (LWP 9571) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866cd8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866cd8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866cd8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866c88, cond=0x7b19e6866cb0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866cb0, mutex=0x7b19e6866c88) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 21 (Thread 0x7b193b7fe6c0 (LWP 9572) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866d5c) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866d5c) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866d5c, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866d08, cond=0x7b19e6866d30) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866d30, mutex=0x7b19e6866d08) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 20 (Thread 0x7b193affd6c0 (LWP 9573) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866dd8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866dd8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866dd8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866d88, cond=0x7b19e6866db0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866db0, mutex=0x7b19e6866d88) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 19 (Thread 0x7b193a7fc6c0 (LWP 9574) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866e58) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866e58) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866e58, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866e08, cond=0x7b19e6866e30) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866e30, mutex=0x7b19e6866e08) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 18 (Thread 0x7b1939ffb6c0 (LWP 9575) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866edc) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866edc) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866edc, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866e88, cond=0x7b19e6866eb0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866eb0, mutex=0x7b19e6866e88) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 17 (Thread 0x7b19397fa6c0 (LWP 9576) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866f58) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866f58) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866f58, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866f08, cond=0x7b19e6866f30) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866f30, mutex=0x7b19e6866f08) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 16 (Thread 0x7b1938ff96c0 (LWP 9577) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6866fdc) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6866fdc) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6866fdc, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6866f88, cond=0x7b19e6866fb0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6866fb0, mutex=0x7b19e6866f88) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 15 (Thread 0x7b191bfff6c0 (LWP 9578) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6867058) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6867058) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6867058, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867008, cond=0x7b19e6867030) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6867030, mutex=0x7b19e6867008) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 14 (Thread 0x7b191b7fe6c0 (LWP 9579) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68670d8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68670d8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68670d8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867088, cond=0x7b19e68670b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68670b0, mutex=0x7b19e6867088) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 13 (Thread 0x7b191affd6c0 (LWP 9580) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6867158) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6867158) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6867158, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867108, cond=0x7b19e6867130) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6867130, mutex=0x7b19e6867108) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 12 (Thread 0x7b191a7fc6c0 (LWP 9581) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68671d8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68671d8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68671d8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867188, cond=0x7b19e68671b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68671b0, mutex=0x7b19e6867188) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 11 (Thread 0x7b1919ffb6c0 (LWP 9582) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31512, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6867258) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31512, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6867258) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6867258, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867208, cond=0x7b19e6867230) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6867230, mutex=0x7b19e6867208) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 10 (Thread 0x7b19197fa6c0 (LWP 9583) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31513, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68672d8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31513, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68672d8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68672d8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867288, cond=0x7b19e68672b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68672b0, mutex=0x7b19e6867288) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 9 (Thread 0x7b1918ff96c0 (LWP 9584) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31512, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6867358) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31512, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6867358) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6867358, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867308, cond=0x7b19e6867330) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6867330, mutex=0x7b19e6867308) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 8 (Thread 0x7b18fbfff6c0 (LWP 9585) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31512, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e68673d8) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31512, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e68673d8) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e68673d8, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867388, cond=0x7b19e68673b0) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e68673b0, mutex=0x7b19e6867388) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 7 (Thread 0x7b18fb7fe6c0 (LWP 9586) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=31512, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x7b19e6867458) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=31512, abstime=0x0, clockid=0, expected=0, futex_word=0x7b19e6867458) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b19e6867458, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429b8cd in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0x7b19e6867408, cond=0x7b19e6867430) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0x7b19e6867430, mutex=0x7b19e6867408) at ./nptl/pthread_cond_wait.c:627
+#5  0x00007b1a308b9047 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007b19e3624573 in Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::WaitForWork(Eigen::EventCount::Waiter*, tsl::thread::EigenEnvironment::Task*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3623c54 in std::_Function_handler<void (), Eigen::ThreadPoolTempl<tsl::thread::EigenEnvironment>::ThreadPoolTempl(int, bool, tsl::thread::EigenEnvironment)::{lambda()#1}>::_M_invoke(std::_Any_data const&) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3623ad1 in void absl::lts_20260526::internal_any_invocable::RemoteInvoker<false, void, tsl::thread::EigenEnvironment::CreateThread(std::function<void ()>)::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+Thread 6 (Thread 0x7b18faffd6c0 (LWP 9587) "muzero-ttt"):
+#0  syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+#1  0x00007b19e393efb8 in absl::lts_20260526::synchronization_internal::FutexWaiter::WaitUntil(std::atomic<int>*, int, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#2  0x00007b19e393f057 in absl::lts_20260526::synchronization_internal::FutexWaiter::Wait(absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#3  0x00007b19e393ec22 in AbslInternalPerThreadSemWait_lts_20260526 () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#4  0x00007b19e393e634 in absl::lts_20260526::CondVar::WaitCommon(absl::lts_20260526::Mutex*, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#5  0x00007b19da983755 in xla::SlowOperationAlarm::AlarmLoop() () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#6  0x00007b19da984459 in void absl::lts_20260526::internal_any_invocable::LocalInvoker<false, void, xla::SlowOperationAlarm::ScheduleAlarm(xla::SlowOperationAlarm*)::$_0::operator()() const::{lambda()#1}&>(absl::lts_20260526::internal_any_invocable::TypeErasedState*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#9  0x00007b1a74329ecc in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 5 (Thread 0x7b18f95fc6c0 (LWP 9590) "muzero-ttt"):
+#0  syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+#1  0x00007b19e393efb8 in absl::lts_20260526::synchronization_internal::FutexWaiter::WaitUntil(std::atomic<int>*, int, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#2  0x00007b19e393f057 in absl::lts_20260526::synchronization_internal::FutexWaiter::Wait(absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#3  0x00007b19e393ec22 in AbslInternalPerThreadSemWait_lts_20260526 () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#4  0x00007b19e393c5e9 in absl::lts_20260526::Mutex::Block(absl::lts_20260526::base_internal::PerThreadSynch*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#5  0x00007b19e393c9f2 in absl::lts_20260526::Mutex::AwaitCommon(absl::lts_20260526::Condition const&, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#6  0x00007b19d5aaefc1 in tsl::UnboundedWorkQueue::PooledThreadFunc() () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#9  0x00007b1a74329ecc in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 4 (Thread 0x7b18f8dfb6c0 (LWP 9591) "muzero-ttt"):
+#0  syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+#1  0x00007b19e393efb8 in absl::lts_20260526::synchronization_internal::FutexWaiter::WaitUntil(std::atomic<int>*, int, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#2  0x00007b19e393f057 in absl::lts_20260526::synchronization_internal::FutexWaiter::Wait(absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#3  0x00007b19e393ec22 in AbslInternalPerThreadSemWait_lts_20260526 () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#4  0x00007b19e393c5e9 in absl::lts_20260526::Mutex::Block(absl::lts_20260526::base_internal::PerThreadSynch*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#5  0x00007b19e393c9f2 in absl::lts_20260526::Mutex::AwaitCommon(absl::lts_20260526::Condition const&, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#6  0x00007b19d5aaefc1 in tsl::UnboundedWorkQueue::PooledThreadFunc() () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+#9  0x00007b1a74329ecc in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 3 (Thread 0x7b18ebfff6c0 (LWP 9592) "muzero-ttt"):
+#0  0x00007b1a7430e90b in __GI_sched_yield () at ../sysdeps/unix/syscall-template.S:120
+#1  0x00007b19a08d6f8c in ?? () from /lib/x86_64-linux-gnu/libze_intel_gpu.so.1
+#2  0x00007b19a08d5ac2 in ?? () from /lib/x86_64-linux-gnu/libze_intel_gpu.so.1
+#3  0x00007b1a33b62173 in ur::level_zero::urEventWait(unsigned int, ur_event_handle_t_* const*) () from /home/skoonce/lean/lean4-mlir-muzero/.venv-xpu/lib/libur_adapter_level_zero.so.0
+#4  0x00007b1a333272eb in ur_loader::urEventWait(unsigned int, ur_event_handle_t_* const*) () from /home/skoonce/lean/lean4-mlir-muzero/.venv-xpu/lib/libur_loader.so.0
+#5  0x00007b1a3333cab7 in urEventWait () from /home/skoonce/lean/lean4-mlir-muzero/.venv-xpu/lib/libur_loader.so.0
+#6  0x00007b1a30f04658 in sycl::_V1::detail::DispatchHostTask::waitForEvents() const () from /home/skoonce/lean/lean4-mlir-muzero/.venv-xpu/lib/libsycl.so.8
+#7  0x00007b1a30f03484 in sycl::_V1::detail::DispatchHostTask::operator()() const () from /home/skoonce/lean/lean4-mlir-muzero/.venv-xpu/lib/libsycl.so.8
+#8  0x00007b1a30e1fa35 in sycl::_V1::detail::ThreadPool::worker() () from /home/skoonce/lean/lean4-mlir-muzero/.venv-xpu/lib/libsycl.so.8
+#9  0x00007b1a308ecdb4 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+Thread 2 (Thread 0x7b18e9d826c0 (LWP 9595) "muzero-ttt"):
+#0  syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
+#1  0x00007b19e393efb8 in absl::lts_20260526::synchronization_internal::FutexWaiter::WaitUntil(std::atomic<int>*, int, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#2  0x00007b19e393f057 in absl::lts_20260526::synchronization_internal::FutexWaiter::Wait(absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#3  0x00007b19e393ec22 in AbslInternalPerThreadSemWait_lts_20260526 () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#4  0x00007b19e393c5e9 in absl::lts_20260526::Mutex::Block(absl::lts_20260526::base_internal::PerThreadSynch*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#5  0x00007b19e393d52d in absl::lts_20260526::Mutex::LockSlowLoop(absl::lts_20260526::SynchWaitParams*, int) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#6  0x00007b19e393ca02 in absl::lts_20260526::Mutex::AwaitCommon(absl::lts_20260526::Condition const&, absl::lts_20260526::synchronization_internal::KernelTimeout) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#7  0x00007b19d5aaefc1 in tsl::UnboundedWorkQueue::PooledThreadFunc() () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#8  0x00007b19e3610078 in tsl::(anonymous namespace)::PThread::ThreadFn(void*) () from .venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+#9  0x00007b1a7429cb84 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:447
+Thread 1 (Thread 0x7b1a744c5800 (LWP 9367) "muzero-ttt"):
+#0  0x00007b1a74298e51 in __futex_abstimed_wait_common64 (private=128, cancel=true, abstime=0x0, op=265, expected=9370, futex_word=0x7b1a2bfff990) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=128, abstime=0x0, clockid=0, expected=9370, futex_word=0x7b1a2bfff990) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x7b1a2bfff990, expected=9370, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=128) at ./nptl/futex-internal.c:139
+#3  0x00007b1a7429e883 in __pthread_clockjoin_ex (threadid=135352337561280, thread_return=0x0, clockid=0, abstime=0x0, block=<optimized out>) at ./nptl/pthread_join_common.c:102
+#4  0x00006401a9fa6101 in lean::run_with_thread_stack(std::__1::function<void ()> const&) ()
+#5  0x00006401a9fa6244 in lean_run_main ()
+#6  0x00006401a9dd7a4a in main ()
+[Inferior 1 (process 9367) detached]

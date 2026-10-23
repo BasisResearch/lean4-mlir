@@ -1,0 +1,46 @@
+Oct 23 17:23:44 minerva kernel: xe 0000:0d:00.0: Using 46-bit DMA addresses
+Oct 23 18:24:17 minerva kernel: xe 0000:0d:00.0: [drm] Tile0: GT0: Engine reset: engine_class=ccs, logical_mask: 0x1, guc_id=2, state=0x289
+Oct 23 18:24:22 minerva kernel: ------------[ cut here ]------------
+Oct 23 18:24:22 minerva kernel: xe 0000:0d:00.0: [drm] Tile0: GT0: Unexpected engine class:instance 3:8 for context utilization
+Oct 23 18:24:22 minerva kernel: WARNING: drivers/gpu/drm/xe/xe_lrc.c:2394 at get_ctx_timestamp+0x9f/0x150 [xe], CPU#4: kworker/u128:0/12548
+Oct 23 18:24:22 minerva kernel: Modules linked in: xt_connmark xt_tcpudp xt_mark xt_conntrack xt_MASQUERADE bridge stp llc xfrm_user xfrm_algo xt_set ip_set nft_chain_nat nf_nat nf_conntrack nf_defrag_ipv6 nf_defrag_ipv4 xt_addrtype nft_compat nf_tables overlay cfg80211 snd_hda_codec_intelhdmi snd_hda_codec_hdmi mei_lb mei_gsc_proxy mei_gsc cmdlinepart mei_me mtd_intel_dg pmt_telemetry mei pmt_discovery pmt_crashlog mtd pmt_class binfmt_misc nls_iso8859_1 xe snd_hda_codec_alc882 snd_hda_codec_realtek_lib snd_hda_codec_generic drm_gpusvm_helper intel_vsec gpu_sched drm_gpuvm drm_buddy snd_hda_intel drm_ttm_helper ttm snd_hda_codec drm_exec amd_atl drm_suballoc_helper intel_rapl_msr intel_rapl_common snd_hda_core drm_display_helper snd_intel_dspcfg cec snd_intel_sdw_acpi mfd_aaeon eeepc_wmi ee1004 snd_hwdep asus_wmi rc_core sparse_keymap snd_pcm asus_ec_sensors video edac_mce_amd mxm_wmi platform_profile wmi_bmof snd_timer ipmi_devintf rapl snd mlx5_fwctl i2c_piix4 soundcore ccp ipmi_msghandler fwctl i2c_smbus k10temp input_leds mac_hid
+Oct 23 18:24:22 minerva kernel:  sch_fq_codel dm_multipath efi_pstore nfnetlink dmi_sysfs ip_tables x_tables autofs4 btrfs libblake2b raid10 raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor raid6_pq raid1 raid0 linear mlx5_ib ib_uverbs macsec ib_core hid_generic usbhid hid mlx5_core ghash_clmulni_intel mlxfw igb nvme psample ahci r8169 libahci tls dca realtek nvme_core pci_hyperv_intf i2c_algo_bit nvme_keyring nvme_auth hkdf wmi aesni_intel
+Oct 23 18:24:22 minerva kernel: CPU: 4 UID: 0 PID: 12548 Comm: kworker/u128:0 Not tainted 7.0.0-38-generic #38~24.04.4-Ubuntu PREEMPT(lazy) 
+Oct 23 18:24:22 minerva kernel: Hardware name: ASUS System Product Name/Pro WS X570-ACE, BIOS 5601 08/18/2026
+Oct 23 18:24:22 minerva kernel: Workqueue: gt-ordered-wq drm_sched_job_timedout [gpu_sched]
+Oct 23 18:24:22 minerva kernel: RIP: 0010:get_ctx_timestamp+0xac/0x150 [xe]
+Oct 23 18:24:22 minerva kernel: Code: 7f 08 4c 8b 7f 50 4d 85 ff 75 03 4c 8b 3f e8 6b 51 97 cd 48 89 c6 48 8d 3d f1 8e 3b 00 41 54 45 89 e9 45 89 f0 89 d9 4c 89 fa <67> 48 0f b9 3a 58 48 8d 65 d8 b8 ff ff ff ff 5b 41 5c 41 5d 41 5e
+Oct 23 18:24:22 minerva kernel: RSP: 0018:ffffcf1e8704fc98 EFLAGS: 00010246
+Oct 23 18:24:22 minerva kernel: RAX: ffffffffc111f7ba RBX: 0000000000000000 RCX: 0000000000000000
+Oct 23 18:24:22 minerva kernel: RDX: ffff8dd583583200 RSI: ffffffffc111f7ba RDI: ffffffffc1602130
+Oct 23 18:24:22 minerva kernel: RBP: ffffcf1e8704fcc8 R08: 0000000000000000 R09: 0000000000000003
+Oct 23 18:24:22 minerva kernel: R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000008
+Oct 23 18:24:22 minerva kernel: R13: 0000000000000003 R14: 0000000000000000 R15: ffff8dd583583200
+Oct 23 18:24:22 minerva kernel: FS:  0000000000000000(0000) GS:ffff8df49d3e0000(0000) knlGS:0000000000000000
+Oct 23 18:24:22 minerva kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Oct 23 18:24:22 minerva kernel: CR2: 00007e5180000020 CR3: 000000010d818000 CR4: 0000000000350ef0
+Oct 23 18:24:22 minerva kernel: Call Trace:
+Oct 23 18:24:22 minerva kernel:  <TASK>
+Oct 23 18:24:22 minerva kernel:  xe_lrc_timestamp+0xc4/0xf0 [xe]
+Oct 23 18:24:22 minerva kernel:  check_timeout+0xb5/0x250 [xe]
+Oct 23 18:24:22 minerva kernel:  guc_exec_queue_timedout_job+0x328/0xd60 [xe]
+Oct 23 18:24:22 minerva kernel:  ? srso_return_thunk+0x5/0x5f
+Oct 23 18:24:22 minerva kernel:  drm_sched_job_timedout+0x8b/0x1c0 [gpu_sched]
+Oct 23 18:24:22 minerva kernel:  process_one_work+0x1af/0x430
+Oct 23 18:24:22 minerva kernel:  worker_thread+0x1bf/0x350
+Oct 23 18:24:22 minerva kernel:  ? __pfx_worker_thread+0x10/0x10
+Oct 23 18:24:22 minerva kernel:  kthread+0xfb/0x140
+Oct 23 18:24:22 minerva kernel:  ? __pfx_kthread+0x10/0x10
+Oct 23 18:24:22 minerva kernel:  ret_from_fork+0x1f8/0x2b0
+Oct 23 18:24:22 minerva kernel:  ? __pfx_kthread+0x10/0x10
+Oct 23 18:24:22 minerva kernel:  ret_from_fork_asm+0x1a/0x30
+Oct 23 18:24:22 minerva kernel:  </TASK>
+Oct 23 18:24:22 minerva kernel: ---[ end trace 0000000000000000 ]---
+Oct 23 18:24:23 minerva kernel: xe 0000:0d:00.0: [drm] Tile0: GT0: Engine reset: engine_class=bcs, logical_mask: 0x2, guc_id=0, state=0x209
+Oct 23 18:24:23 minerva kernel: xe 0000:0d:00.0: [drm] Tile0: GT0: Timedout job: seqno=2364872, lrc_seqno=2364872, guc_id=0, flags=0x73 in no process [-1]
+Oct 23 18:24:23 minerva kernel: xe 0000:0d:00.0: [drm] Xe device coredump has been created
+Oct 23 18:24:23 minerva kernel: xe 0000:0d:00.0: [drm] Check your /sys/class/drm/card0/device/devcoredump/data
+Oct 23 18:24:23 minerva kernel: xe 0000:0d:00.0: [drm] Tile0: GT0: trying reset from guc_exec_queue_timedout_job [xe]
+Oct 23 18:24:23 minerva kernel: xe 0000:0d:00.0: [drm] Tile0: GT0: reset queued
+Oct 23 18:24:23 minerva kernel: xe 0000:0d:00.0: [drm] Tile0: GT0: reset started
+Oct 23 18:24:23 minerva kernel: xe 0000:0d:00.0: [drm] Tile0: GT0: reset done
