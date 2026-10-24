@@ -243,6 +243,7 @@ lean_lib «Certs» where
              `LeanMlir.Proofs.Nets.Small.Cifar8StepTieG,
              `LeanMlir.Proofs.Nets.Small.Cifar8BnStepTieG,
              `LeanMlir.Proofs.Nets.Small.Cifar8BbnStepTieB,
+             `LeanMlir.Proofs.Nets.Small.Cifar8BbnWholeBackB,
              `LeanMlir.Proofs.Nets.Small.SmallParamGrad,
              `LeanMlir.Proofs.Nets.Small.LinearParamGrad,
              `LeanMlir.Proofs.Nets.Small.MlpParamGrad,

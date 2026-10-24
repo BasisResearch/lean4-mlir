@@ -36,12 +36,15 @@ twin of `den bnBatchBack`; `BackLinks.bnInB_eq_den_bnBatchBack` is the identity,
 `bnInB_eq_bnBackB` says it is the certified `bnBatchLA` VJP). So the statement is about exactly
 the values the artifact computes, with no symbolic cotangent and no free activation.
 
-**What is NOT stated here** (the second half ResNet-34's tie has and this net does not yet):
-that this chain IS the certified whole-net backward — `r34IdCotIn_eq_vjp`'s analogue, which needs
-the batched-BN cifar8 forward's `HasVJPAt` and the per-link `_eq_vjp` lemmas. Each link's `den`
-theorem exists (`den_maxPoolBackB`, `den_convBackBatched_eq_cInB`, `bnInB_eq_bnBackB`, the relu
-mask by `rfl`), so that half is composition work, listed in the planning note. Numerically the
-gap is covered by [`tests/TestCifar8BbnGradCheck.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestCifar8BbnGradCheck.lean) and `tests/cifar8_bbn_jax_ref.py`.
+**The other half — that this chain IS the certified whole-net backward — is
+[`Cifar8BbnWholeBackB.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/LeanMlir/Proofs/Nets/Small/Cifar8BbnWholeBackB.lean)**:
+`cifar8BbnBHasVJPAt_backward` says the composite certified VJP's backward is the chain in the
+`BackLinks` vocabulary (`reluMaskB`, `bnBackB`, `cInB`, the per-example pool scatter,
+`rowDenseBackFlat`), and `cifar8BbnInputGradB_correct` reads it as the whole net's Jacobian
+contracted with the cotangent. Each link's `den` theorem (`den_maxPoolBackB`,
+`den_convBackBatched_eq_cInB`, `bnInB_eq_bnBackB`, the relu mask by `rfl`) is what connects the
+nodes below to that vocabulary. Numerically the same fact is checked by
+[`tests/TestCifar8BbnGradCheck.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/tests/TestCifar8BbnGradCheck.lean) and `tests/cifar8_bbn_jax_ref.py`.
 
 **`N` is a binder, `bf16` is a flag.** The bf16 artifacts' conv forward, input-VJP and weight
 gradient are the bf16 kinds; the capstone takes `bf16` and reaches them through `ConvWTiedBAt`

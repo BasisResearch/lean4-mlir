@@ -5105,9 +5105,10 @@ The fused ties' chain, node for node, with the update peeled off; see
   the layer's Jacobian contracted with the cotangent the rendered backward
   chain delivers, summed over the batch, at either precision, with the
   batch-mean softmax cross-entropy at any target. The batch is coupled
-  through the BatchNorms, so there is no per-example reading; the
-  chain-is-the-VJP half and the loss-gradient rung are not stated for these
-  steps.
+  through the BatchNorms, so there is no per-example reading. That the
+  chain delivering those cotangents is the certified whole-net backward is
+  Theorem~\ref{thm:cifar8bbn_whole_back}; the loss-gradient rung is not
+  stated for these steps.
 \end{theorem}
 
 \begin{proof}
@@ -5116,6 +5117,50 @@ Thirty-eight node ties in the batched vocabulary of
 Theorem~\ref{thm:resnet34_step_tie} --- convolution weight and bias,
 BatchNorm pair, dense weight and bias --- at the render's own chain; see
 \leandocref{Proofs.Cifar8BbnTieB.cifar8Bbn\_train\_step\_tiedB}.
+\end{proof}
+
+\begin{theorem}[The batch-statistics backward chain is the certified whole-net backward]
+  \label{thm:cifar8bbn_whole_back}
+  \lean{Proofs.cifar8BbnInputGradB_correct, Proofs.cifar8BbnBHasVJPAt_backward,
+        Proofs.cifar8BbnLayer_fwd}
+  \leanok
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:maxPool2,
+      ax:maxPool2HasVJP3, ax:pdiv, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu,
+      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+  \Assume{}
+  \begin{enumerate}
+    \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)}]
+    \item at \(x\), each of the eight pre-ReLU activations is off zero, each of
+          the four pools has a unique maximum in every window of every
+          example, and the two head pre-activations are off zero
+          \hfill[\texttt{hs}]
+  \end{enumerate}
+  \Prove{} the backward chain the \texttt{cifar8wb\_bbn} steps render ---
+  the three dense backs with the head's two ReLU masks between them, then per
+  stage the pool scatter and twice the ReLU mask, the batch-statistics
+  BatchNorm backward and the convolution input-VJP --- is the backward of
+  the certified VJP of the whole batched forward, and so at every batch size
+  \(N\), every logits cotangent \(dy\) and every input coordinate \(i\) equals
+  \[
+    \sum_j \pdiv(\mathrm{cifar8BbnForwardB})\, x\, i\, j \cdot dy_j ,
+  \]
+  the Jacobian of the net contracted with the cotangent. The forward whose
+  Jacobian this is, is the seventeen-layer composite the net's certified
+  layer computes.
+\end{theorem}
+
+\begin{proof}
+\leanok
+The net is seventeen certified layers composed: eight conv--BN--ReLU stages
+(Theorem~\ref{thm:bnBatchTensor4HasVJP} inside each), four batched \(2 \times 2\)
+pools (the per-example pool VJP lifted over the batch), three dense layers and
+two ReLUs. Composition of certified layers is certified, so the composite's
+backward is the nested stage backwards; each stage's backward is read in the
+chain's vocabulary (the ReLU mask, the BatchNorm backward, the convolution
+input-VJP, the pool scatter), and the chain is that reading. The
+\(\pdiv\) form is the composite VJP's own correctness; see
+\leandocref{Proofs.cifar8BbnInputGradB\_correct}.
 \end{proof}
 
 \begin{theorem}[The trained steps' gradients are the loss's derivatives]
@@ -5481,9 +5526,10 @@ need no separate proof between them. \texttt{cifarCnnBn8HasVJPAt\_correct}
 (\texttt{Proofs/Nets/Small/CifarCNN.lean}) is the statement that its
 backward is the derivative, and \texttt{Proofs/Nets/Small/Cifar8BnStepTie.lean} carries
 that through to the emitted per-image training step. The batch-statistics
-step is tied node by node in Theorem~\ref{thm:cifar8bbn_step_tie}, with
-its whole-net half not yet stated. All three nets run the same XLA/PJRT
-path on the GPU.
+step is tied node by node in Theorem~\ref{thm:cifar8bbn_step_tie}, and its
+backward chain is the certified whole-net backward in
+Theorem~\ref{thm:cifar8bbn_whole_back}. All three nets run the same
+XLA/PJRT path on the GPU.
 \end{sloppypar}
 
 \subsection*{Lever 1: normalization}
