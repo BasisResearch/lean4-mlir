@@ -1,9 +1,9 @@
 # Intel Arc Pro B50 — the verified MNIST, CIFAR and Imagenette tiers on oneAPI
 
 **Status: works — every `arc_setup.sh` rung green on minerva's Arc Pro B50 at Gen3 (2026-10-22),
-ResNet-34's full Imagenette run done, and all seven Imagenette nets tracking CUDA over their
-first five epochs. TODO: full runs of the other six.** MNIST and CIFAR-10 train end to end on the
-GPU and match CUDA; ResNet-34 ran its 80 Imagenette epochs to 89.68 % in 86 min; ConvNeXt-T and
+and all seven Imagenette nets' full 80-epoch runs on record (2026-10-22 to 24), each inside
+CUDA's five-seed range or within two images of its edge.** MNIST and CIFAR-10 train end to end
+on the GPU and match CUDA; the seven Imagenette nets take ~9 h in all at 62–69 W; ConvNeXt-T and
 ViT-Tiny reproduce CUDA's training loss to 4–5 decimals. That took **the slot at PCIe Gen3**: at
 Gen4 the card fell off the bus under load every time — two minutes into sustained 70 W, and once
 three minutes into the suite (§4).
@@ -176,15 +176,32 @@ resuming a copy of the checkpoint for two more epochs gave 49.48 % and then 65.6
 in the eval, not a fault (CUDA's seeds wobble too, by up to 16 points). **EfficientNet-B0**'s 58.06 %
 is just under its seeds' 58.68 % floor at an epoch where they span nine points; its loss is inside.
 
-**Full runs (2026-10-23).** ViT-Tiny, 80 epochs: **68.46 %** (CUDA's seeds 67.82–69.17) in 39 min
-([`runs/2026-10-23-vit-verified-adam/`](../runs/2026-10-23-vit-verified-adam/)). MobileNetV2 reached
-epoch 46 (87.01 %) before the card dropped off the bus at 06:34:38 — one second after
-unattended-upgrades installed liblzma5 and needrestart restarted systemd-udevd, journald and others
-([`runs/2026-10-23-mobilenetv2-verified-adam/`](../runs/2026-10-23-mobilenetv2-verified-adam/):
-`kernel-`, `systemd-`, `apt-06-34.txt`). Its `full` checkpoint at epoch 46 is intact.
+**All seven, 80 epochs (2026-10-22 to 24, Gen3).** One process at a time, 15 minutes idle between
+runs, `LEAN_MLIR_CKPT_TAG=full`, each run's 1 Hz sensor log beside it; no kernel errors in any of
+them, the link at 8 GT/s throughout. CUDA is the same five seeds per net on a 4060 Ti
+([`runs/2026-08-31-imagenette-n3/`](../runs/2026-08-31-imagenette-n3/)).
 
-**TODO: full runs** of the other five Imagenette nets (MobileNetV2 from epoch 46); a second card
-for the suite's two-device tests and the DP path.
+| net | top-1 | CUDA, 5 seeds | wall | mean W | run |
+|---|---|---|---|---|---|
+| ViT-Tiny | 68.46 % | 67.82–69.17 | 39 min | 67.2 | [`2026-10-23-vit-…`](../runs/2026-10-23-vit-verified-adam/) |
+| MobileNetV2 | 88.71 % | 88.74–89.32 (one image under) | ~50 min¹ | 61.8 | [`2026-10-23-mobilenetv2-…`](../runs/2026-10-23-mobilenetv2-verified-adam/) |
+| MobileNetV4-Conv-M | 86.06 % | 85.15–86.90² | 57 min | 63.3 | [`2026-10-23-mobilenetv4-…`](../runs/2026-10-23-mobilenetv4-verified-adam/) |
+| EfficientNet-B0 | 90.55 % | 89.45–90.50 (two images over) | 58 min | 64.3 | [`2026-10-24-efficientnet-…`](../runs/2026-10-24-efficientnet-verified-adam/) |
+| ResNet-34 | 89.68 % | 89.68–90.37 | 86 min | 68.6 | [`2026-10-22-resnet34-…`](../runs/2026-10-22-resnet34-verified-adam/) |
+| ConvNeXt-T | 82.65 % | 82.27 (one run)³ | 1 h 52 | 68.7 | [`2026-10-24-convnext-…`](../runs/2026-10-24-convnext-verified-adam/) |
+| ResNet-50 | 89.61 % | 89.58–89.96 | 2 h 06 | 68.1 | [`2026-10-24-resnet50-…`](../runs/2026-10-24-resnet50-verified-adam/) |
+
+¹ In two pieces: epochs 1–46 until the card dropped off the bus at 06:34:38 on 10-23 — one second
+after unattended-upgrades installed liblzma5 and needrestart restarted systemd-udevd, journald and
+others (`kernel-`, `systemd-`, `apt-06-34.txt` beside the run; "What to expect" below) — then
+epochs 47–80 from the `full` checkpoint (21 min), the first piece's log kept as
+`*.until-2239.log`. ² CUDA's seeds predate 90e4af7e (the timm `conv_medium` rebuild); no
+post-rebuild 80-epoch CUDA run is on record. ³ The LayerScale 1e-6 recipe's one CUDA run,
+[`runs/2026-09-13-convnext-imagenette-ls1e-6-resident/`](../runs/2026-09-13-convnext-imagenette-ls1e-6-resident/);
+the August seeds (85.35–85.78) are the older recipe. The 95 % interval on any one of these is
+about ±1.1 points, wider than every gap above.
+
+**TODO:** a second card for the suite's two-device tests and the DP path.
 
 ## What to expect
 
