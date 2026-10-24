@@ -44,7 +44,10 @@ attempt (below).
 another card). Gate B **fails** at 25 sims: X 0/249/7, O 0/234/22. M2 seen 86.25 % / unseen
 79.68 % agree, sign 80.91 % / 72.13 %. The probe reads the board from h perfectly (100 % / 100 %
 held out) and from g after one imagined move at 42 % of cells, **0 % of whole boards**, ~46 %
-to k = 10 — the 3×3 finding (values, not the board) holds at 4×4.
+to k = 10 — the 3×3 finding (values, not the board) holds at 4×4. **Corrected 2026-10-24:**
+that is h's probe applied to g; the probe *refit* on g (not reached before the stop) reads the
+whole board at 84 % after one imagined move here and at 99.7 % after nine in the 150-iteration
+learners — `../2026-10-24-muzero-ttt-b50-it150/README.md` §3.
 
 **Cost, the reason it did not finish:** the `own` lines block alone was ~46 min, and M4b and the
 blunder account run a search from every start (~70 min each at 25 sims, ~4.7 h at 100 — 35k

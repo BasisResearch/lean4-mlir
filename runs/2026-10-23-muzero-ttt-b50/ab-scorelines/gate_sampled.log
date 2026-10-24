@@ -1,0 +1,98 @@
+I1024 08:24:51.933238  175659 sycl_gpu_runtime.cc:204] Selected platform: Intel(R) oneAPI Unified Runtime over Level-Zero
+I1024 08:24:51.949929  175659 service.cc:154] XLA service 0x78835248f590 initialized for platform SYCL (this does not guarantee that XLA will be used). Devices:
+I1024 08:24:51.949941  175659 service.cc:170]   StreamExecutor [0]: Intel(R) Arc(TM) Pro B50 Graphics, <undefined> (Driver: 1.17.39395; Runtime: 8.0.0; Toolkit: 0.0.0; DNN: 3.12.3)
+I1024 08:24:51.949950  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950169  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950199  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950225  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950252  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950279  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950305  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950332  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950359  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950385  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950419  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950446  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950472  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950499  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950526  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950553  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950579  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.950606  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:51.952334  175659 se_gpu_pjrt_client.cc:1324] Using BFC allocator.
+I1024 08:24:51.952353  175659 gpu_helpers.cc:162] XLA backend allocating 11.94GiB (12821987328 bytes) on device 0 for BFCAllocator.
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] d2h: SERIAL — one readback in flight (oneAPI default — see d2h_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1024 08:24:51.958196  175659 se_gpu_pjrt_compiler.cc:390] Found GPU target config and a PjRtClient with matching configuration. Performing a JIT compilation.
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_h_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 30 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_h_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 25 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_h_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 56 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_h_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 60 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_g_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 31 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_g_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 27 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_g_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 64 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_g_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 67 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_f_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 69 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_f_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 52 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_f_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 149 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_f_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 50 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_r_3x3_c32_eval_b.mlir (@forward_eval, 1 outputs, 1 replica) in 42 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_r_3x3_c32_eval_f.mlir (@forward_eval, 1 outputs, 1 replica) in 41 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_r_3x3_c32_vjp.mlir (@main, 7 outputs, 1 replica) in 90 ms
+[pjrt_ffi] compiled .lake/build/muzero_ttt_3x3_muzero_ttt_r_3x3_c32_adam.mlir (@main, 18 outputs, 1 replica) in 50 ms
+muzero ttt 3x3 (xla): h 56608 + g 74464 + f 3150 + r 2565 = 136787 params, C 32, K 5, 20 iterations of 256 games at 25 sims, batch 64 × 10 epochs over the last 20 iterations, dihedral views, lr 0.001000, cpuct 1.250000 (raw Q), Dir(1.000000) at 0.250000, seed 11 (graphs 1225 ms)
+I1024 08:24:53.161119  175724 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:53.161341  175724 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:53.165718  175659 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:53.222903  175725 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:53.265547  175724 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:53.369618  175724 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+I1024 08:24:53.371872  175724 sycl_stream.cc:262] Creating stream for device ordinal 0 with multiple streams enabled
+  shape checks passed
+score: 4520 decision positions, 1401 visited by self-play (.lake/build/muzero_ttt_3x3_ab3_seen.bin), lines of up to 10 moves
+score: lines, M4a, M4b, blunders and M4c on a sample of 1000 starts (317 visited)
+  M1 vs perfect, net alone: as X 0/77/179, as O 0/8/248 (W/D/L)
+  M1 vs perfect, search 25: as X 0/33/223, as O 0/14/242 (W/D/L)
+  M1 vs random, net alone: as X 164/60/32, as O 97/23/136 (W/D/L)
+  M1 vs random, search 25: as X 178/34/44, as O 121/17/118 (W/D/L)
+  M2 f∘h, all (4520): agree 63.92%  value mse 0.4801  sign 41.02%
+  M2 f∘h, seen (1401): agree 63.31%  value mse 0.4567  sign 44.83%
+  M2 f∘h, unseen (3119): agree 64.19%  value mse 0.4906  sign 39.31%
+  M4d probe on h, held out (2260): cells 100.00%  whole boards 100.00%
+  lines: own — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 317: 62.8% / 41.3%   unseen 683: 68.1% / 42.8%   0.6%   100.0% / 100.0%   –% / –%
+    k 1   seen 219: 61.2% / 33.8%   unseen 469: 65.9% / 29.6%   46.5%   34.7% / 0.0%   0.0% / 0.00%
+    k 2   seen 151: 65.6% / 37.7%   unseen 285: 57.2% / 31.6%   69.7%   25.9% / 0.0%   0.0% / 0.00%
+    k 3   seen 82: 78.0% / 41.5%   unseen 135: 60.0% / 40.7%   67.3%   22.9% / 0.0%   0.0% / 0.00%
+    k 4   seen 44: 88.6% / 36.4%   unseen 48: 79.2% / 60.4%   78.3%   18.6% / 0.0%   0.0% / 0.00%
+    k 5   seen 18: 94.4% / 27.8%   unseen 10: 90.0% / 50.0%   85.7%   17.1% / 0.0%   0.0% / 0.00%
+    k 6   seen 2: 100.0% / 50.0%   unseen 1: 100.0% / 100.0%   100.0%   11.1% / 0.0%   0.0% / 0.00%
+    probe refit on g, held out by board, cells / whole boards:
+  lines: perfect — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 317: 62.8% / 41.3%   unseen 683: 68.1% / 42.8%   0.6%   100.0% / 100.0%   –% / –%
+    k 1   seen 148: 79.1% / 39.9%   unseen 394: 76.6% / 40.4%   36.0%   34.7% / 0.0%   0.0% / 0.00%
+    k 2   seen 106: 72.6% / 47.2%   unseen 282: 62.8% / 45.4%   67.3%   28.4% / 0.0%   0.0% / 0.00%
+    k 3   seen 64: 89.1% / 73.4%   unseen 109: 76.1% / 67.0%   68.8%   26.3% / 0.0%   0.0% / 0.00%
+    k 4   seen 36: 80.6% / 69.4%   unseen 59: 89.8% / 69.5%   68.4%   20.4% / 0.0%   0.0% / 0.00%
+    k 5   seen 14: 100.0% / 92.9%   unseen 18: 88.9% / 100.0%   75.0%   17.0% / 0.0%   0.0% / 0.00%
+    k 6   seen 3: 100.0% / 100.0%   unseen 3: 66.7% / 100.0%   100.0%   20.4% / 0.0%   0.0% / 0.00%
+    k 7   seen 3: 66.7% / 100.0%   unseen 1: 100.0% / 100.0%   100.0%   8.3% / 0.0%   –% / 0.00%
+    k 8   seen 1: 100.0% / 100.0%   100.0%   22.2% / 0.0%   –% / 0.00%
+    probe refit on g, held out by board, cells / whole boards:
+  lines: random — per k, per split: n: policy agree / value sign; then all: argmax on a taken cell, probe cells / whole boards, r recall / false calls
+    k 0   seen 317: 62.8% / 41.3%   unseen 683: 68.1% / 42.8%   0.6%   100.0% / 100.0%   –% / –%
+    k 1   seen 213: 65.3% / 25.8%   unseen 534: 69.7% / 24.9%   36.5%   33.1% / 0.0%   0.0% / 0.00%
+    k 2   seen 139: 69.8% / 28.1%   unseen 345: 56.5% / 24.3%   74.6%   27.8% / 0.0%   0.0% / 0.00%
+    k 3   seen 75: 76.0% / 33.3%   unseen 173: 61.3% / 28.3%   75.4%   23.5% / 0.0%   0.0% / 0.00%
+    k 4   seen 34: 94.1% / 32.4%   unseen 72: 70.8% / 33.3%   80.2%   21.0% / 0.0%   0.0% / 0.00%
+    k 5   seen 11: 90.9% / 45.5%   unseen 22: 90.9% / 27.3%   75.8%   15.2% / 0.0%   0.0% / 0.00%
+    k 6   seen 2: 50.0% / 50.0%   50.0%   33.3% / 0.0%   0.0% / 0.00%
+    probe refit on g, held out by board, cells / whole boards:
+  M4a every legal move from every decision position: winning moves called 0.00% (611), others called wins 0.00% (2944); visited starts 0.00% / 0.00%, unvisited 0.00% / 0.00%
+  M4b search principal lines (25 sims): through a taken cell 51.50%, past the true end 39.60%  (visited 49.21% / unvisited 52.56% taken)
+  blunders (25 sims): 45 starts where the search errs and the net alone does not; phantom win on the line for the mover 0.00% / the opponent 0.00%; the other 955 starts 0.00% / 0.00%
+  M4c transpositions (248 pairs a b c / c b a): ‖s₁ − s₂‖ 0.355, ‖s − h(board)‖ 5.488 / 5.502, two different boards 0.429; |v₁ − v₂| 0.046; value sign vs exact 54.8% / 50.8% (h of the board 83.9%)
+wrote .lake/build/muzero_ttt_3x3_ab3_score.csv (6035 ms)
