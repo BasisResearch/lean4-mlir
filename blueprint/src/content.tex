@@ -5107,8 +5107,8 @@ The fused ties' chain, node for node, with the update peeled off; see
   batch-mean softmax cross-entropy at any target. The batch is coupled
   through the BatchNorms, so there is no per-example reading. That the
   chain delivering those cotangents is the certified whole-net backward is
-  Theorem~\ref{thm:cifar8bbn_whole_back}; the loss-gradient rung is not
-  stated for these steps.
+  Theorem~\ref{thm:cifar8bbn_whole_back}, and that each node is the loss's
+  derivative in its parameter is Theorem~\ref{thm:cifar8bbn_loss_grad}.
 \end{theorem}
 
 \begin{proof}
@@ -5161,6 +5161,57 @@ chain's vocabulary (the ReLU mask, the BatchNorm backward, the convolution
 input-VJP, the pool scatter), and the chain is that reading. The
 \(\pdiv\) form is the composite VJP's own correctness; see
 \leandocref{Proofs.cifar8BbnInputGradB\_correct}.
+\end{proof}
+
+\begin{theorem}[Every batch-statistics gradient node is the loss's derivative]
+  \label{thm:cifar8bbn_loss_grad}
+  \lean{Proofs.cifar8Bbn_net_lossGrad, Proofs.cifar8Bbn_net_lossGrad_CE,
+        Proofs.SmallParamGrad.maxPoolB_relu_eventuallyEq_sel,
+        Proofs.SmallParamGrad.batchMapAux_maxPoolBackFlat_eq_selScatter}
+  \leanok
+  \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dBiasGradHasVJP,
+      ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:maxPool2, ax:pdiv, ax:pdiv_comp,
+      ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad,
+      def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP,
+      thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
+      thm:denseWeightGrad_correct, thm:hasGradAt_comp, thm:pdiv_finset_sum,
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
+  \Assume{}
+  \begin{enumerate}
+    \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)}]
+    \item at \(x\), every ReLU is off its corner, and at each of the four pools
+          every window of every example is entirely \(\le 0\) before its ReLU
+          or has its maximum strictly above every other cell except its twins,
+          cells equal at every weight upstream of that pool \hfill[\texttt{hx}]
+    \item a selection per pool names, for every example, a maximal cell of
+          each window
+    \item \(L\) is any loss of the logits, with gradient \(g\) there
+          \hfill[\texttt{hL}]
+  \end{enumerate}
+  \Prove{} each of the thirty-eight gradient nodes of
+  Theorem~\ref{thm:cifar8bbn_step_tie}, at the chain cotangent with each pool
+  routed at its selection, is \(\partial L/\partial\theta\) of the batched
+  forward with that one parameter varied: the loss is differentiable in the
+  parameter, and the node is its gradient. Instantiated at the batch-mean
+  softmax cross-entropy at the graph's soft target, with the emitted loss
+  cotangent. The render's own routing, each window's cotangent to its first
+  maximal cell, is one such selection, so the chain of
+  Theorem~\ref{thm:cifar8bbn_step_tie} is a chain this theorem is about.
+\end{theorem}
+
+\begin{proof}
+\leanok
+The per-image argument of Theorem~\ref{thm:cifar8_loss_grad}, lifted over
+the batch. Each pool is frozen at its selection, which makes it a gather,
+linear and smooth. Along any one parameter the pooled ReLU equals that
+gather near the point: a dead window stays dead, a strict maximum stays
+strict, and twins stay tied. The loss through the gather model is pulled
+back one certified op at a time, dense and ReLU through the head, then
+gather, BatchNorm and convolution through the four stages, and lands on the
+chain's own cotangent at every layer. Each node's lemma reads that
+cotangent as the derivative in its parameter, and the germ carries the
+result from the gather model to the real net; see
+\leandocref{Proofs.cifar8Bbn\_net\_lossGrad}.
 \end{proof}
 
 \begin{theorem}[The trained steps' gradients are the loss's derivatives]
@@ -5526,10 +5577,11 @@ need no separate proof between them. \texttt{cifarCnnBn8HasVJPAt\_correct}
 (\texttt{Proofs/Nets/Small/CifarCNN.lean}) is the statement that its
 backward is the derivative, and \texttt{Proofs/Nets/Small/Cifar8BnStepTie.lean} carries
 that through to the emitted per-image training step. The batch-statistics
-step is tied node by node in Theorem~\ref{thm:cifar8bbn_step_tie}, and its
+step is tied node by node in Theorem~\ref{thm:cifar8bbn_step_tie}, its
 backward chain is the certified whole-net backward in
-Theorem~\ref{thm:cifar8bbn_whole_back}. All three nets run the same
-XLA/PJRT path on the GPU.
+Theorem~\ref{thm:cifar8bbn_whole_back}, and each node is the loss's
+derivative in its parameter in Theorem~\ref{thm:cifar8bbn_loss_grad}. All
+three nets run the same XLA/PJRT path on the GPU.
 \end{sloppypar}
 
 \subsection*{Lever 1: normalization}
@@ -6014,7 +6066,8 @@ Theorem~\ref{thm:bnHasVJP} is that formula; the per-channel and
 batch-statistics forms are its instantiations; and the eight-convolution
 step is tied with BatchNorm and without
 (Theorems~\ref{thm:cifar8_step_tie} and~\ref{thm:cifar8bn_step_tie}), the
-batch-statistics step node by node (Theorem~\ref{thm:cifar8bbn_step_tie}),
+batch-statistics step node by node and as the loss's gradient
+(Theorems~\ref{thm:cifar8bbn_step_tie} and~\ref{thm:cifar8bbn_loss_grad}),
 with descent at the last convolution. The same emitted graph is LayerNorm's
 backward, since LayerNorm is BatchNorm along a different axis, which is
 why Chapters~\ref{chap:layernorm} and~\ref{chap:attention} add no
@@ -20069,7 +20122,7 @@ parameter, that an emitted optimizer update is its update law, or that
 one SGD step decreases the loss. A theorem that
 only restates a counted one at fixed dimensions or over the committed
 spec is not counted again. Across Chapters~1--9 there are \textbf{44 contracts},
-\textbf{9 witnesses} and \textbf{42 step certificates}. Even Chapter~1's
+\textbf{9 witnesses} and \textbf{45 step certificates}. Even Chapter~1's
 toolkit is used straight away by a proven model, so no chapter is pure
 scaffolding.
 
@@ -20086,7 +20139,7 @@ Chapter & Contracts & Witnesses & Steps & New primitive / result \\
 1 (MNIST: linear) & 1  & --- & 2 & dense, softmax-CE, \texttt{mnistLinear}: the whole classifier; the emitted step is the certified step; one SGD step descends \\
 2 (MNIST: 1D)     & 2  & 2   & 2 & ReLU, MLP; witnesses hand-built and at trained weights; the six emitted updates are the certified step; SGD descends on \(W_0\) \\
 3 (MNIST: 2D)     & 3  & 1   & 2 & conv2d, maxPool2, whole-net MNIST CNN; witness at trained weights; the four conv updates are the certified steps; SGD descends on \(W_2\) \\
-4 (CIFAR: BN)     & 6  & 1   & 5 & per-channel BN (flat $+$ NCHW) and BN at batch statistics; CIFAR whole-nets at 2 convs and at 8 convs $\pm$BN; a hand-built tiny witness; conv and BN updates tied, the 8-conv step tied with and without BN; SGD descends at the last conv \\
+4 (CIFAR: BN)     & 6  & 1   & 8 & per-channel BN (flat $+$ NCHW) and BN at batch statistics; CIFAR whole-nets at 2 convs and at 8 convs $\pm$BN; a hand-built tiny witness; conv and BN updates tied, the 8-conv step tied with and without BN; the batch-statistics step tied node by node, its chain the whole-net VJP, its nodes the loss's derivatives; SGD descends at the last conv \\
 5 (ResNet-34)     & 9  & 3   & 7 & residual ($+$proj), GAP, stride-2 conv ($+$its weight grad), the $3 \times 3$/s2 stem pool, whole-net \texttt{cnn}; \textbf{full-depth ResNet-34 and ResNet-50} at batch statistics; witnesses: a hand-built BN CNN, and the full-width ResNet-34 and ResNet-50 at $224 \times 224$ (ResNet-50 also at 160) with a non-zero backward; both batched steps tied (ResNet-50 also at BCE), both sync-BN twins, the ResNet-50 backward chain is the VJP, both steps' gradient nodes are the loss's derivative \\
 6 (MobileNetV2)   & 6  & 2   & 8 & ReLU6, depthwise (stride 1$+$2); \texttt{mobilenetv2} at representative depth and at \textbf{all 17 blocks} at batch statistics; \textbf{\mbox{MobileNetV4}} at full depth; witnesses: full-width V2 and V4 at $224 \times 224$ with a non-zero backward; both steps tied, both sync-BN twins, both backward chains are the VJP, both steps' gradient nodes are the loss's derivative \\
 7 (EfficientNet)  & 5  & --- & 4 & swish, sigmoid, SE, whole-net at representative depth, \textbf{full B0} (16 \mbox{MBConv} blocks); step tied, sync-BN twin, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
@@ -20094,7 +20147,7 @@ Chapter & Contracts & Witnesses & Steps & New primitive / result \\
 9 (ViT)           & 6  & --- & 4 & MHSA, block, vector LayerNorm and its block, \textbf{every depth $k$} (ViT-Tiny is $k = 12$), \texttt{vitFull}; the emitted graph denotes the tower, step tied, the backward chain is the VJP, the gradient nodes are the loss's derivative \\
 4--6 (optimizers) & --- & --- & 5 & Nesterov momentum and AdamW (Chapter~\ref{chap:bn}), LAMB, the global-norm clip and gradient accumulation (Chapter~\ref{chap:residual}), RMSProp in TensorFlow's form and the EMA shadow (Chapter~\ref{chap:depthwise}): each emitted update denotes its update law on the gradient node it consumes \\
 \hline
-                  & \textbf{44} & \textbf{9} & \textbf{42} & total \textbf{95} \\
+                  & \textbf{44} & \textbf{9} & \textbf{45} & total \textbf{98} \\
 \hline
 \end{tabular}
 \end{table}
@@ -20116,7 +20169,7 @@ The Verified VJP Proofs suite proves the \textbf{44 VJP contracts and
 9 witnesses} of Table~\ref{tab:theorem_budget}, each
 asserting backward \(= \sum_j \pdiv f\,x\,i\,j \cdot dy_j\), with their
 restatements at fixed dimensions and over the committed specs; the
-\textbf{42 step certificates} that tie the emitted programs to them, the
+\textbf{45 step certificates} that tie the emitted programs to them, the
 optimizer updates among them; on
 top of the foundation \(\pdiv\) calculus and the
 differentiability/forward/witness machinery they rest on --- and

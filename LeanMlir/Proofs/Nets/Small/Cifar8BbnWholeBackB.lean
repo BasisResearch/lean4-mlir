@@ -41,9 +41,10 @@ seventeen concrete `CertLayer`s, because every stage of it is a layer the suite 
 A smooth-point statement at one precision: the conv nodes are the f32 kinds, as in ResNet-50's
 whole-net tie (the bf16 artifacts' gradient nodes are `Cifar8BbnStepTieB`'s, on the renderers'
 `bf16` switch at the identity rounding). One device: `cifar8wb_bbn` has no data-parallel render.
-It is about the INPUT cotangent chain; the thirty-eight parameter gradients are the node tie's.
-The loss-gradient rung — that the chain's output at `g = (softmax − t)/B` is `∂L/∂θ` — is not
-stated for this net. -/
+It is about the INPUT cotangent chain; the thirty-eight parameter gradients are the node tie's,
+and that each of them is the loss's derivative in its parameter is
+[`Cifar8BbnParamGrad.lean`](https://github.com/brettkoonce/lean4-mlir/blob/main/LeanMlir/Proofs/Nets/Small/Cifar8BbnParamGrad.lean)
+(`cifar8Bbn_net_lossGrad`). -/
 
 open Proofs Proofs.StableHLO Proofs.BackLinks
 
