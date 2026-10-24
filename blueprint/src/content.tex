@@ -484,7 +484,7 @@ group of verified trainers.
 
 \begin{verbatim}
 lake run mnist        # verified MNIST: linear, MLP, CNN              (~1 min)
-lake run cifar        # ch.4 cifar8w: SGD/momentum/AdamW x bn/no-bn  (~6 min)
+lake run cifar        # ch.4 cifar8w: SGD/momentum/AdamW x 3 norms   (~13 min)
 lake run imagenette   # the Part-I nets at 224^2, 80-epoch AdamW      (~6 h)
 lake run imagenet     # ImageNet-1k on 4 GPUs: plans; `start` runs it (Appendix C)
 \end{verbatim}
@@ -501,9 +501,11 @@ business. The tiers bundle these targets, and any one builds on its own:
 \begin{itemize}
   \item \texttt{mnist}: \texttt{mnist-linear-verified},
     \texttt{mnist-mlp-verified}, \texttt{mnist-cnn-verified}
-  \item \texttt{cifar}: \texttt{cifar8w-ablation} and
-    \texttt{cifar8w-bn-ablation}, each running SGD / momentum / AdamW in
-    sequence --- six arms in two binaries
+  \item \texttt{cifar}: \texttt{cifar8w-ablation},
+    \texttt{cifar8w-bn-ablation} and \texttt{cifar8wb-bbn-ablation} --- no
+    BatchNorm, per-image and batch statistics --- each running SGD /
+    momentum / AdamW in sequence, the last in fp32 and bf16: twelve arms
+    in three binaries
   \item \begingroup\raggedright \texttt{imagenette}, in chapter order, each side
     quest after the chapter it belongs to: \texttt{resnet34-verified-adam},
     \texttt{resnet50-verified-adam}, \texttt{mobilenetv2-verified-adam},
@@ -784,7 +786,12 @@ and~\ref{fig:chapter_map} leave them out. The one exception is BatchNorm, which 
 each example by statistics of the whole batch, so the batch enters the
 function itself and the per-example theorem no longer describes it.
 Chapter~\ref{chap:bn} proves it twice, per example and at batch
-statistics, which is why the budget table counts those as two functions.
+statistics, which is why the budget table counts those as two functions,
+and trains it twice, so the two forms meet on one net. From
+Chapter~\ref{chap:residual} on every BatchNorm net is the batch form,
+which is why each of those five nets carries a data-parallel theorem of
+its own: the statistic has to cross the replicas before it is the
+batch's.
 
 \textbf{The gradient is where the proofs stop.} The update above is plain
 SGD, and it is the only update the book proves anything about: one step
@@ -4356,11 +4363,12 @@ them}. The takeaways are concrete:
   (Theorem~\ref{thm:bnNormalizeHasVJP}).
 \item The formula needs \(\varepsilon > 0\) to stay bounded
   (Theorem~\ref{ax:bnIstdBroadcast_differentiable}).
-\item BN's payoff is speed and stability: a deeper
-  network reaches the same accuracy in far fewer epochs with it than
-  without, and five runs of the same command land between two and a half
-  and more than ten times closer together, depending on the optimizer. The example in
-  \S\ref{sec:bn_cifar_example} measures both directly.
+\item BN's payoff is speed and accuracy: a deeper network reaches a
+  given accuracy in far fewer epochs with it than without, and finishes
+  three to eight points higher depending on the optimizer. Whether five
+  runs of one command land close together is decided by something else,
+  the group the statistics are taken over, and the example in
+  \S\ref{sec:bn_cifar_example} measures all three.
 \end{itemize}
 
 The proofs themselves use Mathlib's \texttt{HasFDerivAt.sqrt},
@@ -4394,20 +4402,20 @@ Together they are the layer.
 One thing to fix before the math, because the chapter's measurements
 depend on it. Ioffe \& Szegedy take \(\mu\) and \(\sigma^2\) over the
 batch: every image in the mini-batch, at every spatial position, for one
-channel. The networks this chapter trains take them \emph{per image}: for
-each example and each channel, over that image's \(32 \times 32 = 1{,}024\)
-spatial cells, and the batch axis is never reduced. Nothing crosses from
-one example to another, so there are no running statistics to keep, the
-layer computes the same thing in training and at evaluation, and every
-op in the emitted graph stays per-example, which is what lets the step
-theorems below be stated one example at a time. The three steps and their
-Jacobians are the same for any group of values that is normalized
-together; \(n\) below is the group size. Chapter~\ref{chap:residual}
-enlarges the group to the whole batch, \(N \times H \times W\) cells per
-channel, keeps running statistics for evaluation, and proves the batched
-form (\texttt{bnBatchTensor4}). Where this chapter says ``BatchNorm'' it
-means this per-image normalization with a learned per-channel scale and
-shift.
+channel, \(N \times H \times W\) cells per statistic. That is the layer
+this chapter trains, with running statistics kept for evaluation, as
+ResNet-34 and every BatchNorm net after it do. The chapter also trains a
+second form of the same layer, \emph{per image}: for each example and each
+channel, over that image's \(32 \times 32 = 1{,}024\) spatial cells, with
+the batch axis never reduced. Nothing crosses from one example to another
+in that form, so it has no running statistics, computes the same thing in
+training and at evaluation, and keeps every op in the emitted graph
+per-example, which is what lets the step theorems below be stated one
+example at a time. The three steps and their Jacobians are the same for
+any group of values that is normalized together; \(n\) below is the group
+size, and the batched form, \texttt{bnBatchTensor4}, is
+Theorem~\ref{thm:bnBatchTensor4HasVJP}. Where this chapter says ``BatchNorm'' without qualification it
+means the batch form; the per-image form is named each time it appears.
 
 The chapter's first six theorems are the Jacobian of each step
 and the VJPs that fall out of them. Theorem
@@ -4421,79 +4429,95 @@ product written out.
 \label{sec:bn_runit}
 
 Before any of the math, train the thing. Four commands and about
-thirteen minutes of GPU time:
+seven minutes of GPU time:
 
 \begin{verbatim}
 lake exe cache get                            # Mathlib oleans, ~30 s
 ./scripts/datasets/download_cifar.sh          # ~170 MB
-lake build cifar8w-bn-ablation
-./.lake/build/bin/cifar8w-bn-ablation data
+lake build cifar8wb-bbn-ablation
+./.lake/build/bin/cifar8wb-bbn-ablation data
 \end{verbatim}
 
-That one binary runs the same network three times, once per optimizer.
-Here is the second of the three, on one RTX 4060 Ti (CUDA 12.9), from
-\texttt{runs/2026-09-01-cifar8w-bn-xla-cuda/cifar8w-bn.log}. XLA's
-startup banner is removed, the per-step loss lines are dropped, and
-epochs 6 through 36 are elided:
+\begin{sloppypar}
+That one binary runs the same network six times: three optimizers, each
+in fp32 and again in bf16. Here is the first of the six, plain SGD in
+fp32, on one RTX 4060 Ti (CUDA 12.9). The log is
+\texttt{runs/2026-10-24-cifar8wb-bbn-xla-cuda/cifar8wb-bbn.log}, with
+XLA's startup banner removed, the per-step loss lines dropped, and epochs
+6 through 36 elided:
+\end{sloppypar}
 
 \begin{verbatim}
 [pjrt_ffi] XLA backend: PJRT 0.114, 1 device(s)
-[pjrt_ffi] compiled verified_mlir/cifar8w_bn_mom_train_step.mlir
-             (@cifar8w_bn_mom_train_step, 117 outputs, 1 replica) in 1061 ms
-[pjrt_ffi] compiled verified_mlir/cifar8w_bn_fwd.mlir
-             (@cifar8w_bn_fwd, 1 outputs, 1 replica) in 237 ms
-════════ cifar8w-BN (wide head) — Nesterov momentum (μ.9, lr 0.02) ════════
-Deeper CIFAR-10 CNN + per-channel BatchNorm, MNIST-style wide head
-  (8× conv→BN→relu → 128→512→512→10) via the VERIFIED renderer → XLA/PJRT → GPU
-  xla/pjrt verified_mlir/cifar8w_bn_mom_train_step.mlir
-  xla/pjrt verified_mlir/cifar8w_bn_fwd.mlir
-  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN mom
-    (constant lr 0.020000), He init
-Epoch 1/40: loss=1.611771 lr=0.020000
-  epoch 1: test_acc = 4927/10000 = 49.270000%  top5 = 9074/10000 = 90.740000%
-             [95% CI 48.29–50.25]
-Epoch 2/40: loss=1.207551 lr=0.020000
-  epoch 2: test_acc = 6135/10000 = 61.350000%  top5 = 9543/10000 = 95.430000%
-             [95% CI 60.39–62.30]
-Epoch 3/40: loss=1.027676 lr=0.020000
-  epoch 3: test_acc = 6469/10000 = 64.690000%  top5 = 9660/10000 = 96.600000%
-             [95% CI 63.75–65.62]
-Epoch 4/40: loss=0.916538 lr=0.020000
-  epoch 4: test_acc = 6653/10000 = 66.530000%  top5 = 9682/10000 = 96.820000%
-             [95% CI 65.60–67.45]
-Epoch 5/40: loss=0.849334 lr=0.020000
-  epoch 5: test_acc = 6868/10000 = 68.680000%  top5 = 9731/10000 = 97.310000%
-             [95% CI 67.76–69.58]
-Epoch 37/40: loss=0.373874 lr=0.020000
-  epoch 37: test_acc = 7550/10000 = 75.500000%  top5 = 9792/10000 = 97.920000%
-             [95% CI 74.65–76.33]
-Epoch 38/40: loss=0.365542 lr=0.020000
-  epoch 38: test_acc = 7565/10000 = 75.650000%  top5 = 9812/10000 = 98.120000%
-             [95% CI 74.80–76.48]
-Epoch 39/40: loss=0.354800 lr=0.020000
-  epoch 39: test_acc = 7585/10000 = 75.850000%  top5 = 9808/10000 = 98.080000%
-             [95% CI 75.00–76.68]
-Epoch 40/40: loss=0.349538 lr=0.020000
-  epoch 40: test_acc = 7594/10000 = 75.940000%  top5 = 9817/10000 = 98.170000%
-             [95% CI 75.09–76.77]
-done (trained CIFAR-CNN8-wide-BN mom + constant lr via packed threading).
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_sgd_train_step.mlir
+             (@cifar8wb_bbn_sgd_train_step, 133 outputs, 1 replica) in 2620 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd.mlir
+             (@cifar8wb_bbn_fwd, 1 outputs, 1 replica) in 781 ms
+[pjrt_ffi] compiled verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+             (@cifar8wb_bbn_fwd_eval, 1 outputs, 1 replica) in 198 ms
+════════ cifar8wb-bbn (batch-statistics BN) f32 — SGD (lr 0.1) ════════
+Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics
+  (8 convs, BATCHED op family, d1=512, running-stat eval)
+  via the VERIFIED renderer → XLA/PJRT → GPU
+  xla/pjrt verified_mlir/cifar8wb_bbn_sgd_train_step.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd.mlir
+  xla/pjrt verified_mlir/cifar8wb_bbn_fwd_eval.mlir
+  train 50000, test 10000; bs 128, CIFAR-CNN8-wide-BN-batchstat sgd
+    (constant lr 0.100000), He init
+Epoch 1/40: loss=1.497842 lr=0.100000
+  epoch 1: test_acc = 4703/10000 = 47.030000%  top5 = 9113/10000 = 91.130000%
+             [95% CI 46.05–48.01]
+Epoch 2/40: loss=1.106227 lr=0.100000
+  epoch 2: test_acc = 5861/10000 = 58.610000%  top5 = 9601/10000 = 96.010000%
+             [95% CI 57.64–59.57]
+Epoch 3/40: loss=0.957487 lr=0.100000
+  epoch 3: test_acc = 6366/10000 = 63.660000%  top5 = 9637/10000 = 96.370000%
+             [95% CI 62.71–64.60]
+Epoch 4/40: loss=0.861241 lr=0.100000
+  epoch 4: test_acc = 6334/10000 = 63.340000%  top5 = 9737/10000 = 97.370000%
+             [95% CI 62.39–64.28]
+Epoch 5/40: loss=0.794502 lr=0.100000
+  epoch 5: test_acc = 5424/10000 = 54.240000%  top5 = 9053/10000 = 90.530000%
+             [95% CI 53.26–55.21]
+Epoch 37/40: loss=0.320061 lr=0.100000
+  epoch 37: test_acc = 7603/10000 = 76.030000%  top5 = 9823/10000 = 98.230000%
+             [95% CI 75.18–76.86]
+Epoch 38/40: loss=0.310950 lr=0.100000
+  epoch 38: test_acc = 7820/10000 = 78.200000%  top5 = 9860/10000 = 98.600000%
+             [95% CI 77.38–79.00]
+Epoch 39/40: loss=0.305377 lr=0.100000
+  epoch 39: test_acc = 7784/10000 = 77.840000%  top5 = 9862/10000 = 98.620000%
+             [95% CI 77.02–78.64]
+Epoch 40/40: loss=0.298878 lr=0.100000
+  epoch 40: test_acc = 7741/10000 = 77.410000%  top5 = 9847/10000 = 98.470000%
+             [95% CI 76.58–78.22]
+done (trained CIFAR-CNN8-wide-BN-batchstat sgd + constant lr via packed threading).
 \end{verbatim}
 
-Forty epochs at about six seconds each, and 75.94\% on the full
-10,000-image CIFAR-10 test set, 98.17\% inside the top five. CIFAR-10
+Forty epochs in about a minute, and 77.41\% on the full
+10,000-image CIFAR-10 test set, 98.47\% inside the top five. CIFAR-10
 is a much harder problem than MNIST, so this is the first chapter where
 the headline accuracy drops out of the nineties. BatchNorm's backward is
 also the first in this book you can't read off by inspection.
 
+\medskip\noindent The test accuracy is not monotone: it can fall several
+points from one epoch to the next while the training loss keeps
+falling. That is the evaluation rather than the training: the test
+forward runs on running statistics that lag the weights at this learning
+rate. \S\ref{sec:bn_cifar_example} comes back to it, because it is where
+the chapter's spreads come from.
+
 \medskip\noindent The learning rate is constant here --- no warmup, no
 decay. Run five times at this setting the net lands between
-$75.8$ and $76.7\%$, so the number above is an ordinary
+$74.9$ and $77.9\%$, so the number above is an ordinary
 draw rather than a best one, and the tables later in the chapter report
 medians over five for the same reason.
 
-\S\ref{sec:bn_cifar_example} runs this same binary and its no-BN peer
-across all three optimizers, which is where the chapter's measurements
-come from, and \texttt{lake run cifar} is those two binaries.
+\S\ref{sec:bn_cifar_example} runs this same binary, its per-image sibling
+and the no-BN peer across all three optimizers, which is where the
+chapter's measurements come from, and \texttt{lake run cifar} is those
+three binaries.
 
 \prosesection{The centering term has an indirect path}
 
@@ -4876,6 +4900,49 @@ the two elementary Jacobians into one formula; contracting with
 \end{enumerate}
 \end{proof}
 
+\begin{theorem}[Batched BN VJP]
+  \label{thm:bnBatchTensor4HasVJP}
+  \lean{Proofs.bnBatchTensor4_differentiable, Proofs.bnBatchTensor4HasVJP_correct,
+        Proofs.bnBatchTensor4GradInput_correct}
+  \leanok
+  \uses{ax:bnIstdBroadcast_differentiable, ax:pdiv, ax:pdiv_reindex, def:hasvjp,
+      def:hasvjpmat, thm:bnHasVJP, thm:vjpComp}
+  \Assume{}
+  \begin{enumerate}
+    \item \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)}]
+  \end{enumerate}
+  \Prove{} on the network's \([N, C, H, W]\) layout, with each channel
+  normalized over all \(N \cdot H \cdot W\) of its cells, the
+  batch-statistics layer \texttt{bnBatchTensor4} is differentiable and has
+  a VJP, and its renderable backward, \texttt{bnBatchTensor4GradInput}, is
+  that VJP: at every input and cotangent it equals the layer's Jacobian
+  contracted with the cotangent. This is the form the batch-statistics
+  steps of this chapter and every BatchNorm net from
+  Chapter~\ref{chap:residual} on render.
+\end{theorem}
+
+\begin{proof}
+\leanok
+\begin{enumerate}
+  \item The layer is the flat per-channel layer conjugated by a
+    relabelling of the layout,
+    \(\mathrm{bnchwBack} \circ \mathrm{bnPerChannelFlat} \circ
+    \mathrm{bnchwFwd}\). The relabelling takes \([N, C, H, W]\) to
+    \([C,\; N H W]\); each channel's row is then normalized with
+    Theorem~\ref{thm:bnHasVJP}'s layer at group size \(n = N H W\), and
+    relabelled back.
+    \pf{Definitional.}
+  \item Both relabellings are linear bijections, so each is differentiable
+    and has a VJP, the inverse relabelling.
+    \pf{\texttt{bnchwFwdHasVJP}, \texttt{bnchwBackHasVJP}.}
+  \item \Qed{}
+    \pf{The VJP chain rule (Theorem~\ref{thm:vjpComp}) twice, with
+    Theorem~\ref{thm:bnHasVJP} per channel in the middle. Unfolding the
+    composed backward gives the per-channel three-term formula over the
+    batch, which is \(\mathrm{bnBatchTensor4GradInput}\).}
+\end{enumerate}
+\end{proof}
+
 The network, at two depths: the two-convolution CIFAR net's fold and loss
 gradient, BatchNorm's two updates, then the eight-convolution net with and
 without BatchNorm --- its fused step, the packed steps this chapter's runs
@@ -5177,20 +5244,22 @@ flip) and one constant learning rate. The findings,
 stated up front so the graphs are no surprise:
 
 \begin{itemize}
-\item \textbf{Normalization buys stability, and speed on the way.}
+\item \textbf{Normalization buys accuracy, and speed on the way.}
   BatchNorm (dropped between each conv and its ReLU) reaches a given
-  accuracy in markedly fewer epochs. It also makes the result
-  repeatable: five runs of the un-normalized net spread over 2.7 to 3.3
-  points under every optimizer, five of the normalized net over 0.2 to
-  1.1.
-\item \textbf{The optimizer moves the ceiling most.} Trading plain SGD
-  for SGD-with-momentum is worth about two points of final accuracy,
-  more than anything else here. AdamW lands level with plain SGD once
-  BN is in, and its per-coordinate adaptivity earns less than momentum
-  does.
+  accuracy in markedly fewer epochs and finishes three to eight points
+  higher. What it does not buy is repeatability: five runs of the
+  batch-statistics net spread over 2.2 to 3.0 points, about what the
+  un-normalized net's 2.7 to 3.3 are. The per-image form lands within
+  1.1, and the reason is where its statistics come from, not that it
+  normalizes.
+\item \textbf{The optimizer moves the ceiling less than the
+  normalization does.} Momentum finishes first on both normalized nets,
+  but its lead over plain SGD is half a point at batch statistics,
+  inside the spread of either. AdamW lands a point under SGD once BN is
+  in, and its per-coordinate adaptivity earns less than momentum does.
 \item \textbf{The arithmetic does not move the ranking.} Recomputing the
   normalized ladder in bf16 leaves the optimizer ordering exactly where it
-  was, with medians moving by $+0.31$, $-0.02$ and $-0.33$ --- every one of
+  was, with medians moving by $-0.21$, $+0.57$ and $+1.02$ --- every one of
   them smaller than the spread between repeated runs of a single
   configuration. Drop the normalization and bf16 starts to show: the
   medians move by up to $1.4$ points and one seed collapses. The
@@ -5215,10 +5284,10 @@ per process, so two runs of the identical command differ. Every accuracy
 in this section is therefore the median of five runs at seeds 1--5
 (\texttt{LEAN\_MLIR\_SEED}, which moves the initialisation, the shuffle
 and the flips), and each table states the observed range alongside it.
-That spread is seed-to-seed variance plus the nondeterminism: about a
-point with the normalization, about three without, which is wide enough
-to swallow small differences, so the text below only ranks gaps that are
-clearly outside it.
+That spread is seed-to-seed variance plus the nondeterminism: two to
+three points at batch statistics and without normalization, about a
+point per image, which is wide enough to swallow small differences, so
+the text below only ranks gaps that are clearly outside it.
 
 \subsection*{Architecture}
 
@@ -5346,12 +5415,28 @@ def cifar8wBnVerified : VerifiedNetSpec where
                 via the VERIFIED renderer → %LOWERER% → GPU"
 \end{verbatim}
 
+At batch statistics, the spec the transcript in \S\ref{sec:bn_runit}
+trained is the second one with a single field changed:
+
+\begin{verbatim}
+def cifar8wbBbnVerified : VerifiedNetSpec :=
+  { cifar8wBnVerified with
+    name      := "CIFAR-CNN8-wide-BN-batchstat"
+    slug      := "cifar8wb_bbn"
+    runningBN := true
+    blurb     := "Wide-head CIFAR-10 CNN + per-channel BatchNorm at BATCH statistics
+                  (8 convs, BATCHED op family, d1=512, running-stat eval)
+                  via the VERIFIED renderer → %LOWERER% → GPU" }
+\end{verbatim}
+
 Each \texttt{layers} list and each \texttt{blurb} is one line in the
-source, wrapped here; the second \texttt{blurb} is the banner
-\S\ref{sec:bn_runit}'s transcript opens with. The diff is eight
-\texttt{.bnPerChannel} entries, one inserted between
-each convolution and its ReLU. The dense head, the max-pools, and the
-training config are all identical.
+source, wrapped here; the third \texttt{blurb} is the banner
+\S\ref{sec:bn_runit}'s transcript opens with. The diff between the first
+two specs is eight \texttt{.bnPerChannel} entries, one inserted between
+each convolution and its ReLU. The diff between the second and the third
+is \texttt{runningBN}: the group each of those eight normalizes over, and
+whether the net keeps running statistics. The dense head, the max-pools,
+and the training config are all identical.
 
 \paragraph{What \texttt{.bnPerChannel} contributes.} One arm, and the
 only new one this chapter needs --- \texttt{.conv}, \texttt{.maxPool},
@@ -5367,21 +5452,24 @@ BatchNorm's $\gamma$ initialises to ones and $\beta$ to zeros, so
 a freshly built net's BN is the identity and the surrounding
 convolutions see exactly what they would have seen without it. Zero-init
 $\gamma$ instead and the whole trunk outputs $\beta$ regardless of its
-input. Note also what is not here: running mean and variance. This net
-has none, because its statistics are per image (\S\ref{sec:bn_runit}
-above), so training and evaluation compute the same forward and the spec
-leaves \texttt{runningBN} off. The ImageNet nets of
-Chapters~\ref{chap:residual}--\ref{chap:se} turn it on; there the
-running statistics are state, not parameters --- no gradient reaches them
---- and the renderer threads them through separate \texttt{bnChannels}
-slots rather than this list.
+input. Note also what is not here: running mean and variance. They are
+state, not parameters --- no gradient reaches them --- so the renderer
+threads them through separate \texttt{bnChannels} slots rather than this
+list, sixteen of them for the batch-statistics spec, derived from
+\texttt{runningBN} and the eight widths. The per-image spec leaves
+\texttt{runningBN} off and has no slots, because its statistics never
+leave the example. The ImageNet nets of
+Chapters~\ref{chap:residual}--\ref{chap:se} are the batch-statistics form
+throughout.
 
+\begin{sloppypar}
 \medskip\noindent\textbf{The spec-to-proof tie.} These are
 \texttt{VerifiedNetSpec}s, which is what makes the listing above
 binding rather than descriptive. The \texttt{slug} names the committed
-render, so \texttt{cifar8w\_bn} is
-\texttt{verified\_mlir/cifar8w\_bn\_\{mom,sgd,adam\}\_train\_step.mlir},
-the files the run in \S\ref{sec:bn_runit} handed to XLA. The
+render, so \texttt{cifar8wb\_bbn} names the six
+\texttt{cifar8wb\_bbn\_*\_train\_step.mlir} files in
+\texttt{verified\_mlir/}, the ones the run in \S\ref{sec:bn_runit} handed
+to XLA, and \texttt{cifar8w\_bn} names the per-image set. The
 \texttt{layers} list folds to a parameter layout through
 \texttt{toSpecs}, and a \texttt{\#guard} in the same file pins that
 layout against the one the renderer emits, so a spec that drifts from
@@ -5392,16 +5480,20 @@ $512$-wide head here and the $64$-wide one behind \texttt{cifar8-bn-verified}
 need no separate proof between them. \texttt{cifarCnnBn8HasVJPAt\_correct}
 (\texttt{Proofs/Nets/Small/CifarCNN.lean}) is the statement that its
 backward is the derivative, and \texttt{Proofs/Nets/Small/Cifar8BnStepTie.lean} carries
-that through to the emitted training step. Both nets run the same
-XLA/PJRT path on the GPU.
+that through to the emitted per-image training step. The batch-statistics
+step is tied node by node in Theorem~\ref{thm:cifar8bbn_step_tie}, with
+its whole-net half not yet stated. All three nets run the same XLA/PJRT
+path on the GPU.
+\end{sloppypar}
 
 \subsection*{Lever 1: normalization}
 
-Fix the optimizer at plain SGD and toggle BN. Both nets train for 40
-epochs on the shared pipeline at a constant learning rate --- no
-warmup, no decay --- because a schedule is a fourth thing changing and
-this section is about the third. Figure~\ref{fig:cifar_bn_curves} is the
-per-epoch test accuracy, the median of five runs each.
+Fix the optimizer at plain SGD and change the normalization: none, per
+image, batch statistics. All three nets train for 40 epochs on the shared
+pipeline at a constant learning rate --- no warmup, no decay --- because
+a schedule is a fourth thing changing and this section is about the
+third. Figure~\ref{fig:cifar_bn_curves} is the per-epoch test accuracy,
+the median of five runs each.
 
 \begin{figure}[H]
 \centering
@@ -5409,9 +5501,9 @@ per-epoch test accuracy, the median of five runs each.
 \begin{axis}[
     width=0.92\linewidth, height=6.5cm,
     xlabel={Epoch}, ylabel={Test accuracy (\%)},
-    xmin=0, xmax=41, ymin=10, ymax=78,
+    xmin=0, xmax=41, ymin=10, ymax=80,
     xtick={0,5,10,15,20,25,30,35,40},
-    ytick={10,20,30,40,50,60,70},
+    ytick={10,20,30,40,50,60,70,80},
     legend pos=south east,
     legend cell align={left},
     grid=major, grid style={gray!18},
@@ -5420,31 +5512,40 @@ per-epoch test accuracy, the median of five runs each.
     every axis plot/.append style={line width=1pt, mark size=1pt},
 ]
 \addplot[blue, mark=*, mark options={fill=blue}] coordinates {
+(1,43.54) (2,54.91) (3,60.53) (4,59.38) (5,56.87) (6,66.06) (7,69.18) (8,71.82) (9,69.22) (10,72.38) (11,72.92) (12,72.64) (13,73.12) (14,73.79) (15,74.66) (16,71.78) (17,73.33) (18,74.28) (19,74.34) (20,75.92) (21,75.54) (22,75.70) (23,75.12) (24,75.29) (25,75.16) (26,74.51) (27,75.41) (28,74.96) (29,76.63) (30,76.48) (31,76.12) (32,76.55) (33,76.89) (34,75.83) (35,76.24) (36,76.70) (37,75.77) (38,77.30) (39,76.14) (40,76.78)
+};
+\addlegendentry{BN, batch statistics}
+\addplot[teal!60!black, mark=*, mark options={fill=teal!60!black}] coordinates {
 (1,41.19) (2,52.47) (3,55.65) (4,59.07) (5,64.14) (6,65.53) (7,66.81) (8,68.33) (9,66.86) (10,70.38) (11,71.04) (12,72.00) (13,71.77) (14,71.47) (15,72.30) (16,73.05) (17,72.70) (18,72.85) (19,73.04) (20,73.69) (21,73.64) (22,73.81) (23,74.62) (24,72.84) (25,73.95) (26,73.99) (27,74.04) (28,73.90) (29,74.25) (30,74.75) (31,74.50) (32,75.29) (33,74.77) (34,74.73) (35,74.27) (36,74.04) (37,74.48) (38,74.76) (39,74.78) (40,74.50)
 };
-\addlegendentry{with BN}
+\addlegendentry{BN, per image}
 \addplot[orange, mark=*, mark options={fill=orange}] coordinates {
 (1,13.43) (2,34.55) (3,40.84) (4,43.54) (5,49.04) (6,48.40) (7,53.08) (8,53.52) (9,52.90) (10,58.18) (11,58.84) (12,58.73) (13,60.17) (14,59.54) (15,60.90) (16,64.71) (17,63.81) (18,63.73) (19,65.63) (20,67.15) (21,65.10) (22,65.79) (23,67.21) (24,66.78) (25,66.26) (26,68.24) (27,67.75) (28,68.92) (29,67.95) (30,68.60) (31,69.62) (32,69.24) (33,68.86) (34,69.08) (35,68.34) (36,68.86) (37,68.39) (38,69.48) (39,70.15) (40,68.75)
 };
 \addlegendentry{no BN}
 \end{axis}
 \end{tikzpicture}
-\caption{CIFAR-10 test accuracy per epoch with and without BatchNorm: the wide 8-conv net, plain SGD at a constant lr~0.1 on the shared pipeline, 40 epochs, through the verified renderer, the median of five runs per curve (\texttt{runs/2026-09-01-cifar8w-6arm-constlr/}).}
+\caption{CIFAR-10 test accuracy per epoch under three normalizations: the wide 8-conv net, plain SGD at a constant lr~0.1 on the shared pipeline, 40 epochs, through the verified renderer, the median of five runs per curve (\texttt{runs/2026-10-24-bbn-seeds/} for batch statistics, \texttt{runs/2026-09-01-cifar8w-6arm-constlr/} for the other two).}
 \label{fig:cifar_bn_curves}
 \end{figure}
 
-\noindent The final points span 74.1 to 75.2 with BN
-and 68.0 to 70.7 without.
+\noindent The final points span 74.9 to 77.9 at batch statistics, 74.1
+to 75.2 per image, and 68.0 to 70.7 without.
 
-\medskip\noindent BN leads from the first epoch --- 41\% against the bare net's 13\% ---
-and never gives the lead back, finishing 5.8 points up
-(74.5\% vs 68.8\%). The un-normalized net traces the same
-arc roughly ten epochs behind, and the gap never closes: it is still
-losing at epoch 40 by more than the spread of either set of runs.
+\medskip\noindent Both normalized nets lead from the first epoch --- 44\%
+and 41\% against the bare net's 13\% --- and never give the lead back,
+the batch form finishing 8.0 points up (76.8\% vs 68.8\%) and the
+per-image form 5.8. The un-normalized net traces the same arc roughly ten
+epochs behind, and the gap never closes: it is still losing at epoch 40
+by more than the spread of any set of runs. The batch curve is also the
+jagged one: its test reads swing where the per-image curve's do not,
+because its test forward runs on running statistics that lag the
+weights, while the per-image net evaluates with the statistics it trained
+on.
 
 \medskip\noindent That first epoch is worth a second look. Thirteen per
 cent is barely above chance on ten classes, and the un-normalized net
-spends four epochs getting to where the normalized one starts. The
+spends four epochs getting to where the normalized ones start. The
 conditioning the three-term backward
 (Theorem~\ref{thm:bnNormalizeHasVJP}) buys is what that is, and it is worth
 more the deeper the stack --- exactly the trend that makes BN standard
@@ -5460,38 +5561,51 @@ observed range across five runs.
 
 \begin{table}[H]
 \centering
-\caption{Final CIFAR-10 test accuracy by optimizer, with and without BatchNorm: the median of five runs, with the range from lowest run to highest in parentheses.}
+\caption{Final CIFAR-10 test accuracy by optimizer, without BatchNorm and with it in both forms: the median of five runs, with the range from lowest run to highest in parentheses (\texttt{runs/2026-09-01-cifar8w-6arm-constlr/}, \texttt{runs/2026-10-24-bbn-seeds/}).}
 \label{tab:cifar_optimizers}
 \begin{tabular}{l c c c}
 \hline
        & SGD & momentum & AdamW \\
        & (lr 0.1) & ($\mu$ 0.9, lr 0.02) & (lr $10^{-3}$) \\
 \hline
-no BN  & 68.8 {\footnotesize (2.7)} & 72.2 {\footnotesize (3.3)} & 72.8 {\footnotesize (2.8)} \\
-BN     & 74.5 {\footnotesize (1.1)} & \textbf{76.3 {\footnotesize (1.0)}} & 74.3 {\footnotesize (0.2)} \\
+no BN                & 68.8 {\footnotesize (2.7)} & 72.2 {\footnotesize (3.3)} & 72.8 {\footnotesize (2.8)} \\
+BN, per image        & 74.5 {\footnotesize (1.1)} & 76.3 {\footnotesize (1.0)} & 74.3 {\footnotesize (0.2)} \\
+BN, batch statistics & 76.8 {\footnotesize (3.0)} & \textbf{77.4 {\footnotesize (2.2)}} & 75.7 {\footnotesize (2.3)} \\
 \hline
 \end{tabular}
 \end{table}
 
-\medskip\noindent Momentum with BN is the best result on the board at
-76.3\%, about two points over plain SGD and two over AdamW,
-and that gap is wider than the spread within any cell. AdamW lands
-level with SGD rather than between the two: its per-coordinate
-second-moment scaling is worth something on the un-normalized net and
-nothing once BN is doing the conditioning.
+\medskip\noindent Momentum at batch statistics is the best result on
+the board at 77.4\%, half a point over plain SGD and 1.7 over AdamW. The
+first gap is inside the spread of either cell and the second is about at
+its edge, so the order is momentum, SGD, AdamW on both normalized nets,
+and only the AdamW gap is a result. AdamW lands under SGD rather than
+between the two: its per-coordinate second-moment scaling is worth
+something on the un-normalized net and nothing once BN is doing the
+conditioning.
 
 \medskip\noindent\textbf{Reading down the columns recovers Lever~1, and
-this time it recovers it everywhere.} BN is ahead in all three ---
-$+5.8$ under SGD, $+4.2$ under momentum,
-$+1.5$ under AdamW. The benefit shrinks as the optimizer gets
-stronger, which is the familiar reading: a better update rule can
-partly substitute for better conditioning, and never entirely.
+this time it recovers it everywhere.} Batch statistics are ahead in all
+three --- $+8.0$ under SGD, $+5.2$ under momentum, $+2.9$ under AdamW ---
+and the per-image form by $+5.8$, $+4.2$ and $+1.5$. The benefit shrinks
+as the optimizer gets stronger, which is the familiar reading: a better
+update rule can partly substitute for better conditioning, and never
+entirely.
 
 \medskip\noindent\textbf{Where the spread is.} Read the parenthesised
 ranges. Without BN, five runs of the same command land 2.7 to 3.3 points
-apart under every optimizer; with it, 1.1 under SGD, 1.0 under momentum
-and 0.2 under AdamW. The normalized net is not only ahead, it is the one
-whose number means something from a single run. The un-normalized AdamW
+apart under every optimizer; at batch statistics, 3.0, 2.2 and 2.3; per
+image, 1.1, 1.0 and 0.2. So normalization is not what makes a single
+run's number mean something. What does is where the evaluation's
+statistics come from. The per-image net scores each test image with the
+statistics it trained on. The batch-statistics net scores on running
+means and variances, an average over roughly the last hundred steps
+(\texttt{bnMomentum} $0.99$), and at a constant learning rate the weights
+move faster than that average follows, so the final test read carries
+the position of the last few hundred steps as well as the seed. The
+dips in Figure~\ref{fig:cifar_bn_curves} are the same effect at the epoch
+scale. The ImageNet chapters run this layer under a cosine schedule,
+which is what settles it. The un-normalized AdamW
 runs also printed \texttt{loss=NaN} in late epochs in three of the five
 seeds while their accuracy held, and that turned out to be the
 diagnostic, not the training: the progress line's loss is
@@ -5556,11 +5670,11 @@ question this chapter would like to answer is whether that costs any
 accuracy.
 
 \medskip\noindent The renderer has two convolution op
-families --- the per-example one these MNIST and CIFAR chapters use, and
-the batched one the ImageNet chapters use --- and the bf16 twins were
-built for the batched family only. The normalized net was rendered
-per-example, so until it moved across there was no bf16 arm to run on it.
-Moving it needed no new arithmetic: BatchNorm itself stays
+families --- the per-example one the MNIST chapters use, and
+the batched one the ImageNet chapters use --- and the bf16 twins exist in
+the batched family only. The batch-statistics net lives there already,
+since a statistic over the batch needs the batch axis in the graph, so
+its bf16 arms come with the family. BatchNorm itself stays
 \texttt{float32}, which is not a shortcut but the recipe every ImageNet
 network in this book uses --- low precision through the convolutions and
 the dense layers, full precision through the normalization.
@@ -5575,28 +5689,31 @@ Table~\ref{tab:cifar_bf16} is the six arms, five seeds each.
 
 \begin{table}[H]
 \centering
-\caption{Final CIFAR-10 test accuracy per seed in fp32 and bf16, for each optimizer (\texttt{runs/2026-09-01-bnprec-seeds/}).}
+\caption{Final CIFAR-10 test accuracy per seed in fp32 and bf16, for each optimizer, the net at batch statistics (\texttt{runs/2026-10-24-bbn-seeds/}).}
 \label{tab:cifar_bf16}
 \small
 \begin{tabular}{l l r r r r r c}
 \hline
  & & \multicolumn{5}{c}{final test accuracy, per seed} & median \\
 \hline
-SGD (lr 0.1)   & fp32 & 74.63 & 75.00 & 73.11 & 73.76 & 74.39 & 74.39 \\
-               & bf16 & 74.84 & 74.65 & 75.30 & 73.55 & 74.70 & 74.70 \\[2pt]
-momentum       & fp32 & 76.72 & 76.46 & 77.14 & 76.39 & 76.78 & 76.72 \\
-               & bf16 & 77.32 & 76.91 & 76.28 & 76.29 & 76.70 & 76.70 \\[2pt]
-AdamW          & fp32 & 74.75 & 75.08 & 73.90 & 73.98 & 74.48 & 74.48 \\
-               & bf16 & 74.53 & 73.76 & 74.23 & 74.15 & 73.95 & 74.15 \\
+SGD (lr 0.1)   & fp32 & 77.89 & 74.93 & 76.78 & 76.71 & 77.18 & 76.78 \\
+               & bf16 & 77.41 & 76.38 & 78.08 & 76.57 & 76.29 & 76.57 \\[2pt]
+momentum       & fp32 & 77.91 & 77.71 & 77.36 & 76.21 & 75.73 & 77.36 \\
+               & bf16 & 77.93 & 78.22 & 77.76 & 77.76 & 78.37 & 77.93 \\[2pt]
+AdamW          & fp32 & 75.54 & 75.69 & 75.00 & 76.24 & 77.25 & 75.69 \\
+               & bf16 & 77.47 & 72.22 & 73.34 & 76.71 & 76.72 & 76.71 \\
 \hline
 \end{tabular}
 \end{table}
 
-\noindent Medians move by $+0.31$, $-0.02$ and $-0.33$. Each of those is
-smaller than the spread within the corresponding fp32 row --- $1.89$,
-$0.75$ and $1.18$ --- so on this net, at this scale, the number format is
+\noindent Medians move by $-0.21$, $+0.57$ and $+1.02$. Each of those is
+smaller than the spread within the corresponding fp32 row --- $2.96$,
+$2.18$ and $2.25$ --- so on this net, at this scale, the number format is
 not measurable against the noise of rerunning the same configuration.
-Thirty arm-runs, no \texttt{NaN}, nothing collapsed to chance.
+Thirty arm-runs, no \texttt{NaN}, nothing collapsed to chance. The two
+low bf16 AdamW seeds at $72$ and $73$ make that the widest row on the
+board, and the bf16 momentum row, five seeds within $0.6$ of each other,
+is the narrowest.
 
 \medskip\noindent The un-normalized net answers differently, and the
 difference is the interesting part. Run the same comparison there (the
@@ -5613,7 +5730,7 @@ bits show up at all.
 pull. Changing the op family at fixed fp32 --- per-example to batched, the
 same arithmetic throughout --- moves the un-normalized net by $+2.0$ on
 SGD and $+1.7$ on momentum, which is larger than anything precision does
-to it. On the normalized net the identical change is worth $-0.11$,
+to it. On the per-image net the identical change is worth $-0.11$,
 $+0.37$ and $+0.19$. The rendering path is a lever, it is invisible to the
 proofs, and normalization damps it too.
 
@@ -5629,27 +5746,25 @@ Almost not at all, which is exactly why we could borrow MNIST's head
 untouched. The 2$\times$512 head carries about $334{,}000$ of the net's
 $374{,}000$ parameters. Swap it for a narrow 64-wide head ($13{,}000$
 params, whole net down to $53{,}000$) and, under AdamW on the sweep
-in Figure~\ref{fig:cifar_head_width}, the two land within a point of each other with overlapping
-intervals: $73.13\%$ narrow, $74.09\%$ wide. Seven times the parameters
+in Figure~\ref{fig:cifar_head_width}, the two land a point and a half apart with overlapping
+intervals: $76.40\%$ narrow, $77.85\%$ wide. Seven times the parameters
 buys no accuracy the test set can resolve. The eight convolutions over
 the $32 \times 32$ maps dominate the compute, and the head is cheap
-matmul at these widths --- the sweep's 4096-wide point is where it stops
-being cheap, nine times the wall clock of the 64-wide run for nothing.
-That is the lesson the
+matmul at these widths. That is the lesson the
 bridge makes concrete: at this scale the depth of the
 convolutional body is the lever, not the width of the classifier on top.
 It is why the head can stay MNIST's, and why the next chapter spends its
 budget on thirty-four layers of more convolution rather than a
 bigger head.
 
-That two-point comparison is worth drawing out in full,
-because the parametric renderer makes it cheap: \texttt{cifar8-bn-grid}
-holds the eight-convolution backbone fixed and renders the AdamW train step
-at any head width $d$ (the same $D_1$ that was hard-wired to 64 is now a
-parameter of the verified emitter), so we can sweep $d$ from 8 to 4096 and
-train each point on its own proof-rendered StableHLO. Dealt across three
-of the box's four cards, the whole curve, Figure~\ref{fig:cifar_head_width}, is
-a 22-minute run.
+That comparison is worth drawing out in full, because the parametric
+renderer makes it cheap. The grid driver, \texttt{cifar8wb-bbn-grid},
+holds the eight-convolution backbone fixed and renders the AdamW train
+step, the forward and the evaluation forward at any head width $d$ (the
+same $D_1$ that was hard-wired to 64 is now a parameter of the verified
+emitter), so we can sweep $d$ from 8 to 4096 and train each point on its
+own proof-rendered StableHLO. Dealt across three of the box's four cards,
+the whole curve, Figure~\ref{fig:cifar_head_width}, is a four-minute run.
 
 \begin{figure}[H]
 \centering
@@ -5659,10 +5774,10 @@ a 22-minute run.
     xlabel={Dense-head width $d$ (both head layers; backbone fixed)},
     ylabel={CIFAR-10 test accuracy (\%)},
     xmode=log, log basis x=2,
-    xmin=6.5, xmax=5000, ymin=69, ymax=75.5,
+    xmin=6.5, xmax=5000, ymin=74.5, ymax=79.5,
     xtick={8,16,32,64,128,256,512,1024,2048,4096},
     xticklabels={8,16,32,64,128,256,512,1024,2048,4096},
-    ytick={69,70,71,72,73,74,75},
+    ytick={75,76,77,78,79},
     grid=major, grid style={gray!18},
     tick label style={font=\small},
     label style={font=\small},
@@ -5673,38 +5788,34 @@ a 22-minute run.
   error bar style={blue!55!white, line width=0.6pt},
   error mark options={rotate=90, mark size=2.5pt, blue!55!white, line width=0.6pt}]
 coordinates {
-(8,70.38) += (0,0.89) -= (0,0.90) (16,72.06) += (0,0.87) -= (0,0.89) (32,73.61) += (0,0.85) -= (0,0.87) (64,73.13) += (0,0.86) -= (0,0.88) (128,73.60) += (0,0.85) -= (0,0.87) (256,73.66) += (0,0.85) -= (0,0.87) (512,74.09) += (0,0.85) -= (0,0.87) (1024,73.34) += (0,0.86) -= (0,0.88) (2048,73.38) += (0,0.86) -= (0,0.88) (4096,73.07) += (0,0.86) -= (0,0.88)
+(8,75.98) += (0,0.83) -= (0,0.85) (16,76.99) += (0,0.81) -= (0,0.84) (32,77.35) += (0,0.81) -= (0,0.83) (64,76.40) += (0,0.82) -= (0,0.84) (128,76.49) += (0,0.82) -= (0,0.84) (256,77.60) += (0,0.81) -= (0,0.83) (512,77.85) += (0,0.80) -= (0,0.82) (1024,77.84) += (0,0.80) -= (0,0.82) (2048,77.30) += (0,0.81) -= (0,0.83) (4096,77.62) += (0,0.81) -= (0,0.83)
 };
-\addplot[only marks, mark=o, mark size=4pt, red, line width=1pt, forget plot] coordinates {(64,73.13)};
-\node[anchor=west, font=\footnotesize, red!70!black] at (axis cs:74,71.6)
+\addplot[only marks, mark=o, mark size=4pt, red, line width=1pt, forget plot] coordinates {(64,76.40)};
+\node[anchor=west, font=\footnotesize, red!70!black] at (axis cs:74,75.2)
   {canonical head $d{=}64$};
 \end{axis}
 \end{tikzpicture}
-\caption{CIFAR-10 test accuracy against dense-head width for the 8-conv net with per-channel BatchNorm, the convolutional backbone held at $[16,16,32,32]$: AdamW, 25 epochs under a cosine schedule with a three-epoch warmup (\texttt{runs/2026-09-13-cifar8bn-grid-xla/}). Each point is one run; the whiskers are the 95\% Wilson interval on the $10{,}000$-image test set.}
+\caption{CIFAR-10 test accuracy against dense-head width for the 8-conv net with BatchNorm at batch statistics, the convolutional backbone held at $[16,16,32,32]$: AdamW, 25 epochs under a cosine schedule with a three-epoch warmup (\texttt{runs/2026-10-24-cifar8wb-bbn-grid-xla/}). Each point is one run; the whiskers are the 95\% Wilson interval on the $10{,}000$-image test set.}
 \label{fig:cifar_head_width}
 \end{figure}
 
 \noindent The recipe is the grid driver's own; the levers above ran at a constant
-rate. A whisker is about $\pm 0.9$ here, and is not a spread over repeats. Read
+rate. A whisker is about $\pm 0.8$ here, and is not a spread over repeats. Read
 that way the curve makes a sharper claim than
-``essentially flat'': every width from $d{=}32$ to $d{=}4096$ spans only
-$73.1$ to $74.1\%$, which is narrower than a single point's own interval,
-so the eight plateau intervals all overlap and none of the
-differences between them is resolvable from this experiment. The
-$128\times$ wider head buys nothing measurable; its $17$M-parameter
-classifier fits the training set a little harder (final train loss $0.39$
-against $0.52$ at $d{=}64$) and the test set does not notice. Two
-differences do survive. $d{=}16$ ($72.1\%$, interval $71.2$--$72.9$) sits
-under the top of the plateau, its interval stopping short of $d{=}512$'s,
-and $d{=}8$ ($70.4\%$, interval $69.5$--$71.3$) is below every plateau
-point, its upper bound about a point under the lowest plateau bound of
-$72.2$: there the $128{\to}8$ first layer throttles the 128-dim feature
-map the convolutions produce. The canonical $d{=}64$ (circled) sits
-squarely on the plateau: the head width genuinely does not matter here,
-which is the whole reason the net could borrow MNIST's classifier
-untouched. (The $d{=}512$ point is the board's own net, and lands within a
-quarter point of its 40-epoch AdamW cell on a shorter, scheduled run; the
-shape is the point.)
+``essentially flat'': every width from $d{=}16$ to $d{=}4096$ spans
+$76.4$ to $77.9\%$, about one point's own interval, so all nine of those
+intervals overlap the best point's and none of the differences between
+them is resolvable from this experiment. The $128\times$ wider head buys
+nothing measurable. One difference does survive: $d{=}8$ ($76.0\%$,
+interval $75.1$--$76.8$) stops short of the best point's interval, which
+starts at $77.0$; there the $128{\to}8$ first layer throttles the 128-dim
+feature map the convolutions produce. The canonical $d{=}64$ (circled)
+sits on the plateau: the head width genuinely does not matter here, which
+is the whole reason the net could borrow MNIST's classifier untouched.
+(The $d{=}512$ point is the board's own net, and lands two points over
+its 40-epoch AdamW cell in Table~\ref{tab:cifar_optimizers}; that is the
+cosine schedule against the constant rate, not the width, and the shape
+is the point.)
 
 \subsection*{Why the levers work}
 
@@ -5725,8 +5836,8 @@ and reliable progress compounds across epochs, which is what the
 curves and the table measure.
 
 The two levers interact, and the momentum column is where that shows.
-Momentum makes each step longer and more consistent, which is why it wins
-on accuracy, and a longer step through eight unnormalized layers is also
+Momentum makes each step longer and more consistent, which is why it
+finishes first, and a longer step through eight unnormalized layers is also
 what let one low-precision momentum run collapse to chance. Normalization
 is what makes the aggressive optimizer survivable. That is the standard
 account of why the two arrived together, and why every image architecture
@@ -5856,15 +5967,18 @@ none of the smooth-point exclusions ReLU and max-pool carry.
 Theorem~\ref{thm:bnHasVJP} is that formula; the per-channel and
 batch-statistics forms are its instantiations; and the eight-convolution
 step is tied with BatchNorm and without
-(Theorems~\ref{thm:cifar8_step_tie} and~\ref{thm:cifar8bn_step_tie}), with
-descent at the last convolution. The same emitted graph is LayerNorm's
+(Theorems~\ref{thm:cifar8_step_tie} and~\ref{thm:cifar8bn_step_tie}), the
+batch-statistics step node by node (Theorem~\ref{thm:cifar8bbn_step_tie}),
+with descent at the last convolution. The same emitted graph is LayerNorm's
 backward, since LayerNorm is BatchNorm along a different axis, which is
 why Chapters~\ref{chap:layernorm} and~\ref{chap:attention} add no
 normalization proof of their own.
 
 The experiment half says what the proofs do not: at eight convolutions,
-normalization and the optimizer are what govern training, and the number
-format is not measurable against seed noise. Eight is also about where a
+normalization is what governs training, the optimizer moves the result by
+less than a seed does, the group the statistics are taken over decides
+whether one run's number can be trusted, and the number format is not
+measurable against seed noise. Eight is also about where a
 plain stack stops helping. The next chapter adds the skip connection, whose
 VJP is additive fan-in, the second of the three composition rules, and
 composes it with convolution and BatchNorm to go thirty-four layers deep,
@@ -6115,8 +6229,8 @@ of the emitted text and take none; (v) is at fixed weights.
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP,
+      thm:identityHasVJP, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{R34PosB}]
@@ -6149,8 +6263,8 @@ activation; see \leandocref{Proofs.resnet34ForwardBFullHasVJPAt\_correct}.
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP,
+      thm:identityHasVJP, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item the ResNet-34 conditions, at ResNet-50's sixteen bottleneck blocks
@@ -6175,8 +6289,8 @@ As for ResNet-34, with the bottleneck in place of the basic block; see
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:pdiv_of_affine,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP,
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon_s > 0\), the stem ReLU off its corner and the stem pool's
@@ -6214,9 +6328,10 @@ stem's endpoint ties, and each block's backward in its slot; see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dBiasGradHasVJP,
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad,
-      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
-      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:identityHasVJP,
-      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
+      thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat,
+      thm:vjpComp}
   \Prove{} each of the 110 emitted parameter gradients of the batched
   ResNet-34 step (\texttt{resnet34\_sgd\_train\_step.mlir} and
   \texttt{\_adam\_} at \(N = 32\), \texttt{resnet34in\_momdp64} at
@@ -6247,10 +6362,11 @@ certified block backwards; see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dBiasGradHasVJP,
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad,
-      def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
-      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine,
-      thm:resnet34_step_tie, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP,
+      thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
+      thm:denseWeightGrad_correct, thm:hasGradAt_comp, thm:identityHasVJP,
+      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:resnet34_step_tie,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{R34PosB}]
@@ -6304,9 +6420,10 @@ to a maximal cell.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dBiasGradHasVJP,
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad,
-      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
-      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:identityHasVJP,
-      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
+      thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat,
+      thm:vjpComp}
   \Prove{} each of the 161 parameter gradients of the batched ResNet-50 step
   denotes the certified batch gradient at the chain cotangent of a loss
   cotangent \(g\) left as a binder, generic in \(N\) and \(q\). Instantiated
@@ -6330,10 +6447,11 @@ As for ResNet-34, over the three block kinds; see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dBiasGradHasVJP,
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad,
-      def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
-      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine,
-      thm:resnet50_step_tie, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP,
+      thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
+      thm:denseWeightGrad_correct, thm:hasGradAt_comp, thm:identityHasVJP,
+      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:resnet50_step_tie,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{R50PosB}]
@@ -6361,8 +6479,9 @@ As for ResNet-34; see \leandocref{Proofs.ResNet50TieB.r50\_net\_lossGrad}.
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:pdiv_of_affine, thm:resnet34FullHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP,
+      thm:identityHasVJP, thm:pdiv_of_affine, thm:resnet34FullHasVJP,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} at the structural weights \texttt{sealW} and input
   \texttt{sealX}, batch 2, for any positive number of classes, there is an
   (example, class) coordinate \(j_0\) and a pixel \(i_0\) at which the
@@ -6383,8 +6502,9 @@ coordinate; see \leandocref{Proofs.R34FullBSeal.sealX\_backward\_nontrivial}.
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:pdiv_of_affine, thm:resnet50FullHasVJP, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP,
+      thm:identityHasVJP, thm:pdiv_of_affine, thm:resnet50FullHasVJP,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} the same construction, with its own witness, for ResNet-50 at
   both 224 and 160 pixels (\(0 < q \le 7\)).
 \end{theorem}
@@ -8340,9 +8460,9 @@ MobileNetV4-Conv-M take each of the six rungs in turn.
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
-      ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine, thm:rowwiseHasVJPMat,
-      thm:vjpComp}
+      ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP,
+      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine,
+      thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{MNV2PosB}]
@@ -8376,8 +8496,8 @@ activation; see \leandocref{Proofs.mobilenetv2ForwardBFullHasVJPAt\_correct}.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item at the activation its stage sees, every ReLU is off its corner; the
@@ -8409,8 +8529,8 @@ graph tie op by op; see
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:pdiv, ax:pdiv_comp, ax:pdiv_reindex, def:hasvjp,
-      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:pdiv_of_affine,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseHasVJP, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the stem's and the head's BatchNorm, and the
@@ -8448,8 +8568,8 @@ stem's endpoint ties, and each block's backward in its slot; see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(\varepsilon > 0\) at the stem's and the two head BatchNorms, and
@@ -8483,10 +8603,10 @@ As for MobileNetV2; see \leandocref{Proofs.mnv4InputGradB\_eq\_mnv4B\_full\_vjp}
       ax:conv2dHasVJP3, ax:conv2dWeightGradHasVJP, ax:depthwiseBiasGradHasVJP,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:depthwiseWeightGradHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex,
-      ax:softmaxCE_grad, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
-      thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat,
-      thm:vjpComp}
+      ax:softmaxCE_grad, def:hasvjp, def:hasvjp3, def:hasvjpmat,
+      thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseBiasGrad_correct,
+      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:identityHasVJP,
+      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} each of the 158 emitted parameter gradients of the batched
   MobileNetV2 step (\texttt{mobilenetv2\_adam\_train\_step.mlir} at
   \(N = 32\), \texttt{mobilenetv2in\_rmsdp64} at \(N = 64\)) denotes the
@@ -8573,10 +8693,10 @@ weight, so its faithfulness is that op's, by \texttt{rfl}; see
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:depthwiseWeightGradHasVJP3, ax:pdiv,
       ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const, ax:pdiv_mul, ax:pdiv_reindex,
       ax:softmaxCE_grad, def:hasgradat, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:denseWeightGrad_correct, thm:hasGradAt_comp, thm:identityHasVJP,
-      thm:mobilenetv2_step_tie, thm:pdiv_finset_sum, thm:pdiv_of_affine,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseBiasGrad_correct,
+      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:hasGradAt_comp,
+      thm:identityHasVJP, thm:mobilenetv2_step_tie, thm:pdiv_finset_sum,
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{MNV2PosB}]
@@ -8611,9 +8731,10 @@ backwards (Theorem~\ref{thm:hasGradAt_comp}, once per stage); see
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const,
       ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad, def:hasvjp,
-      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
-      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:identityHasVJP,
-      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
+      thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat,
+      thm:vjpComp}
   \Prove{} each of the 233 parameter gradients of the batched
   MobileNetV4-Conv-M step (\texttt{mnv4in\_adamdp64}) denotes the certified
   batch gradient at the chain cotangent of a loss cotangent left as a binder,
@@ -8637,10 +8758,10 @@ of the body, skip and fused stages and the head; see
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const,
       ax:pdiv_mul, ax:pdiv_reindex, ax:pdiv_relu, ax:softmaxCE_grad, def:hasgradat,
-      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
-      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:hasGradAt_comp,
-      thm:identityHasVJP, thm:mobilenetv4_step_tie, thm:pdiv_finset_sum,
-      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
+      def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
+      thm:hasGradAt_comp, thm:identityHasVJP, thm:mobilenetv4_step_tie,
+      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item at the activation its stage sees, every ReLU is off its corner; the
@@ -8667,8 +8788,8 @@ As for MobileNetV2; see \leandocref{Proofs.Mnv4TieB.mnv4\_net\_lossGrad}.
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
-      ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnHasVJP,
-      thm:denseHasVJP, thm:identityHasVJP, thm:mobilenetv2FullHasVJP,
+      ax:pdiv_reindex, def:hasvjp, def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP,
+      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:mobilenetv2FullHasVJP,
       thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} at the structural weights \texttt{sealW} and input
   \texttt{sealX}, batch 2, there is a class and a pixel at which the backward
@@ -8690,8 +8811,8 @@ coordinate; see \leandocref{Proofs.Mnv2FullBSeal.sealX\_backward\_nontrivial}.
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:mobilenetv4FullHasVJP,
-      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
+      thm:mobilenetv4FullHasVJP, thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} the same for MobileNetV4-Conv-M, thirty-eight clauses, from a
   grid-constant base.
 \end{theorem}
@@ -8741,8 +8862,8 @@ its shard, so its node is the global node's sum over that shard, scaled by
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp,
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
-      thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP, thm:pdiv_of_affine,
-      thm:rowwiseHasVJPMat, thm:vjpComp}
+      thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
+      thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
   \Prove{} the same for MobileNetV4's 233 gradients, instantiated at the
   label-smoothed cross-entropy.
 \end{theorem}
@@ -10153,8 +10274,9 @@ gradient and the data-parallel tie; no seal.
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp,
-      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:pdiv_of_affine,
-      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+      def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseHasVJP, thm:pdiv_of_affine, thm:residualHasVJP, thm:rowwiseHasVJPMat,
+      thm:seBlockHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\), forty-nine of them
@@ -10189,9 +10311,9 @@ and the head; the graph ties op by op; see
   \leanok
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:depthwiseConv2d, ax:depthwiseHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp,
-      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP,
-      thm:efficientnetFullHasVJP, thm:pdiv_of_affine, thm:residualHasVJP,
-      thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+      def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseHasVJP, thm:efficientnetFullHasVJP, thm:pdiv_of_affine,
+      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)w}]
@@ -10218,9 +10340,10 @@ Theorem~\ref{thm:efficientnetFullHasVJP} read stage by stage; see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct, thm:denseHasVJP,
-      thm:denseWeightGrad_correct, thm:identityHasVJP, thm:pdiv_of_affine,
-      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+      def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseBiasGrad_correct,
+      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:identityHasVJP,
+      thm:pdiv_of_affine, thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP,
+      thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\), all forty-nine of them
@@ -10258,10 +10381,11 @@ backwards; see \leandocref{Proofs.EnetTieG.efficientnet\_net\_tiedG}.
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_add, ax:pdiv_comp, ax:pdiv_const,
       ax:pdiv_mul, ax:pdiv_reindex, ax:softmaxCE_grad, def:hasgradat, def:hasvjp,
-      def:hasvjp3, def:hasvjpmat, thm:bnHasVJP, thm:denseBiasGrad_correct,
-      thm:denseHasVJP, thm:denseWeightGrad_correct, thm:efficientnet_step_tie,
-      thm:hasGradAt_comp, thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine,
-      thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP, thm:vjpComp}
+      def:hasvjp3, def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP,
+      thm:denseBiasGrad_correct, thm:denseHasVJP, thm:denseWeightGrad_correct,
+      thm:efficientnet_step_tie, thm:hasGradAt_comp, thm:identityHasVJP,
+      thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:residualHasVJP, thm:rowwiseHasVJPMat,
+      thm:seBlockHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item every BatchNorm's \(\varepsilon > 0\) \hfill[\texttt{h\(\varepsilon\)w}]
@@ -10291,9 +10415,9 @@ backwards (Theorem~\ref{thm:hasGradAt_comp}, once per stage); see
   \uses{ax:bnIstdBroadcast_differentiable, ax:conv2d, ax:conv2dHasVJP3,
       ax:conv2dWeightGradHasVJP, ax:depthwiseConv2d, ax:depthwiseHasVJP3,
       ax:depthwiseWeightGradHasVJP3, ax:pdiv, ax:pdiv_reindex, def:hasvjp, def:hasvjp3,
-      def:hasvjpmat, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
-      thm:pdiv_of_affine, thm:residualHasVJP, thm:rowwiseHasVJPMat, thm:seBlockHasVJP,
-      thm:vjpComp}
+      def:hasvjpmat, thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP,
+      thm:identityHasVJP, thm:pdiv_of_affine, thm:residualHasVJP, thm:rowwiseHasVJPMat,
+      thm:seBlockHasVJP, thm:vjpComp}
   \Assume{}
   \begin{enumerate}
     \item \(R \ge 1\) replicas of \(N \ge 1\) images each, all forty-nine
@@ -18285,7 +18409,10 @@ $Q$-function. Three things change relative to the CIFAR demo:
     20--500\,Hz, 128 frames); the ordinary train step with integer labels,
     Adam at $10^{-3}$ with one warm-up epoch and cosine decay, batch 64,
     six epochs, under two minutes on one card. Nothing in the codegen
-    moved.
+    moved. The BatchNorm is the batch-statistics form of that chapter's
+    headline rows, scored here on each test batch's own statistics rather
+    than running ones; the sign-language, leaf and band demos inherit the
+    same net.
 \end{itemize}
 
 \paragraph{Scored against the theorem.} Detection probability by injected

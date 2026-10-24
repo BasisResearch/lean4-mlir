@@ -2302,18 +2302,20 @@ script mnist do
   runDemoGroup ["mnist-linear-verified", "mnist-mlp-verified",
                 "mnist-cnn-verified"] (xla := true)
 
-/-- `lake run cifar` — the six-way Chapter-4 optimizer ablation on XLA
-    (SGD / Nesterov-momentum / AdamW × BN / no-BN).
+/-- `lake run cifar` — the Chapter-4 optimizer ablation on XLA: SGD / Nesterov-momentum / AdamW
+    × no-BN / per-image BN / batch-statistics BN, the last also in bf16 (twelve arms, three
+    binaries, ~13 min on a 4060 Ti).
 
-    A mirror of `lake run cifar-iree` in the literal sense: the SAME binaries,
-    differing only in the lowerer `runDemoGroup` selects. Both sides run the WIDE-head pair so that
-    the demo trains the net Chapter 4 reports on; each ablation binary runs its three optimizers in
-    sequence on one controlled pipeline (shuffle + hflip + cosine-warmup), so the six arms are two
-    binaries rather than six. Wide costs noticeably more wall-clock per epoch than the narrow pair
-    and buys no accuracy — §4.3's head-width sweep is exactly that
-    finding — but matching the chapter is worth the minutes. -/
+    `cifar8w-ablation` and `cifar8w-bn-ablation` are the pair `lake run cifar-iree` mirrors, the
+    SAME binaries differing only in the lowerer `runDemoGroup` selects. `cifar8wb-bbn-ablation` is
+    the chapter's headline net — BatchNorm at batch statistics with running-stat eval, the layer
+    Chapter 5 onward trains — and is XLA-only here: IREE 3.11's llvm-cpu miscompiles the pooled
+    batched steps (planning/cifar-batch-bn-rerender.md), so it has no `-iree` twin. All three run
+    the WIDE head so the demo trains the nets Chapter 4 reports on; wide costs more wall-clock per
+    epoch than narrow and buys no accuracy — §4.3's head-width sweep is exactly that finding —
+    but matching the chapter is worth the minutes. -/
 script cifar do
-  runDemoGroup ["cifar8w-ablation", "cifar8w-bn-ablation"] (xla := true)
+  runDemoGroup ["cifar8w-ablation", "cifar8w-bn-ablation", "cifar8wb-bbn-ablation"] (xla := true)
 
 /-- `lake run imagenette` — the seven Imagenette nets on the verified XLA path, 80 epochs of AdamW
     at 224², in book order (ch.5 → ch.9, each chapter's side quest right after it).
