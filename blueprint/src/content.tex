@@ -460,7 +460,7 @@ gcc -fPIC -O2 -shared ffi/pjrt_ffi.c -ldl -o ffi/libpjrt_ffi.so
 \begin{verbatim}
 ./scripts/datasets/download_mnist.sh       # MNIST       (mnist tier)
 ./scripts/datasets/download_cifar.sh       # CIFAR-10    (cifar tier)
-./scripts/datasets/download_imagenette.sh  # Imagenette 320px, 330 MB (imagenette tier)
+./scripts/datasets/download_imagenette.sh  # Imagenette 320px, 330 MB (imagenette)
 \end{verbatim}
 
   \item \textbf{Build and run a trainer.} No backend selection: XLA finds
@@ -9406,23 +9406,23 @@ config comes from.
 \hline
 Knob & Value & Source \\
 \hline
-learning rate & $0.12$ at $256$ & README: \texttt{learning\_rate 0.045*NUM\_GPUS} on \texttt{batch\_size 96*NUM\_GPUS}, so $0.045$ per $96$ images \\
-epochs & $90$; \texttt{full} $420$ & the validation tier; the README's ``about 700K steps'' on 8 clones of 96 is $700{,}000 \times 768 / 1{,}281{,}167 \approx 420$ epochs of data \\
-optimizer & RMSProp, TF~1 form & \texttt{train\_image\_classifier.py}: \texttt{optimizer} defaults to \texttt{rmsprop}; TF~1's \texttt{ApplyRMSProp} folds the rate into the momentum term \\
-RMSProp $\mu$, $\rho$, $\varepsilon$ & $0.9$, $0.9$, $1.0$ & \texttt{rmsprop\_momentum 0.9}, \texttt{rmsprop\_decay 0.9}, \texttt{opt\_epsilon 1.0}, not $10^{-8}$ \\
-weight decay & $4 \times 10^{-5}$, coupled & \texttt{weight\_decay 4e-5}, the regularization loss; \texttt{l2\_regularizer} on \texttt{slim.conv2d} only, so no BN $\gamma/\beta$, no biases, and \texttt{separable\_conv2d} has \texttt{weights\_regularizer=None} \\
-initialization & truncated normal, $\sigma = 0.09$ & \texttt{training\_scope(stddev=0.09)}, on every kernel and the logits \\
-schedule & $\times 0.98$ every $2.5$ epochs, staircase, no warmup & \texttt{learning\_rate\_decay\_factor 0.98}; \texttt{num\_epochs\_per\_decay = 2.5 / NUM\_GPUS} per-clone epochs, $2.5$ epochs of data; \texttt{staircase=True} from step 0; \texttt{warmup\_epochs} unset \\
-dropout & $0.2$ & \texttt{dropout\_keep\_prob 0.8} \\
-train crop & area $0.05$--$1$, aspect $0.75$--$1.33$, 100 attempts & \texttt{inception\_preprocessing}: \texttt{distorted\_bounding\_box\_crop} with \texttt{area\_range (0.05, 1.0)}, \texttt{aspect\_ratio\_range (0.75, 1.33)}, \texttt{max\_attempts 100}, then the whole image; a horizontal flip \\
-resize & bilinear, TF~1 kernel, no antialias & \texttt{resize\_images} in \texttt{fast\_mode}; TF~1's \texttt{resize\_bilinear} (\texttt{half\_pixel\_centers=False}), which \texttt{resize\_images} was; train and eval \\
-color & brightness, then saturation & \texttt{distort\_color fast\_mode}: brightness $\pm 32/255$, saturation $0.5$--$1.5$ \\
-input scale & $(x - 0.5) \times 2$ & slim's \texttt{inception\_preprocessing} \\
-eval crop & slim's window & \texttt{preprocess\_for\_eval}: \texttt{central\_crop(0.875)} of both sides, then \texttt{resize\_bilinear} to $224 \times 224$; slim's window, not tf-models' shorter-side square; timm's resize-then-crop kept beside it for \texttt{PROTOCOL=timm} \\
-label smoothing & $0.1$ & README: \texttt{--label\_smoothing=0.1} \\
-EMA & $0.9999$, warmed up & README: \texttt{--moving\_average\_decay=0.9999}; \texttt{ExponentialMovingAverage(decay, num\_updates=global\_step)} \\
-BatchNorm & decay $0.997$, $\varepsilon = 10^{-3}$, running stats at eval & \texttt{training\_scope bn\_decay 0.997}, PyTorch momentum $0.003$; \texttt{slim.batch\_norm}'s $\varepsilon$ \\
-precision & bf16 convolutions, fp32 head, f32 eval & the reference's own choice, matching every verified render \\
+\cellleft learning rate & \cellleft $0.12$ at $256$ & \cellleft README: \texttt{learning\_rate 0.045*NUM\_GPUS} on \texttt{batch\_size 96*NUM\_GPUS}, so $0.045$ per $96$ images \\
+\cellleft epochs & \cellleft $90$; \texttt{full} $420$ & \cellleft the validation tier; the README's ``about 700K steps'' on 8 clones of 96 is $700{,}000 \times 768 / 1{,}281{,}167 \approx 420$ epochs of data \\
+\cellleft optimizer & \cellleft RMSProp, TF~1 form & \cellleft \texttt{train\_image\_classifier.py}: \texttt{optimizer} defaults to \texttt{rmsprop}; TF~1's \texttt{ApplyRMSProp} folds the rate into the momentum term \\
+\cellleft RMSProp $\mu$, $\rho$, $\varepsilon$ & \cellleft $0.9$, $0.9$, $1.0$ & \cellleft \texttt{rmsprop\_momentum 0.9}, \texttt{rmsprop\_decay 0.9}, \texttt{opt\_epsilon 1.0}, not $10^{-8}$ \\
+\cellleft weight decay & \cellleft $4 \times 10^{-5}$, coupled & \cellleft \texttt{weight\_decay 4e-5}, the regularization loss; \texttt{l2\_regularizer} on \texttt{slim.conv2d} only, so no BN $\gamma/\beta$, no biases, and \texttt{separable\_conv2d} has \texttt{weights\_regularizer=None} \\
+\cellleft initialization & \cellleft truncated normal, $\sigma = 0.09$ & \cellleft \texttt{training\_scope(stddev=0.09)}, on every kernel and the logits \\
+\cellleft schedule & \cellleft $\times 0.98$ every $2.5$ epochs, staircase, no warmup & \cellleft \texttt{learning\_rate\_decay\_factor 0.98}; \texttt{num\_epochs\_per\_decay = 2.5 / NUM\_GPUS} per-clone epochs, $2.5$ epochs of data; \texttt{staircase=True} from step 0; \texttt{warmup\_epochs} unset \\
+\cellleft dropout & \cellleft $0.2$ & \cellleft \texttt{dropout\_keep\_prob 0.8} \\
+\cellleft train crop & \cellleft area $0.05$--$1$, aspect $0.75$--$1.33$, 100 attempts & \cellleft \texttt{inception\_preprocessing}: \texttt{distorted\_bounding\_box\_crop} with \texttt{area\_range (0.05, 1.0)}, \texttt{aspect\_ratio\_range (0.75, 1.33)}, \texttt{max\_attempts 100}, then the whole image; a horizontal flip \\
+\cellleft resize & \cellleft bilinear, TF~1 kernel, no antialias & \cellleft \texttt{resize\_images} in \texttt{fast\_mode}; TF~1's \texttt{resize\_bilinear} (\texttt{half\_pixel\_centers=False}), which \texttt{resize\_images} was; train and eval \\
+\cellleft color & \cellleft brightness, then saturation & \cellleft \texttt{distort\_color fast\_mode}: brightness $\pm 32/255$, saturation $0.5$--$1.5$ \\
+\cellleft input scale & \cellleft $(x - 0.5) \times 2$ & \cellleft slim's \texttt{inception\_preprocessing} \\
+\cellleft eval crop & \cellleft slim's window & \cellleft \texttt{preprocess\_for\_eval}: \texttt{central\_crop(0.875)} of both sides, then \texttt{resize\_bilinear} to $224 \times 224$; slim's window, not tf-models' shorter-side square; timm's resize-then-crop kept beside it for \texttt{PROTOCOL=timm} \\
+\cellleft label smoothing & \cellleft $0.1$ & \cellleft README: \texttt{--label\_smoothing=0.1} \\
+\cellleft EMA & \cellleft $0.9999$, warmed up & \cellleft README: \texttt{--moving\_average\_decay=0.9999}; \texttt{ExponentialMovingAverage(decay, num\_updates=global\_step)} \\
+\cellleft BatchNorm & \cellleft decay $0.997$, $\varepsilon = 10^{-3}$, running stats at eval & \cellleft \texttt{training\_scope bn\_decay 0.997}, PyTorch momentum $0.003$; \texttt{slim.batch\_norm}'s $\varepsilon$ \\
+\cellleft precision & \cellleft bf16 convolutions, fp32 head, f32 eval & \cellleft the reference's own choice, matching every verified render \\
 \hline
 \end{tabular}
 \end{table}
@@ -11079,20 +11079,20 @@ off.
 \hline
 Knob & Value & Source \\
 \hline
-learning rate & $0.016$ at $256$ & the reference base rate $0.256$ at batch $4096$, scaled linearly; paper-faithful, with no lowered rate and no gradient clip \\
-optimizer & RMSProp, TF~1 form & \texttt{utils.build\_optimizer}: \texttt{tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon)}; TF~1's \texttt{ApplyRMSProp} folds the rate into the momentum buffer, $\varepsilon$ inside the square root, mean square started at $1$ \\
-RMSProp $\mu$, $\rho$, $\varepsilon$ & $0.9$, $0.9$, $10^{-3}$ & the paper's values; the TF-RMSProp form has no blow-up for a clip to compensate for, so none is set \\
-weight decay & $10^{-5}$, biases included & \texttt{main.py}: \texttt{weight\_decay} times the sum of \texttt{l2\_loss(v)} over every trainable variable without \emph{batch\_normalization} in its name, so BN $\gamma/\beta$ exempt and biases decayed (\texttt{wdDecayBiases}); timm and the verified \texttt{wx} render exclude norm and bias \\
-schedule & $\times 0.97$ every $2.4$ epochs, floored, 5-epoch warmup & TF: the exponential decay on the global step, floored; the warmup overrides it while it runs \\
-dropout, drop path & $0.2$, $0.2$ & the B0 classifier dropout; stochastic depth at the drop-connect rate, on TF's and timm's ramp $0.2 \cdot i/16$, not the default $i/15$ \\
-head init & $U(\pm 1/\sqrt{1000})$, zero bias & \texttt{efficientnet\_model.py} \texttt{dense\_kernel\_initializer} \\
-AutoAugment & policy v0, TF's ops & \texttt{autoaugment.py}: the v0 table op for op, \texttt{TranslateY} absolute, fill 128, TF's posterize shift; \texttt{contrib\_image.\{transform,rotate,translate\}} interpolate \texttt{NEAREST}, not timm's PIL bicubic; \texttt{HParams(cutout\_const=100, translate\_const=250)}, so $(m/10) \cdot 250$ px \\
-train crop & whole-image draw falls back to the centre crop & \texttt{preprocessing.py} \\
-resize & bicubic, TF~1 op & \texttt{\_resize\_image}: \texttt{tf.image.resize\_bicubic}, no antialias, \texttt{half\_pixel\_centers=False} \\
-eval crop & $224/256$ of the shorter side, TF's offsets & \texttt{\_decode\_and\_center\_crop}: crop first, the side truncated, offsets $((h - \mathrm{side}) + 1)/2$, then bicubic to $224$ \\
-EMA & $0.9999$, BN buffers shadowed & paper-faithful weight averaging; the emitter EMA-shadows the BN buffers too and eval uses them, since EMA weights with live BN statistics blow up at eval \\
-BatchNorm & $\varepsilon = 10^{-3}$, running stats at eval & TF's BN $\varepsilon$; paper-faithful eval \\
-precision & bf16 MBConv convolutions, fp32 head, f32 eval & the reference's own choice; the logged number is scored through an f32 forward, as the verified path's and timm's are \\
+\cellleft learning rate & \cellleft $0.016$ at $256$ & \cellleft the reference base rate $0.256$ at batch $4096$, scaled linearly; paper-faithful, with no lowered rate and no gradient clip \\
+\cellleft optimizer & \cellleft RMSProp, TF~1 form & \cellleft \texttt{utils.build\_optimizer}: \texttt{tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon)}; TF~1's \texttt{ApplyRMSProp} folds the rate into the momentum buffer, $\varepsilon$ inside the square root, mean square started at $1$ \\
+\cellleft RMSProp $\mu$, $\rho$, $\varepsilon$ & \cellleft $0.9$, $0.9$, $10^{-3}$ & \cellleft the paper's values; the TF-RMSProp form has no blow-up for a clip to compensate for, so none is set \\
+\cellleft weight decay & \cellleft $10^{-5}$, biases included & \cellleft \texttt{main.py}: \texttt{weight\_decay} times the sum of \texttt{l2\_loss(v)} over every trainable variable without \emph{batch\_normalization} in its name, so BN $\gamma/\beta$ exempt and biases decayed (\texttt{wdDecayBiases}); timm and the verified \texttt{wx} render exclude norm and bias \\
+\cellleft schedule & \cellleft $\times 0.97$ every $2.4$ epochs, floored, 5-epoch warmup & \cellleft TF: the exponential decay on the global step, floored; the warmup overrides it while it runs \\
+\cellleft dropout, drop path & \cellleft $0.2$, $0.2$ & \cellleft the B0 classifier dropout; stochastic depth at the drop-connect rate, on TF's and timm's ramp $0.2 \cdot i/16$, not the default $i/15$ \\
+\cellleft head init & \cellleft $U(\pm 1/\sqrt{1000})$, zero bias & \cellleft \texttt{efficientnet\_model.py} \texttt{dense\_kernel\_initializer} \\
+\cellleft AutoAugment & \cellleft policy v0, TF's ops & \cellleft \texttt{autoaugment.py}: the v0 table op for op, \texttt{TranslateY} absolute, fill 128, TF's posterize shift; \texttt{contrib\_image.\{transform,rotate,translate\}} interpolate \texttt{NEAREST}, not timm's PIL bicubic; \texttt{HParams(cutout\_const=100, translate\_const=250)}, so $(m/10) \cdot 250$ px \\
+\cellleft train crop & \cellleft whole-image draw falls back to the centre crop & \cellleft \texttt{preprocessing.py} \\
+\cellleft resize & \cellleft bicubic, TF~1 op & \cellleft \texttt{\_resize\_image}: \texttt{tf.image.resize\_bicubic}, no antialias, \texttt{half\_pixel\_centers=False} \\
+\cellleft eval crop & \cellleft $224/256$ of the shorter side, TF's offsets & \cellleft \texttt{\_decode\_and\_center\_crop}: crop first, the side truncated, offsets $((h - \mathrm{side}) + 1)/2$, then bicubic to $224$ \\
+\cellleft EMA & \cellleft $0.9999$, BN buffers shadowed & \cellleft paper-faithful weight averaging; the emitter EMA-shadows the BN buffers too and eval uses them, since EMA weights with live BN statistics blow up at eval \\
+\cellleft BatchNorm & \cellleft $\varepsilon = 10^{-3}$, running stats at eval & \cellleft TF's BN $\varepsilon$; paper-faithful eval \\
+\cellleft precision & \cellleft bf16 MBConv convolutions, fp32 head, f32 eval & \cellleft the reference's own choice; the logged number is scored through an f32 forward, as the verified path's and timm's are \\
 \hline
 \end{tabular}
 \end{table}

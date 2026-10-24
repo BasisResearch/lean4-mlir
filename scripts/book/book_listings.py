@@ -226,21 +226,23 @@ def main():
     print(f'\n{quoted} listings quote a file, {drifted} with units the file no longer has; '
           + ', '.join(f'{v} {k}' for k, v in kinds.most_common()) + ' matched nothing')
     # the column limit: a code line in the printed page holds about 88 characters, and a longer one
-    # runs into the margin (the config listings grow with every recipe pass, so this is a gate)
+    # runs into the margin (the config listings grow with every recipe pass, so this is a gate).
+    # Reported after the drift report, so a run with both problems shows both.
     max_cols = next((int(a.split('=', 1)[1]) for a in sys.argv if a.startswith('--max-cols=')), 88)
     long_lines = [(start + 1 + k, len(l)) for start, body in blocks(tex_lines)
                   for k, l in enumerate(body) if len(l) > max_cols]
-    if check and long_lines:
-        print(f'{len(long_lines)} listing line(s) over {max_cols} characters:')
-        for n, w in long_lines: print(f'  L{n}  {w} chars')
-        sys.exit(1)
-    print(f'no listing line over {max_cols} characters')
     if check:
         if failures:
             print(f'{len(failures)} listing(s) drifted from the tree and are not listed in {HISTORICAL}:')
             for start, h, best in failures: print(f'  L{start}  {h}  ({best})')
-            sys.exit(1)
-        print('every listing matches its file (or is listed as historical)')
+        else:
+            print('every listing matches its file (or is listed as historical)')
+        if long_lines:
+            print(f'{len(long_lines)} listing line(s) over {max_cols} characters:')
+            for n, w in long_lines: print(f'  L{n}  {w} chars')
+        else:
+            print(f'no listing line over {max_cols} characters')
+        if failures or long_lines: sys.exit(1)
 
 if __name__ == '__main__':
     main()
