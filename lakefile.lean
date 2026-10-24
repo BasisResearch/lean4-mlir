@@ -2305,7 +2305,7 @@ script mnist do
 
 /-- `lake run cifar` — the Chapter-4 optimizer ablation on XLA: SGD / Nesterov-momentum / AdamW
     × no-BN / per-image BN / batch-statistics BN, the last also in bf16 (twelve arms, three
-    binaries, ~13 min on a 4060 Ti).
+    binaries).
 
     `cifar8w-ablation` and `cifar8w-bn-ablation` are the pair `lake run cifar-iree` mirrors, the
     SAME binaries differing only in the lowerer `runDemoGroup` selects. `cifar8wb-bbn-ablation` is
