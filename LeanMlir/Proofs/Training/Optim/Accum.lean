@@ -141,7 +141,7 @@ theorem lambStepAcc_eq_mean (β₁ β₂ ε lr wd bc₁ bc₂ wn2 k : ℝ) (hk :
 
 /-- **Accumulate phase for LAMB: `lr = 0` discards the direction, the moments pass through.**
     The direction computed on an accumulate micro-batch is built from `β₁·m` rather than a real
-    moment (`RenderKit.OptRecipe.lambAccum` says so); this is why that is harmless. -/
+    moment (`StableHLO.OptRecipe.lambAccum` says so); this is why that is harmless. -/
 theorem lambStepAcc_accumulate (ε wd bc₁ bc₂ wn2 k : ℝ) (θ m v Gt : Vec n) :
     lambStepAcc 1 1 ε 0 wd bc₁ bc₂ wn2 k θ m v Gt = (θ, m, v) := by
   refine Prod.ext ?_ (Prod.ext ?_ ?_) <;> funext i <;>

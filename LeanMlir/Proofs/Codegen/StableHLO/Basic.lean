@@ -11,7 +11,6 @@ public import LeanMlir.Proofs.Architectures.Attention
 -- LAMB (`lambDir`/`lambTrust`/`lambScale`), RSB-A3's optimizer. Imports GradClip for `scalarOf`
 -- and `gradSumSq` — the per-leaf squared norm is SHARED with the clip rather than re-derived, so
 -- the two features cannot drift on what a norm is.
-public import LeanMlir.Proofs.Training.Optim.Lamb
 public import LeanMlir.Proofs.Training.Optim.Accum
 -- RmsPropStep imports only the two above, so this adds no cycle either.
 public import LeanMlir.Proofs.Training.Optim.RmsPropStep
