@@ -33,6 +33,7 @@ this repo.
 
 | date | host | GPUs | driver | runtime | plugin | PJRT API | repo | tiers | pass | xfail | fail | skip | |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-24 | minerva | 1× Intel(R) Arc(TM) Pro B50 Graphics |  | runtime 8.0.0, dnn 3.12.3 | jax_oneapi_pjrt==0.11.2 | 0.115 (hdr 0.90) | `ef15b629` | 0–2 | 21 | 0 | 0 | 3 | [✅](runs/platform/2026-10-24-minerva-xpu/results.tsv) |
 | 2026-10-22 | minerva | 1× Intel(R) Arc(TM) Pro B50 Graphics |  | runtime 8.0.0, dnn 3.12.3 | jax_oneapi_pjrt==0.11.2 | 0.115 (hdr 0.90) | `476f7878+dirty` | 0–2 | 21 | 0 | 0 | 3 | [✅](runs/platform/2026-10-22-minerva-xpu/results.tsv) |
 | 2026-10-11 | minerva | 1× Intel(R) Arc(TM) Pro B50 Graphics |  | runtime 8.0.0, dnn 3.12.3 | jax_oneapi_pjrt==0.11.2 | 0.115 (hdr 0.90) | `320f5045+dirty` | 0–2 | 21 | 0 | 0 | 3 | [✅](runs/platform/2026-10-11-minerva-xpu/results.tsv) |
 | 2026-10-06 | mars | 4× RTX 3060 | 610.57.04 | runtime 13.3.0, dnn 9.24.0 | jax_cuda13_pjrt==0.11.1 | 0.114 (hdr 0.90) | `40e3c7ee` | 0–2 | 24 | 0 | 0 | 0 | [✅](runs/platform/2026-10-06-mars-cuda/results.tsv) |

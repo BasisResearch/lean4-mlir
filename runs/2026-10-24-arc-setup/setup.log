@@ -1,0 +1,109 @@
+════ arc_setup 2026-10-24 17:11:47 — stages: check smoke suite
+
+━━━ check: the box
+  ✓ Intel GPU at 0000:0d:00.0 (0xe212)
+  ✓ xe driver, kernel 7.0.0-38-generic
+  ✓ BAR: 16384 MiB (Resizable BAR on)
+  ✓ Level Zero: libze_loader + libze_intel_gpu
+  ✓ xpu-smi: Intel(R) Arc(TM) Pro B50 Graphics    
+  ✓ C compiler: gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+  ✓ python: /usr/bin/python3.12 (Python 3.12.3)
+  ✓ elan: /home/skoonce/.elan/bin/elan
+  ✓ disk: 106 GB free
+
+━━━ smoke: our PJRT shim on Intel's plugin, before any Lean
+  PJRT_PLUGIN=.venv-xpu/lib/python3.12/site-packages/jax_plugins/xla_oneapi/xla_oneapi_plugin.so
+  ✓ built ffi/libpjrt_ffi.so
+[pjrt_ffi] platform: oneapi
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] d2h: SERIAL — one readback in flight (oneAPI default — see d2h_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/linear_fwd.mlir (@linear_fwd, 1 outputs, 1 replica) in 37 ms
+[pjrt_ffi] @linear_fwd ok (3 in, 1 out)
+[pjrt_ffi] platform: oneapi
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] d2h: SERIAL — one readback in flight (oneAPI default — see d2h_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/linear_train_step.mlir (@linear_train_step, 2 outputs, 1 replica) in 148 ms
+[pjrt_ffi] platform: oneapi
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] d2h: SERIAL — one readback in flight (oneAPI default — see d2h_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/mlp_fwd.mlir (@mlp_fwd, 1 outputs, 1 replica) in 56 ms
+[pjrt_ffi] platform: oneapi
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] d2h: SERIAL — one readback in flight (oneAPI default — see d2h_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/mlp_train_step.mlir (@mlp_train_step, 7 outputs, 1 replica) in 258 ms
+[pjrt_ffi] platform: oneapi
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] d2h: SERIAL — one readback in flight (oneAPI default — see d2h_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cnn_fwd.mlir (@cnn_fwd, 1 outputs, 1 replica) in 103 ms
+[pjrt_ffi] platform: oneapi
+[pjrt_ffi] XLA backend: PJRT 0.115, 1 device(s)
+[pjrt_ffi] command buffers: enabled (default)
+[pjrt_ffi] h2d: SERIAL — one upload in flight (oneAPI default — see h2d_serial())
+[pjrt_ffi] d2h: SERIAL — one readback in flight (oneAPI default — see d2h_serial())
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+[pjrt_ffi] compiled verified_mlir/cnn_train_step.mlir (@cnn_train_step, 11 outputs, 1 replica) in 354 ms
+linear_fwd: max |device - host| = 1.72e-06 over 1280 outputs (y[0][0] = 2.329578)
+compiled verified_mlir/linear_train_step.mlir
+compiled verified_mlir/mlp_fwd.mlir
+compiled verified_mlir/mlp_train_step.mlir
+compiled verified_mlir/cnn_fwd.mlir
+compiled verified_mlir/cnn_train_step.mlir
+SMOKE OK
+
+━━━ suite: scripts/platform/check.sh, tiers 0–2
+platform suite — xpu, tiers 0..2 → runs/platform/2026-10-24-minerva-xpu
+build:
+  build:shim       PASS  
+  build:probe      PASS  
+  build:smoke      PASS  
+  build:guards     PASS  
+  build:dp         PASS  
+  build:allreduce  PASS  
+  build:compile_check PASS  
+  build:tier2_run  PASS  
+tier 0 — platform:
+  smi              PASS                                                                    
+  probe            PASS  devices=1
+  smoke            PASS  compile + execute OK
+  erfc             PASS  chlo.erfc OK
+tier 1 — shim:
+  guards           PASS  all guards fire (0 failures)
+  compile_dp       SKIP  needs 2 devices, 1 visible
+  allreduce        SKIP  needs 2 devices, 1 visible
+  dp               SKIP  needs 2 devices, 1 visible
+tier 2 — ops vs XLA:CPU goldens:
+  linear_train_step PASS  OK dot/f32: median 5.2e-07 (≤0.003), p90 5.4e-07 (≤0.03), max 5.4e-07 at output 1
+  mlp_train_step   PASS  OK dot/f32: median 5.6e-07 (≤0.003), p90 1.4e-06 (≤0.03), max 1.5e-06 at output 2
+  cifar8_train_step PASS  OK conv-pool/f32: median 3.6e-07 (≤0.03), p90 5.6e-07 (≤0.07), max 2.7e-06 at output 0
+  cifar8_bf16_train_step PASS  OK conv-pool/bf16: median 1.9e-02 (≤0.06), p90 2.6e-02 (≤0.1), max 1.0e-01 at output 0
+  cifar8_bn_adam_train_step PASS  OK batchnorm/f32: median 1.1e-06 (≤0.005), p90 2.5e-05 (≤0.2), max 1.7e-04 at output 1
+  cifar8wb_bn_bf16adam_train_step PASS  OK batchnorm/bf16: median 2.7e-03 (≤0.01), p90 3.4e-01 (≤1), max 3.9e-01 at output 38
+  mobilenetv2_adam_train_step PASS  OK depthwise/f32: median 7.5e-04 (≤0.06), p90 1.1e-02 (≤0.9), max 1.1e+01 at output 213
+  mobilenetv2in_adam64bf16_train_step PASS  OK depthwise/bf16: median 2.0e-01 (≤0.25), p90 1.1e+00 (≤3), max 3.3e+01 at output 8
+  efficientnet_adam_train_step PASS  OK swish-se/f32: median 5.9e-06 (≤0.015), p90 2.3e-05 (≤0.02), max 6.5e-04 at output 12
+  efficientnet_adambf16_train_step PASS  OK swish-se/bf16: median 7.4e-02 (≤0.2), p90 1.5e-01 (≤0.4), max 3.7e+00 at output 292
+  vit_adam_train_step PASS  OK attention/f32: median 2.9e-07 (≤0.003), p90 2.0e-06 (≤0.005), max 1.9e-05 at output 166
+  vitin_adamwxclipdropbf16_train_step PASS  OK attention/bf16: median 2.5e-03 (≤0.01), p90 1.6e-02 (≤0.05), max 8.7e-02 at output 209
+  vitin_adamwxclipdroperfbf16_train_step PASS  OK attention/bf16: median 1.6e-03 (≤0.01), p90 1.6e-02 (≤0.05), max 1.0e-01 at output 209
+  resnet34_adam_train_step PASS  OK deep-conv/f32: median 2.9e-03 (≤0.15), p90 1.3e-02 (≤0.8), max 2.8e-02 at output 102
+  resnet34_adambf16_train_step PASS  OK deep-conv/bf16: median 1.7e-01 (≤0.3), p90 9.2e-01 (≤3), max 1.1e+00 at output 8
+  convnext_adam_train_step PASS  OK layernorm-dw7/f32: median 3.4e-07 (≤0.003), p90 2.0e-06 (≤0.005), max 1.8e-05 at output 113
+
+29 pass, 0 xfail, 0 fail, 0 xpass, 3 skip — runs/platform/2026-10-24-minerva-xpu
+
+━━━ done: check smoke suite — log runs/2026-10-24-arc-setup/setup.log, box facts runs/2026-10-24-arc-setup/manifest.txt
