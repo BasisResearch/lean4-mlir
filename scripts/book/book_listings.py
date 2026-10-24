@@ -237,12 +237,12 @@ def main():
             for start, h, best in failures: print(f'  L{start}  {h}  ({best})')
         else:
             print('every listing matches its file (or is listed as historical)')
-        if long_lines:
-            print(f'{len(long_lines)} listing line(s) over {max_cols} characters:')
-            for n, w in long_lines: print(f'  L{n}  {w} chars')
-        else:
-            print(f'no listing line over {max_cols} characters')
-        if failures or long_lines: sys.exit(1)
+    if long_lines:
+        print(f'{len(long_lines)} listing line(s) over {max_cols} characters:')
+        for n, w in long_lines: print(f'  L{n}  {w} chars')
+    else:
+        print(f'no listing line over {max_cols} characters')
+    if check and (failures or long_lines): sys.exit(1)
 
 if __name__ == '__main__':
     main()
