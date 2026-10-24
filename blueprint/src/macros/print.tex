@@ -36,7 +36,17 @@
 % In the printed version we just render the declaration name in
 % typewriter --- the URL would clutter the page. Web version provides a
 % live link via macros/web.tex.
-\newcommand{\leandocref}[1]{\texttt{#1}}
+% A Lean name may break after any `.` or `_` (no hyphen: a hyphen would read as part
+% of the name), so a long \leandocref at a line end stays inside the margin.
+\ExplSyntaxOn
+\tl_new:N \l__leandoc_tl
+\NewDocumentCommand{\leandocref}{m}{
+  \tl_set:Nn \l__leandoc_tl {#1}
+  \tl_replace_all:Nnn \l__leandoc_tl {.} {.\allowbreak}
+  \tl_replace_all:Nnn \l__leandoc_tl {\_} {\_\allowbreak}
+  \texttt{\l__leandoc_tl}
+}
+\ExplSyntaxOff
 
 % \prosesection: a chapter-body prose sub-heading. In the printed version
 % it is a normal unnumbered section, exactly as before. The web version
