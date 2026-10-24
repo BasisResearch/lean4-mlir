@@ -1,0 +1,17 @@
+=== r50-2018 bot jax e90 f32 ===
+eval dtype: f32 forward (EVAL_DTYPE=f32); the module's DT=bfloat16 CONV_DT=bfloat16
+backend=gpu devices=4
+gen=generated/generated_resnet50_imagenet_2018.py
+state=/home/skoonce/r50_2018_bot_jax/resnet50_imagenet_2018_e90.state.npz
+eval protocol: 224px, crop_pct=0.875000 (timm resize-then-crop, antialiased)
+state tuple (from the module): (params, velocity, bn_state)
+  params=161 bn=106 opt=161 leaves -> 428 total (file has 428) ✓
+loaded step=450360
+scoring the live weights + running BN buffers
+
+── scoring at 224px, crop_pct 0.875 — train (the module's own)
+   per-image top-1 bitmap -> ../runs/2026-10-22-r50-2018-bot-verified/bitmaps/r50_2018_bot_jax_f32.bin (50000 bytes, 38505 set) — pair with scripts/demos/mcnemar.py
+   top-1: 38505/50000 = 77.01%   top-5: 46755/50000 = 93.51%
+
+=== FULL VAL (f32 forward (EVAL_DTYPE=f32)) ===
+224px crop 0.875  top-1  77.01%  top-5  93.51%  (50000 images)  train (the module's own)

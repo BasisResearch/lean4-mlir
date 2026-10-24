@@ -1,0 +1,10 @@
+⚠ other resnet50in checkpoints present — they must NOT be resumed into this run:
+   .lake/build/resnet50in_momdp64_ckpt_xla.bin
+   .lake/build/resnet50in_momdp64_ckpt_xla_q8.bin
+box=ares plugin=.venv/lib/python3.12/site-packages/jax_plugins/xla_cuda12/xla_cuda_plugin.so python=.venv/bin/python3
+[sup] 2026-10-23 08:25:48 START job=r50-2018-bf16-4gpu devs=0,1,2,3 epochs=90 rest_after=[none] temp_max=78 stall=1800s logs=runs/2026-10-22-r50-2018-bot-verified
+[sup] 2026-10-23 08:25:48 cmd: .lake/build/bin/resnet50-imagenet-verified data
+[sup] 2026-10-23 08:25:48 eta: bf16 ~29 h / f32 ~46 h on 4x 4060 Ti (222 / 358 ms/step median, 90 ep)
+[sup] 2026-10-23 08:25:48 attempt 1: resuming at epoch 0/90 (next rest: 999)
+[sup] 2026-10-23 08:25:48   launched PID=3243962 PGID=3243962
+[sup] 2026-10-24 14:33:37 ✅ COMPLETE — 90/90 epochs

@@ -1,0 +1,41 @@
+ResNet-50 on full 1000-class ImageNet with the 2018 recipe's augmentation (random-resized-crop + hflip, no RandAugment), via the VERIFIED renderer.
+  SCORING A CHECKPOINT — no training. ResNet-50 (ImageNet-1k, 2018 recipe) momdp64wxbf16, .lake/build/resnet50in_momdp64wxbf16_ckpt_xla_bot.bin
+  region 0 of 3 (the live weights), 25557032 params
+  BN: 53 layers from .lake/build/resnet50in_momdp64wxbf16_ckpt_xla_bot.bin.bn — the running stats
+I1024 14:33:53.374171 3748537 service.cc:154] XLA service 0x7c065402ed50 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1024 14:33:53.374214 3748537 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1024 14:33:53.374221 3748537 service.cc:170]   StreamExecutor [1]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1024 14:33:53.374237 3748537 service.cc:170]   StreamExecutor [2]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1024 14:33:53.374241 3748537 service.cc:170]   StreamExecutor [3]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1024 14:33:53.376997 3748537 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1024 14:33:53.377025 3748537 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 0 for BFCAllocator.
+I1024 14:33:53.377065 3748537 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 1 for BFCAllocator.
+I1024 14:33:53.377077 3748537 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 2 for BFCAllocator.
+I1024 14:33:53.377089 3748537 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 3 for BFCAllocator.
+I1024 14:33:53.386901 3748537 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 4 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+I1024 14:33:54.791101 3748611 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 56 bytes spill stores, 56 bytes spill loads
+
+I1024 14:33:55.134328 3748599 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 832 bytes spill stores, 832 bytes spill loads
+
+[pjrt_ffi] compiled verified_mlir/resnet50in_fwd_eval.mlir (@resnet50in_fwd_eval, 1 outputs, 1 replica) in 14367 ms
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792852448.114060 3749458 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792852450.247120 3749599 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792852450.833426 3749602 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792852453.078679 3749816 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @resnet50in_fwd_eval holds 267 parameter tensors (97.7 MB) on 1 device; they stop crossing PCIe from here
+  xla/pjrt verified_mlir/resnet50in_fwd_eval.mlir
+  imagenet: val streams per pass (50,000 images at eval width 150528) — nothing is held
+  imagenet shim: jax/.lake/build/generated_resnet50_imagenet_2018_shim.py — validation split, batch 256, 150528 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_resnet50_imagenet_2018_shim.py — validation split, batch 256, 150528 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  checkpoint: acc = 38494/50000 = 76.988000%  top5 = 46756/50000 = 93.512000%  [95% CI 76.62–77.35]
+    per-example top-1 bitmap -> runs/2026-10-22-r50-2018-bot-verified/bitmaps/r50_2018_bot_verified.bin (50000 bytes) — pair two of these with scripts/demos/mcnemar.py

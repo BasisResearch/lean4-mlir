@@ -416,8 +416,8 @@ and `gen_mlir_manifest.py --selftest` replays those collisions through this deco
 
 | file | kind | variant | decoded | MB | writer | runs |
 |---|---|---|---|---|---|---|
-| `resnet50in_fwd.mlir` | fwd | `—` | — | 0.2 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 14 |
-| `resnet50in_fwd_eval.mlir` | fwd_eval | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 14 |
+| `resnet50in_fwd.mlir` | fwd | `—` | — | 0.2 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 16 |
+| `resnet50in_fwd_eval.mlir` | fwd_eval | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 17 |
 | `resnet50in_fwd_eval_s288.mlir` | fwd_eval @288px | `—` | — | 0.1 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | — |
 | `resnet50in_acc4x64_train_step.mlir` | train_step | `acc4x64` | AdamW, grad-accum ×4, micro-batch 64 | 1.1 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 2 |
 | `resnet50in_accdp4x64_train_step.mlir` | train_step | `accdp4x64` | AdamW, data-parallel, grad-accum ×4, micro-batch 64 per replica | 1.3 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | — |
@@ -442,7 +442,7 @@ and `gen_mlir_manifest.py --selftest` replays those collisions through this deco
 | `resnet50in_mom256_train_step.mlir` | train_step | `mom256` | momentum, batch 256 | 0.7 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | — |
 | `resnet50in_momdp64_train_step.mlir` | train_step | `momdp64` | momentum, data-parallel, batch 64 per replica | 0.9 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | — |
 | `resnet50in_momdp64bf16_train_step.mlir` | train_step | `momdp64bf16` | momentum, data-parallel, bf16, batch 64 per replica | 1.0 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 6 |
-| `resnet50in_momdp64wxbf16_train_step.mlir` | train_step | `momdp64wxbf16` | momentum, data-parallel, no decay on norm/bias, bf16, batch 64 per replica | 1.0 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | — |
+| `resnet50in_momdp64wxbf16_train_step.mlir` | train_step | `momdp64wxbf16` | momentum, data-parallel, no decay on norm/bias, bf16, batch 64 per replica | 1.0 | `LeanMlir/Proofs/Codegen/ResNet50RenderB.lean` | 2 |
 
 ## `resnet50in160` — 15 artifacts, 19.0 MB
 
