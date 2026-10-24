@@ -2525,18 +2525,30 @@ MNIST-MLP via the VERIFIED renderer (784→512→512→10) → XLA/PJRT → GPU
   xla/pjrt verified_mlir/mlp_fwd.mlir
   train 60000, test 10000; bs 128, MNIST-MLP (6 params, 669706 floats),
     mean-loss SGD lr=0.100000, He init
-  epoch 1: loss = 0.413496, test_acc = 9199/10000 = 91.990000%  [95% CI 91.44–92.51] (870ms)
-  epoch 2: loss = 0.191186, test_acc = 9526/10000 = 95.260000%  [95% CI 94.83–95.66] (879ms)
-  epoch 3: loss = 0.139057, test_acc = 9636/10000 = 96.360000%  [95% CI 95.97–96.71] (888ms)
-  epoch 4: loss = 0.109009, test_acc = 9690/10000 = 96.900000%  [95% CI 96.54–97.22] (842ms)
-  epoch 5: loss = 0.088619, test_acc = 9716/10000 = 97.160000%  [95% CI 96.82–97.47] (847ms)
-  epoch 6: loss = 0.073548, test_acc = 9732/10000 = 97.320000%  [95% CI 96.98–97.62] (864ms)
-  epoch 7: loss = 0.061923, test_acc = 9746/10000 = 97.460000%  [95% CI 97.13–97.75] (802ms)
-  epoch 8: loss = 0.052682, test_acc = 9762/10000 = 97.620000%  [95% CI 97.30–97.90] (818ms)
-  epoch 9: loss = 0.045157, test_acc = 9767/10000 = 97.670000%  [95% CI 97.36–97.95] (841ms)
-  epoch 10: loss = 0.038872, test_acc = 9771/10000 = 97.710000%  [95% CI 97.40–97.99] (831ms)
-  epoch 11: loss = 0.033574, test_acc = 9778/10000 = 97.780000%  [95% CI 97.47–98.05] (847ms)
-  epoch 12: loss = 0.029061, test_acc = 9781/10000 = 97.810000%  [95% CI 97.50–98.08] (850ms)
+  epoch 1: loss = 0.413496, test_acc = 9199/10000 = 91.990000%
+             [95% CI 91.44–92.51] (870ms)
+  epoch 2: loss = 0.191186, test_acc = 9526/10000 = 95.260000%
+             [95% CI 94.83–95.66] (879ms)
+  epoch 3: loss = 0.139057, test_acc = 9636/10000 = 96.360000%
+             [95% CI 95.97–96.71] (888ms)
+  epoch 4: loss = 0.109009, test_acc = 9690/10000 = 96.900000%
+             [95% CI 96.54–97.22] (842ms)
+  epoch 5: loss = 0.088619, test_acc = 9716/10000 = 97.160000%
+             [95% CI 96.82–97.47] (847ms)
+  epoch 6: loss = 0.073548, test_acc = 9732/10000 = 97.320000%
+             [95% CI 96.98–97.62] (864ms)
+  epoch 7: loss = 0.061923, test_acc = 9746/10000 = 97.460000%
+             [95% CI 97.13–97.75] (802ms)
+  epoch 8: loss = 0.052682, test_acc = 9762/10000 = 97.620000%
+             [95% CI 97.30–97.90] (818ms)
+  epoch 9: loss = 0.045157, test_acc = 9767/10000 = 97.670000%
+             [95% CI 97.36–97.95] (841ms)
+  epoch 10: loss = 0.038872, test_acc = 9771/10000 = 97.710000%
+             [95% CI 97.40–97.99] (831ms)
+  epoch 11: loss = 0.033574, test_acc = 9778/10000 = 97.780000%
+             [95% CI 97.47–98.05] (847ms)
+  epoch 12: loss = 0.029061, test_acc = 9781/10000 = 97.810000%
+             [95% CI 97.50–98.08] (850ms)
 done (trained MNIST-MLP via the proof-rendered StableHLO).
 \end{verbatim}
 
@@ -3250,18 +3262,30 @@ MNIST-CNN via the VERIFIED renderer (conv→conv→pool→512→512→10) → XL
   xla/pjrt verified_mlir/cnn_fwd.mlir
   train 60000, test 10000; bs 128, MNIST-CNN (10 params, 3489130 floats),
     mean-loss SGD lr=0.100000, He init
-  epoch 1: loss = 0.352314, test_acc = 9295/10000 = 92.950000%  [95% CI 92.43–93.44] (5219ms)
-  epoch 2: loss = 0.094411, test_acc = 9749/10000 = 97.490000%  [95% CI 97.16–97.78] (5072ms)
-  epoch 3: loss = 0.056773, test_acc = 9800/10000 = 98.000000%  [95% CI 97.71–98.26] (4888ms)
-  epoch 4: loss = 0.038316, test_acc = 9819/10000 = 98.190000%  [95% CI 97.91–98.43] (4672ms)
-  epoch 5: loss = 0.026202, test_acc = 9838/10000 = 98.380000%  [95% CI 98.11–98.61] (4357ms)
-  epoch 6: loss = 0.018312, test_acc = 9853/10000 = 98.530000%  [95% CI 98.27–98.75] (5069ms)
-  epoch 7: loss = 0.022045, test_acc = 9857/10000 = 98.570000%  [95% CI 98.32–98.78] (5537ms)
-  epoch 8: loss = 0.011130, test_acc = 9859/10000 = 98.590000%  [95% CI 98.34–98.80] (5390ms)
-  epoch 9: loss = 0.006994, test_acc = 9869/10000 = 98.690000%  [95% CI 98.45–98.89] (4808ms)
-  epoch 10: loss = 0.006176, test_acc = 9861/10000 = 98.610000%  [95% CI 98.36–98.82] (4351ms)
-  epoch 11: loss = 0.004395, test_acc = 9867/10000 = 98.670000%  [95% CI 98.43–98.88] (4647ms)
-  epoch 12: loss = 0.033374, test_acc = 9877/10000 = 98.770000%  [95% CI 98.53–98.97] (4981ms)
+  epoch 1: loss = 0.352314, test_acc = 9295/10000 = 92.950000%
+             [95% CI 92.43–93.44] (5219ms)
+  epoch 2: loss = 0.094411, test_acc = 9749/10000 = 97.490000%
+             [95% CI 97.16–97.78] (5072ms)
+  epoch 3: loss = 0.056773, test_acc = 9800/10000 = 98.000000%
+             [95% CI 97.71–98.26] (4888ms)
+  epoch 4: loss = 0.038316, test_acc = 9819/10000 = 98.190000%
+             [95% CI 97.91–98.43] (4672ms)
+  epoch 5: loss = 0.026202, test_acc = 9838/10000 = 98.380000%
+             [95% CI 98.11–98.61] (4357ms)
+  epoch 6: loss = 0.018312, test_acc = 9853/10000 = 98.530000%
+             [95% CI 98.27–98.75] (5069ms)
+  epoch 7: loss = 0.022045, test_acc = 9857/10000 = 98.570000%
+             [95% CI 98.32–98.78] (5537ms)
+  epoch 8: loss = 0.011130, test_acc = 9859/10000 = 98.590000%
+             [95% CI 98.34–98.80] (5390ms)
+  epoch 9: loss = 0.006994, test_acc = 9869/10000 = 98.690000%
+             [95% CI 98.45–98.89] (4808ms)
+  epoch 10: loss = 0.006176, test_acc = 9861/10000 = 98.610000%
+             [95% CI 98.36–98.82] (4351ms)
+  epoch 11: loss = 0.004395, test_acc = 9867/10000 = 98.670000%
+             [95% CI 98.43–98.88] (4647ms)
+  epoch 12: loss = 0.033374, test_acc = 9877/10000 = 98.770000%
+             [95% CI 98.53–98.97] (4981ms)
 done (trained MNIST-CNN via the proof-rendered StableHLO).
 \end{verbatim}
 
@@ -5086,9 +5110,9 @@ Theorem~\ref{thm:cifar_bn_fold} at each convolution; see
 
 \begin{proof}
 \leanok
-The fused ties' chain, node for node, with the update peeled off; see
 \leandocref{Proofs.Cifar8TieG.cifar8\_train\_step\_tiedG} and
-\leandocref{Proofs.Cifar8BnTieG.cifar8Bn\_train\_step\_tiedG}.
+\leandocref{Proofs.Cifar8BnTieG.cifar8Bn\_train\_step\_tiedG} are the fused
+ties' chain, node for node, with the update peeled off.
 \end{proof}
 
 \begin{theorem}[The batch-statistics steps' gradients are the certified batch gradients]
@@ -5113,10 +5137,10 @@ The fused ties' chain, node for node, with the update peeled off; see
 
 \begin{proof}
 \leanok
-Thirty-eight node ties in the batched vocabulary of
+\leandocref{Proofs.Cifar8BbnTieB.cifar8Bbn\_train\_step\_tiedB} is
+thirty-eight node ties in the batched vocabulary of
 Theorem~\ref{thm:resnet34_step_tie} --- convolution weight and bias,
-BatchNorm pair, dense weight and bias --- at the render's own chain; see
-\leandocref{Proofs.Cifar8BbnTieB.cifar8Bbn\_train\_step\_tiedB}.
+BatchNorm pair, dense weight and bias --- at the render's own chain.
 \end{proof}
 
 \begin{theorem}[The batch-statistics backward chain is the certified whole-net backward]
@@ -5244,9 +5268,11 @@ result from the gather model to the real net; see
 
 \begin{proof}
 \leanok
-As for the MNIST net, stage by stage through the four pools; see
-\leandocref{Proofs.Cifar8TieG.cifar8\_net\_lossGrad} and
-\leandocref{Proofs.Cifar8BnTieG.cifar8Bn\_net\_lossGrad}.
+\leandocref{Proofs.Cifar8TieG.cifar8\_net\_lossGrad} is the net without
+BatchNorm: as for the MNIST net, stage by stage through the four pools.
+
+\leandocref{Proofs.Cifar8BnTieG.cifar8Bn\_net\_lossGrad} is the same for the
+BatchNorm net.
 \end{proof}
 
 \begin{theorem}[SGD descends at the last convolution]
@@ -5272,9 +5298,9 @@ As for the MNIST net, stage by stage through the four pools; see
 
 \begin{proof}
 \leanok
+\leandocref{Proofs.cifar8\_lastConv\_sgd\_descends} is
 Theorem~\ref{thm:cnn_sgd_descends} at the factored forward, the frozen
-prefix as its input; see
-\leandocref{Proofs.cifar8\_lastConv\_sgd\_descends}.
+prefix as its input.
 \end{proof}
 
 \begin{theorem}[The optimizer tails are their update laws]
@@ -9075,14 +9101,18 @@ def mobilenetv2Verified : VerifiedNetSpec where
   imageW   := 224
   data     := .imagenette
   layers   := [
-    .convBnNB 3 32 3 2,             -- stem (no conv bias)       224->112
-    .invertedResidualNB 32  32  16 1,                         -- stage 1, t=1
-    .invertedResidualNB 16  96  24 2, .invertedResidualNB 24 144  24 1,            -- 112->56
-    .invertedResidualNB 24 144  32 2, .invertedResidualNB 32 192  32 1, .invertedResidualNB 32 192  32 1,
-    .invertedResidualNB 32 192  64 2, .invertedResidualNB 64 384  64 1, .invertedResidualNB 64 384  64 1, .invertedResidualNB 64 384  64 1,
-    .invertedResidualNB 64 384  96 1, .invertedResidualNB 96 576  96 1, .invertedResidualNB 96 576  96 1,
-    .invertedResidualNB 96 576 160 2, .invertedResidualNB 160 960 160 1, .invertedResidualNB 160 960 160 1,
-    .invertedResidualNB 160 960 320 1,                                                  -- stage 7 @7
+    .convBnNB 3 32 3 2,                   -- stem (no conv bias)   224->112
+    .invertedResidualNB 32  32  16 1,     -- stage 1, t=1
+    .invertedResidualNB 16  96  24 2, .invertedResidualNB 24 144  24 1,  -- 112->56
+    .invertedResidualNB 24 144  32 2, .invertedResidualNB 32 192  32 1,
+    .invertedResidualNB 32 192  32 1,
+    .invertedResidualNB 32 192  64 2, .invertedResidualNB 64 384  64 1,
+    .invertedResidualNB 64 384  64 1, .invertedResidualNB 64 384  64 1,
+    .invertedResidualNB 64 384  96 1, .invertedResidualNB 96 576  96 1,
+    .invertedResidualNB 96 576  96 1,
+    .invertedResidualNB 96 576 160 2, .invertedResidualNB 160 960 160 1,
+    .invertedResidualNB 160 960 160 1,
+    .invertedResidualNB 160 960 320 1,    -- stage 7 @7
     .convBnNB 320 1280 1 1,         -- head (no conv bias), 1x1 to 1280
     .globalAvgPool,
     .dense 1280 10 ]
@@ -9310,57 +9340,92 @@ def mobilenetV2Imagenet : NetSpec where
     .dense 1280 1000 .identity      -- 1000-class head
   ]
 
--- TF-slim's README command, row for row (the README's line beside each value).
+-- TF-slim's README command, row for row; the table below names each value's source.
 def mobilenetV2ImagenetConfig : TrainConfig where
-  learningRate   := 0.12    -- README: learning_rate 0.045*NUM_GPUS on batch_size 96*NUM_GPUS, so 0.045 per 96 images: 0.12 at 256
+  learningRate   := 0.12      -- 0.045 per 96 images, scaled to 256
   batchSize      := 256
-  epochs         := 90      -- the validation tier; `full` is the README's ~420
-  optimizer      := .rmsprop  -- train_image_classifier.py: `optimizer` defaults to rmsprop
-  momentum       := 0.9       -- rmsprop_momentum 0.9
-  rmspropDecay   := 0.9       -- rmsprop_decay 0.9
-  rmspropEps     := 1.0       -- opt_epsilon 1.0 (NOT 1e-8)
+  epochs         := 90        -- the validation tier; `full` is ~420
+  optimizer      := .rmsprop  -- slim's default optimizer
+  momentum       := 0.9       -- rmsprop_momentum
+  rmspropDecay   := 0.9       -- rmsprop_decay
+  rmspropEps     := 1.0       -- opt_epsilon (NOT 1e-8)
   rmspropTf      := true      -- TF1 ApplyRMSProp: the rate inside the momentum term
-  weightDecay    := 4e-5      -- weight_decay 4e-5, coupled (the regularization loss)
-  wdExcludeNormBias := true   -- l2_regularizer on slim.conv2d only: no BN γ/β, no biases
-  wdExcludeDepthwise := true  -- …and separable_conv2d (the depthwise) has weights_regularizer=None
-  initTruncNormal := 0.09     -- training_scope(stddev=0.09): truncated_normal on every kernel + the logits
+  weightDecay    := 4e-5      -- coupled, the regularization loss
+  wdExcludeNormBias := true   -- decay on conv2d kernels only: no BN γ/β, no biases
+  wdExcludeDepthwise := true  -- …and not on the depthwise kernels
+  initTruncNormal := 0.09     -- truncated normal on every kernel and the logits
   cosineDecay      := false   -- exponential_decay instead
-  expLRDecayRate   := 0.98    -- learning_rate_decay_factor 0.98
-  expLRDecayEpochs := 2.5     -- num_epochs_per_decay = 2.5 / NUM_GPUS per-clone epochs = 2.5 epochs of data
+  expLRDecayRate   := 0.98    -- learning_rate_decay_factor
+  expLRDecayEpochs := 2.5     -- num_epochs_per_decay, in epochs of data
   expLRStaircase   := true    -- staircase=True, counted from step 0
   dropout          := 0.2     -- dropout_keep_prob 0.8
   warmupEpochs   := 0         -- warmup_epochs unset
   augment        := true      -- inception_preprocessing: distorted crop + flip
-  cropAreaMin    := 0.05      -- distorted_bounding_box_crop area_range (0.05, 1.0)
-  cropMaxAttempts := 100      -- …max_attempts 100 (then the whole image)
-  cropAspectLo   := 0.75      -- …aspect_ratio_range (0.75, 1.33)
+  cropAreaMin    := 0.05      -- area_range (0.05, 1.0)
+  cropMaxAttempts := 100      -- …then the whole image
+  cropAspectLo   := 0.75      -- aspect_ratio_range (0.75, 1.33)
   cropAspectHi   := 1.33
-  trainResize    := .bilinear -- resize_images, fast_mode: bilinear
-  resizeAntialias := false    -- tf.image.resize_images: no antialias
-  resizeLegacyTf1 := true     -- …and TF 1's resize_bilinear kernel (half_pixel_centers=False), which resize_images was; train and eval
-  colorDistortSlim := true    -- distort_color fast_mode: brightness ±32/255 then saturation 0.5–1.5
+  trainResize    := .bilinear -- resize_images, fast_mode
+  resizeAntialias := false    -- resize_images: no antialias
+  resizeLegacyTf1 := true     -- TF 1's resize_bilinear kernel, train and eval
+  colorDistortSlim := true    -- distort_color fast_mode: brightness, then saturation
   inputScalePm1  := true      -- (x − 0.5) × 2
-  evalCropTf     := true      -- preprocess_for_eval: crop first, then resize (timm's resize-then-crop kept beside it for PROTOCOL=timm)
-  evalCropSlim   := true      -- …central_crop(0.875) of BOTH sides, then resize_bilinear to 224 × 224 — slim's window, not tf-models' shorter-side square
+  evalCropTf     := true      -- preprocess_for_eval: crop first, then resize
+  evalCropSlim   := true      -- central_crop(0.875) of both sides, then resize to 224
   useAutoAugment := false     -- none in slim's pipeline
-  labelSmoothing := 0.1       -- README: --label_smoothing=0.1
-  useEMA         := true      -- README: --moving_average_decay=0.9999
+  labelSmoothing := 0.1       -- --label_smoothing=0.1
+  useEMA         := true      -- --moving_average_decay=0.9999
   emaDecay       := 0.9999
-  emaWarmup      := true      -- tf.train.ExponentialMovingAverage(decay, num_updates=global_step)
+  emaWarmup      := true      -- ExponentialMovingAverage with num_updates
   evalF32        := true      -- the reference number from an f32 forward
   bf16           := true
   bf16Conv       := true      -- reaches the inverted-residual blocks
-  f32StemHead    := true      -- classifier head in fp32, as every verified render keeps it
-  runningBN      := true      -- paper-faithful eval: running BN stats, not eval-batch stats
-  bnMomentum     := 0.997     -- training_scope bn_decay 0.997 (PyTorch momentum 0.003)
+  f32StemHead    := true      -- classifier head in fp32, as every verified render
+  runningBN      := true      -- paper-faithful eval: running BN stats
+  bnMomentum     := 0.997     -- bn_decay 0.997 (PyTorch momentum 0.003)
   bnEps          := 1e-3      -- slim.batch_norm's ε
 
-/-- The run: the README's "about 700K steps" on 8 clones of 96 = 700,000 × 768 / 1,281,167 ≈ 420
-    epochs of data. Selected with the `full` recipe arg; writes a separate `_full.py` so a quick
-    validation subrun and the multi-day run never clobber each other. -/
+/-- The run: the README's "about 700K steps" on 8 clones of 96, which is
+    700,000 × 768 / 1,281,167 ≈ 420 epochs of data. Selected with the `full`
+    recipe arg; writes a separate `_full.py` so a quick validation subrun and
+    the multi-day run never clobber each other. -/
 def mobilenetV2ImagenetConfigFull : TrainConfig :=
   { mobilenetV2ImagenetConfig with epochs := 420 }
 \end{verbatim}
+
+\noindent Table~\ref{tab:mnv2_config_sources} is where each value of the
+config comes from.
+
+\begin{table}[H]
+\centering
+\caption{Where each value of the MobileNetV2 ImageNet config comes from: TF-slim's \texttt{research/slim} tree, the README command and the files it runs.}
+\label{tab:mnv2_config_sources}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{2.6cm} p{2.9cm} p{8.4cm}@{}}
+\hline
+Knob & Value & Source \\
+\hline
+learning rate & $0.12$ at $256$ & README: \texttt{learning\_rate 0.045*NUM\_GPUS} on \texttt{batch\_size 96*NUM\_GPUS}, so $0.045$ per $96$ images \\
+epochs & $90$; \texttt{full} $420$ & the validation tier; the README's ``about 700K steps'' on 8 clones of 96 is $700{,}000 \times 768 / 1{,}281{,}167 \approx 420$ epochs of data \\
+optimizer & RMSProp, TF~1 form & \texttt{train\_image\_classifier.py}: \texttt{optimizer} defaults to \texttt{rmsprop}; TF~1's \texttt{ApplyRMSProp} folds the rate into the momentum term \\
+RMSProp $\mu$, $\rho$, $\varepsilon$ & $0.9$, $0.9$, $1.0$ & \texttt{rmsprop\_momentum 0.9}, \texttt{rmsprop\_decay 0.9}, \texttt{opt\_epsilon 1.0}, not $10^{-8}$ \\
+weight decay & $4 \times 10^{-5}$, coupled & \texttt{weight\_decay 4e-5}, the regularization loss; \texttt{l2\_regularizer} on \texttt{slim.conv2d} only, so no BN $\gamma/\beta$, no biases, and \texttt{separable\_conv2d} has \texttt{weights\_regularizer=None} \\
+initialization & truncated normal, $\sigma = 0.09$ & \texttt{training\_scope(stddev=0.09)}, on every kernel and the logits \\
+schedule & $\times 0.98$ every $2.5$ epochs, staircase, no warmup & \texttt{learning\_rate\_decay\_factor 0.98}; \texttt{num\_epochs\_per\_decay = 2.5 / NUM\_GPUS} per-clone epochs, $2.5$ epochs of data; \texttt{staircase=True} from step 0; \texttt{warmup\_epochs} unset \\
+dropout & $0.2$ & \texttt{dropout\_keep\_prob 0.8} \\
+train crop & area $0.05$--$1$, aspect $0.75$--$1.33$, 100 attempts & \texttt{inception\_preprocessing}: \texttt{distorted\_bounding\_box\_crop} with \texttt{area\_range (0.05, 1.0)}, \texttt{aspect\_ratio\_range (0.75, 1.33)}, \texttt{max\_attempts 100}, then the whole image; a horizontal flip \\
+resize & bilinear, TF~1 kernel, no antialias & \texttt{resize\_images} in \texttt{fast\_mode}; TF~1's \texttt{resize\_bilinear} (\texttt{half\_pixel\_centers=False}), which \texttt{resize\_images} was; train and eval \\
+color & brightness, then saturation & \texttt{distort\_color fast\_mode}: brightness $\pm 32/255$, saturation $0.5$--$1.5$ \\
+input scale & $(x - 0.5) \times 2$ & slim's \texttt{inception\_preprocessing} \\
+eval crop & slim's window & \texttt{preprocess\_for\_eval}: \texttt{central\_crop(0.875)} of both sides, then \texttt{resize\_bilinear} to $224 \times 224$; slim's window, not tf-models' shorter-side square; timm's resize-then-crop kept beside it for \texttt{PROTOCOL=timm} \\
+label smoothing & $0.1$ & README: \texttt{--label\_smoothing=0.1} \\
+EMA & $0.9999$, warmed up & README: \texttt{--moving\_average\_decay=0.9999}; \texttt{ExponentialMovingAverage(decay, num\_updates=global\_step)} \\
+BatchNorm & decay $0.997$, $\varepsilon = 10^{-3}$, running stats at eval & \texttt{training\_scope bn\_decay 0.997}, PyTorch momentum $0.003$; \texttt{slim.batch\_norm}'s $\varepsilon$ \\
+precision & bf16 convolutions, fp32 head, f32 eval & the reference's own choice, matching every verified render \\
+\hline
+\end{tabular}
+\end{table}
 
 \noindent The run below is \texttt{mobilenetV2ImagenetConfigFull}, launched
 by \texttt{scripts/jobs/\allowbreak mnv2-full-jax-4gpu.conf}. The recipe is
@@ -9498,7 +9563,7 @@ def mobilenetv2ImagenetConfig : VerifiedConfig where
   batchSize := 64
   bnMomentum := 0.997        -- TF-slim's BN decay, the reference's `bnMomentum`
   dwFanK2 := true            -- depthwise fan = k², as the JAX reference
-  truncNormalSigma := 0.09   -- slim's truncated normal on every kernel, above the fan rules
+  truncNormalSigma := 0.09   -- slim's truncated normal on every kernel
 
 def main (argv : List String) : IO Unit :=
   mobilenetv2ImagenetVerified.toNet.trainAdamSched
@@ -9902,7 +9967,7 @@ def mnv4ImagenetVerified : VerifiedNetSpec where
     .convBnNB 960 1280 1 1,
     .dense 1280 1000 ]                -- 1000-class head
   runningBN   := true
-  dropoutKeep := some (0.9, 1280)     -- classifier dropout 0.1, read by the `do` variants
+  dropoutKeep := some (0.9, 1280)     -- classifier dropout 0.1, for the `do` variants
 
 -- The head is the ONLY thing that may differ from the 10-class net.
 #guard mnv4ImagenetVerified.toSpecs.size == mobilenetv4Verified.toSpecs.size
@@ -9929,12 +9994,12 @@ at the paper's $256$, a slug of its own:
 
 \begin{verbatim}
 def mnv4Imagenet256FullVerified : VerifiedNetSpec :=
-  { mnv4ImagenetFullVerified with      -- the full shim (m15), dropout 0.2, the 18 drop sites
+  { mnv4ImagenetFullVerified with      -- full shim (m15), dropout 0.2, 18 drop sites
       name          := "MobileNetV4-Conv-M (ImageNet-1k, paper tier, 256²)",
       slug          := "mnv4in256",
       imageH        := 256,
       imageW        := 256,
-      dropDenom     := 26,              -- tf-models' ramp: UIB i keeps 1 - 0.075 (i+3)/26
+      dropDenom     := 26,              -- tf-models: UIB i keeps 1 - 0.075 (i+3)/26
       dropIdxOffset := 3,
       ... }                             -- the blurb
 
@@ -10944,51 +11009,49 @@ def efficientNetB0Imagenet : NetSpec where
     .dense 1280 1000 .identity      -- 1000-class head
   ]
 
--- TF TPU EfficientNet's own code, row for row: each line names its source.
+-- TF TPU EfficientNet's own code, row for row; the table below names each source.
 def efficientNetB0ImagenetConfig : TrainConfig where
-  learningRate   := 0.016   -- EfficientNet reference base LR 0.016@bs256 (= 0.256@bs4096); paper-faithful, RMSProp matching TF (ε-inside-sqrt + mean-square init 1.0)
+  learningRate   := 0.016   -- 0.256 at batch 4096, scaled to 256
   batchSize      := 256
   epochs         := 80
   optimizer      := .rmsprop  -- EfficientNet's original optimizer
   momentum       := 0.9       -- μ for the RMSprop momentum buffer
   rmspropDecay   := 0.9       -- ρ, the running mean-square decay
   rmspropEps     := 1e-3      -- EfficientNet uses ε=1e-3
-  gradClipNorm   := 0.0       -- OFF (paper uses none): the TF-RMSProp form (ε-inside-sqrt + ms-init-1.0) has no blow-up to compensate for
+  gradClipNorm   := 0.0       -- off: the paper uses none
   weightDecay    := 1e-5
-  wdExcludeNormBias := true   -- no decay on BN γ/β or biases (TF, timm; the verified `wx`)
-  cosineDecay      := false   -- the paper exp-decay schedule instead
-  expLRDecayRate   := 0.97    -- EfficientNet: ×0.97 every 2.4 epochs
+  wdExcludeNormBias := true   -- no decay on BN γ/β or biases
+  cosineDecay      := false   -- the paper's exponential decay instead
+  expLRDecayRate   := 0.97    -- ×0.97 every 2.4 epochs
   expLRDecayEpochs := 2.4
-  expLRStaircase   := true    -- TF: floored, on the global step (warmup overrides while it runs)
+  expLRStaircase   := true    -- floored on the global step
   dropout          := 0.2     -- EfficientNet-B0 classifier dropout
   warmupEpochs   := 5
   augment        := true
-  useAutoAugment := true     -- full AutoAugment ImageNet policy (incl. geometric)
-  autoAugmentV0  := true     -- TF EfficientNet's policy v0 (timm `v0`), img_mean fill
-  augBicubic     := false   -- NOT timm's PIL bicubic: TF's geometry is nearest (augNearest below; 2026-10-12)
-  cropFallbackCenter := true -- EfficientNet: a whole-image draw falls back to the centre crop
+  useAutoAugment := true     -- full AutoAugment ImageNet policy
+  autoAugmentV0  := true     -- TF EfficientNet's policy v0 (timm `v0`)
+  augBicubic     := false   -- TF's geometry is nearest, not PIL bicubic
+  cropFallbackCenter := true -- a whole-image draw falls back to the centre crop
   labelSmoothing := 0.1
   bf16           := true
   bf16Conv       := true    -- reaches the MBConv expand/depthwise/project
-  f32StemHead    := true    -- classifier head in fp32, as every verified render keeps it
-  useEMA         := true     -- weight averaging (decay 0.9999) — paper-faithful; the emitter EMA-shadows the BN buffers too (eval uses ema_bn); EMA weights with live BN stats blow up at eval
-  dropPath       := 0.2      -- stochastic depth, EfficientNet-B0 drop-connect rate
-  dropPathOverN  := true     -- TF's and timm's ramp: 0.2 · i/16, not the default i/15
-  runningBN      := true     -- paper-faithful eval: running BN stats, not eval-batch stats
+  f32StemHead    := true    -- classifier head in fp32, as every verified render
+  useEMA         := true     -- weight averaging at 0.9999, BN buffers shadowed too
+  dropPath       := 0.2      -- stochastic depth, the drop-connect rate
+  dropPathOverN  := true     -- the ramp 0.2 · i/16, not the default i/15
+  runningBN      := true     -- paper-faithful eval: running BN stats
   bnEps          := 1e-3     -- TF's BN ε
-  -- ── The rest of TF TPU EfficientNet's own code, read off
-  --    tensorflow/tpu models/official/efficientnet/{main,utils,efficientnet_model,preprocessing,
-  --    autoaugment}.py and set row by row. Each line names its source. ──
-  rmspropTf      := true     -- utils.build_optimizer: tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon) — TF1's ApplyRMSProp folds lr into the momentum buffer
-  wdDecayBiases  := true     -- main.py: weight_decay · Σ l2_loss(v) over every trainable variable with 'batch_normalization' not in its name — BN γ/β exempt, biases decayed
-  initHeadTfUniform := true  -- efficientnet_model.py dense_kernel_initializer: U(±1/√1000) on the classifier, zeros bias
-  autoAugmentTf  := true     -- autoaugment.py: the v0 table op for op; 'TranslateY' absolute, fill 128, TF's posterize shift
-  augNearest     := true     -- contrib_image.{transform,rotate,translate}: interpolation defaults to NEAREST
-  randAugmentTranslateConst := 250.0  -- distort_image_with_autoaugment: HParams(cutout_const=100, translate_const=250) → (m/10)·250 px
-  resizeLegacyTf1 := true    -- preprocessing.py _resize_image: tf.image.resize_bicubic (TF1 op: no antialias, half_pixel_centers=False)
-  evalCropTf     := true     -- preprocess_for_eval: _decode_and_center_crop — crop first, 224/256 of the shorter side …
-  evalCropTfEfficientNet := true  -- … with its arithmetic (truncated side, ((h − side) + 1)//2 offsets), then bicubic to 224
-  evalF32        := true     -- the logged number scored through an f32 forward (the verified path's and timm's)
+  -- ── The rest of TF TPU EfficientNet's own code, set row by row ──
+  rmspropTf      := true     -- TF1 ApplyRMSProp folds lr into the momentum buffer
+  wdDecayBiases  := true     -- weight decay over every non-BN variable: biases too
+  initHeadTfUniform := true  -- U(±1/√1000) on the classifier, zero bias
+  autoAugmentTf  := true     -- the v0 table op for op, TF's fills and shifts
+  augNearest     := true     -- contrib_image transforms interpolate NEAREST
+  randAugmentTranslateConst := 250.0  -- translate_const 250: (m/10)·250 px
+  resizeLegacyTf1 := true    -- TF1 resize_bicubic: no antialias
+  evalCropTf     := true     -- crop first, 224/256 of the shorter side …
+  evalCropTfEfficientNet := true  -- … with TF's offsets, then bicubic to 224
+  evalF32        := true     -- the logged number through an f32 forward
 
 
 /-- Paper-faithful full run: identical recipe at the 350-epoch schedule, at the
@@ -11002,8 +11065,37 @@ def efficientNetB0ImagenetConfigFull : TrainConfig :=
 350-epoch one, from the run on this listing. The recipe is not the paper's
 sentence but TensorFlow's own EfficientNet code read row by row ---
 \texttt{main.py}, \texttt{utils.py}, \texttt{efficientnet\_model.py},
-\texttt{preprocessing.py} and \texttt{autoaugment.py} --- and each line of
-the config names the source it was read off.
+\texttt{preprocessing.py} and \texttt{autoaugment.py} --- and
+Table~\ref{tab:enet_config_sources} names the source each value was read
+off.
+
+\begin{table}[H]
+\centering
+\caption{Where each value of the EfficientNet-B0 ImageNet config comes from: TF TPU EfficientNet's own code, \texttt{tensorflow/tpu models/official/efficientnet/}.}
+\label{tab:enet_config_sources}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{2.6cm} p{2.9cm} p{8.4cm}@{}}
+\hline
+Knob & Value & Source \\
+\hline
+learning rate & $0.016$ at $256$ & the reference base rate $0.256$ at batch $4096$, scaled linearly; paper-faithful, with no lowered rate and no gradient clip \\
+optimizer & RMSProp, TF~1 form & \texttt{utils.build\_optimizer}: \texttt{tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon)}; TF~1's \texttt{ApplyRMSProp} folds the rate into the momentum buffer, $\varepsilon$ inside the square root, mean square started at $1$ \\
+RMSProp $\mu$, $\rho$, $\varepsilon$ & $0.9$, $0.9$, $10^{-3}$ & the paper's values; the TF-RMSProp form has no blow-up for a clip to compensate for, so none is set \\
+weight decay & $10^{-5}$, biases included & \texttt{main.py}: \texttt{weight\_decay} times the sum of \texttt{l2\_loss(v)} over every trainable variable without \emph{batch\_normalization} in its name, so BN $\gamma/\beta$ exempt and biases decayed (\texttt{wdDecayBiases}); timm and the verified \texttt{wx} render exclude norm and bias \\
+schedule & $\times 0.97$ every $2.4$ epochs, floored, 5-epoch warmup & TF: the exponential decay on the global step, floored; the warmup overrides it while it runs \\
+dropout, drop path & $0.2$, $0.2$ & the B0 classifier dropout; stochastic depth at the drop-connect rate, on TF's and timm's ramp $0.2 \cdot i/16$, not the default $i/15$ \\
+head init & $U(\pm 1/\sqrt{1000})$, zero bias & \texttt{efficientnet\_model.py} \texttt{dense\_kernel\_initializer} \\
+AutoAugment & policy v0, TF's ops & \texttt{autoaugment.py}: the v0 table op for op, \texttt{TranslateY} absolute, fill 128, TF's posterize shift; \texttt{contrib\_image.\{transform,rotate,translate\}} interpolate \texttt{NEAREST}, not timm's PIL bicubic; \texttt{HParams(cutout\_const=100, translate\_const=250)}, so $(m/10) \cdot 250$ px \\
+train crop & whole-image draw falls back to the centre crop & \texttt{preprocessing.py} \\
+resize & bicubic, TF~1 op & \texttt{\_resize\_image}: \texttt{tf.image.resize\_bicubic}, no antialias, \texttt{half\_pixel\_centers=False} \\
+eval crop & $224/256$ of the shorter side, TF's offsets & \texttt{\_decode\_and\_center\_crop}: crop first, the side truncated, offsets $((h - \mathrm{side}) + 1)/2$, then bicubic to $224$ \\
+EMA & $0.9999$, BN buffers shadowed & paper-faithful weight averaging; the emitter EMA-shadows the BN buffers too and eval uses them, since EMA weights with live BN statistics blow up at eval \\
+BatchNorm & $\varepsilon = 10^{-3}$, running stats at eval & TF's BN $\varepsilon$; paper-faithful eval \\
+precision & bf16 MBConv convolutions, fp32 head, f32 eval & the reference's own choice; the logged number is scored through an f32 forward, as the verified path's and timm's are \\
+\hline
+\end{tabular}
+\end{table}
 
 Two details are specific to EfficientNet. First, \texttt{bf16Conv}
 casts the MBConv block's heavy convolutions (the $1\times1$
@@ -12436,7 +12528,7 @@ def convNeXtTinyImagenet : NetSpec where
   imageH := 224
   imageW := 224
   layers := [
-    .convNextStem 3 96 4,              -- patchify: 4x4 s4 conv -> channel-LN (no BN/ReLU)
+    .convNextStem 3 96 4,              -- patchify: 4x4 s4 conv -> channel-LN
     .convNextStage 96 3 .ln .gelu,     -- stage 1: 3 blocks @ 96  (56x56)
     .convNextDownsample 96 192,        -- 56 -> 28
     .convNextStage 192 3 .ln .gelu,    -- stage 2: 3 blocks @ 192
@@ -12456,22 +12548,22 @@ def convNeXtTinyImagenetConfig : TrainConfig where
   epochs            := 80           -- validation tier of an 80->300 ladder
   optimizer         := .adam        -- AdamW (decoupled weight decay)
   weightDecay       := 0.05
-  wdExcludeNormBias := true         -- timm no_weight_decay: skip norm g/b, bias, LayerScale
-  cnxInit           := true         -- ConvNeXt _init_weights: trunc_normal(0.02) on every conv
+  wdExcludeNormBias := true         -- timm no_weight_decay: norm g/b, bias, LayerScale
+  cnxInit           := true         -- _init_weights: trunc_normal(0.02) on every conv
   cosineDecay       := true
   warmupEpochs      := 20           -- ConvNeXt paper warmup
   gradClipNorm      := 1.0          -- ours: the paper does not clip
   augment           := true
   useRandAugment    := true         -- geometric RandAugment N=2, M=9, mstd0.5, inc1
   randAugmentGeometric := true
-  augBicubic        := true         -- PIL-bicubic geometry, as timm (after the run below)
+  augBicubic        := true         -- PIL-bicubic geometry, as timm (after the run)
   randAugmentMstd   := 0.5
   randAugmentInc    := true
   useMixup          := true         -- Mixup alpha 0.8 ...
   useCutmix         := true         -- ... + CutMix alpha 1.0 (alternates per step) ...
   randomErasing     := true         -- ... + Random Erasing p 0.25 (full DeiT pack)
   randomErasingProb := 0.25
-  erasingPixel      := true         -- timm mode='pixel', N(0,1) fill (after the run below)
+  erasingPixel      := true         -- timm mode='pixel', N(0,1) fill (after the run)
   labelSmoothing    := 0.1
   bf16              := true
   bf16Conv          := true         -- dw-7x7 + 1x1s; LN/GELU stay fp32
@@ -14536,8 +14628,10 @@ def runViTAdam (argv : List String) : IO Unit := do
   let tsPath := s!"verified_mlir/vit_{variant}_train_step.mlir"
   if !(← System.FilePath.pathExists tsPath) then
     throw (IO.userError s!"{tsPath} missing — it is written by \
-LeanMlir/Proofs/Codegen/ViTRender.lean; run `lake build LeanMlir.Proofs.Codegen.ViTRender` first")
-  let bs := ((← IO.getEnv "LEAN_MLIR_BATCH").bind (·.toNat?)).getD vitAdamConfig.batchSize
+LeanMlir/Proofs/Codegen/ViTRender.lean; run \
+`lake build LeanMlir.Proofs.Codegen.ViTRender` first")
+  let bs := ((← IO.getEnv "LEAN_MLIR_BATCH").bind (·.toNat?))
+    .getD vitAdamConfig.batchSize
   let emaDecay := match (← IO.getEnv "LEAN_MLIR_EMA_DECAY_U").bind (·.toNat?) with
     | some u => u.toFloat * 1e-6
     | none   => 0.99996
@@ -18399,7 +18493,7 @@ def fno2dNavierStokes : NetSpec where
   imageW := 64
   layers := [
     .conv2d 3 20 1 .same .identity,     -- P: lift (a, x, y) → width
-    .conv2d 20 20 1 .same .gelu,        -- Fourier layer 1: W bypass (+ R, 230,400 reals)
+    .conv2d 20 20 1 .same .gelu,        -- Fourier layer 1: W bypass (+R, 230,400 reals)
     .conv2d 20 20 1 .same .gelu,        -- Fourier layer 2
     .conv2d 20 20 1 .same .gelu,        -- Fourier layer 3
     .conv2d 20 20 1 .same .identity,    -- Fourier layer 4
@@ -19736,7 +19830,7 @@ def alphaGoZeroPolicy : NetSpec where
   layers := [
     .convBn 17 256 3 1 .same,                     -- 17 raw-history planes → 256
     .residualBlock 256 256 19 1,                  -- 19 residual blocks (shared body)
-    .convBn 256 2 1 1 .same,                      -- policy head: conv→BN→ReLU (2 filters)
+    .convBn 256 2 1 1 .same,                      -- policy head: conv→BN→ReLU, 2 ch
     .flatten,
     .dense (2 * 19 * 19) 362 .identity            -- 361 board moves + pass
   ]
@@ -19784,7 +19878,7 @@ def muZeroGoRepresentation : NetSpec where
   imageW := 19
   layers := [
     .convBn 17 256 3 1 .same,                     -- observation → hidden
-    .residualBlock 256 256 16 1                   -- 16 ResBlocks (AlphaZero-shaped body)
+    .residualBlock 256 256 16 1                   -- 16 ResBlocks, AlphaZero-shaped body
   ]
 \end{verbatim}
 
@@ -19825,7 +19919,7 @@ def muZeroGoPredictionPolicy : NetSpec where
   imageW := 19
   layers := [
     .residualBlock 256 256 2 1,                   -- small head body
-    .convBn 256 2 1 1 .same,                      -- policy head: conv→BN→ReLU (2 filters)
+    .convBn 256 2 1 1 .same,                      -- policy head: conv→BN→ReLU, 2 ch
     .flatten,
     .dense (2 * 19 * 19) 362 .identity            -- 361 moves + pass
   ]
@@ -19891,7 +19985,7 @@ less than the last.
 lake exe cache get           # Mathlib oleans, ~30 s (vs ~45 min from source)
 lake build ProofsMinimal     # two files: the faithfulness fold + SGD descent
 lake build Proofs            # the proof suite
-lake build Certs             # the certificates CI checks; subsumes Proofs -- the long one
+lake build Certs             # the certificates CI checks; subsumes Proofs (slow)
 \end{verbatim}
 
 \texttt{ProofsMinimal} is the smallest thing that is still a real result:
@@ -20950,9 +21044,9 @@ These are multi-day runs, so they go through a supervisor
 the restart policy, and the job's own name is the command:
 
 \begin{verbatim}
-lake run r34-default-bf16-4gpu        # supervised: resumes, restarts on AER / heat / stall
-lake run r34-default-bf16-4gpu plan   # the precheck and the wall-clock on file; runs nothing
-lake run r34-default-bf16-4gpu once   # one foreground run with the job's env, no restarts
+lake run r34-default-bf16-4gpu        # supervised: resumes, restarts on AER/heat/stall
+lake run r34-default-bf16-4gpu plan   # precheck and wall-clock on file; runs nothing
+lake run r34-default-bf16-4gpu once   # one foreground run, the job's env, no restarts
 lake run imagenet                # every row's plan, in chapter order; runs nothing
 lake run imagenet start          # the rows in order, each resuming from its checkpoint
 \end{verbatim}

@@ -3,7 +3,8 @@
 
     python3 scripts/book/book_listings.py            # one block per listing: its file, and every quoted unit the file no longer has
     python3 scripts/book/book_listings.py --summary  # one line per listing
-    python3 scripts/book/book_listings.py --check    # CI: exit 1 on a drifted listing not in the historical list
+    python3 scripts/book/book_listings.py --check    # CI: exit 1 on a drifted listing not in the historical list,
+                                                     #     or on a listing line over --max-cols=88 characters
 
 A listing the book deliberately quotes at a past commit ("its recipe as the run trained it") is
 named in scripts/gates/book_listings_historical.txt as `<section heading> | <file>`; `--check`
@@ -80,10 +81,12 @@ def units(lines):
         prev_open = bool(out) and out[-1][3]                          # the previous line did not finish
         cont = out and not NEW_UNIT.match(l) and (prev_open or (indent > out[-1][0] and not out[-1][4]))
         block_start = bool(re.search(r'\b(do|then|else|where)\s*$', s))
+        text = s.strip(); backslash = text.endswith('\\')
+        if backslash: text = text[:-1].rstrip()          # a `\`-continued string: the break itself does not count
         if cont:
-            out[-1] = (out[-1][0], out[-1][1] + ' ' + s.strip(), out[-1][2] or elided, s.endswith('\\'), block_start)
+            out[-1] = (out[-1][0], out[-1][1] + ' ' + text, out[-1][2] or elided, backslash, block_start)
         else:
-            out.append((indent, s.strip(), elided, s.endswith('\\'), block_start))
+            out.append((indent, text, elided, backslash, block_start))
     return [squash(u) for _, u, e, _, _ in out if not e and len(u) >= 6]
 
 def walk(roots, exts):
@@ -222,6 +225,16 @@ def main():
             print(f'  file: {(near[0][:150] if near else "(no unit like it)")}')
     print(f'\n{quoted} listings quote a file, {drifted} with units the file no longer has; '
           + ', '.join(f'{v} {k}' for k, v in kinds.most_common()) + ' matched nothing')
+    # the column limit: a code line in the printed page holds about 88 characters, and a longer one
+    # runs into the margin (the config listings grow with every recipe pass, so this is a gate)
+    max_cols = next((int(a.split('=', 1)[1]) for a in sys.argv if a.startswith('--max-cols=')), 88)
+    long_lines = [(start + 1 + k, len(l)) for start, body in blocks(tex_lines)
+                  for k, l in enumerate(body) if len(l) > max_cols]
+    if check and long_lines:
+        print(f'{len(long_lines)} listing line(s) over {max_cols} characters:')
+        for n, w in long_lines: print(f'  L{n}  {w} chars')
+        sys.exit(1)
+    print(f'no listing line over {max_cols} characters')
     if check:
         if failures:
             print(f'{len(failures)} listing(s) drifted from the tree and are not listed in {HISTORICAL}:')
