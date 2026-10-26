@@ -1426,7 +1426,10 @@ one number, the derivative. A layer takes \(n\) numbers in and puts
 \(m\) numbers out, so the full picture of how every output coordinate
 responds to every input coordinate is an \(m \times n\) table of slopes,
 one per (output, input) pair. That table is the Jacobian, and
-\(\pdiv\) above is one entry of it at a chosen \((i, j)\).
+\(\pdiv\,f\,x\,i\,j\) above is one entry of it, read with \(i\) the input
+and \(j\) the output: the slope of output \(j\) in input \(i\). The Lean
+keeps that order everywhere, so its table is this one transposed, rows
+indexed by inputs.
 
 Our smallest building block is a dense (or ``fully connected'')
 layer: \(y = Wx + b\), where \(W\) is an \(m \times n\) weight
@@ -1510,7 +1513,11 @@ The Lean stores \(W\) input-major ---
 the \texttt{dense} listing in the introduction says --- so the same
 gradient reads \(B(x, dy) = W\, dy\) in Theorem~\ref{thm:denseHasVJP},
 and in the MLIR it is a contraction over the output axis of both
-operands. One transpose, three spellings.
+operands. The weight gradient follows the same rule: the prose's
+\(dW = dy \otimes x\), output-major like \(W\), is
+Theorem~\ref{thm:denseWeightGrad_correct}'s \(dW = x \otimes dy\) and the
+render's \(x^{\!\top} dy\), one array under three index orders. One
+transpose, three spellings.
 
 \begin{theorem}[Dense Jacobian wrt input]
   \label{ax:pdiv_dense}
@@ -11102,9 +11109,9 @@ off.
 \hline
 Knob & Value & Source \\
 \hline
-\cellleft learning rate & \cellleft $0.016$ at $256$ & \cellleft the reference base rate $0.256$ at batch $4096$, scaled linearly; paper-faithful, with no lowered rate and no gradient clip \\
-\cellleft optimizer & \cellleft RMSProp, TF~1 form & \cellleft \texttt{utils.build\_optimizer}: \texttt{tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon)}; TF~1's \texttt{ApplyRMSProp} folds the rate into the momentum buffer, $\varepsilon$ inside the square root, mean square started at $1$ \\
-\cellleft RMSProp $\mu$, $\rho$, $\varepsilon$ & \cellleft $0.9$, $0.9$, $10^{-3}$ & \cellleft the paper's values; the TF-RMSProp form has no blow-up for a clip to compensate for, so none is set \\
+\cellleft learning rate & \cellleft $0.016$ at $256$ & \cellleft the reference base rate $0.256$ at batch $4096$, scaled linearly \\
+\cellleft optimizer & \cellleft RMSProp, TF~1 form & \cellleft \texttt{utils.build\_optimizer}: \texttt{tf.train.RMSPropOptimizer(lr, decay, momentum, epsilon)}, which is TF~1's \texttt{ApplyRMSProp} \\
+\cellleft RMSProp $\mu$, $\rho$, $\varepsilon$ & \cellleft $0.9$, $0.9$, $10^{-3}$ & \cellleft the paper's values \\
 \cellleft weight decay & \cellleft $10^{-5}$, biases included & \cellleft \texttt{main.py}: \texttt{weight\_decay} times the sum of \texttt{l2\_loss(v)} over every trainable variable without \texttt{batch\_normalization} in its name, so BN $\gamma/\beta$ exempt and biases decayed (\texttt{wdDecayBiases}); timm and the verified \texttt{wx} render exclude norm and bias \\
 \cellleft schedule & \cellleft $\times 0.97$ every $2.4$ epochs, floored, 5-epoch warmup & \cellleft TF: the exponential decay on the global step, floored; the warmup overrides it while it runs \\
 \cellleft dropout, drop path & \cellleft $0.2$, $0.2$ & \cellleft the B0 classifier dropout; stochastic depth at the drop-connect rate, on TF's and timm's ramp $0.2 \cdot i/16$, not the default $i/15$ \\
@@ -11300,8 +11307,7 @@ EfficientNet's reference config turns on the full AutoAugment policy and
 streaming another net's shim would drop it. The head is the only
 parameter shape that moves, from $1280 \times 10$ to $1280 \times 1000$,
 which takes the count from 4,020,358 to \textbf{5,288,548}. That second
-number is B0's canonical $5.29$M, the count the correctly-sized squeeze
-restores.
+number is B0's canonical $5.29$M.
 
 \medskip\noindent\textbf{The recipe, on both paths.} RMSProp $\rho\,0.9$ /
 $\mu\,0.9$ / $\varepsilon\,10^{-3}$, lr $0.256$ at batch $4096$ (so $0.016$ at
@@ -11310,10 +11316,9 @@ $2.4$ epochs after a five-epoch warmup, dropout $0.2$, drop-connect $0.2$
 ramped as $0.2 \cdot i/16$, AutoAugment \texttt{v0}, label smoothing $0.1$,
 EMA $0.9999$ over the weights and the BatchNorm buffers, BN momentum $0.99$
 and $\varepsilon\,10^{-3}$, 350 epochs. All of it is carried on both paths,
-including every place TensorFlow's code differs from a naive port:
-$\varepsilon$ inside the square root ($g/\sqrt{s+\varepsilon}$, not
-$g/(\sqrt{s}+\varepsilon)$) with the mean-square accumulator started at
-$1.0$; the learning rate folded into the momentum buffer; weight decay off
+including every place TensorFlow's code differs from a naive port: the
+TF-form RMSProp and the EMA over the BatchNorm buffers that the reference
+section set out; weight decay off
 BatchNorm's $\gamma$ and $\beta$ alone, so the biases decay; \texttt{SAME}
 padding on the four strided depthwise convolutions; TensorFlow's crop
 sampler with its centre-crop fallback and TF~1's bicubic resize at train and
@@ -11483,14 +11488,14 @@ and every row is a one-line change to the \texttt{VerifiedNetSpec}, the
 Knob & ResNet-34 (2018) & EfficientNet-B0 (2019) & What the B0 choice buys \\
 \hline
 Backbone      & basic block, 21.8\,M   & MBConv + SE + Swish, 5.3\,M  & depthwise sandwich + SE gating --- ResNet-34-class accuracy at a quarter of the parameters \\
-Optimizer     & SGD + momentum $0.9$   & RMSProp (TF form)             & $\rho{=}0.9$, $\mu{=}0.9$, $\varepsilon{=}10^{-3}$ --- and the exact variant matters (below) \\
+Optimizer     & SGD + momentum $0.9$   & RMSProp (TF form)             & $\rho{=}0.9$, $\mu{=}0.9$, $\varepsilon{=}10^{-3}$ --- and the exact variant matters \\
 Peak LR       & $0.1$                  & $0.016$                       & linearly scaled from the official $0.256$@4096 --- RMSProp's scale, not comparable to SGD's $0.1$ \\
 LR schedule   & cosine to zero         & exponential, $\times0.97$ every 2.4 epochs & the paper's staircase, floored on the global step, under the same 5-epoch warmup \\
 Epochs        & 90                     & 350                           & the long-schedule regime the regularizers need, and the row the exponential decay above makes non-negotiable \\
 Weight decay  & $10^{-4}$, weights only & $10^{-5}$, BN $\gamma,\beta$ excluded & $10\times$ weaker --- depthwise and SE parameters are decay-sensitive \\
 Augmentation  & RRC + hflip            & + AutoAugment \texttt{v0}     & the learned ImageNet policy, in TensorFlow's table --- 2019's forerunner of ConvNeXt's DeiT pack \\
 Stochastic depth & none                & drop-path $0.2$               & randomly drops whole residual branches per step, at B0's drop-connect rate \\
-EMA           & none                   & decay $0.9999$                & evaluates a smoothed shadow of the weights and the BN buffers (below) \\
+EMA           & none                   & decay $0.9999$                & evaluates a smoothed shadow of the weights and the BN buffers \\
 \hline
 \end{tabular}
 \end{table}
@@ -11502,15 +11507,10 @@ both at $224$, bf16 convolution (the SE $1\times1$s and the classifier
 head in fp32), and no gradient clipping, which is unlike every later recipe in
 this ladder.
 
-The two quietest rows carry the chapter's two debugging lessons, both
-told in full above. ``RMSProp (TF form)'' is doing real work:
-$\varepsilon$ inside the square root and a mean-square accumulator that
-starts at $1$ are the difference between training stably at the paper's
-$0.016$ and eroding top-1 over the run. And the EMA row only evaluates
-correctly because the BN running statistics are shadowed alongside the
-weights (\texttt{ema\_bn}); averaged weights against live BN statistics
-is an eval blow-up, a failure mode specific to BatchNorm nets trained
-with weight averaging.
+Two of these rows are configuration rather than hyperparameters: RMSProp
+in TensorFlow's form, and an EMA that shadows the BatchNorm buffers. Both
+are set in the config this run trained on, and the reference section says
+what each does.
 
 The through-line of the 2018$\to$2019 shift is ``smaller,
 longer, more automated'': a quarter of the parameters trained for
