@@ -20,7 +20,7 @@ stands only on what every chapter uses hangs from the figure's shared box, which
 says where those statements live; every box is a link.}
 
 % Side-quest furniture. A "side quest" is a variant a chapter renders but does
-% not carry as a Track-4 row (MobileNetV4's has run once, as a consistency check;
+% not carry as a Track-4 row (MobileNetV4's has run, as a consistency check;
 % the rest will run eventually), and the heading says which of the three kinds it
 % is: a RECIPE (§\ref{sec:r50_a2_a1_cost}), a SIZE (§\ref{sec:convnext_sb},
 % §\ref{sec:vit_sb}), or an ARCHITECTURE the book reaches for once
@@ -9854,18 +9854,25 @@ config in \texttt{tensorflow/models}
 is that file: $256^2$ input, weight decay $0.1$ off the norms and biases,
 classifier dropout $0.2$, RandAugment $N2$ $m15$ at $p\,0.7$ under
 TensorFlow's own mappings (nearest resampling, fill $128$, the identity op
-in the draw), drop-path $0.075$ ramped as $(i+3)/26$ over the block list and
-applied at the 18 UIBs that carry a skip, BatchNorm at decay $0.997$ and
-$\varepsilon = 10^{-3}$, AdamW at Keras' $\varepsilon = 10^{-7}$, the cosine
-from step $0$ with the five-epoch warmup on top, tf-models' crop sampler with
-its centre-crop fallback and its bilinear resize without antialiasing, and no
-EMA, so the live weights are
-what gets scored, at the paper's $256$ with a $0.875$ centre crop. The yaml
-says $500$ epochs, and the $79.9\%$ headline is that number. The pair this
-section is built on is that recipe with only the length cut, to $100$, on
-both paths. Everything the recipe asks of the code is exercised by it; the
-500-epoch run is the same two jobs with a longer cosine, and it is the one
-thing here that has not run.
+in the draw), drop-path $0.075$ ramped as $(i+3)/26$ over its 26-entry block
+list (the \texttt{gpooling} row counts) and applied at the 18 UIBs that carry
+a skip, BatchNorm at decay $0.997$ and $\varepsilon = 10^{-3}$, AdamW at
+Keras' $\varepsilon = 10^{-7}$, the cosine from step $0$ with the five-epoch
+warmup on top, tf-models' crop sampler with its centre-crop fallback where
+the sampler returns the whole image and its bilinear resize without
+antialiasing, the head in tf-models' order (its block list pools before the
+$1280$ convolution), and no EMA, so the live weights are what gets scored,
+at the paper's $256$ with a $0.875$ centre crop. Three rows of the yaml stay
+out, disclosed on both paths: the initialization (tf-models draws every
+convolution and depthwise kernel from Keras' \texttt{VarianceScaling},
+fan-in, truncated normal, and the classifier $U(\pm 0.05)$; ours is
+\texttt{timm}'s), weight decay reaching the classifier bias (the yaml exempts
+BatchNorm alone; ours exempts every bias), and the BatchNorm group (per TPU
+core there, the $512$-image micro-batch here). The yaml says $500$ epochs,
+and the $79.9\%$ headline is that number. The pair this section is built on
+is that recipe with only the length cut, to $100$, on both paths. Everything
+the recipe asks of the code is exercised by it; the 500-epoch run is the
+same two jobs with a longer cosine, and it is the one thing here still owed.
 
 \prosesection{The reference (JAX)}
 
@@ -9889,22 +9896,20 @@ Table~\ref{tab:mnv4_jax} is the run.
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
-4$\times$ 4060 Ti (CUDA) & bf16 & $\sim$13.3 min & 100 & $\sim$22.2 hr & $\mathbf{77.39\%}$ & $\mathbf{93.46\%}$ \\
+4$\times$ 4060 Ti (CUDA) & bf16 & $\sim$13.7 min & 100 & $\sim$22.5 hr & $\mathbf{77.74\%}$ & $\mathbf{93.50\%}$ \\
 \hline
 \end{tabular}
 \end{table}
 
-\noindent The trainer is feed-bound at this shape, $2.55$\,s an optimizer
-step with the four cards waiting on the input pipeline. It restarted once: a
-corrected PCIe error on the chipset's upstream bridge, not a GPU, at epoch
-48, which the supervisor's AER policy treats as a kill; it resumed from the
-epoch-47 checkpoint twenty seconds later and lost about ten minutes. Set
-against this chapter's other half, that is the six-year argument in two
-rows: $\mathbf{+5.55}$ points over MobileNetV2's README-faithful $71.84\%$,
-from $2.8\times$ the parameters and under a quarter of the epochs, $100$
-against $420$. By 2024 the mobile line is not trading accuracy for size so
-much as reaching the same accuracy with a block that happens to be cheap.
-Figure~\ref{fig:mnv4_jax_curve} is the run, scored every five epochs.
+\noindent The trainer is feed-bound at this shape, $2.59$\,s an optimizer
+step with the four cards waiting on the input pipeline; one attempt, no
+restart. Set against this chapter's other half, that is the six-year
+argument in two rows: $\mathbf{+5.90}$ points over MobileNetV2's
+README-faithful $71.84\%$, from $2.8\times$ the parameters and under a
+quarter of the epochs, $100$ against $420$. By 2024 the mobile line is not
+trading accuracy for size so much as reaching the same accuracy with a block
+that happens to be cheap. Figure~\ref{fig:mnv4_jax_curve} is the run, scored
+every five epochs.
 
 \begin{figure}[H]
 \centering
@@ -9922,11 +9927,11 @@ Figure~\ref{fig:mnv4_jax_curve} is the run, scored every five epochs.
     title={MobileNetV4-Conv-M, the paper tier at 100 epochs --- reference},
 ]
 \addplot[blue, mark=*, mark options={fill=blue}] coordinates {
-(5,5.48) (10,33.65) (15,51.97) (20,58.09) (25,60.29) (30,61.44) (35,63.27) (40,64.69) (45,66.53) (50,68.14) (55,68.27) (60,69.51) (65,71.56) (70,72.65) (75,74.12) (80,75.22) (85,75.94) (90,76.90) (95,77.33) (100,77.39)
+(5,4.61) (10,36.60) (15,54.63) (20,56.98) (25,60.65) (30,60.97) (35,64.26) (40,65.72) (45,66.79) (50,67.99) (55,68.18) (60,69.08) (65,70.99) (70,72.23) (75,74.39) (80,75.75) (85,76.78) (90,77.25) (95,77.59) (100,77.74)
 };
 \addlegendentry{top-1}
 \addplot[orange, mark=*, mark options={fill=orange}] coordinates {
-(5,15.53) (10,58.95) (15,76.94) (20,81.66) (25,83.35) (30,83.89) (35,85.36) (40,86.43) (45,87.45) (50,88.68) (55,88.81) (60,89.52) (65,90.49) (70,91.10) (75,91.92) (80,92.49) (85,92.92) (90,93.20) (95,93.49) (100,93.46)
+(5,13.62) (10,62.53) (15,78.88) (20,80.83) (25,83.48) (30,83.86) (35,85.89) (40,87.08) (45,87.83) (50,88.52) (55,88.53) (60,89.00) (65,90.02) (70,90.78) (75,91.96) (80,92.58) (85,92.98) (90,93.34) (95,93.47) (100,93.50)
 };
 \addlegendentry{top-5}
 \end{axis}
@@ -9935,9 +9940,9 @@ Figure~\ref{fig:mnv4_jax_curve} is the run, scored every five epochs.
 \label{fig:mnv4_jax_curve}
 \end{figure}
 
-\noindent The last ten epochs move top-1 by $0.49$ ($76.90 \to 77.33 \to
-77.39$), so at a hundred epochs this schedule is not exhausted: the pack wants
-the length, which is what the yaml's $500$ is for, and the $2.5$ points to
+\noindent The last ten epochs move top-1 by $0.49$ ($77.25 \to 77.59 \to
+77.74$), so at a hundred epochs this schedule is not exhausted: the pack wants
+the length, which is what the yaml's $500$ is for, and the two points to
 $79.9\%$ are the schedule's to close.
 
 \prosesection{The verified path (PJRT)}
@@ -10026,15 +10031,16 @@ gives it. Theorem~\ref{thm:mobilenetv4_sync_tie} ties the data-parallel
 render's bf16 gradient nodes to one device's step at the global batch, and is
 stated at $224^2$: the $256^2$ render has not had it restated, so on this pair
 the data-parallel step is the render's and not a theorem's, and accumulation
-and the two dropouts sit outside the statement as before. Disclosed, on both
-paths: the initialization is \texttt{timm}'s, and the decay reaches the
-classifier bias. It runs with:
+and the two dropouts sit outside the statement as before. The three rows the
+recipe paragraph discloses are out on this path as on the reference. It has
+no \texttt{lake} script of its own and launches as:
 
 \begin{verbatim}
-lake run mnv4-full-e100-4gpu
+scripts/supervise.sh mnv4-full-e100-4gpu
 \end{verbatim}
 
-\noindent \texttt{LEAN\_MLIR\_EPOCHS=100} sets the cosine as well as the loop
+\noindent The job config is the 500-epoch row's with
+\texttt{LEAN\_MLIR\_EPOCHS=100}, which sets the cosine as well as the loop
 bound, under the run's own checkpoint tag. Table~\ref{tab:mnv4_pjrt} is the
 run.
 
@@ -10046,14 +10052,15 @@ run.
 \hline
 GPU & Precision & Per epoch & Epochs & Total & Val top-1 & Val top-5 \\
 \hline
-4$\times$ 4060 Ti (CUDA) & bf16 & $\sim$9.4 min & 100 & $\sim$15.6 hr & $\mathbf{77.35\%}$ & $\mathbf{93.53\%}$ \\
+4$\times$ 4060 Ti (CUDA) & bf16 & $\sim$10.6 min & 100 & $\sim$17.6 hr & $\mathbf{77.42\%}$ & $\mathbf{93.48\%}$ \\
 \hline
 \end{tabular}
 \end{table}
 
-\noindent Compute-bound at $214$\,ms a micro-step, which is why the proven
-graph finishes six and a half hours ahead of the Python trainer on the same
-four cards; no restart and no thermal rest.
+\noindent Compute-bound, at about a quarter of a second a $512$-image
+micro-step, which is why the proven graph finishes five hours ahead of the
+Python trainer on the same four cards; one attempt, no restart and no thermal
+rest.
 
 \prosesection{The two paths, side by side}
 
@@ -10089,8 +10096,8 @@ RandAugment         & $m15$ at $p\,0.7$         & $m15$ at $p\,0.7$ \\
 dropout, drop-path  & $0.2$, $0.075$           & $0.2$, $0.075$ \\
 weights scored      & live                     & live \\
 \hline
-\textbf{val top-1}  & $\mathbf{77.39\%}$       & $\mathbf{77.35\%}$ \\
-\textbf{val top-5}  & $\mathbf{93.46\%}$       & $\mathbf{93.53\%}$ \\
+\textbf{val top-1}  & $\mathbf{77.74\%}$       & $\mathbf{77.42\%}$ \\
+\textbf{val top-5}  & $\mathbf{93.50\%}$       & $\mathbf{93.48\%}$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -10099,15 +10106,26 @@ weights scored      & live                     & live \\
 classifier head and the depthwise initialization, which starts every
 depthwise kernel $\sqrt{C}$ narrower on the verified path.
 
-\medskip\noindent\textbf{The pair ties.} $-0.04$ on top-1 and $+0.07$ on
-top-5 are a tenth of one run's $\pm0.37$ Wilson half-width at $n = 50{,}000$,
-and the curves cross back and forth the whole way: at epoch 60 the two score
-$34{,}753$ and $34{,}750$ images correct, and the means of the last five
-scored epochs are $76.56$ and $76.60$. Table~\ref{tab:mnv4_paths_epochs} is
-the selected epochs and Figure~\ref{fig:mnv4_paths_curve} every five. The
-McNemar pairing of \S\ref{sec:r34_pjrt} is owed: only the verified trainer
-writes the per-image bitmap, and the reference's checkpoint is kept for the
-rescore that produces its half.
+\medskip\noindent\textbf{The pair separates, by a third of a point.} $-0.32$
+on top-1 ($162$ images) and $-0.02$ on top-5, the reference ahead. Unpaired,
+that is inside one run's $\pm0.37$ Wilson half-width at $n = 50{,}000$ and
+the two intervals overlap; paired on the same images the reading is
+different. The two checkpoints disagree on $4{,}304$ of them, $2{,}233$ the
+reference's way and $2{,}071$ the verified path's, and McNemar's exact test
+puts $p = 0.014$ on the $162$ between them. The reference's half of that
+pairing is its epoch-100 checkpoint rescored through the same fp32 forward
+with a per-image bitmap, $38{,}870$ of $50{,}000$, the in-training count
+exactly. The verified path leads at seven of the twenty scorings, epochs 5,
+10 and 20 and again from 55 to 70, by as much as $+1.47$ at epoch 60; the
+reference leads at every scoring from 75 on, by $0.43$ on the mean of the
+last five. Table~\ref{tab:mnv4_paths_epochs} is the selected epochs and
+Figure~\ref{fig:mnv4_paths_curve} every five.
+
+\medskip\noindent The two halves ran one after the other on the same four
+cards (\texttt{runs/2026-10-24-mnv4-full100-jax},
+\texttt{runs/2026-10-24-mnv4-full100-verified}), one seed per arm, and the
+pairing is a statement about these two checkpoints: a gap of this size is
+within what a second seed can move either of them.
 
 \begin{table}[H]
 \centering
@@ -10117,9 +10135,9 @@ rescore that produces its half.
 \hline
 epoch & 5 & 10 & 25 & 50 & 75 & 90 & 95 & 100 \\
 \hline
-reference (JAX)       & 5.48 & 33.65 & 60.29 & 68.14 & 74.12 & 76.90 & 77.33 & 77.39 \\
-verified path (PJRT)  & 7.88 & 34.19 & 60.29 & 67.62 & 73.89 & 77.06 & 77.29 & 77.35 \\
-$\Delta$              & $+2.40$ & $+0.54$ & $0.00$ & $-0.52$ & $-0.23$ & $+0.16$ & $-0.04$ & $-0.04$ \\
+reference (JAX)       & 4.61 & 36.60 & 60.65 & 67.99 & 74.39 & 77.25 & 77.59 & 77.74 \\
+verified path (PJRT)  & 5.63 & 39.11 & 59.96 & 67.22 & 73.54 & 76.90 & 77.42 & 77.42 \\
+$\Delta$              & $+1.02$ & $+2.51$ & $-0.69$ & $-0.77$ & $-0.85$ & $-0.35$ & $-0.17$ & $-0.32$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -10141,11 +10159,11 @@ $\Delta$              & $+2.40$ & $+0.54$ & $0.00$ & $-0.52$ & $-0.23$ & $+0.16$
     every axis plot/.append style={line width=1pt, mark size=0.8pt},
 ]
 \addplot[blue, mark=*, mark options={fill=blue}] coordinates {
-(5,5.48) (10,33.65) (15,51.97) (20,58.09) (25,60.29) (30,61.44) (35,63.27) (40,64.69) (45,66.53) (50,68.14) (55,68.27) (60,69.51) (65,71.56) (70,72.65) (75,74.12) (80,75.22) (85,75.94) (90,76.90) (95,77.33) (100,77.39)
+(5,4.61) (10,36.60) (15,54.63) (20,56.98) (25,60.65) (30,60.97) (35,64.26) (40,65.72) (45,66.79) (50,67.99) (55,68.18) (60,69.08) (65,70.99) (70,72.23) (75,74.39) (80,75.75) (85,76.78) (90,77.25) (95,77.59) (100,77.74)
 };
 \addlegendentry{reference (JAX)}
 \addplot[red, dashed, mark=o] coordinates {
-(5,7.88) (10,34.19) (15,55.49) (20,57.85) (25,60.29) (30,61.62) (35,63.87) (40,64.78) (45,64.87) (50,67.62) (55,69.23) (60,69.50) (65,70.53) (70,72.60) (75,73.89) (80,75.08) (85,76.24) (90,77.06) (95,77.29) (100,77.35)
+(5,5.63) (10,39.11) (15,53.24) (20,57.25) (25,59.96) (30,59.23) (35,62.35) (40,65.47) (45,65.99) (50,67.22) (55,68.73) (60,70.55) (65,71.23) (70,72.93) (75,73.54) (80,75.05) (85,76.17) (90,76.90) (95,77.42) (100,77.42)
 };
 \addlegendentry{verified path (PJRT)}
 \end{axis}
@@ -10154,21 +10172,9 @@ $\Delta$              & $+2.40$ & $+0.54$ & $0.00$ & $-0.52$ & $-0.23$ & $+0.16$
 \label{fig:mnv4_paths_curve}
 \end{figure}
 
-\medskip\noindent \textbf{[TODO: the schedule, and what the pair above
-still owes the paper's own code. The same two jobs at $500$ epochs,
-\texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu}, ${\sim}112 + 78$\,h
-on the 4060~Ti box, this pair times five, are owed. The $100$-epoch pair
-above predates two rows of that recipe, on both paths: the stochastic-depth ramp over tf-models' $26$-entry block list
-(the \texttt{gpooling} row counts; the pair ran $/25$), and tf-models' centre-crop
-fallback where the crop sampler returns the whole image (the pair fell back to
-the whole image). Still out, disclosed on both paths: the initialization
-(tf-models draws every convolution and depthwise kernel from Keras'
-\texttt{VarianceScaling}, fan-in, truncated normal, and the classifier
-$U(\pm 0.05)$; ours is \texttt{timm}'s), weight decay reaching the classifier
-bias (the yaml exempts BatchNorm alone; ours exempts every bias), and the
-BatchNorm group (per TPU core there, the $512$-image micro-batch here).
-What the pair does \emph{not} owe: the head order is tf-models' too (its
-block list pools before the $1280$ convolution).]}
+\medskip\noindent \textbf{[TODO: the schedule. The same two jobs at $500$
+epochs, \texttt{mnv4-full-jax-4gpu} / \texttt{mnv4-full-4gpu},
+${\sim}112 + 88$\,h on the 4060~Ti box, this pair times five, are owed.]}
 
 \section{Recap}
 
@@ -10185,8 +10191,8 @@ practice in one page: by 2024 the mobile line trains the way everything
 else does.
 
 What is open is the schedule: the paper tier ran at a hundred epochs on
-both paths and tied, and its five hundred are the one job in the chapter
-that has not. The next block keeps the depthwise convolution and adds a gate
+both paths, a third of a point apart, and its five hundred are the one job
+in the chapter still owed. The next block keeps the depthwise convolution and adds a gate
 around it, a learned per-channel gain computed from the map itself, which
 is the third composition rule, multiplicative fan-in, and the first
 attention mechanism in the book. Its activation is smooth, and that changes
