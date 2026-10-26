@@ -49,13 +49,12 @@ the finer chain — a tie whose opaque slots are groups would say nothing about 
 so the stages here are the twenty-one blocks themselves, `mnv4Blk0 … mnv4Blk21`'s
 (`MobileNetV4StepTieB.lean`) stage functions. Peeling `CertLayer.comp` to reach `.fwd` inside a
 group is cheap (`comp_fwd` is a generic `rfl` lemma and `MobileNetV4FullB`'s five
-group-faithfulness proofs each do it); what is not payable at MobileNetV4's literal resolutions is composing the compositions,
+group-faithfulness proofs each do it); what is not payable at a literal side is composing the compositions,
 which is why there is no `mnv4NetLayer` and why the shape check below stops at the block.
 
 **Everything generic in its widths, instantiated only in the capstone.** Both stage ties bind
-`{N ic oc h w kH kW}` and the apex binds `{s0 … s26}`; MobileNetV4's 224/112/56/28/14/7 are
-literals, and stating a `den`- or width-indexed `rfl` at them lets it run into kernel timeouts.
-Instantiating a proven lemma is cheap.
+`{N ic oc h w kH kW}` and the apex binds `{s0 … s26}`; at the literal sides 224/112/56/28/14/7
+a `den`- or width-indexed `rfl` runs into kernel timeouts. Instantiating a proven lemma is cheap.
 
 **The blocks stay opaque and there is no `backward_unique` step**, because instantiating a tie of this shape at the concrete blocks is a KERNEL deterministic timeout when
 the witnesses are `HasVJPAt` carrying a saved activation. B0 takes that step only because swish
@@ -179,7 +178,7 @@ theorem mnv4Hc2BBack_eq_vjp_backward {N h w mid oc : Nat}
         ∘ reluMaskBack (fun i => StableHLO.bnBatchLA N oc 1 1 ε γ β
             (StableHLO.batchMap N (flatConv W b) (mnv4PoolB N h w v)) i > 0)))
       = (mnv4Hc2BHasVJPDiffAt N h w W b ε hε γ β v hs).fst.backward := by
-  rw [cbReluBBack_eq_vjp_backward (h := 1) (w := 1) (by decide) (by decide) W b ε hε γ β _ hs]
+  rw [cbReluBBack_eq_vjp_backward (h := 1) (w := 1) (by simp) (by simp) W b ε hε γ β _ hs]
   funext dy
   rw [mnv4Hc2BHasVJPDiffAt, vjpCompDiffAt_fst_backward]
   show _ = (mnv4PoolBHasVJP N h w).backward v _
@@ -421,8 +420,9 @@ private theorem mnv4BFullHasVJPAt_backward
     sides are `16f, 8f, 4f, 2f, f`, the input `2·16f`; `MobileNetBackChains.mnv4InputGradB`).
     The stage ties this rewrites with were generic in `h w` all along, and the apex over opaque
     stages binds its widths, so the side costs nothing here; `mobilenetv4ForwardBFull_eq_slots`,
-    which identifies the stages with the literal-resolution forward of `MobileNetV4FullB`, stays
-    at 224 (that file's note on resolution literals). On the data-parallel (sync-BN) artifacts,
+    which identifies the stages with `MobileNetV4FullB`'s forward, takes the same `f` since that
+    file's side became a binder (its sides are the nests `2 * (2 * f)`, …, where the stages here
+    are the products `4 * f`, …). On the data-parallel (sync-BN) artifacts,
     instantiate at the global batch `R·N` (see `MobileNetV4SyncB`). -/
 theorem mnv4InputGradB_eq_mnv4B_full_vjp (N f : Nat) {nCls : Nat}
     (Ws : Kernel4 32 3 3 3) (bs : Vec 32) (εs : ℝ) (hεs : 0 < εs) (γs βs : Vec 32)
@@ -530,9 +530,9 @@ theorem mnv4InputGradB_eq_mnv4B_full_vjp (N f : Nat) {nCls : Nat}
             (mnv4ClsB_differentiable N Wd bd) _⟩).backward := by
   unfold mnv4InputGradB
   rw [mnv4StemBBack_eq_vjp_backward (N := N) (h := 16 * f) (w := 16 * f)
-        (by decide) (by decide) Ws bs εs hεs γs βs x h_stem,
+        (by simp) (by simp) Ws bs εs hεs γs βs x h_stem,
       cbReluBBack_eq_vjp_backward (N := N) (h := f) (w := f)
-        (by decide) (by decide) Wh1 bh1 εh1 hεh1 γh1 βh1
+        (by simp) (by simp) Wh1 bh1 εh1 hεh1 γh1 βh1
         (opaqueA22 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 x) h_h1,
       mnv4Hc2BBack_eq_vjp_backward (N := N) (h := f) (w := f) Wh bh εh hεh γh βh
         (opaqueA23 (mnv4StemB N (16 * f) (16 * f) Ws bs εs γs βs) fused b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 (cbReluB N (h := f) (w := f) Wh1 bh1 εh1 γh1 βh1) x) h_h2,
@@ -664,29 +664,29 @@ theorem mnv4InputGradB_correct (N f : Nat) {nCls : Nat}
 
 /-- The **head**, as the tie's three stages: `cn_960` conv-BN-relu, the pool with `conv_head`, the
     relabelled classifier. -/
-private theorem mnv4HeadStack_fwd_apply (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (v : Vec (N * (256 * 7 * 7))) :
-    (mnv4HeadStack N w).fwd v
+private theorem mnv4HeadStack_fwd_apply (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (v : Vec (N * (256 * f * f))) :
+    (mnv4HeadStack N f w).fwd v
       = mnv4ClsB N w.Wd w.bd
-          ((cbReluB N (h := 1) (w := 1) w.hW w.hb w.hE w.hg w.hbt ∘ mnv4PoolB N 7 7)
-            (cbReluB N (h := 7) (w := 7) w.h1W w.h1b w.h1E w.h1g w.h1bt v)) := by
+          ((cbReluB N (h := 1) (w := 1) w.hW w.hb w.hE w.hg w.hbt ∘ mnv4PoolB N f f)
+            (cbReluB N (h := f) (w := f) w.h1W w.h1b w.h1E w.h1g w.h1bt v)) := by
   simp only [mnv4HeadStack, mnv4Head, CertLayer.comp_fwd_apply, cbReluLayer_fwd_apply,
     gapLayer_fwd_apply, denseLayer_fwd_apply, castLayer_fwd_apply]
   rfl
 
 /-- The forward at GROUP granularity — `rfl`, because `mobilenetv4ForwardBFull` IS the nest of
     `mnv4Pre0 … mnv4Pre6`. Nothing is peeled here; the seven `.fwd`s stay folded. -/
-private theorem mnv4_fwd_eq_groups (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) :
-    mobilenetv4ForwardBFull N w x
-      = (mnv4HeadStack N w).fwd
-          ((mnv4Res7bLayer N w).fwd
-            ((mnv4Res7aLayer N w).fwd
-              ((mnv4Res14bLayer N w).fwd
-                ((mnv4Res14aLayer N w).fwd
-                  ((mnv4Res28Layer N w).fwd
-                    ((mnv4FusedStack N w).fwd
-                      (mnv4StemB N 112 112 w.sW w.sb w.sE w.sg w.sbt x))))))) := rfl
+private theorem mnv4_fwd_eq_groups (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) :
+    mobilenetv4ForwardBFull N f w x
+      = (mnv4HeadStack N f w).fwd
+          ((mnv4Res7bLayer N f w).fwd
+            ((mnv4Res7aLayer N f w).fwd
+              ((mnv4Res14bLayer N f w).fwd
+                ((mnv4Res14aLayer N f w).fwd
+                  ((mnv4Res28Layer N f w).fwd
+                    ((mnv4FusedStack N f w).fwd
+                      (mnv4StemB N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt x))))))) := rfl
 
 /-- The twenty-six-stage composition, APPLIED — the apex's chain read as a nested application.
     Generic in every dimension and every stage, so it costs nothing here. -/
@@ -736,35 +736,35 @@ private theorem mnv4Chain_apply {s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s
     every slot names its row, so rows 4/5/7, 8/10, 12/18, 13/14 and 15/19/20 — shape-identical,
     hence interchangeable to every type and `#guard` — are pinned here by the row constant, as
     `mnv4FwdGraphBFull`'s SSA names pin them in the graph. -/
-theorem mobilenetv4ForwardBFull_eq_slots (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) :
-    mobilenetv4ForwardBFull N w x
+theorem mobilenetv4ForwardBFull_eq_slots (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) :
+    mobilenetv4ForwardBFull N f w x
       = (mnv4ClsB N w.Wd w.bd
-          ∘ (cbReluB N (h := 1) (w := 1) w.hW w.hb w.hE w.hg w.hbt ∘ mnv4PoolB N 7 7)
-          ∘ cbReluB N (h := 7) (w := 7) w.h1W w.h1b w.h1E w.h1g w.h1bt
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row21 w.b21)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row20 w.b20)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row19 w.b19)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row18 w.b18)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row17 w.b17)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row16 w.b16)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row15 w.b15)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row14 w.b14)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row13 w.b13)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row12 w.b12)).fwd
-          ∘ (mnv4StridedBodyOfRow N mnv4Row11 w.b11).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row10 w.b10)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row9 w.b9)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row8 w.b8)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row7 w.b7)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row6 w.b6)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row5 w.b5)).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row4 w.b4)).fwd
-          ∘ (mnv4StridedBodyOfRow N mnv4Row3 w.b3).fwd
-          ∘ (CertLayer.residual (mnv4BodyOfRow N mnv4Row2 w.b2)).fwd
-          ∘ (mnv4StridedBodyOfRow N mnv4Row1 w.b1).fwd
-          ∘ (mnv4FusedStack N w).fwd
-          ∘ mnv4StemB N 112 112 w.sW w.sb w.sE w.sg w.sbt) x := by
+          ∘ (cbReluB N (h := 1) (w := 1) w.hW w.hb w.hE w.hg w.hbt ∘ mnv4PoolB N f f)
+          ∘ cbReluB N (h := f) (w := f) w.h1W w.h1b w.h1E w.h1g w.h1bt
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row21 f) w.b21)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row20 f) w.b20)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row19 f) w.b19)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row18 f) w.b18)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row17 f) w.b17)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row16 f) w.b16)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row15 f) w.b15)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row14 f) w.b14)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row13 f) w.b13)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row12 f) w.b12)).fwd
+          ∘ (mnv4StridedBodyOfRow N (mnv4Row11 f) w.b11).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row10 f) w.b10)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row9 f) w.b9)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row8 f) w.b8)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row7 f) w.b7)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row6 f) w.b6)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row5 f) w.b5)).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row4 f) w.b4)).fwd
+          ∘ (mnv4StridedBodyOfRow N (mnv4Row3 f) w.b3).fwd
+          ∘ (CertLayer.residual (mnv4BodyOfRow N (mnv4Row2 f) w.b2)).fwd
+          ∘ (mnv4StridedBodyOfRow N (mnv4Row1 f) w.b1).fwd
+          ∘ (mnv4FusedStack N f w).fwd
+          ∘ mnv4StemB N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt) x := by
   -- Seven rewrites of lemmas proved above, each proved at group granularity (nothing peeled) or
   -- between variables: no `CertLayer` peel is discharged at a literal resolution here.
   rw [mnv4Chain_apply, mnv4_fwd_eq_groups, mnv4HeadStack_fwd_apply, mnv4Res7bLayer_fwd_apply,

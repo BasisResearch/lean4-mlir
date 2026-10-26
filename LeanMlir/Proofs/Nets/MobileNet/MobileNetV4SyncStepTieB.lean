@@ -89,7 +89,8 @@ lowering is.
 stated on the renderers' switch (`Foundation.GradNodesBAt`): the replicas' nodes and the
 batch-`R·N` node are the f32 kind at `bf16 := false` and the bf16 kind at `true` — and the capstone
 takes `bf16`, so it covers the f32 DP artifacts and the `*bf16` ones' step
-(`mnv4in_emaaccdp8x128wxdowd005bf16`, `mnv4in_accdp8x128wxdropdowd01bf16`) read over ℝ at the
+(`mnv4in_emaaccdp8x128wxdowd005bf16`, `mnv4in_accdp8x128wxdropdowd01bf16`, and at `f := 8` the
+paper tier's `mnv4in256_accdp8x128wxdropdowd01bf16`) read over ℝ at the
 identity rounding (`Bf16Erasure`), where each bf16 collective is `1/R` of the batch-`R·N` bf16 node
 exactly as at f32. At a real rounding the bf16 weight-gradient collective differs from the
 single-device node by the per-replica rounding of each partial sum, which `DataParallel.SyncBf16`
@@ -1201,106 +1202,106 @@ theorem mnv4_head_syncTiedB (R : Nat) (hR : 0 < R) (N h w : Nat) {c mid oc nCls 
     `mnv4_net_tiedB`'s chain at `N := R·N`, driven by the global cotangent `G`; the next 23 are the
     replicas' sync-BN chain, driven by the family `gs`; the 24 conjuncts are one per stage, every
     emitted parameter collective against `mnv4_net_tiedB`'s node at the global batch. -/
-def mnv4NetSyncTiedB (R : Nat) (hR : 0 < R) (N : Nat) {nCls : Nat} (xN cotN vN epsStr : String)
+def mnv4NetSyncTiedB (R : Nat) (hR : 0 < R) (N f : Nat) {nCls : Nat} (xN cotN vN epsStr : String)
     (w : Mnv4BWeights nCls) (bf16 : Bool)
-    (X : Vec ((R * N) * (3 * 224 * 224))) (G : Vec ((R * N) * nCls)) (gs : Fin R → Vec (N * nCls)) : Prop :=
+    (X : Vec ((R * N) * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) (G : Vec ((R * N) * nCls)) (gs : Fin R → Vec (N * nCls)) : Prop :=
   -- ── the single-device chain at the global batch `R·N` (`mnv4_net_tiedB`'s) ──
-  let dy21 := mnv4HeadCotIn (R * N) 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
-               w.Wd w.bd (mnv4Blk21 (R * N) w X) G
-  let dy20 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row21 w.b21 (mnv4Blk20 (R * N) w X) dy21) dy21
-  let dy19 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row20 w.b20 (mnv4Blk19 (R * N) w X) dy20) dy20
-  let dy18 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row19 w.b19 (mnv4Blk18 (R * N) w X) dy19) dy19
-  let dy17 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row18 w.b18 (mnv4Blk17 (R * N) w X) dy18) dy18
-  let dy16 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row17 w.b17 (mnv4Blk16 (R * N) w X) dy17) dy17
-  let dy15 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row16 w.b16 (mnv4Blk15 (R * N) w X) dy16) dy16
-  let dy14 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row15 w.b15 (mnv4Blk14 (R * N) w X) dy15) dy15
-  let dy13 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row14 w.b14 (mnv4Blk13 (R * N) w X) dy14) dy14
-  let dy12 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row13 w.b13 (mnv4Blk12 (R * N) w X) dy13) dy13
-  let dy11 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row12 w.b12 (mnv4Blk11 (R * N) w X) dy12) dy12
-  let dy10 := mnv4SBodyCotIn (R * N) mnv4Row11 w.b11 (mnv4Blk10 (R * N) w X) dy11
-  let dy9 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row10 w.b10 (mnv4Blk9 (R * N) w X) dy10) dy10
-  let dy8 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row9 w.b9 (mnv4Blk8 (R * N) w X) dy9) dy9
-  let dy7 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row8 w.b8 (mnv4Blk7 (R * N) w X) dy8) dy8
-  let dy6 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row7 w.b7 (mnv4Blk6 (R * N) w X) dy7) dy7
-  let dy5 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row6 w.b6 (mnv4Blk5 (R * N) w X) dy6) dy6
-  let dy4 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row5 w.b5 (mnv4Blk4 (R * N) w X) dy5) dy5
-  let dy3 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row4 w.b4 (mnv4Blk3 (R * N) w X) dy4) dy4
-  let dy2 := mnv4SBodyCotIn (R * N) mnv4Row3 w.b3 (mnv4Blk2 (R * N) w X) dy3
-  let dy1 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) mnv4Row2 w.b2 (mnv4Blk1 (R * N) w X) dy2) dy2
-  let dy0 := mnv4SBodyCotIn (R * N) mnv4Row1 w.b1 (mnv4Blk0 (R * N) w X) dy1
-  let dyStem := mnv4FusedCotIn (R * N) 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
-                 w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt (mnv4Pre0 (R * N) w X) dy0
+  let dy21 := mnv4HeadCotIn (R * N) f f w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
+               w.Wd w.bd (mnv4Blk21 (R * N) f w X) G
+  let dy20 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row21 f) w.b21 (mnv4Blk20 (R * N) f w X) dy21) dy21
+  let dy19 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row20 f) w.b20 (mnv4Blk19 (R * N) f w X) dy20) dy20
+  let dy18 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row19 f) w.b19 (mnv4Blk18 (R * N) f w X) dy19) dy19
+  let dy17 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row18 f) w.b18 (mnv4Blk17 (R * N) f w X) dy18) dy18
+  let dy16 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row17 f) w.b17 (mnv4Blk16 (R * N) f w X) dy17) dy17
+  let dy15 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row16 f) w.b16 (mnv4Blk15 (R * N) f w X) dy16) dy16
+  let dy14 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row15 f) w.b15 (mnv4Blk14 (R * N) f w X) dy15) dy15
+  let dy13 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row14 f) w.b14 (mnv4Blk13 (R * N) f w X) dy14) dy14
+  let dy12 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row13 f) w.b13 (mnv4Blk12 (R * N) f w X) dy13) dy13
+  let dy11 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row12 f) w.b12 (mnv4Blk11 (R * N) f w X) dy12) dy12
+  let dy10 := mnv4SBodyCotIn (R * N) (mnv4Row11 f) w.b11 (mnv4Blk10 (R * N) f w X) dy11
+  let dy9 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row10 f) w.b10 (mnv4Blk9 (R * N) f w X) dy10) dy10
+  let dy8 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row9 f) w.b9 (mnv4Blk8 (R * N) f w X) dy9) dy9
+  let dy7 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row8 f) w.b8 (mnv4Blk7 (R * N) f w X) dy8) dy8
+  let dy6 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row7 f) w.b7 (mnv4Blk6 (R * N) f w X) dy7) dy7
+  let dy5 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row6 f) w.b6 (mnv4Blk5 (R * N) f w X) dy6) dy6
+  let dy4 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row5 f) w.b5 (mnv4Blk4 (R * N) f w X) dy5) dy5
+  let dy3 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row4 f) w.b4 (mnv4Blk3 (R * N) f w X) dy4) dy4
+  let dy2 := mnv4SBodyCotIn (R * N) (mnv4Row3 f) w.b3 (mnv4Blk2 (R * N) f w X) dy3
+  let dy1 := mnv4SkipCotIn (mnv4BodyCotIn (R * N) (mnv4Row2 f) w.b2 (mnv4Blk1 (R * N) f w X) dy2) dy2
+  let dy0 := mnv4SBodyCotIn (R * N) (mnv4Row1 f) w.b1 (mnv4Blk0 (R * N) f w X) dy1
+  let dyStem := mnv4FusedCotIn (R * N) (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
+                 w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt (mnv4Pre0 (R * N) f w X) dy0
   -- ── replica `r`: its own sync-BN chain, from its own loss cotangent `gs r` ──
-  let e21 := mnv4HeadSyncCotIn R hR N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
-               w.Wd w.bd (mnv4Blk21 (R * N) w X) gs
+  let e21 := mnv4HeadSyncCotIn R hR N f f w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
+               w.Wd w.bd (mnv4Blk21 (R * N) f w X) gs
   let e20 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row21 w.b21 (mnv4Blk20 (R * N) w X) e21 r) (e21 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row21 f) w.b21 (mnv4Blk20 (R * N) f w X) e21 r) (e21 r)
   let e19 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row20 w.b20 (mnv4Blk19 (R * N) w X) e20 r) (e20 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row20 f) w.b20 (mnv4Blk19 (R * N) f w X) e20 r) (e20 r)
   let e18 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row19 w.b19 (mnv4Blk18 (R * N) w X) e19 r) (e19 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row19 f) w.b19 (mnv4Blk18 (R * N) f w X) e19 r) (e19 r)
   let e17 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row18 w.b18 (mnv4Blk17 (R * N) w X) e18 r) (e18 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row18 f) w.b18 (mnv4Blk17 (R * N) f w X) e18 r) (e18 r)
   let e16 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row17 w.b17 (mnv4Blk16 (R * N) w X) e17 r) (e17 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row17 f) w.b17 (mnv4Blk16 (R * N) f w X) e17 r) (e17 r)
   let e15 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row16 w.b16 (mnv4Blk15 (R * N) w X) e16 r) (e16 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row16 f) w.b16 (mnv4Blk15 (R * N) f w X) e16 r) (e16 r)
   let e14 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row15 w.b15 (mnv4Blk14 (R * N) w X) e15 r) (e15 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row15 f) w.b15 (mnv4Blk14 (R * N) f w X) e15 r) (e15 r)
   let e13 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row14 w.b14 (mnv4Blk13 (R * N) w X) e14 r) (e14 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row14 f) w.b14 (mnv4Blk13 (R * N) f w X) e14 r) (e14 r)
   let e12 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row13 w.b13 (mnv4Blk12 (R * N) w X) e13 r) (e13 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row13 f) w.b13 (mnv4Blk12 (R * N) f w X) e13 r) (e13 r)
   let e11 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row12 w.b12 (mnv4Blk11 (R * N) w X) e12 r) (e12 r)
-  let e10 := mnv4SBodySyncCotIn R hR N mnv4Row11 w.b11 (mnv4Blk10 (R * N) w X) e11
+    (mnv4BodySyncCotIn R hR N (mnv4Row12 f) w.b12 (mnv4Blk11 (R * N) f w X) e12 r) (e12 r)
+  let e10 := mnv4SBodySyncCotIn R hR N (mnv4Row11 f) w.b11 (mnv4Blk10 (R * N) f w X) e11
   let e9 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row10 w.b10 (mnv4Blk9 (R * N) w X) e10 r) (e10 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row10 f) w.b10 (mnv4Blk9 (R * N) f w X) e10 r) (e10 r)
   let e8 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row9 w.b9 (mnv4Blk8 (R * N) w X) e9 r) (e9 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row9 f) w.b9 (mnv4Blk8 (R * N) f w X) e9 r) (e9 r)
   let e7 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row8 w.b8 (mnv4Blk7 (R * N) w X) e8 r) (e8 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row8 f) w.b8 (mnv4Blk7 (R * N) f w X) e8 r) (e8 r)
   let e6 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row7 w.b7 (mnv4Blk6 (R * N) w X) e7 r) (e7 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row7 f) w.b7 (mnv4Blk6 (R * N) f w X) e7 r) (e7 r)
   let e5 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row6 w.b6 (mnv4Blk5 (R * N) w X) e6 r) (e6 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row6 f) w.b6 (mnv4Blk5 (R * N) f w X) e6 r) (e6 r)
   let e4 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row5 w.b5 (mnv4Blk4 (R * N) w X) e5 r) (e5 r)
+    (mnv4BodySyncCotIn R hR N (mnv4Row5 f) w.b5 (mnv4Blk4 (R * N) f w X) e5 r) (e5 r)
   let e3 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row4 w.b4 (mnv4Blk3 (R * N) w X) e4 r) (e4 r)
-  let e2 := mnv4SBodySyncCotIn R hR N mnv4Row3 w.b3 (mnv4Blk2 (R * N) w X) e3
+    (mnv4BodySyncCotIn R hR N (mnv4Row4 f) w.b4 (mnv4Blk3 (R * N) f w X) e4 r) (e4 r)
+  let e2 := mnv4SBodySyncCotIn R hR N (mnv4Row3 f) w.b3 (mnv4Blk2 (R * N) f w X) e3
   let e1 := fun r => mnv4SkipCotIn
-    (mnv4BodySyncCotIn R hR N mnv4Row2 w.b2 (mnv4Blk1 (R * N) w X) e2 r) (e2 r)
-  let e0 := mnv4SBodySyncCotIn R hR N mnv4Row1 w.b1 (mnv4Blk0 (R * N) w X) e1
-  let eStem := mnv4FusedSyncCotIn R hR N 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
-                 w.f0pW w.f0pb w.f0pE w.f0pg (mnv4Pre0 (R * N) w X) e0
-  mnv4StemSyncTiedB R hR N 112 112 xN cotN vN epsStr w.sW w.sb w.sE w.sg w.sbt bf16 X eStem dyStem
-  ∧ mnv4FusedSyncTiedB R hR N 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt w.f0pW w.f0pb w.f0pE
-      w.f0pg w.f0pbt xN cotN vN epsStr bf16 (mnv4Pre0 (R * N) w X) e0 dy0
-  ∧ mnv4StridedSyncTiedB R hR N mnv4Row1 xN cotN vN epsStr w.b1 bf16 (mnv4Blk0 (R * N) w X) e1 dy1
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row2 xN cotN vN epsStr w.b2 bf16 (mnv4Blk1 (R * N) w X) e2 dy2
-  ∧ mnv4StridedSyncTiedB R hR N mnv4Row3 xN cotN vN epsStr w.b3 bf16 (mnv4Blk2 (R * N) w X) e3 dy3
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row4 xN cotN vN epsStr w.b4 bf16 (mnv4Blk3 (R * N) w X) e4 dy4
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row5 xN cotN vN epsStr w.b5 bf16 (mnv4Blk4 (R * N) w X) e5 dy5
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row6 xN cotN vN epsStr w.b6 bf16 (mnv4Blk5 (R * N) w X) e6 dy6
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row7 xN cotN vN epsStr w.b7 bf16 (mnv4Blk6 (R * N) w X) e7 dy7
-  ∧ mnv4ConvNeXtSyncTiedB R hR N mnv4Row8 xN cotN vN epsStr w.b8 bf16 (mnv4Blk7 (R * N) w X) e8 dy8
-  ∧ mnv4FfnSyncTiedB R hR N mnv4Row9 xN cotN vN epsStr w.b9 bf16 (mnv4Blk8 (R * N) w X) e9 dy9
-  ∧ mnv4ConvNeXtSyncTiedB R hR N mnv4Row10 xN cotN vN epsStr w.b10 bf16 (mnv4Blk9 (R * N) w X) e10 dy10
-  ∧ mnv4StridedSyncTiedB R hR N mnv4Row11 xN cotN vN epsStr w.b11 bf16 (mnv4Blk10 (R * N) w X)
+    (mnv4BodySyncCotIn R hR N (mnv4Row2 f) w.b2 (mnv4Blk1 (R * N) f w X) e2 r) (e2 r)
+  let e0 := mnv4SBodySyncCotIn R hR N (mnv4Row1 f) w.b1 (mnv4Blk0 (R * N) f w X) e1
+  let eStem := mnv4FusedSyncCotIn R hR N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
+                 w.f0pW w.f0pb w.f0pE w.f0pg (mnv4Pre0 (R * N) f w X) e0
+  mnv4StemSyncTiedB R hR N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) xN cotN vN epsStr w.sW w.sb w.sE w.sg w.sbt bf16 X eStem dyStem
+  ∧ mnv4FusedSyncTiedB R hR N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt w.f0pW w.f0pb w.f0pE
+      w.f0pg w.f0pbt xN cotN vN epsStr bf16 (mnv4Pre0 (R * N) f w X) e0 dy0
+  ∧ mnv4StridedSyncTiedB R hR N (mnv4Row1 f) xN cotN vN epsStr w.b1 bf16 (mnv4Blk0 (R * N) f w X) e1 dy1
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row2 f) xN cotN vN epsStr w.b2 bf16 (mnv4Blk1 (R * N) f w X) e2 dy2
+  ∧ mnv4StridedSyncTiedB R hR N (mnv4Row3 f) xN cotN vN epsStr w.b3 bf16 (mnv4Blk2 (R * N) f w X) e3 dy3
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row4 f) xN cotN vN epsStr w.b4 bf16 (mnv4Blk3 (R * N) f w X) e4 dy4
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row5 f) xN cotN vN epsStr w.b5 bf16 (mnv4Blk4 (R * N) f w X) e5 dy5
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row6 f) xN cotN vN epsStr w.b6 bf16 (mnv4Blk5 (R * N) f w X) e6 dy6
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row7 f) xN cotN vN epsStr w.b7 bf16 (mnv4Blk6 (R * N) f w X) e7 dy7
+  ∧ mnv4ConvNeXtSyncTiedB R hR N (mnv4Row8 f) xN cotN vN epsStr w.b8 bf16 (mnv4Blk7 (R * N) f w X) e8 dy8
+  ∧ mnv4FfnSyncTiedB R hR N (mnv4Row9 f) xN cotN vN epsStr w.b9 bf16 (mnv4Blk8 (R * N) f w X) e9 dy9
+  ∧ mnv4ConvNeXtSyncTiedB R hR N (mnv4Row10 f) xN cotN vN epsStr w.b10 bf16 (mnv4Blk9 (R * N) f w X) e10 dy10
+  ∧ mnv4StridedSyncTiedB R hR N (mnv4Row11 f) xN cotN vN epsStr w.b11 bf16 (mnv4Blk10 (R * N) f w X)
       e11 dy11
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row12 xN cotN vN epsStr w.b12 bf16 (mnv4Blk11 (R * N) w X) e12 dy12
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row13 xN cotN vN epsStr w.b13 bf16 (mnv4Blk12 (R * N) w X) e13 dy13
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row14 xN cotN vN epsStr w.b14 bf16 (mnv4Blk13 (R * N) w X) e14 dy14
-  ∧ mnv4FfnSyncTiedB R hR N mnv4Row15 xN cotN vN epsStr w.b15 bf16 (mnv4Blk14 (R * N) w X) e15 dy15
-  ∧ mnv4ConvNeXtSyncTiedB R hR N mnv4Row16 xN cotN vN epsStr w.b16 bf16 (mnv4Blk15 (R * N) w X) e16 dy16
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row17 xN cotN vN epsStr w.b17 bf16 (mnv4Blk16 (R * N) w X) e17 dy17
-  ∧ mnv4ExtraDWSyncTiedB R hR N mnv4Row18 xN cotN vN epsStr w.b18 bf16 (mnv4Blk17 (R * N) w X) e18 dy18
-  ∧ mnv4FfnSyncTiedB R hR N mnv4Row19 xN cotN vN epsStr w.b19 bf16 (mnv4Blk18 (R * N) w X) e19 dy19
-  ∧ mnv4FfnSyncTiedB R hR N mnv4Row20 xN cotN vN epsStr w.b20 bf16 (mnv4Blk19 (R * N) w X) e20 dy20
-  ∧ mnv4ConvNeXtSyncTiedB R hR N mnv4Row21 xN cotN vN epsStr w.b21 bf16 (mnv4Blk20 (R * N) w X) e21 dy21
-  ∧ mnv4HeadSyncTiedB R hR N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
-      w.Wd w.bd xN cotN vN epsStr bf16 (mnv4Blk21 (R * N) w X) gs G
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row12 f) xN cotN vN epsStr w.b12 bf16 (mnv4Blk11 (R * N) f w X) e12 dy12
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row13 f) xN cotN vN epsStr w.b13 bf16 (mnv4Blk12 (R * N) f w X) e13 dy13
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row14 f) xN cotN vN epsStr w.b14 bf16 (mnv4Blk13 (R * N) f w X) e14 dy14
+  ∧ mnv4FfnSyncTiedB R hR N (mnv4Row15 f) xN cotN vN epsStr w.b15 bf16 (mnv4Blk14 (R * N) f w X) e15 dy15
+  ∧ mnv4ConvNeXtSyncTiedB R hR N (mnv4Row16 f) xN cotN vN epsStr w.b16 bf16 (mnv4Blk15 (R * N) f w X) e16 dy16
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row17 f) xN cotN vN epsStr w.b17 bf16 (mnv4Blk16 (R * N) f w X) e17 dy17
+  ∧ mnv4ExtraDWSyncTiedB R hR N (mnv4Row18 f) xN cotN vN epsStr w.b18 bf16 (mnv4Blk17 (R * N) f w X) e18 dy18
+  ∧ mnv4FfnSyncTiedB R hR N (mnv4Row19 f) xN cotN vN epsStr w.b19 bf16 (mnv4Blk18 (R * N) f w X) e19 dy19
+  ∧ mnv4FfnSyncTiedB R hR N (mnv4Row20 f) xN cotN vN epsStr w.b20 bf16 (mnv4Blk19 (R * N) f w X) e20 dy20
+  ∧ mnv4ConvNeXtSyncTiedB R hR N (mnv4Row21 f) xN cotN vN epsStr w.b21 bf16 (mnv4Blk20 (R * N) f w X) e21 dy21
+  ∧ mnv4HeadSyncTiedB R hR N f f w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
+      w.Wd w.bd xN cotN vN epsStr bf16 (mnv4Blk21 (R * N) f w X) gs G
 
 /-- **The synchronised-BN data-parallel MobileNetV4-Conv-M step is the single-device step at the
     global batch.** `R` replicas at batch `N`, each running the render's sync-BN backward chain
@@ -1316,7 +1317,8 @@ def mnv4NetSyncTiedB (R : Nat) (hR : 0 < R) (N : Nat) {nCls : Nat} (xN cotN vN e
     right-hand chain is `mnv4_net_tiedB`'s at `N := R·N` with `g := G`, whose nodes that capstone
     ties to the certified gradient at its chain cotangent — so this and it together say every
     all-reduced gradient a DP render emits — `mnv4in_adamdp64`'s at `bf16 := false`,
-    `mnv4in_emaaccdp8x128wxdowd005bf16`'s conv and depthwise collectives at `true`, read at the
+    `mnv4in_emaaccdp8x128wxdowd005bf16`'s conv and depthwise collectives at `true`, and at the
+    final side `f := 8` the paper tier's `mnv4in256_accdp8x128wxdropdowd01bf16`'s — read at the
     identity rounding (`Bf16Erasure`) — is the global-batch step's gradient node. The AdamW update
     that follows is not stated here, and neither are the classifier dropout (`%do`), EMA and
     gradient accumulation of `mnv4in_emaaccdp8x128wxdowd005bf16`. `mnv4_net_syncTiedB_smoothedCE` discharges the
@@ -1324,131 +1326,131 @@ def mnv4NetSyncTiedB (R : Nat) (hR : 0 < R) (N : Nat) {nCls : Nat} (xN cotN vN e
 
     With per-replica BatchNorm the corresponding statement is false in general;
     `DataParallel.dpMeanGrad_ne_globalBatchGrad` is a two-replica counterexample. -/
-theorem mnv4_net_syncTiedB (R : Nat) (hR : 0 < R) (N : Nat) (hN : 0 < N) {nCls : Nat}
+theorem mnv4_net_syncTiedB (R : Nat) (hR : 0 < R) (N f : Nat) (hN : 0 < N) (hf : 0 < f) {nCls : Nat}
     (xN cotN vN epsStr : String) (w : Mnv4BWeights nCls) (bf16 : Bool)
-    (X : Vec ((R * N) * (3 * 224 * 224))) (G : Vec ((R * N) * nCls)) (gs : Fin R → Vec (N * nCls))
+    (X : Vec ((R * N) * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) (G : Vec ((R * N) * nCls)) (gs : Fin R → Vec (N * nCls))
     (hgs : ∀ r, gs r = batchShard R N nCls (fun i => (R : ℝ) * G i) r) :
-    mnv4NetSyncTiedB R hR N xN cotN vN epsStr w bf16 X G gs := by
+    mnv4NetSyncTiedB R hR N f xN cotN vN epsStr w bf16 X G gs := by
   unfold mnv4NetSyncTiedB
   intro dy21 dy20 dy19 dy18 dy17 dy16 dy15 dy14 dy13 dy12 dy11 dy10 dy9 dy8 dy7 dy6 dy5 dy4 dy3
     dy2 dy1 dy0 dyStem e21 e20 e19 e18 e17 e16 e15 e14 e13 e12 e11 e10 e9 e8 e7 e6 e5 e4 e3 e2
     e1 e0 eStem
-  have h112 : 0 < 112 := by norm_num
-  have h56 : 0 < 56 := by norm_num
-  have h7 : 0 < 7 := by norm_num
+  have h112 : 0 < 2 * (2 * (2 * (2 * f))) := by omega
+  have h56 : 0 < 2 * (2 * (2 * f)) := by omega
+  have h7 : 0 < f := hf
   -- the scaled-shard invariant, block by block down the chain, from `hgs`
-  have s21 := mnv4HeadSyncCotIn_scaled R hR N 7 7 hN h7 h7 w.h1W w.h1b w.h1E w.h1g w.h1bt
-    w.hW w.hb w.hE w.hg w.hbt w.Wd w.bd (mnv4Blk21 (R * N) w X) gs G hgs
+  have s21 := mnv4HeadSyncCotIn_scaled R hR N f f hN h7 h7 w.h1W w.h1b w.h1E w.h1g w.h1bt
+    w.hW w.hb w.hE w.hg w.hbt w.Wd w.bd (mnv4Blk21 (R * N) f w X) gs G hgs
   have s20 := mnv4SkipSyncCotIn_scaled _ e21 _ dy21
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row21 (by decide) w.b21 (mnv4Blk20 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row21 f) (by simp only [mnv4Row21]; omega) w.b21 (mnv4Blk20 (R * N) f w X)
       e21 dy21 s21) s21
   have s19 := mnv4SkipSyncCotIn_scaled _ e20 _ dy20
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row20 (by decide) w.b20 (mnv4Blk19 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row20 f) (by simp only [mnv4Row20]; omega) w.b20 (mnv4Blk19 (R * N) f w X)
       e20 dy20 s20) s20
   have s18 := mnv4SkipSyncCotIn_scaled _ e19 _ dy19
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row19 (by decide) w.b19 (mnv4Blk18 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row19 f) (by simp only [mnv4Row19]; omega) w.b19 (mnv4Blk18 (R * N) f w X)
       e19 dy19 s19) s19
   have s17 := mnv4SkipSyncCotIn_scaled _ e18 _ dy18
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row18 (by decide) w.b18 (mnv4Blk17 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row18 f) (by simp only [mnv4Row18]; omega) w.b18 (mnv4Blk17 (R * N) f w X)
       e18 dy18 s18) s18
   have s16 := mnv4SkipSyncCotIn_scaled _ e17 _ dy17
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row17 (by decide) w.b17 (mnv4Blk16 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row17 f) (by simp only [mnv4Row17]; omega) w.b17 (mnv4Blk16 (R * N) f w X)
       e17 dy17 s17) s17
   have s15 := mnv4SkipSyncCotIn_scaled _ e16 _ dy16
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row16 (by decide) w.b16 (mnv4Blk15 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row16 f) (by simp only [mnv4Row16]; omega) w.b16 (mnv4Blk15 (R * N) f w X)
       e16 dy16 s16) s16
   have s14 := mnv4SkipSyncCotIn_scaled _ e15 _ dy15
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row15 (by decide) w.b15 (mnv4Blk14 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row15 f) (by simp only [mnv4Row15]; omega) w.b15 (mnv4Blk14 (R * N) f w X)
       e15 dy15 s15) s15
   have s13 := mnv4SkipSyncCotIn_scaled _ e14 _ dy14
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row14 (by decide) w.b14 (mnv4Blk13 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row14 f) (by simp only [mnv4Row14]; omega) w.b14 (mnv4Blk13 (R * N) f w X)
       e14 dy14 s14) s14
   have s12 := mnv4SkipSyncCotIn_scaled _ e13 _ dy13
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row13 (by decide) w.b13 (mnv4Blk12 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row13 f) (by simp only [mnv4Row13]; omega) w.b13 (mnv4Blk12 (R * N) f w X)
       e13 dy13 s13) s13
   have s11 := mnv4SkipSyncCotIn_scaled _ e12 _ dy12
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row12 (by decide) w.b12 (mnv4Blk11 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row12 f) (by simp only [mnv4Row12]; omega) w.b12 (mnv4Blk11 (R * N) f w X)
       e12 dy12 s12) s12
-  have s10 := mnv4SBodySyncCotIn_scaled R hR N hN mnv4Row11 (by decide) w.b11
-    (mnv4Blk10 (R * N) w X) e11 dy11 s11
+  have s10 := mnv4SBodySyncCotIn_scaled R hR N hN (mnv4Row11 f) (by simp only [mnv4Row11]; omega) w.b11
+    (mnv4Blk10 (R * N) f w X) e11 dy11 s11
   have s9 := mnv4SkipSyncCotIn_scaled _ e10 _ dy10
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row10 (by decide) w.b10 (mnv4Blk9 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row10 f) (by simp only [mnv4Row10]; omega) w.b10 (mnv4Blk9 (R * N) f w X)
       e10 dy10 s10) s10
   have s8 := mnv4SkipSyncCotIn_scaled _ e9 _ dy9
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row9 (by decide) w.b9 (mnv4Blk8 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row9 f) (by simp only [mnv4Row9]; omega) w.b9 (mnv4Blk8 (R * N) f w X)
       e9 dy9 s9) s9
   have s7 := mnv4SkipSyncCotIn_scaled _ e8 _ dy8
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row8 (by decide) w.b8 (mnv4Blk7 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row8 f) (by simp only [mnv4Row8]; omega) w.b8 (mnv4Blk7 (R * N) f w X)
       e8 dy8 s8) s8
   have s6 := mnv4SkipSyncCotIn_scaled _ e7 _ dy7
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row7 (by decide) w.b7 (mnv4Blk6 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row7 f) (by simp only [mnv4Row7]; omega) w.b7 (mnv4Blk6 (R * N) f w X)
       e7 dy7 s7) s7
   have s5 := mnv4SkipSyncCotIn_scaled _ e6 _ dy6
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row6 (by decide) w.b6 (mnv4Blk5 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row6 f) (by simp only [mnv4Row6]; omega) w.b6 (mnv4Blk5 (R * N) f w X)
       e6 dy6 s6) s6
   have s4 := mnv4SkipSyncCotIn_scaled _ e5 _ dy5
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row5 (by decide) w.b5 (mnv4Blk4 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row5 f) (by simp only [mnv4Row5]; omega) w.b5 (mnv4Blk4 (R * N) f w X)
       e5 dy5 s5) s5
   have s3 := mnv4SkipSyncCotIn_scaled _ e4 _ dy4
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row4 (by decide) w.b4 (mnv4Blk3 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row4 f) (by simp only [mnv4Row4]; omega) w.b4 (mnv4Blk3 (R * N) f w X)
       e4 dy4 s4) s4
-  have s2 := mnv4SBodySyncCotIn_scaled R hR N hN mnv4Row3 (by decide) w.b3
-    (mnv4Blk2 (R * N) w X) e3 dy3 s3
+  have s2 := mnv4SBodySyncCotIn_scaled R hR N hN (mnv4Row3 f) (by simp only [mnv4Row3]; omega) w.b3
+    (mnv4Blk2 (R * N) f w X) e3 dy3 s3
   have s1 := mnv4SkipSyncCotIn_scaled _ e2 _ dy2
-    (mnv4BodySyncCotIn_scaled R hR N hN mnv4Row2 (by decide) w.b2 (mnv4Blk1 (R * N) w X)
+    (mnv4BodySyncCotIn_scaled R hR N hN (mnv4Row2 f) (by simp only [mnv4Row2]; omega) w.b2 (mnv4Blk1 (R * N) f w X)
       e2 dy2 s2) s2
-  have s0 := mnv4SBodySyncCotIn_scaled R hR N hN mnv4Row1 (by decide) w.b1
-    (mnv4Blk0 (R * N) w X) e1 dy1 s1
-  have sStem := mnv4FusedSyncCotIn_scaled R hR N 56 56 hN h56 h56 w.f0cW w.f0cb w.f0cE w.f0cg
-    w.f0cbt w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt (mnv4Pre0 (R * N) w X) e0 dy0 s0
-  exact ⟨mnv4_stem_syncTiedB R hR N 112 112 hN h112 h112 xN cotN vN epsStr
+  have s0 := mnv4SBodySyncCotIn_scaled R hR N hN (mnv4Row1 f) (by simp only [mnv4Row1]; omega) w.b1
+    (mnv4Blk0 (R * N) f w X) e1 dy1 s1
+  have sStem := mnv4FusedSyncCotIn_scaled R hR N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) hN h56 h56 w.f0cW w.f0cb w.f0cE w.f0cg
+    w.f0cbt w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt (mnv4Pre0 (R * N) f w X) e0 dy0 s0
+  exact ⟨mnv4_stem_syncTiedB R hR N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) hN h112 h112 xN cotN vN epsStr
       w.sW w.sb w.sE w.sg w.sbt bf16 X eStem _ sStem,
-    mnv4_fused_syncTiedB R hR N 56 56 hN h56 h56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
-      w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt xN cotN vN epsStr bf16 (mnv4Pre0 (R * N) w X) e0 dy0 s0,
-    mnv4_strided_syncTiedB R hR N hN mnv4Row1 (by decide) xN cotN vN epsStr w.b1 bf16
-      (mnv4Blk0 (R * N) w X) e1 dy1 s1,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row2 (by decide) xN cotN vN epsStr w.b2 bf16
-      (mnv4Blk1 (R * N) w X) e2 dy2 s2,
-    mnv4_strided_syncTiedB R hR N hN mnv4Row3 (by decide) xN cotN vN epsStr w.b3 bf16
-      (mnv4Blk2 (R * N) w X) e3 dy3 s3,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row4 (by decide) xN cotN vN epsStr w.b4 bf16
-      (mnv4Blk3 (R * N) w X) e4 dy4 s4,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row5 (by decide) xN cotN vN epsStr w.b5 bf16
-      (mnv4Blk4 (R * N) w X) e5 dy5 s5,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row6 (by decide) xN cotN vN epsStr w.b6 bf16
-      (mnv4Blk5 (R * N) w X) e6 dy6 s6,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row7 (by decide) xN cotN vN epsStr w.b7 bf16
-      (mnv4Blk6 (R * N) w X) e7 dy7 s7,
-    mnv4_convnext_syncTiedB R hR N hN mnv4Row8 (by decide) xN cotN vN epsStr w.b8 bf16
-      (mnv4Blk7 (R * N) w X) e8 dy8 s8,
-    mnv4_ffn_syncTiedB R hR N hN mnv4Row9 (by decide) xN cotN vN epsStr w.b9 bf16
-      (mnv4Blk8 (R * N) w X) e9 dy9 s9,
-    mnv4_convnext_syncTiedB R hR N hN mnv4Row10 (by decide) xN cotN vN epsStr w.b10 bf16
-      (mnv4Blk9 (R * N) w X) e10 dy10 s10,
-    mnv4_strided_syncTiedB R hR N hN mnv4Row11 (by decide) xN cotN vN epsStr w.b11 bf16
-      (mnv4Blk10 (R * N) w X) e11 dy11 s11,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row12 (by decide) xN cotN vN epsStr w.b12 bf16
-      (mnv4Blk11 (R * N) w X) e12 dy12 s12,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row13 (by decide) xN cotN vN epsStr w.b13 bf16
-      (mnv4Blk12 (R * N) w X) e13 dy13 s13,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row14 (by decide) xN cotN vN epsStr w.b14 bf16
-      (mnv4Blk13 (R * N) w X) e14 dy14 s14,
-    mnv4_ffn_syncTiedB R hR N hN mnv4Row15 (by decide) xN cotN vN epsStr w.b15 bf16
-      (mnv4Blk14 (R * N) w X) e15 dy15 s15,
-    mnv4_convnext_syncTiedB R hR N hN mnv4Row16 (by decide) xN cotN vN epsStr w.b16 bf16
-      (mnv4Blk15 (R * N) w X) e16 dy16 s16,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row17 (by decide) xN cotN vN epsStr w.b17 bf16
-      (mnv4Blk16 (R * N) w X) e17 dy17 s17,
-    mnv4_extradw_syncTiedB R hR N hN mnv4Row18 (by decide) xN cotN vN epsStr w.b18 bf16
-      (mnv4Blk17 (R * N) w X) e18 dy18 s18,
-    mnv4_ffn_syncTiedB R hR N hN mnv4Row19 (by decide) xN cotN vN epsStr w.b19 bf16
-      (mnv4Blk18 (R * N) w X) e19 dy19 s19,
-    mnv4_ffn_syncTiedB R hR N hN mnv4Row20 (by decide) xN cotN vN epsStr w.b20 bf16
-      (mnv4Blk19 (R * N) w X) e20 dy20 s20,
-    mnv4_convnext_syncTiedB R hR N hN mnv4Row21 (by decide) xN cotN vN epsStr w.b21 bf16
-      (mnv4Blk20 (R * N) w X) e21 dy21 s21,
-    mnv4_head_syncTiedB R hR N 7 7 hN h7 h7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg
-      w.hbt w.Wd w.bd xN cotN vN epsStr bf16 (mnv4Blk21 (R * N) w X) gs G hgs⟩
+    mnv4_fused_syncTiedB R hR N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) hN h56 h56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
+      w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt xN cotN vN epsStr bf16 (mnv4Pre0 (R * N) f w X) e0 dy0 s0,
+    mnv4_strided_syncTiedB R hR N hN (mnv4Row1 f) (by simp only [mnv4Row1]; omega) xN cotN vN epsStr w.b1 bf16
+      (mnv4Blk0 (R * N) f w X) e1 dy1 s1,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row2 f) (by simp only [mnv4Row2]; omega) xN cotN vN epsStr w.b2 bf16
+      (mnv4Blk1 (R * N) f w X) e2 dy2 s2,
+    mnv4_strided_syncTiedB R hR N hN (mnv4Row3 f) (by simp only [mnv4Row3]; omega) xN cotN vN epsStr w.b3 bf16
+      (mnv4Blk2 (R * N) f w X) e3 dy3 s3,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row4 f) (by simp only [mnv4Row4]; omega) xN cotN vN epsStr w.b4 bf16
+      (mnv4Blk3 (R * N) f w X) e4 dy4 s4,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row5 f) (by simp only [mnv4Row5]; omega) xN cotN vN epsStr w.b5 bf16
+      (mnv4Blk4 (R * N) f w X) e5 dy5 s5,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row6 f) (by simp only [mnv4Row6]; omega) xN cotN vN epsStr w.b6 bf16
+      (mnv4Blk5 (R * N) f w X) e6 dy6 s6,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row7 f) (by simp only [mnv4Row7]; omega) xN cotN vN epsStr w.b7 bf16
+      (mnv4Blk6 (R * N) f w X) e7 dy7 s7,
+    mnv4_convnext_syncTiedB R hR N hN (mnv4Row8 f) (by simp only [mnv4Row8]; omega) xN cotN vN epsStr w.b8 bf16
+      (mnv4Blk7 (R * N) f w X) e8 dy8 s8,
+    mnv4_ffn_syncTiedB R hR N hN (mnv4Row9 f) (by simp only [mnv4Row9]; omega) xN cotN vN epsStr w.b9 bf16
+      (mnv4Blk8 (R * N) f w X) e9 dy9 s9,
+    mnv4_convnext_syncTiedB R hR N hN (mnv4Row10 f) (by simp only [mnv4Row10]; omega) xN cotN vN epsStr w.b10 bf16
+      (mnv4Blk9 (R * N) f w X) e10 dy10 s10,
+    mnv4_strided_syncTiedB R hR N hN (mnv4Row11 f) (by simp only [mnv4Row11]; omega) xN cotN vN epsStr w.b11 bf16
+      (mnv4Blk10 (R * N) f w X) e11 dy11 s11,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row12 f) (by simp only [mnv4Row12]; omega) xN cotN vN epsStr w.b12 bf16
+      (mnv4Blk11 (R * N) f w X) e12 dy12 s12,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row13 f) (by simp only [mnv4Row13]; omega) xN cotN vN epsStr w.b13 bf16
+      (mnv4Blk12 (R * N) f w X) e13 dy13 s13,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row14 f) (by simp only [mnv4Row14]; omega) xN cotN vN epsStr w.b14 bf16
+      (mnv4Blk13 (R * N) f w X) e14 dy14 s14,
+    mnv4_ffn_syncTiedB R hR N hN (mnv4Row15 f) (by simp only [mnv4Row15]; omega) xN cotN vN epsStr w.b15 bf16
+      (mnv4Blk14 (R * N) f w X) e15 dy15 s15,
+    mnv4_convnext_syncTiedB R hR N hN (mnv4Row16 f) (by simp only [mnv4Row16]; omega) xN cotN vN epsStr w.b16 bf16
+      (mnv4Blk15 (R * N) f w X) e16 dy16 s16,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row17 f) (by simp only [mnv4Row17]; omega) xN cotN vN epsStr w.b17 bf16
+      (mnv4Blk16 (R * N) f w X) e17 dy17 s17,
+    mnv4_extradw_syncTiedB R hR N hN (mnv4Row18 f) (by simp only [mnv4Row18]; omega) xN cotN vN epsStr w.b18 bf16
+      (mnv4Blk17 (R * N) f w X) e18 dy18 s18,
+    mnv4_ffn_syncTiedB R hR N hN (mnv4Row19 f) (by simp only [mnv4Row19]; omega) xN cotN vN epsStr w.b19 bf16
+      (mnv4Blk18 (R * N) f w X) e19 dy19 s19,
+    mnv4_ffn_syncTiedB R hR N hN (mnv4Row20 f) (by simp only [mnv4Row20]; omega) xN cotN vN epsStr w.b20 bf16
+      (mnv4Blk19 (R * N) f w X) e20 dy20 s20,
+    mnv4_convnext_syncTiedB R hR N hN (mnv4Row21 f) (by simp only [mnv4Row21]; omega) xN cotN vN epsStr w.b21 bf16
+      (mnv4Blk20 (R * N) f w X) e21 dy21 s21,
+    mnv4_head_syncTiedB R hR N f f hN h7 h7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg
+      w.hbt w.Wd w.bd xN cotN vN epsStr bf16 (mnv4Blk21 (R * N) f w X) gs G hgs⟩
 
 /-- **…and at the loss the artifacts emit.** `mnv4_net_syncTiedB` with its cotangent hypothesis
     discharged by `replicaLossCot_eq`: each replica runs the label-smoothed softmax chain
@@ -1457,17 +1459,17 @@ theorem mnv4_net_syncTiedB (R : Nat) (hR : 0 < R) (N : Nat) (hN : 0 < N) {nCls :
     runs it on the whole `R·N` batch with divisor `R·B`. Then every all-reduced gradient the DP
     render emits IS the single-device node at batch `R·N` — the step `mnv4_net_tiedB` at
     `N := R·N`, `g := ` that step's own smoothed-CE cotangent, ties to the certified gradient. -/
-theorem mnv4_net_syncTiedB_smoothedCE (R : Nat) (hR : 0 < R) (N : Nat) (hN : 0 < N) {nCls : Nat}
+theorem mnv4_net_syncTiedB_smoothedCE (R : Nat) (hR : 0 < R) (N f : Nat) (hN : 0 < N) (hf : 0 < f) {nCls : Nat}
     (xN cotN vN epsStr : String) (aStr negAK bStr logN ohN : String) (α B : ℝ)
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (X : Vec ((R * N) * (3 * 224 * 224)))
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (X : Vec ((R * N) * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f))))))))
     (T : Vec ((R * N) * (1 * nCls))) :
-    mnv4NetSyncTiedB R hR N xN cotN vN epsStr w bf16 X
+    mnv4NetSyncTiedB R hR N f xN cotN vN epsStr w bf16 X
       (unrowB (R * N) nCls (den (smoothedLossCotGraph (R * N) nCls α ((R : ℝ) * B) aStr negAK
-        bStr logN ohN (rowB (R * N) nCls (mobilenetv4ForwardBFull (R * N) w X)) T)))
+        bStr logN ohN (rowB (R * N) nCls (mobilenetv4ForwardBFull (R * N) f w X)) T)))
       (fun r => unrowB N nCls (den (smoothedLossCotGraph N nCls α B aStr negAK bStr logN ohN
-        (rowB N nCls (batchShard R N nCls (mobilenetv4ForwardBFull (R * N) w X) r))
+        (rowB N nCls (batchShard R N nCls (mobilenetv4ForwardBFull (R * N) f w X) r))
         (batchShard R N (1 * nCls) T r)))) :=
-  mnv4_net_syncTiedB R hR N hN xN cotN vN epsStr w bf16 X _ _
+  mnv4_net_syncTiedB R hR N f hN hf xN cotN vN epsStr w bf16 X _ _
     (fun r => replicaLossCot_eq R N nCls hR α B aStr negAK bStr logN ohN _ T r)
 
 end Proofs.MobileNetV4SyncTieB

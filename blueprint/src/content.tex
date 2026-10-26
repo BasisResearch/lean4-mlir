@@ -8631,9 +8631,10 @@ activation; see \leandocref{Proofs.mobilenetv2ForwardBFullHasVJPAt\_correct}.
   \end{enumerate}
   \Prove{} the same for MobileNetV4-Conv-M (\texttt{mobilenetv4ForwardBFull}:
   the fused-IB stage and the universal inverted bottlenecks of
-  \S\ref{sec:mnv4_side_quest}): the backward composed from its stages'
-  backwards at batch \(N\) equals the \(\pdiv\)-contracted Jacobian at every
-  input, cotangent and index. With stochastic depth on the residual branch of
+  \S\ref{sec:mnv4_side_quest}), at every final feature side \(f\) (\(7\)
+  at \(224^2\), \(8\) at the paper tier's \(256^2\)): the backward composed
+  from its stages' backwards at batch \(N\) equals the \(\pdiv\)-contracted
+  Jacobian at every input, cotangent and index. With stochastic depth on the residual branch of
   its eighteen skip rows and classifier dropout before the dense, the forward
   graph of the \texttt{dropdo} train steps denotes the masked forward at every
   pair of masks and at either precision, and at all-ones masks it is this
@@ -8709,7 +8710,8 @@ stem's endpoint ties, and each block's backward in its slot; see
   \(\mathrm{head} \circ b_{21} \circ \dots \circ b_1 \circ \mathrm{fused} \circ \mathrm{stem}\),
   generic in \(N\), in the number of classes and in the final feature side
   (\(7\) at \(224^2\), \(8\) at the paper tier's \(256^2\)); the shape check
-  against \texttt{mobilenetv4ForwardBFull} is again separate, at \(224^2\).
+  against \texttt{mobilenetv4ForwardBFull} is again separate, at the same
+  side.
 \end{theorem}
 
 \begin{proof}
@@ -8861,10 +8863,13 @@ backwards (Theorem~\ref{thm:hasGradAt_comp}, once per stage); see
       thm:identityHasVJP, thm:pdiv_finset_sum, thm:pdiv_of_affine, thm:rowwiseHasVJPMat,
       thm:vjpComp}
   \Prove{} each of the 233 parameter gradients of the batched
-  MobileNetV4-Conv-M step (\texttt{mnv4in\_adamdp64}) denotes the certified
-  batch gradient at the chain cotangent of a loss cotangent left as a binder,
-  generic in \(N\) and in the number of classes, at either precision.
-  Instantiated at the label-smoothed cross-entropy for targets summing to one.
+  MobileNetV4-Conv-M step (\texttt{mnv4in\_adamdp64} at \(224^2\), the paper
+  tier's \texttt{mnv4in256\_\allowbreak accdp8x128\allowbreak wxdropdowd01bf16} at
+  \(256^2\)) denotes
+  the certified batch gradient at the chain cotangent of a loss cotangent left
+  as a binder, generic in \(N\), in the number of classes and in the final
+  feature side, at either precision. Instantiated at the label-smoothed
+  cross-entropy for targets summing to one.
 \end{theorem}
 
 \begin{proof}
@@ -8989,8 +8994,8 @@ its shard, so its node is the global node's sum over that shard, scaled by
       ax:pdiv_reindex, ax:pdiv_relu, def:hasvjp, def:hasvjp3, def:hasvjpmat,
       thm:bnBatchTensor4HasVJP, thm:bnHasVJP, thm:denseHasVJP, thm:identityHasVJP,
       thm:pdiv_of_affine, thm:rowwiseHasVJPMat, thm:vjpComp}
-  \Prove{} the same for MobileNetV4's 233 gradients, instantiated at the
-  label-smoothed cross-entropy.
+  \Prove{} the same for MobileNetV4's 233 gradients, at every final feature
+  side, instantiated at the label-smoothed cross-entropy.
 \end{theorem}
 
 \begin{proof}
@@ -10028,10 +10033,10 @@ $\varepsilon\,10^{-7}$ baked. Each of the 77 BatchNorms all-reduces its mean
 and variance across the four replicas, so the statistic group is the
 $512$-image micro-batch, which is the group the reference's accumulation
 gives it. Theorem~\ref{thm:mobilenetv4_sync_tie} ties the data-parallel
-render's bf16 gradient nodes to one device's step at the global batch, and is
-stated at $224^2$: the $256^2$ render has not had it restated, so on this pair
-the data-parallel step is the render's and not a theorem's, and accumulation
-and the two dropouts sit outside the statement as before. The three rows the
+render's bf16 gradient nodes to one device's step at the global batch at every
+final feature side, so it reaches this $256^2$ render as it does the $224^2$
+ones; accumulation and the two dropouts sit outside the statement as before.
+The three rows the
 recipe paragraph discloses are out on this path as on the reference. It has
 no \texttt{lake} script of its own and launches as:
 

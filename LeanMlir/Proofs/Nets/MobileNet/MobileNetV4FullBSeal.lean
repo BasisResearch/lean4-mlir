@@ -141,27 +141,27 @@ noncomputable def sealW (nCls : Nat) : Mnv4BWeights nCls where
   hf0pE := one_pos
   f0pg := kv 48 1
   f0pbt := kv 48 0
-  b1 := sealCT mnv4Row1
-  b2 := sealZ mnv4Row2
-  b3 := sealCT mnv4Row3
-  b4 := sealZ mnv4Row4
-  b5 := sealZ mnv4Row5
-  b6 := sealZ mnv4Row6
-  b7 := sealZ mnv4Row7
-  b8 := sealZ mnv4Row8
-  b9 := sealZ mnv4Row9
-  b10 := sealZ mnv4Row10
-  b11 := sealCT mnv4Row11
-  b12 := sealZ mnv4Row12
-  b13 := sealZ mnv4Row13
-  b14 := sealZ mnv4Row14
-  b15 := sealZ mnv4Row15
-  b16 := sealZ mnv4Row16
-  b17 := sealZ mnv4Row17
-  b18 := sealZ mnv4Row18
-  b19 := sealZ mnv4Row19
-  b20 := sealZ mnv4Row20
-  b21 := sealZ mnv4Row21
+  b1 := sealCT (mnv4Row1 7)
+  b2 := sealZ (mnv4Row2 7)
+  b3 := sealCT (mnv4Row3 7)
+  b4 := sealZ (mnv4Row4 7)
+  b5 := sealZ (mnv4Row5 7)
+  b6 := sealZ (mnv4Row6 7)
+  b7 := sealZ (mnv4Row7 7)
+  b8 := sealZ (mnv4Row8 7)
+  b9 := sealZ (mnv4Row9 7)
+  b10 := sealZ (mnv4Row10 7)
+  b11 := sealCT (mnv4Row11 7)
+  b12 := sealZ (mnv4Row12 7)
+  b13 := sealZ (mnv4Row13 7)
+  b14 := sealZ (mnv4Row14 7)
+  b15 := sealZ (mnv4Row15 7)
+  b16 := sealZ (mnv4Row16 7)
+  b17 := sealZ (mnv4Row17 7)
+  b18 := sealZ (mnv4Row18 7)
+  b19 := sealZ (mnv4Row19 7)
+  b20 := sealZ (mnv4Row20 7)
+  b21 := sealZ (mnv4Row21 7)
   h1W := ctK 960 256 1 1 1
   h1b := kv 960 0
   h1E := 1
@@ -364,61 +364,61 @@ theorem sc_stem (nCls : Nat) (t : ℝ) :
   bne 2 32 112 112 (by norm_num) _
 
 private theorem sc_fused (nCls : Nat) (t : ℝ) :
-    (mnv4FusedStack 2 (sealW nCls)).ok (mnv4Pre0 2 (sealW nCls) (sealX t)) :=
+    (mnv4FusedStack 2 7 (sealW nCls)).ok (mnv4Pre0 2 7 (sealW nCls) (sealX t)) :=
   ⟨bne 2 128 56 56 (by norm_num) _, trivial⟩
 
 private theorem sc28 (nCls : Nat) (t : ℝ) :
-    (mnv4Res28Layer 2 (sealW nCls)).ok (mnv4Pre1 2 (sealW nCls) (sealX t)) :=
-  ⟨sealUibStrided_ok 2 mnv4Row1 (by norm_num) (by norm_num) (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row2 (by norm_num) _ _ _ _ _⟩
+    (mnv4Res28Layer 2 7 (sealW nCls)).ok (mnv4Pre1 2 7 (sealW nCls) (sealX t)) :=
+  ⟨sealUibStrided_ok 2 (mnv4Row1 7) (by norm_num) (by norm_num) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row2 7) (by norm_num) _ _ _ _ _⟩
 
 private theorem sc14a (nCls : Nat) (t : ℝ) :
-    (mnv4Res14aLayer 2 (sealW nCls)).ok (mnv4Pre2 2 (sealW nCls) (sealX t)) :=
-  ⟨sealUibStrided_ok 2 mnv4Row3 (by norm_num) (by norm_num) (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row4 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row5 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row6 (by norm_num) _ _ _ _ _⟩
+    (mnv4Res14aLayer 2 7 (sealW nCls)).ok (mnv4Pre2 2 7 (sealW nCls) (sealX t)) :=
+  ⟨sealUibStrided_ok 2 (mnv4Row3 7) (by norm_num) (by norm_num) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row4 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row5 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row6 7) (by norm_num) _ _ _ _ _⟩
 
 private theorem sc14b (nCls : Nat) (t : ℝ) :
-    (mnv4Res14bLayer 2 (sealW nCls)).ok (mnv4Pre3 2 (sealW nCls) (sealX t)) :=
-  ⟨sealUib_ok 2 mnv4Row7 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row8 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row9 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row10 (by norm_num) _ _ _ _ _⟩
+    (mnv4Res14bLayer 2 7 (sealW nCls)).ok (mnv4Pre3 2 7 (sealW nCls) (sealX t)) :=
+  ⟨sealUib_ok 2 (mnv4Row7 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row8 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row9 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row10 7) (by norm_num) _ _ _ _ _⟩
 
 private theorem sc7a (nCls : Nat) (t : ℝ) :
-    (mnv4Res7aLayer 2 (sealW nCls)).ok (mnv4Pre4 2 (sealW nCls) (sealX t)) :=
-  ⟨sealUibStrided_ok 2 mnv4Row11 (by norm_num) (by norm_num) (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row12 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row13 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row14 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row15 (by norm_num) _ _ _ _ _⟩
+    (mnv4Res7aLayer 2 7 (sealW nCls)).ok (mnv4Pre4 2 7 (sealW nCls) (sealX t)) :=
+  ⟨sealUibStrided_ok 2 (mnv4Row11 7) (by norm_num) (by norm_num) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row12 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row13 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row14 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row15 7) (by norm_num) _ _ _ _ _⟩
 
 private theorem sc7b (nCls : Nat) (t : ℝ) :
-    (mnv4Res7bLayer 2 (sealW nCls)).ok (mnv4Pre5 2 (sealW nCls) (sealX t)) :=
-  ⟨sealUib_ok 2 mnv4Row16 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row17 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row18 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row19 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row20 (by norm_num) _ _ _ _ _,
-   sealUib_ok 2 mnv4Row21 (by norm_num) _ _ _ _ _⟩
+    (mnv4Res7bLayer 2 7 (sealW nCls)).ok (mnv4Pre5 2 7 (sealW nCls) (sealX t)) :=
+  ⟨sealUib_ok 2 (mnv4Row16 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row17 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row18 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row19 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row20 7) (by norm_num) _ _ _ _ _,
+   sealUib_ok 2 (mnv4Row21 7) (by norm_num) _ _ _ _ _⟩
 
 /-- the head's two relus — `cn_960`'s at 7×7 and `conv_head`'s on the pooled `1×1` (its BatchNorm
     over the two examples alone); GAP, the relabels and dense are `True`. -/
 theorem sc_head (nCls : Nat) (t : ℝ) :
-    (mnv4HeadStack 2 (sealW nCls)).ok (mnv4Pre6 2 (sealW nCls) (sealX t)) :=
+    (mnv4HeadStack 2 7 (sealW nCls)).ok (mnv4Pre6 2 7 (sealW nCls) (sealX t)) :=
   ⟨bne 2 960 7 7 (by norm_num) _, trivial, trivial, bne 2 1280 1 1 (by norm_num) _, trivial,
     trivial⟩
 
 /-- The eight group conditions above, as the apex's one smoothness hypothesis. -/
-theorem seal_smooth (nCls : Nat) (t : ℝ) : Mnv4SmoothAt 2 (sealW nCls) (sealX t) :=
+theorem seal_smooth (nCls : Nat) (t : ℝ) : Mnv4SmoothAt 2 7 (sealW nCls) (sealX t) :=
   ⟨sc_stem nCls t, sc_fused nCls t, sc28 nCls t, sc14a nCls t, sc14b nCls t, sc7a nCls t,
     sc7b nCls t, sc_head nCls t⟩
 
 /-- **The whole-net VJP at the witness** — all eight bundles discharged. -/
 noncomputable def sealVJP (nCls : Nat) (t : ℝ) :
-    HasVJPAt (mobilenetv4ForwardBFull 2 (sealW nCls)) (sealX t) :=
-  mobilenetv4ForwardBFullHasVJPAt 2 (sealW nCls) (sealX t) (seal_smooth nCls t)
+    HasVJPAt (mobilenetv4ForwardBFull 2 7 (sealW nCls)) (sealX t) :=
+  mobilenetv4ForwardBFullHasVJPAt 2 7 (sealW nCls) (sealX t) (seal_smooth nCls t)
 
 -- ════════════════════════════════════════════════════════════════
 -- § 8. The pool and the relabels carry the carrier
@@ -808,11 +808,11 @@ theorem Rr_continuous : Continuous Rr := by
 --   structure projection, and `sealZ mnv4Row_k` is only DEFEQ to it.
 -- ════════════════════════════════════════════════════════════════
 /-- the stem's relu is the identity here, so `mnv4Pre0` IS the stem BatchNorm. -/
-theorem pc0 (nCls : Nat) (t : ℝ) : mnv4Pre0 2 (sealW nCls) (sealX t) = As t :=
+theorem pc0 (nCls : Nat) (t : ℝ) : mnv4Pre0 2 7 (sealW nCls) (sealX t) = As t :=
   mnv4StemB_eq (ctK 32 3 3 3 1) (kv 32 0) (by norm_num) (sealX t)
 
-theorem pc1 (nCls : Nat) (t : ℝ) : mnv4Pre1 2 (sealW nCls) (sealX t) = A1p t := by
-  show (mnv4FusedStack 2 (sealW nCls)).fwd (mnv4Pre0 2 (sealW nCls) (sealX t)) = _
+theorem pc1 (nCls : Nat) (t : ℝ) : mnv4Pre1 2 7 (sealW nCls) (sealX t) = A1p t := by
+  show (mnv4FusedStack 2 7 (sealW nCls)).fwd (mnv4Pre0 2 7 (sealW nCls) (sealX t)) = _
   rw [pc0]
   simp only [mnv4FusedStack, mnv4FusedStage, CertLayer.comp_fwd_apply]
   show projB 2 (h := 56) (w := 56) (ctK 48 128 1 1 1) (kv 48 0) 1 (kv 48 1) (kv 48 0)
@@ -821,66 +821,66 @@ theorem pc1 (nCls : Nat) (t : ℝ) : mnv4Pre1 2 (sealW nCls) (sealX t) = A1p t :
   rw [cbReluStridedB_eq _ _ (by norm_num)]
   rfl
 
-theorem pc2 (nCls : Nat) (t : ℝ) : mnv4Pre2 2 (sealW nCls) (sealX t) = Aaz t := by
-  have hs : (mnv4StridedBodyOfRow 2 mnv4Row1 (sealW nCls).b1).fwd (A1p t) = Aaz t :=
-    sealCTStrided_eq 2 mnv4Row1 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (A1p t)
-  have e2 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row2 (sealW nCls).b2)).fwd (Aaz t)
-      = Aaz t := resid_id _ _ (sealZBody_eq 2 mnv4Row2 (by norm_num) _)
-  show (mnv4Res28Layer 2 (sealW nCls)).fwd (mnv4Pre1 2 (sealW nCls) (sealX t)) = _
+theorem pc2 (nCls : Nat) (t : ℝ) : mnv4Pre2 2 7 (sealW nCls) (sealX t) = Aaz t := by
+  have hs : (mnv4StridedBodyOfRow 2 (mnv4Row1 7) (sealW nCls).b1).fwd (A1p t) = Aaz t :=
+    sealCTStrided_eq 2 (mnv4Row1 7) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (A1p t)
+  have e2 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row2 7) (sealW nCls).b2)).fwd (Aaz t)
+      = Aaz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row2 7) (by norm_num) _)
+  show (mnv4Res28Layer 2 7 (sealW nCls)).fwd (mnv4Pre1 2 7 (sealW nCls) (sealX t)) = _
   rw [mnv4Res28Layer_fwd_apply, pc1, hs, e2]
 
-theorem pc3 (nCls : Nat) (t : ℝ) : mnv4Pre3 2 (sealW nCls) (sealX t) = Abz t := by
-  have hs : (mnv4StridedBodyOfRow 2 mnv4Row3 (sealW nCls).b3).fwd (Aaz t) = Abz t :=
-    sealCTStrided_eq 2 mnv4Row3 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (Aaz t)
-  have e4 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row4 (sealW nCls).b4)).fwd (Abz t)
-      = Abz t := resid_id _ _ (sealZBody_eq 2 mnv4Row4 (by norm_num) _)
-  have e5 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row5 (sealW nCls).b5)).fwd (Abz t)
-      = Abz t := resid_id _ _ (sealZBody_eq 2 mnv4Row5 (by norm_num) _)
-  have e6 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row6 (sealW nCls).b6)).fwd (Abz t)
-      = Abz t := resid_id _ _ (sealZBody_eq 2 mnv4Row6 (by norm_num) _)
-  show (mnv4Res14aLayer 2 (sealW nCls)).fwd (mnv4Pre2 2 (sealW nCls) (sealX t)) = _
+theorem pc3 (nCls : Nat) (t : ℝ) : mnv4Pre3 2 7 (sealW nCls) (sealX t) = Abz t := by
+  have hs : (mnv4StridedBodyOfRow 2 (mnv4Row3 7) (sealW nCls).b3).fwd (Aaz t) = Abz t :=
+    sealCTStrided_eq 2 (mnv4Row3 7) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (Aaz t)
+  have e4 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row4 7) (sealW nCls).b4)).fwd (Abz t)
+      = Abz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row4 7) (by norm_num) _)
+  have e5 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row5 7) (sealW nCls).b5)).fwd (Abz t)
+      = Abz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row5 7) (by norm_num) _)
+  have e6 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row6 7) (sealW nCls).b6)).fwd (Abz t)
+      = Abz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row6 7) (by norm_num) _)
+  show (mnv4Res14aLayer 2 7 (sealW nCls)).fwd (mnv4Pre2 2 7 (sealW nCls) (sealX t)) = _
   rw [mnv4Res14aLayer_fwd_apply, pc2, hs, e4, e5, e6]
 
-theorem pc4 (nCls : Nat) (t : ℝ) : mnv4Pre4 2 (sealW nCls) (sealX t) = Abz t := by
-  have e7 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row7 (sealW nCls).b7)).fwd (Abz t)
-      = Abz t := resid_id _ _ (sealZBody_eq 2 mnv4Row7 (by norm_num) _)
-  have e8 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row8 (sealW nCls).b8)).fwd (Abz t)
-      = Abz t := resid_id _ _ (sealZBody_eq 2 mnv4Row8 (by norm_num) _)
-  have e9 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row9 (sealW nCls).b9)).fwd (Abz t)
-      = Abz t := resid_id _ _ (sealZBody_eq 2 mnv4Row9 (by norm_num) _)
-  have e10 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row10 (sealW nCls).b10)).fwd (Abz t)
-      = Abz t := resid_id _ _ (sealZBody_eq 2 mnv4Row10 (by norm_num) _)
-  show (mnv4Res14bLayer 2 (sealW nCls)).fwd (mnv4Pre3 2 (sealW nCls) (sealX t)) = _
+theorem pc4 (nCls : Nat) (t : ℝ) : mnv4Pre4 2 7 (sealW nCls) (sealX t) = Abz t := by
+  have e7 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row7 7) (sealW nCls).b7)).fwd (Abz t)
+      = Abz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row7 7) (by norm_num) _)
+  have e8 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row8 7) (sealW nCls).b8)).fwd (Abz t)
+      = Abz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row8 7) (by norm_num) _)
+  have e9 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row9 7) (sealW nCls).b9)).fwd (Abz t)
+      = Abz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row9 7) (by norm_num) _)
+  have e10 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row10 7) (sealW nCls).b10)).fwd (Abz t)
+      = Abz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row10 7) (by norm_num) _)
+  show (mnv4Res14bLayer 2 7 (sealW nCls)).fwd (mnv4Pre3 2 7 (sealW nCls) (sealX t)) = _
   rw [mnv4Res14bLayer_fwd_apply, pc3, e7, e8, e9, e10]
 
-theorem pc5 (nCls : Nat) (t : ℝ) : mnv4Pre5 2 (sealW nCls) (sealX t) = Acz t := by
-  have hs : (mnv4StridedBodyOfRow 2 mnv4Row11 (sealW nCls).b11).fwd (Abz t) = Acz t :=
-    sealCTStrided_eq 2 mnv4Row11 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (Abz t)
-  have e12 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row12 (sealW nCls).b12)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row12 (by norm_num) _)
-  have e13 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row13 (sealW nCls).b13)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row13 (by norm_num) _)
-  have e14 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row14 (sealW nCls).b14)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row14 (by norm_num) _)
-  have e15 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row15 (sealW nCls).b15)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row15 (by norm_num) _)
-  show (mnv4Res7aLayer 2 (sealW nCls)).fwd (mnv4Pre4 2 (sealW nCls) (sealX t)) = _
+theorem pc5 (nCls : Nat) (t : ℝ) : mnv4Pre5 2 7 (sealW nCls) (sealX t) = Acz t := by
+  have hs : (mnv4StridedBodyOfRow 2 (mnv4Row11 7) (sealW nCls).b11).fwd (Abz t) = Acz t :=
+    sealCTStrided_eq 2 (mnv4Row11 7) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (Abz t)
+  have e12 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row12 7) (sealW nCls).b12)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row12 7) (by norm_num) _)
+  have e13 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row13 7) (sealW nCls).b13)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row13 7) (by norm_num) _)
+  have e14 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row14 7) (sealW nCls).b14)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row14 7) (by norm_num) _)
+  have e15 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row15 7) (sealW nCls).b15)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row15 7) (by norm_num) _)
+  show (mnv4Res7aLayer 2 7 (sealW nCls)).fwd (mnv4Pre4 2 7 (sealW nCls) (sealX t)) = _
   rw [mnv4Res7aLayer_fwd_apply, pc4, hs, e12, e13, e14, e15]
 
-theorem pc6 (nCls : Nat) (t : ℝ) : mnv4Pre6 2 (sealW nCls) (sealX t) = Acz t := by
-  have e16 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row16 (sealW nCls).b16)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row16 (by norm_num) _)
-  have e17 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row17 (sealW nCls).b17)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row17 (by norm_num) _)
-  have e18 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row18 (sealW nCls).b18)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row18 (by norm_num) _)
-  have e19 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row19 (sealW nCls).b19)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row19 (by norm_num) _)
-  have e20 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row20 (sealW nCls).b20)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row20 (by norm_num) _)
-  have e21 : (CertLayer.residual (mnv4BodyOfRow 2 mnv4Row21 (sealW nCls).b21)).fwd (Acz t)
-      = Acz t := resid_id _ _ (sealZBody_eq 2 mnv4Row21 (by norm_num) _)
-  show (mnv4Res7bLayer 2 (sealW nCls)).fwd (mnv4Pre5 2 (sealW nCls) (sealX t)) = _
+theorem pc6 (nCls : Nat) (t : ℝ) : mnv4Pre6 2 7 (sealW nCls) (sealX t) = Acz t := by
+  have e16 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row16 7) (sealW nCls).b16)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row16 7) (by norm_num) _)
+  have e17 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row17 7) (sealW nCls).b17)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row17 7) (by norm_num) _)
+  have e18 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row18 7) (sealW nCls).b18)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row18 7) (by norm_num) _)
+  have e19 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row19 7) (sealW nCls).b19)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row19 7) (by norm_num) _)
+  have e20 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row20 7) (sealW nCls).b20)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row20 7) (by norm_num) _)
+  have e21 : (CertLayer.residual (mnv4BodyOfRow 2 (mnv4Row21 7) (sealW nCls).b21)).fwd (Acz t)
+      = Acz t := resid_id _ _ (sealZBody_eq 2 (mnv4Row21 7) (by norm_num) _)
+  show (mnv4Res7bLayer 2 7 (sealW nCls)).fwd (mnv4Pre5 2 7 (sealW nCls) (sealX t)) = _
   rw [mnv4Res7bLayer_fwd_apply, pc5, e16, e17, e18, e19, e20, e21]
 
 -- ════════════════════════════════════════════════════════════════
@@ -893,20 +893,20 @@ theorem sealW_Wd (nCls : Nat) :
 /-- the head, peeled: `cn_960` conv-bn-relu, GAP and its relabel, `conv_head` conv-bn-relu at
     `1×1`, the relabel back, the classifier. Proved at variables and applied at the net's
     literals. -/
-private theorem headStack_apply (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (v : Vec (N * (256 * 7 * 7))) :
-    (mnv4HeadStack N w).fwd v
+private theorem headStack_apply (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (v : Vec (N * (256 * f * f))) :
+    (mnv4HeadStack N f w).fwd v
       = StableHLO.batchMap N (dense w.Wd w.bd)
           (fun k => StableHLO.cbReluB N (h := 1) (w := 1) w.hW w.hb w.hE w.hg w.hbt
-            (fun j => StableHLO.batchMap N (globalAvgPoolFlat 960 7 7)
-              (StableHLO.cbReluB N (h := 7) (w := 7) w.h1W w.h1b w.h1E w.h1g w.h1bt v)
+            (fun j => StableHLO.batchMap N (globalAvgPoolFlat 960 f f)
+              (StableHLO.cbReluB N (h := f) (w := f) w.h1W w.h1b w.h1E w.h1g w.h1bt v)
               (Fin.cast (mnv4_pool11 N 960).symm j))
             (Fin.cast (mnv4_pool11 N 1280) k)) := by
   simp only [mnv4HeadStack, mnv4Head, CertLayer.comp_fwd_apply, cbReluLayer_fwd_apply,
     gapLayer_fwd_apply, denseLayer_fwd_apply, castLayer_fwd_apply]
 
 theorem head_eq_dense (nCls : Nat) (t : ℝ) :
-    mobilenetv4ForwardBFull 2 (sealW nCls) (sealX t)
+    mobilenetv4ForwardBFull 2 7 (sealW nCls) (sealX t)
       = StableHLO.batchMap 2 (dense (sealW nCls).Wd (sealW nCls).bd)
           (fun k => Ah2 t (Fin.cast (mnv4_pool11 2 1280) k)) := by
   rw [mobilenetv4ForwardBFull, headStack_apply, pc6]
@@ -926,9 +926,9 @@ theorem head_eq_dense (nCls : Nat) (t : ℝ) :
 /-- **The class-0 difference between the two examples, along the ray**: `t` times the
     seventeen BatchNorm factors on the carrier's path. -/
 theorem gd_ray (nCls : Nat) (hn : 0 < nCls) (t : ℝ) :
-    mobilenetv4ForwardBFull 2 (sealW nCls) (sealX t)
+    mobilenetv4ForwardBFull 2 7 (sealW nCls) (sealX t)
         (finProdFinEquiv ((0 : Fin 2), (⟨0, hn⟩ : Fin nCls)))
-      - mobilenetv4ForwardBFull 2 (sealW nCls) (sealX t)
+      - mobilenetv4ForwardBFull 2 7 (sealW nCls) (sealX t)
         (finProdFinEquiv ((1 : Fin 2), (⟨0, hn⟩ : Fin nCls)))
       = t * Rr t := by
   rw [head_eq_dense, cls_diff (0 : Fin 1280) rfl ⟨0, hn⟩ _ _ (fun ci => by rw [sealW_Wd]; simp) rfl
@@ -944,24 +944,24 @@ private theorem hasDerivAt_gd : HasDerivAt (fun t : ℝ => t * Rr t) (Rr 0) 0 :=
   hasDerivAt_mul_self_zero Rr_continuous.continuousAt
 
 theorem seal_differentiableAt (nCls : Nat) (t : ℝ) :
-    DifferentiableAt ℝ (mobilenetv4ForwardBFull 2 (sealW nCls)) (sealX t) :=
-  mobilenetv4ForwardBFull_differentiableAt 2 (sealW nCls) (sealX t) (seal_smooth nCls t)
+    DifferentiableAt ℝ (mobilenetv4ForwardBFull 2 7 (sealW nCls)) (sealX t) :=
+  mobilenetv4ForwardBFull_differentiableAt 2 7 (sealW nCls) (sealX t) (seal_smooth nCls t)
 
 /-- **Level 2 — the witness is non-degenerate**: the full-width batch-BN MobileNetV4-Conv-M at
     the structural weights is NOT constant in its input. -/
 theorem sealX_nonconstant (nCls : Nat) (hn : 0 < nCls) :
-    mobilenetv4ForwardBFull 2 (sealW nCls) (sealX 1)
-      ≠ mobilenetv4ForwardBFull 2 (sealW nCls) (sealX 0) :=
+    mobilenetv4ForwardBFull 2 7 (sealW nCls) (sealX 1)
+      ≠ mobilenetv4ForwardBFull 2 7 (sealW nCls) (sealX 0) :=
   ne_of_ray_readout _ sealX _ _ (gd_ray nCls hn) (by simpa using (Rr_pos 1).ne')
 
 /-- **Level 3 — the whole-net Jacobian is nonzero at the witness.** -/
 theorem sealX_jacobian_nonzero (nCls : Nat) (hn : 0 < nCls) :
-    fderiv ℝ (mobilenetv4ForwardBFull 2 (sealW nCls)) (sealX 0) ≠ 0 :=
+    fderiv ℝ (mobilenetv4ForwardBFull 2 7 (sealW nCls)) (sealX 0) ≠ 0 :=
   fderiv_ne_zero_of_ray_readout _ sealX sealV sealX_zero_add _ _ (gd_ray nCls hn)
     (seal_differentiableAt nCls 0) (Rr_pos 0).ne' hasDerivAt_gd
 
 /-- **The seal**: the proven whole-network backward of the full-width, batch-BatchNorm,
-    21-block, 224×224 MobileNetV4-Conv-M — `mobilenetv4ForwardBFull`, the training-BatchNorm
+    21-block MobileNetV4-Conv-M at the table's side `f = 7` (224×224) — `mobilenetv4ForwardBFull`, the training-BatchNorm
     forward of the MobileNetV4 train steps (the `mnv4in_emaacc*` ones add classifier dropout),
     here at `N = 2` — is **not the zero map** at the witness. -/
 theorem sealX_backward_nontrivial (nCls : Nat) (hn : 0 < nCls) :

@@ -428,7 +428,8 @@ def UibSpec.family (s : UibSpec) : UibFamily :=
 -- `pw_exp` / `dw_mid` / `pw_proj` off each `UniversalInvertedResidual`. All 21 rows agree with timm
 -- exactly on `(ic, oc, expand, preDWk, postDWk, h, stride2)`, and the first guard pins all 21
 -- tuples as timm prints them (`expand` = `pw_exp`'s out / in channels, `h` the block's output
--- side at a 224-px input). Note the naming: our `postDWk` is timm's `dw_mid`, not a third
+-- side at a 224-px input; the chain's rows `mnv4Row{k} f` carry it as `2 * (2 * f)`, `2 * f`, `f`,
+-- and `mnv4Row{k} 7` is this table). Note the naming: our `postDWk` is timm's `dw_mid`, not a third
 -- convolution.
 #guard mnv4Blocks.map (fun s => (s.ic, s.oc, s.expand, s.preDWk, s.postDWk, s.h, s.stride2)) ==
   [(48, 80, 4, 3, 5, 28, true), (80, 80, 2, 3, 3, 28, false), (80, 160, 6, 3, 5, 14, true),
@@ -528,29 +529,37 @@ theorem DWSlot.params_ofParams {c k : Nat} (hk : k ≠ 0) (p : DWBnParams c k) :
   | zero => exact absurd rfl hk
   | succ k => rfl
 
-/-- **One UIB block's parameters, typed by its table row.** Every width is a projection of `s`, so
-    a record whose widths disagree with the row is not constructible, and the two depthwise slots
-    carry parameters only when the row's kernel is nonzero (`DWSlot`). Bias-free convs still carry
-    a `b` because the stage vocabulary takes one; the render binds it to `%zb{c}`. -/
-structure UibParams (s : UibSpec) where
-  /-- pre-depthwise, at `s.ic` channels and `s.preDWk` extent. -/
-  pre : DWSlot s.ic s.preDWk
-  /-- expand `1x1`, `s.ic -> s.ic * s.expand`. -/
-  We : Kernel4 (s.ic * s.expand) s.ic 1 1
-  be : Vec (s.ic * s.expand)
+/-- **One UIB block's parameters, by its widths.** `UibParams s` below reads every width off the
+    row `s`, so a record whose widths disagree with the row is not constructible, and the two
+    depthwise slots carry parameters only when the row's kernel is nonzero (`DWSlot`). Bias-free
+    convs still carry a `b` because the stage vocabulary takes one; the render binds it to
+    `%zb{c}`. -/
+structure UibParamsOf (ic oc expand preDWk postDWk : Nat) where
+  /-- pre-depthwise, at `ic` channels and `preDWk` extent. -/
+  pre : DWSlot ic preDWk
+  /-- expand `1x1`, `ic -> ic * expand`. -/
+  We : Kernel4 (ic * expand) ic 1 1
+  be : Vec (ic * expand)
   ee : ℝ
   he : 0 < ee
-  ge : Vec (s.ic * s.expand)
-  be2 : Vec (s.ic * s.expand)
-  /-- post-depthwise, at the EXPANDED width and `s.postDWk` extent. -/
-  post : DWSlot (s.ic * s.expand) s.postDWk
-  /-- project `1x1`, `s.ic * s.expand -> s.oc`. -/
-  Wz : Kernel4 s.oc (s.ic * s.expand) 1 1
-  bz : Vec s.oc
+  ge : Vec (ic * expand)
+  be2 : Vec (ic * expand)
+  /-- post-depthwise, at the EXPANDED width and `postDWk` extent. -/
+  post : DWSlot (ic * expand) postDWk
+  /-- project `1x1`, `ic * expand -> oc`. -/
+  Wz : Kernel4 oc (ic * expand) 1 1
+  bz : Vec oc
   ez : ℝ
   hz : 0 < ez
-  gz : Vec s.oc
-  bz2 : Vec s.oc
+  gz : Vec oc
+  bz2 : Vec oc
+
+/-- **A row's parameters** — `UibParamsOf` at the row's five widths. A reducible alias, not a
+    structure indexed by the row, and that is what lets the chain take its side as a binder: the
+    record never mentions `s.h`, so `UibParams (mnv4Row4 f)` is the SAME type at every `f` and a
+    weight record typed at the table's own side (`Mnv4BWeights`, at `f := 7`) is passed to the
+    chain at any side with no transport. -/
+abbrev UibParams (s : UibSpec) : Type := UibParamsOf s.ic s.oc s.expand s.preDWk s.postDWk
 
 namespace UibParams
 variable {s : UibSpec} (p : UibParams s)

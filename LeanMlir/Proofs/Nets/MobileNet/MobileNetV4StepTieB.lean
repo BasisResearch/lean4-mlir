@@ -65,10 +65,11 @@ nodes carry no flag because no render switches them.
 ## Everything here is generic in the row
 
 Every definition and theorem below takes a `UibSpec` binder `s` and reads its widths off it, so
-`s.ic`, `s.h` and `s.ic * s.expand` are variables. That is not a convenience: MNv4's resolutions
-are literals, and letting `den` and width-indexed `rfl`s run at 224/112/56/28/14/7 ends in kernel
-timeouts (`MobileNetV4FullB.lean`). Stated at a row binder they stay stuck; the capstone then
-instantiates at the 21 concrete rows.
+`s.ic`, `s.h` and `s.ic * s.expand` are variables. That is not a convenience: at the literal
+sides 224/112/56/28/14/7, letting `den` and width-indexed `rfl`s run ends in kernel timeouts
+(`MobileNetV4FullB.lean`). Stated at a row binder they stay stuck; the capstone then
+instantiates at the 21 concrete rows — at the final side `f` (`mnv4Row{k} f`), so the one
+statement covers the 224 artifacts (`f = 7`) and the paper tier's `mnv4in256` ones (`f = 8`).
 
 ## The chain, node for node from `uibBackSkipGradB`
 
@@ -496,7 +497,7 @@ theorem mnv4_strided_tiedB (N : Nat) (s : UibSpec) (xN cotN vN epsStr : String) 
 -- ════════════════════════════════════════════════════════════════
 
 /-! All three are generic in their widths, for the reason `MobileNetV4FullB.lean`'s stem-graph
-docstring records: pinning MNv4's literal resolutions here lets `den` and the
+docstring records: pinning literal resolutions here lets `den` and the
 width-indexed `rfl`s actually run, and the kernel gives up. The capstone instantiates. -/
 
 /-- Cotangent at the stem BN's output — the fused stage's `dx`, masked by the stem relu.
@@ -856,92 +857,92 @@ theorem mnv4HeadCotIn_eq_vjp (N h w : Nat) {c mid oc nCls : Nat}
     `MobileNetV4FullB.lean`'s `mnv4Pre0 … mnv4Pre6` are the resolution-group prefixes, which is
     the granularity the whole-net forward, graph and VJP need; the tie needs one per BLOCK, so these 22 name the finer chain.
     `mnv4Blk0` is definitionally `mnv4Pre1`. -/
-noncomputable def mnv4Blk0 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (48 * 56 * 56)) := mnv4Pre1 N w x
+noncomputable def mnv4Blk0 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (48 * (2 * (2 * (2 * f))) * (2 * (2 * (2 * f))))) := mnv4Pre1 N f w x
 
-noncomputable def mnv4Blk1 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (80 * 28 * 28)) :=
-  (mnv4StridedBodyOfRow N mnv4Row1 w.b1).fwd (mnv4Blk0 N w x)
+noncomputable def mnv4Blk1 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (80 * (2 * (2 * f)) * (2 * (2 * f)))) :=
+  (mnv4StridedBodyOfRow N (mnv4Row1 f) w.b1).fwd (mnv4Blk0 N f w x)
 
-noncomputable def mnv4Blk2 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (80 * 28 * 28)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row2 w.b2)).fwd (mnv4Blk1 N w x)
+noncomputable def mnv4Blk2 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (80 * (2 * (2 * f)) * (2 * (2 * f)))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row2 f) w.b2)).fwd (mnv4Blk1 N f w x)
 
-noncomputable def mnv4Blk3 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (mnv4StridedBodyOfRow N mnv4Row3 w.b3).fwd (mnv4Blk2 N w x)
+noncomputable def mnv4Blk3 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (mnv4StridedBodyOfRow N (mnv4Row3 f) w.b3).fwd (mnv4Blk2 N f w x)
 
-noncomputable def mnv4Blk4 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row4 w.b4)).fwd (mnv4Blk3 N w x)
+noncomputable def mnv4Blk4 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row4 f) w.b4)).fwd (mnv4Blk3 N f w x)
 
-noncomputable def mnv4Blk5 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row5 w.b5)).fwd (mnv4Blk4 N w x)
+noncomputable def mnv4Blk5 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row5 f) w.b5)).fwd (mnv4Blk4 N f w x)
 
-noncomputable def mnv4Blk6 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row6 w.b6)).fwd (mnv4Blk5 N w x)
+noncomputable def mnv4Blk6 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row6 f) w.b6)).fwd (mnv4Blk5 N f w x)
 
-noncomputable def mnv4Blk7 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row7 w.b7)).fwd (mnv4Blk6 N w x)
+noncomputable def mnv4Blk7 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row7 f) w.b7)).fwd (mnv4Blk6 N f w x)
 
-noncomputable def mnv4Blk8 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row8 w.b8)).fwd (mnv4Blk7 N w x)
+noncomputable def mnv4Blk8 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row8 f) w.b8)).fwd (mnv4Blk7 N f w x)
 
-noncomputable def mnv4Blk9 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row9 w.b9)).fwd (mnv4Blk8 N w x)
+noncomputable def mnv4Blk9 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row9 f) w.b9)).fwd (mnv4Blk8 N f w x)
 
-noncomputable def mnv4Blk10 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row10 w.b10)).fwd (mnv4Blk9 N w x)
+noncomputable def mnv4Blk10 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row10 f) w.b10)).fwd (mnv4Blk9 N f w x)
 
-noncomputable def mnv4Blk11 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (mnv4StridedBodyOfRow N mnv4Row11 w.b11).fwd (mnv4Blk10 N w x)
+noncomputable def mnv4Blk11 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (mnv4StridedBodyOfRow N (mnv4Row11 f) w.b11).fwd (mnv4Blk10 N f w x)
 
-noncomputable def mnv4Blk12 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row12 w.b12)).fwd (mnv4Blk11 N w x)
+noncomputable def mnv4Blk12 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row12 f) w.b12)).fwd (mnv4Blk11 N f w x)
 
-noncomputable def mnv4Blk13 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row13 w.b13)).fwd (mnv4Blk12 N w x)
+noncomputable def mnv4Blk13 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row13 f) w.b13)).fwd (mnv4Blk12 N f w x)
 
-noncomputable def mnv4Blk14 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row14 w.b14)).fwd (mnv4Blk13 N w x)
+noncomputable def mnv4Blk14 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row14 f) w.b14)).fwd (mnv4Blk13 N f w x)
 
-noncomputable def mnv4Blk15 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row15 w.b15)).fwd (mnv4Blk14 N w x)
+noncomputable def mnv4Blk15 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row15 f) w.b15)).fwd (mnv4Blk14 N f w x)
 
-noncomputable def mnv4Blk16 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row16 w.b16)).fwd (mnv4Blk15 N w x)
+noncomputable def mnv4Blk16 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row16 f) w.b16)).fwd (mnv4Blk15 N f w x)
 
-noncomputable def mnv4Blk17 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row17 w.b17)).fwd (mnv4Blk16 N w x)
+noncomputable def mnv4Blk17 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row17 f) w.b17)).fwd (mnv4Blk16 N f w x)
 
-noncomputable def mnv4Blk18 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row18 w.b18)).fwd (mnv4Blk17 N w x)
+noncomputable def mnv4Blk18 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row18 f) w.b18)).fwd (mnv4Blk17 N f w x)
 
-noncomputable def mnv4Blk19 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row19 w.b19)).fwd (mnv4Blk18 N w x)
+noncomputable def mnv4Blk19 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row19 f) w.b19)).fwd (mnv4Blk18 N f w x)
 
-noncomputable def mnv4Blk20 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row20 w.b20)).fwd (mnv4Blk19 N w x)
+noncomputable def mnv4Blk20 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row20 f) w.b20)).fwd (mnv4Blk19 N f w x)
 
-noncomputable def mnv4Blk21 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row21 w.b21)).fwd (mnv4Blk20 N w x)
+noncomputable def mnv4Blk21 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row21 f) w.b21)).fwd (mnv4Blk20 N f w x)
 
 /-- **The whole batch-BN MobileNetV4-Conv-M train step, tied.** Threading the net's own forward
     prefixes as the block inputs and an arbitrary loss cotangent `g` down through the head, the 21
@@ -958,8 +959,9 @@ noncomputable def mnv4Blk21 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
 
     **No smoothness hypothesis and no `0 < ε`**, and `N` and `nCls` are both binders. The folds
     are `∀ cot` statements at explicitly constructed cotangents; the kink and positivity conditions
-    live in the `CertLayer`s whose `.ok` `MobileNetV4FullBVJP.lean` binds. The statement is at
-    224×224; unlike ResNet-50 there is no resolution binder `q`. One device, at either precision:
+    live in the `CertLayer`s whose `.ok` `MobileNetV4FullBVJP.lean` binds. The final side `f`
+    is a binder, as ResNet-50's `q`: `f = 7` is the 224 artifacts (`mnv4in_adamdp64`, …), `f = 8`
+    the paper tier's `mnv4in256_acc{,dp}8x128wxdropdowd01bf16`. One device, at either precision:
     `bf16` selects the conv and depthwise weight nodes' kind — `false` the f32 artifacts', `true`
     the bf16 ones', read over ℝ (`Bf16Erasure`); the right-hand side is the same certified
     gradient at either value.
@@ -967,87 +969,87 @@ noncomputable def mnv4Blk21 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
     On the data-parallel (sync-BN) artifacts this theorem applies at `N := R·N`: the per-replica
     statement is `MobileNetV4SyncTieB.mnv4_net_syncTiedB`, whose right-hand sides are this
     theorem's nodes at the global batch. The AdamW update that follows is not stated here. -/
-theorem mnv4_net_tiedB (N : Nat) {nCls : Nat} (xN cotN vN epsStr : String)
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (x : Vec (N * (3 * 224 * 224))) (g : Vec (N * nCls)) :
-  let dy21 := mnv4HeadCotIn N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
-               w.Wd w.bd (mnv4Blk21 N w x) g
-  let dy20 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row21 w.b21 (mnv4Blk20 N w x) dy21) dy21
-  let dy19 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row20 w.b20 (mnv4Blk19 N w x) dy20) dy20
-  let dy18 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row19 w.b19 (mnv4Blk18 N w x) dy19) dy19
-  let dy17 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row18 w.b18 (mnv4Blk17 N w x) dy18) dy18
-  let dy16 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row17 w.b17 (mnv4Blk16 N w x) dy17) dy17
-  let dy15 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row16 w.b16 (mnv4Blk15 N w x) dy16) dy16
-  let dy14 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row15 w.b15 (mnv4Blk14 N w x) dy15) dy15
-  let dy13 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row14 w.b14 (mnv4Blk13 N w x) dy14) dy14
-  let dy12 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row13 w.b13 (mnv4Blk12 N w x) dy13) dy13
-  let dy11 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row12 w.b12 (mnv4Blk11 N w x) dy12) dy12
-  let dy10 := mnv4SBodyCotIn N mnv4Row11 w.b11 (mnv4Blk10 N w x) dy11
-  let dy9 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row10 w.b10 (mnv4Blk9 N w x) dy10) dy10
-  let dy8 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row9 w.b9 (mnv4Blk8 N w x) dy9) dy9
-  let dy7 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row8 w.b8 (mnv4Blk7 N w x) dy8) dy8
-  let dy6 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row7 w.b7 (mnv4Blk6 N w x) dy7) dy7
-  let dy5 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row6 w.b6 (mnv4Blk5 N w x) dy6) dy6
-  let dy4 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row5 w.b5 (mnv4Blk4 N w x) dy5) dy5
-  let dy3 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row4 w.b4 (mnv4Blk3 N w x) dy4) dy4
-  let dy2 := mnv4SBodyCotIn N mnv4Row3 w.b3 (mnv4Blk2 N w x) dy3
-  let dy1 := mnv4SkipCotIn (mnv4BodyCotIn N mnv4Row2 w.b2 (mnv4Blk1 N w x) dy2) dy2
-  let dy0 := mnv4SBodyCotIn N mnv4Row1 w.b1 (mnv4Blk0 N w x) dy1
-  let dyStem := mnv4FusedCotIn N 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
-                 w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt (mnv4Pre0 N w x) dy0
-  mnv4StemTiedB N 112 112 xN cotN vN epsStr w.sW w.sb w.sE w.sg w.sbt bf16 x dyStem
-  ∧ mnv4FusedTiedB N 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt w.f0pW w.f0pb w.f0pE w.f0pg
-      w.f0pbt xN cotN vN epsStr bf16 (mnv4Pre0 N w x) dy0
-  ∧ mnv4StridedTiedB N mnv4Row1 xN cotN vN epsStr w.b1 bf16 (mnv4Blk0 N w x) dy1
-  ∧ mnv4ExtraDWTiedB N mnv4Row2 xN cotN vN epsStr w.b2 bf16 (mnv4Blk1 N w x) dy2
-  ∧ mnv4StridedTiedB N mnv4Row3 xN cotN vN epsStr w.b3 bf16 (mnv4Blk2 N w x) dy3
-  ∧ mnv4ExtraDWTiedB N mnv4Row4 xN cotN vN epsStr w.b4 bf16 (mnv4Blk3 N w x) dy4
-  ∧ mnv4ExtraDWTiedB N mnv4Row5 xN cotN vN epsStr w.b5 bf16 (mnv4Blk4 N w x) dy5
-  ∧ mnv4ExtraDWTiedB N mnv4Row6 xN cotN vN epsStr w.b6 bf16 (mnv4Blk5 N w x) dy6
-  ∧ mnv4ExtraDWTiedB N mnv4Row7 xN cotN vN epsStr w.b7 bf16 (mnv4Blk6 N w x) dy7
-  ∧ mnv4ConvNeXtTiedB N mnv4Row8 xN cotN vN epsStr w.b8 bf16 (mnv4Blk7 N w x) dy8
-  ∧ mnv4FfnTiedB N mnv4Row9 xN cotN vN epsStr w.b9 bf16 (mnv4Blk8 N w x) dy9
-  ∧ mnv4ConvNeXtTiedB N mnv4Row10 xN cotN vN epsStr w.b10 bf16 (mnv4Blk9 N w x) dy10
-  ∧ mnv4StridedTiedB N mnv4Row11 xN cotN vN epsStr w.b11 bf16 (mnv4Blk10 N w x) dy11
-  ∧ mnv4ExtraDWTiedB N mnv4Row12 xN cotN vN epsStr w.b12 bf16 (mnv4Blk11 N w x) dy12
-  ∧ mnv4ExtraDWTiedB N mnv4Row13 xN cotN vN epsStr w.b13 bf16 (mnv4Blk12 N w x) dy13
-  ∧ mnv4ExtraDWTiedB N mnv4Row14 xN cotN vN epsStr w.b14 bf16 (mnv4Blk13 N w x) dy14
-  ∧ mnv4FfnTiedB N mnv4Row15 xN cotN vN epsStr w.b15 bf16 (mnv4Blk14 N w x) dy15
-  ∧ mnv4ConvNeXtTiedB N mnv4Row16 xN cotN vN epsStr w.b16 bf16 (mnv4Blk15 N w x) dy16
-  ∧ mnv4ExtraDWTiedB N mnv4Row17 xN cotN vN epsStr w.b17 bf16 (mnv4Blk16 N w x) dy17
-  ∧ mnv4ExtraDWTiedB N mnv4Row18 xN cotN vN epsStr w.b18 bf16 (mnv4Blk17 N w x) dy18
-  ∧ mnv4FfnTiedB N mnv4Row19 xN cotN vN epsStr w.b19 bf16 (mnv4Blk18 N w x) dy19
-  ∧ mnv4FfnTiedB N mnv4Row20 xN cotN vN epsStr w.b20 bf16 (mnv4Blk19 N w x) dy20
-  ∧ mnv4ConvNeXtTiedB N mnv4Row21 xN cotN vN epsStr w.b21 bf16 (mnv4Blk20 N w x) dy21
-  ∧ mnv4HeadTiedB N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
-      w.Wd w.bd xN cotN vN epsStr bf16 (mnv4Blk21 N w x) g := by
+theorem mnv4_net_tiedB (N f : Nat) {nCls : Nat} (xN cotN vN epsStr : String)
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) (g : Vec (N * nCls)) :
+  let dy21 := mnv4HeadCotIn N f f w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
+               w.Wd w.bd (mnv4Blk21 N f w x) g
+  let dy20 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row21 f) w.b21 (mnv4Blk20 N f w x) dy21) dy21
+  let dy19 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row20 f) w.b20 (mnv4Blk19 N f w x) dy20) dy20
+  let dy18 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row19 f) w.b19 (mnv4Blk18 N f w x) dy19) dy19
+  let dy17 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row18 f) w.b18 (mnv4Blk17 N f w x) dy18) dy18
+  let dy16 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row17 f) w.b17 (mnv4Blk16 N f w x) dy17) dy17
+  let dy15 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row16 f) w.b16 (mnv4Blk15 N f w x) dy16) dy16
+  let dy14 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row15 f) w.b15 (mnv4Blk14 N f w x) dy15) dy15
+  let dy13 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row14 f) w.b14 (mnv4Blk13 N f w x) dy14) dy14
+  let dy12 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row13 f) w.b13 (mnv4Blk12 N f w x) dy13) dy13
+  let dy11 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row12 f) w.b12 (mnv4Blk11 N f w x) dy12) dy12
+  let dy10 := mnv4SBodyCotIn N (mnv4Row11 f) w.b11 (mnv4Blk10 N f w x) dy11
+  let dy9 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row10 f) w.b10 (mnv4Blk9 N f w x) dy10) dy10
+  let dy8 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row9 f) w.b9 (mnv4Blk8 N f w x) dy9) dy9
+  let dy7 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row8 f) w.b8 (mnv4Blk7 N f w x) dy8) dy8
+  let dy6 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row7 f) w.b7 (mnv4Blk6 N f w x) dy7) dy7
+  let dy5 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row6 f) w.b6 (mnv4Blk5 N f w x) dy6) dy6
+  let dy4 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row5 f) w.b5 (mnv4Blk4 N f w x) dy5) dy5
+  let dy3 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row4 f) w.b4 (mnv4Blk3 N f w x) dy4) dy4
+  let dy2 := mnv4SBodyCotIn N (mnv4Row3 f) w.b3 (mnv4Blk2 N f w x) dy3
+  let dy1 := mnv4SkipCotIn (mnv4BodyCotIn N (mnv4Row2 f) w.b2 (mnv4Blk1 N f w x) dy2) dy2
+  let dy0 := mnv4SBodyCotIn N (mnv4Row1 f) w.b1 (mnv4Blk0 N f w x) dy1
+  let dyStem := mnv4FusedCotIn N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
+                 w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt (mnv4Pre0 N f w x) dy0
+  mnv4StemTiedB N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) xN cotN vN epsStr w.sW w.sb w.sE w.sg w.sbt bf16 x dyStem
+  ∧ mnv4FusedTiedB N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt w.f0pW w.f0pb w.f0pE w.f0pg
+      w.f0pbt xN cotN vN epsStr bf16 (mnv4Pre0 N f w x) dy0
+  ∧ mnv4StridedTiedB N (mnv4Row1 f) xN cotN vN epsStr w.b1 bf16 (mnv4Blk0 N f w x) dy1
+  ∧ mnv4ExtraDWTiedB N (mnv4Row2 f) xN cotN vN epsStr w.b2 bf16 (mnv4Blk1 N f w x) dy2
+  ∧ mnv4StridedTiedB N (mnv4Row3 f) xN cotN vN epsStr w.b3 bf16 (mnv4Blk2 N f w x) dy3
+  ∧ mnv4ExtraDWTiedB N (mnv4Row4 f) xN cotN vN epsStr w.b4 bf16 (mnv4Blk3 N f w x) dy4
+  ∧ mnv4ExtraDWTiedB N (mnv4Row5 f) xN cotN vN epsStr w.b5 bf16 (mnv4Blk4 N f w x) dy5
+  ∧ mnv4ExtraDWTiedB N (mnv4Row6 f) xN cotN vN epsStr w.b6 bf16 (mnv4Blk5 N f w x) dy6
+  ∧ mnv4ExtraDWTiedB N (mnv4Row7 f) xN cotN vN epsStr w.b7 bf16 (mnv4Blk6 N f w x) dy7
+  ∧ mnv4ConvNeXtTiedB N (mnv4Row8 f) xN cotN vN epsStr w.b8 bf16 (mnv4Blk7 N f w x) dy8
+  ∧ mnv4FfnTiedB N (mnv4Row9 f) xN cotN vN epsStr w.b9 bf16 (mnv4Blk8 N f w x) dy9
+  ∧ mnv4ConvNeXtTiedB N (mnv4Row10 f) xN cotN vN epsStr w.b10 bf16 (mnv4Blk9 N f w x) dy10
+  ∧ mnv4StridedTiedB N (mnv4Row11 f) xN cotN vN epsStr w.b11 bf16 (mnv4Blk10 N f w x) dy11
+  ∧ mnv4ExtraDWTiedB N (mnv4Row12 f) xN cotN vN epsStr w.b12 bf16 (mnv4Blk11 N f w x) dy12
+  ∧ mnv4ExtraDWTiedB N (mnv4Row13 f) xN cotN vN epsStr w.b13 bf16 (mnv4Blk12 N f w x) dy13
+  ∧ mnv4ExtraDWTiedB N (mnv4Row14 f) xN cotN vN epsStr w.b14 bf16 (mnv4Blk13 N f w x) dy14
+  ∧ mnv4FfnTiedB N (mnv4Row15 f) xN cotN vN epsStr w.b15 bf16 (mnv4Blk14 N f w x) dy15
+  ∧ mnv4ConvNeXtTiedB N (mnv4Row16 f) xN cotN vN epsStr w.b16 bf16 (mnv4Blk15 N f w x) dy16
+  ∧ mnv4ExtraDWTiedB N (mnv4Row17 f) xN cotN vN epsStr w.b17 bf16 (mnv4Blk16 N f w x) dy17
+  ∧ mnv4ExtraDWTiedB N (mnv4Row18 f) xN cotN vN epsStr w.b18 bf16 (mnv4Blk17 N f w x) dy18
+  ∧ mnv4FfnTiedB N (mnv4Row19 f) xN cotN vN epsStr w.b19 bf16 (mnv4Blk18 N f w x) dy19
+  ∧ mnv4FfnTiedB N (mnv4Row20 f) xN cotN vN epsStr w.b20 bf16 (mnv4Blk19 N f w x) dy20
+  ∧ mnv4ConvNeXtTiedB N (mnv4Row21 f) xN cotN vN epsStr w.b21 bf16 (mnv4Blk20 N f w x) dy21
+  ∧ mnv4HeadTiedB N f f w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
+      w.Wd w.bd xN cotN vN epsStr bf16 (mnv4Blk21 N f w x) g := by
   intro dy21 dy20 dy19 dy18 dy17 dy16 dy15 dy14 dy13 dy12 dy11 dy10 dy9 dy8 dy7 dy6 dy5 dy4 dy3
     dy2 dy1 dy0 dyStem
-  exact ⟨mnv4_stem_tiedB N 112 112 xN cotN vN epsStr w.sW w.sb w.sE w.sg w.sbt bf16 x dyStem,
-    mnv4_fused_tiedB N 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt w.f0pW w.f0pb w.f0pE w.f0pg
-      w.f0pbt xN cotN vN epsStr bf16 (mnv4Pre0 N w x) dy0,
-    mnv4_strided_tiedB N mnv4Row1 xN cotN vN epsStr w.b1 bf16 (mnv4Blk0 N w x) dy1,
-    mnv4_extradw_tiedB N mnv4Row2 xN cotN vN epsStr w.b2 bf16 (mnv4Blk1 N w x) dy2,
-    mnv4_strided_tiedB N mnv4Row3 xN cotN vN epsStr w.b3 bf16 (mnv4Blk2 N w x) dy3,
-    mnv4_extradw_tiedB N mnv4Row4 xN cotN vN epsStr w.b4 bf16 (mnv4Blk3 N w x) dy4,
-    mnv4_extradw_tiedB N mnv4Row5 xN cotN vN epsStr w.b5 bf16 (mnv4Blk4 N w x) dy5,
-    mnv4_extradw_tiedB N mnv4Row6 xN cotN vN epsStr w.b6 bf16 (mnv4Blk5 N w x) dy6,
-    mnv4_extradw_tiedB N mnv4Row7 xN cotN vN epsStr w.b7 bf16 (mnv4Blk6 N w x) dy7,
-    mnv4_convnext_tiedB N mnv4Row8 xN cotN vN epsStr w.b8 bf16 (mnv4Blk7 N w x) dy8,
-    mnv4_ffn_tiedB N mnv4Row9 xN cotN vN epsStr w.b9 bf16 (mnv4Blk8 N w x) dy9,
-    mnv4_convnext_tiedB N mnv4Row10 xN cotN vN epsStr w.b10 bf16 (mnv4Blk9 N w x) dy10,
-    mnv4_strided_tiedB N mnv4Row11 xN cotN vN epsStr w.b11 bf16 (mnv4Blk10 N w x) dy11,
-    mnv4_extradw_tiedB N mnv4Row12 xN cotN vN epsStr w.b12 bf16 (mnv4Blk11 N w x) dy12,
-    mnv4_extradw_tiedB N mnv4Row13 xN cotN vN epsStr w.b13 bf16 (mnv4Blk12 N w x) dy13,
-    mnv4_extradw_tiedB N mnv4Row14 xN cotN vN epsStr w.b14 bf16 (mnv4Blk13 N w x) dy14,
-    mnv4_ffn_tiedB N mnv4Row15 xN cotN vN epsStr w.b15 bf16 (mnv4Blk14 N w x) dy15,
-    mnv4_convnext_tiedB N mnv4Row16 xN cotN vN epsStr w.b16 bf16 (mnv4Blk15 N w x) dy16,
-    mnv4_extradw_tiedB N mnv4Row17 xN cotN vN epsStr w.b17 bf16 (mnv4Blk16 N w x) dy17,
-    mnv4_extradw_tiedB N mnv4Row18 xN cotN vN epsStr w.b18 bf16 (mnv4Blk17 N w x) dy18,
-    mnv4_ffn_tiedB N mnv4Row19 xN cotN vN epsStr w.b19 bf16 (mnv4Blk18 N w x) dy19,
-    mnv4_ffn_tiedB N mnv4Row20 xN cotN vN epsStr w.b20 bf16 (mnv4Blk19 N w x) dy20,
-    mnv4_convnext_tiedB N mnv4Row21 xN cotN vN epsStr w.b21 bf16 (mnv4Blk20 N w x) dy21,
-    mnv4_head_tiedB N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
-      w.Wd w.bd xN cotN vN epsStr bf16 (mnv4Blk21 N w x) g⟩
+  exact ⟨mnv4_stem_tiedB N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) xN cotN vN epsStr w.sW w.sb w.sE w.sg w.sbt bf16 x dyStem,
+    mnv4_fused_tiedB N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt w.f0pW w.f0pb w.f0pE w.f0pg
+      w.f0pbt xN cotN vN epsStr bf16 (mnv4Pre0 N f w x) dy0,
+    mnv4_strided_tiedB N (mnv4Row1 f) xN cotN vN epsStr w.b1 bf16 (mnv4Blk0 N f w x) dy1,
+    mnv4_extradw_tiedB N (mnv4Row2 f) xN cotN vN epsStr w.b2 bf16 (mnv4Blk1 N f w x) dy2,
+    mnv4_strided_tiedB N (mnv4Row3 f) xN cotN vN epsStr w.b3 bf16 (mnv4Blk2 N f w x) dy3,
+    mnv4_extradw_tiedB N (mnv4Row4 f) xN cotN vN epsStr w.b4 bf16 (mnv4Blk3 N f w x) dy4,
+    mnv4_extradw_tiedB N (mnv4Row5 f) xN cotN vN epsStr w.b5 bf16 (mnv4Blk4 N f w x) dy5,
+    mnv4_extradw_tiedB N (mnv4Row6 f) xN cotN vN epsStr w.b6 bf16 (mnv4Blk5 N f w x) dy6,
+    mnv4_extradw_tiedB N (mnv4Row7 f) xN cotN vN epsStr w.b7 bf16 (mnv4Blk6 N f w x) dy7,
+    mnv4_convnext_tiedB N (mnv4Row8 f) xN cotN vN epsStr w.b8 bf16 (mnv4Blk7 N f w x) dy8,
+    mnv4_ffn_tiedB N (mnv4Row9 f) xN cotN vN epsStr w.b9 bf16 (mnv4Blk8 N f w x) dy9,
+    mnv4_convnext_tiedB N (mnv4Row10 f) xN cotN vN epsStr w.b10 bf16 (mnv4Blk9 N f w x) dy10,
+    mnv4_strided_tiedB N (mnv4Row11 f) xN cotN vN epsStr w.b11 bf16 (mnv4Blk10 N f w x) dy11,
+    mnv4_extradw_tiedB N (mnv4Row12 f) xN cotN vN epsStr w.b12 bf16 (mnv4Blk11 N f w x) dy12,
+    mnv4_extradw_tiedB N (mnv4Row13 f) xN cotN vN epsStr w.b13 bf16 (mnv4Blk12 N f w x) dy13,
+    mnv4_extradw_tiedB N (mnv4Row14 f) xN cotN vN epsStr w.b14 bf16 (mnv4Blk13 N f w x) dy14,
+    mnv4_ffn_tiedB N (mnv4Row15 f) xN cotN vN epsStr w.b15 bf16 (mnv4Blk14 N f w x) dy15,
+    mnv4_convnext_tiedB N (mnv4Row16 f) xN cotN vN epsStr w.b16 bf16 (mnv4Blk15 N f w x) dy16,
+    mnv4_extradw_tiedB N (mnv4Row17 f) xN cotN vN epsStr w.b17 bf16 (mnv4Blk16 N f w x) dy17,
+    mnv4_extradw_tiedB N (mnv4Row18 f) xN cotN vN epsStr w.b18 bf16 (mnv4Blk17 N f w x) dy18,
+    mnv4_ffn_tiedB N (mnv4Row19 f) xN cotN vN epsStr w.b19 bf16 (mnv4Blk18 N f w x) dy19,
+    mnv4_ffn_tiedB N (mnv4Row20 f) xN cotN vN epsStr w.b20 bf16 (mnv4Blk19 N f w x) dy20,
+    mnv4_convnext_tiedB N (mnv4Row21 f) xN cotN vN epsStr w.b21 bf16 (mnv4Blk20 N f w x) dy21,
+    mnv4_head_tiedB N f f w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
+      w.Wd w.bd xN cotN vN epsStr bf16 (mnv4Blk21 N f w x) g⟩
 
 
 /-- **And the loss cotangent `g` is instantiated: MNv4's is the label-smoothed softmax chain.**
@@ -1062,19 +1064,19 @@ theorem mnv4_net_tiedB (N : Nat) {nCls : Nat} (xN cotN vN epsStr : String)
 
     MNv4 ships one loss — there is no BCE twin to state, where ResNet-50 needed both. The only
     hypothesis is that the example's target sums to 1: a one-hot, or mixup's convex combination. -/
-theorem mnv4_lossCot_is_smoothedCE_grad (N : Nat) {nCls : Nat} (hK : 0 < nCls)
+theorem mnv4_lossCot_is_smoothedCE_grad (N f : Nat) {nCls : Nat} (hK : 0 < nCls)
     (aStr negAK bStr logN ohN : String) (α B : ℝ) (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) (t : Vec (N * (1 * nCls)))
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) (t : Vec (N * (1 * nCls)))
     (n : Fin N) (j : Fin nCls)
     (ht : ∑ k : Fin nCls, Mat.unflatten (batchSlice N (1 * nCls) t n) (0 : Fin 1) k = 1) :
     den (smoothedLossCotGraph N nCls α B aStr negAK bStr logN ohN
-          (rowB N nCls (mobilenetv4ForwardBFull N w x)) t)
+          (rowB N nCls (mobilenetv4ForwardBFull N f w x)) t)
         (finProdFinEquiv (n, finProdFinEquiv ((0 : Fin 1), j)))
       = (pdiv (fun z' : Vec nCls => fun _ : Fin 1 =>
             softCE nCls (smoothTarget nCls α
               (Mat.unflatten (batchSlice N (1 * nCls) t n) (0 : Fin 1))) z')
           (Mat.unflatten (batchSlice N (1 * nCls)
-            (rowB N nCls (mobilenetv4ForwardBFull N w x)) n) (0 : Fin 1)) j 0) / B :=
+            (rowB N nCls (mobilenetv4ForwardBFull N f w x)) n) (0 : Fin 1)) j 0) / B :=
   smoothedLossCotGraph_row N nCls hK α B aStr negAK bStr logN ohN _ t n j ht
 
 end Proofs.Mnv4TieB

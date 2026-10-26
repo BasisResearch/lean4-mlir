@@ -33,7 +33,7 @@ difference is `CertLayer`:
 
 It would be seven fewer still if the whole trunk were one `CertLayer` — and it cannot be. That
 composition elaborates, but every later use has to peel `CertLayer.comp` to reach `.fwd`, and at
-MNv4's literal resolutions that peel ends in a kernel timeout (`MobileNetV4FullB.lean`); the
+a literal side that peel ends in a kernel timeout (`MobileNetV4FullB.lean`); the
 seven prefixes are the price, and they are ResNet-50's own shape at seven stages rather than
 eighteen.
 
@@ -100,24 +100,24 @@ theorem mnv4StemB_differentiableAt (N h w : Nat) {ic oc kH kW : Nat}
     and the BN-only pre-DWs, the projects, GAP, the head casts and dense contribute nothing. 38
     relu clauses in total (the stem's plus 37 across the seven `.ok` fields), none of which had
     to be written down. -/
-structure Mnv4SmoothAt (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Prop where
+structure Mnv4SmoothAt (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Prop where
   /-- the stem's relu is away from its kink at the image. -/
-  stem : Mnv4StemSmoothAtB N 112 112 w.sW w.sb w.sE w.sg w.sbt x
+  stem : Mnv4StemSmoothAtB N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt x
   /-- the fused stage's relu at the stem's output (its project contributes `True`). -/
-  fused : (mnv4FusedStack N w).ok (mnv4Pre0 N w x)
+  fused : (mnv4FusedStack N f w).ok (mnv4Pre0 N f w x)
   /-- rows 1–2 at 56×56. -/
-  g28 : (mnv4Res28Layer N w).ok (mnv4Pre1 N w x)
+  g28 : (mnv4Res28Layer N f w).ok (mnv4Pre1 N f w x)
   /-- rows 3–6 at 28×28. -/
-  g14a : (mnv4Res14aLayer N w).ok (mnv4Pre2 N w x)
+  g14a : (mnv4Res14aLayer N f w).ok (mnv4Pre2 N f w x)
   /-- rows 7–10 at 14×14. -/
-  g14b : (mnv4Res14bLayer N w).ok (mnv4Pre3 N w x)
+  g14b : (mnv4Res14bLayer N f w).ok (mnv4Pre3 N f w x)
   /-- rows 11–15 at 14×14. -/
-  g7a : (mnv4Res7aLayer N w).ok (mnv4Pre4 N w x)
+  g7a : (mnv4Res7aLayer N f w).ok (mnv4Pre4 N f w x)
   /-- rows 16–21 at 7×7. -/
-  g7b : (mnv4Res7bLayer N w).ok (mnv4Pre5 N w x)
+  g7b : (mnv4Res7bLayer N f w).ok (mnv4Pre5 N f w x)
   /-- the head's two relus at the trunk's output. -/
-  head : (mnv4HeadStack N w).ok (mnv4Pre6 N w x)
+  head : (mnv4HeadStack N f w).ok (mnv4Pre6 N f w x)
 
 -- ════════════════════════════════════════════════════════════════
 -- § The apex
@@ -125,32 +125,32 @@ structure Mnv4SmoothAt (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
 
 /-- The chain's VJP and its differentiability together, one `vjpCompDiffAt` per join: the apex
     is `.fst`, `mobilenetv4ForwardBFull_differentiableAt` is `.snd`. -/
-noncomputable def mnv4ChainB (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) (hx : Mnv4SmoothAt N w x) :
-    HasVJPDiffAt (mobilenetv4ForwardBFull N w) x :=
-  let p0 : HasVJPDiffAt (mnv4Pre0 N w) x :=
-    ⟨mnv4StemBHasVJPAt N 112 112 w.sW w.sb w.sE w.hsE w.sg w.sbt x hx.stem,
-      mnv4StemB_differentiableAt N 112 112 w.sW w.sb w.sE w.hsE w.sg w.sbt x hx.stem⟩
-  let p1 : HasVJPDiffAt (mnv4Pre1 N w) x :=
+noncomputable def mnv4ChainB (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) (hx : Mnv4SmoothAt N f w x) :
+    HasVJPDiffAt (mobilenetv4ForwardBFull N f w) x :=
+  let p0 : HasVJPDiffAt (mnv4Pre0 N f w) x :=
+    ⟨mnv4StemBHasVJPAt N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.hsE w.sg w.sbt x hx.stem,
+      mnv4StemB_differentiableAt N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.hsE w.sg w.sbt x hx.stem⟩
+  let p1 : HasVJPDiffAt (mnv4Pre1 N f w) x :=
     vjpCompDiffAt _ _ x p0
-      ⟨(mnv4FusedStack N w).vjp _ hx.fused, (mnv4FusedStack N w).diff _ hx.fused⟩
-  let p2 : HasVJPDiffAt (mnv4Pre2 N w) x :=
+      ⟨(mnv4FusedStack N f w).vjp _ hx.fused, (mnv4FusedStack N f w).diff _ hx.fused⟩
+  let p2 : HasVJPDiffAt (mnv4Pre2 N f w) x :=
     vjpCompDiffAt _ _ x p1
-      ⟨(mnv4Res28Layer N w).vjp _ hx.g28, (mnv4Res28Layer N w).diff _ hx.g28⟩
-  let p3 : HasVJPDiffAt (mnv4Pre3 N w) x :=
+      ⟨(mnv4Res28Layer N f w).vjp _ hx.g28, (mnv4Res28Layer N f w).diff _ hx.g28⟩
+  let p3 : HasVJPDiffAt (mnv4Pre3 N f w) x :=
     vjpCompDiffAt _ _ x p2
-      ⟨(mnv4Res14aLayer N w).vjp _ hx.g14a, (mnv4Res14aLayer N w).diff _ hx.g14a⟩
-  let p4 : HasVJPDiffAt (mnv4Pre4 N w) x :=
+      ⟨(mnv4Res14aLayer N f w).vjp _ hx.g14a, (mnv4Res14aLayer N f w).diff _ hx.g14a⟩
+  let p4 : HasVJPDiffAt (mnv4Pre4 N f w) x :=
     vjpCompDiffAt _ _ x p3
-      ⟨(mnv4Res14bLayer N w).vjp _ hx.g14b, (mnv4Res14bLayer N w).diff _ hx.g14b⟩
-  let p5 : HasVJPDiffAt (mnv4Pre5 N w) x :=
+      ⟨(mnv4Res14bLayer N f w).vjp _ hx.g14b, (mnv4Res14bLayer N f w).diff _ hx.g14b⟩
+  let p5 : HasVJPDiffAt (mnv4Pre5 N f w) x :=
     vjpCompDiffAt _ _ x p4
-      ⟨(mnv4Res7aLayer N w).vjp _ hx.g7a, (mnv4Res7aLayer N w).diff _ hx.g7a⟩
-  let p6 : HasVJPDiffAt (mnv4Pre6 N w) x :=
+      ⟨(mnv4Res7aLayer N f w).vjp _ hx.g7a, (mnv4Res7aLayer N f w).diff _ hx.g7a⟩
+  let p6 : HasVJPDiffAt (mnv4Pre6 N f w) x :=
     vjpCompDiffAt _ _ x p5
-      ⟨(mnv4Res7bLayer N w).vjp _ hx.g7b, (mnv4Res7bLayer N w).diff _ hx.g7b⟩
+      ⟨(mnv4Res7bLayer N f w).vjp _ hx.g7b, (mnv4Res7bLayer N f w).diff _ hx.g7b⟩
   vjpCompDiffAt _ _ x p6
-    ⟨(mnv4HeadStack N w).vjp _ hx.head, (mnv4HeadStack N w).diff _ hx.head⟩
+    ⟨(mnv4HeadStack N f w).vjp _ hx.head, (mnv4HeadStack N f w).diff _ hx.head⟩
 
 /-- **MobileNetV4-Conv-M at batch BatchNorm has a certified input-VJP at a smooth point — the
     fused stage, all 21 UIB blocks and the two-conv head.**
@@ -160,30 +160,30 @@ noncomputable def mnv4ChainB (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
     composition theorem already applied within it, which is `CertifiedChain.lean`'s whole reason
     for existing; only the seven joins are made here.
 
-    Pointwise, because relu is kinked (`hx : Mnv4SmoothAt N w x`). `N` and `nCls` are both binders, so this
+    Pointwise, because relu is kinked (`hx : Mnv4SmoothAt N f w x`). `N` and `nCls` are both binders, so this
     covers the 10-class Imagenette artifacts and the 1000-class `mnv4in` ones at every batch size,
     and no `0 < ε` hypothesis appears — those live in the weight records. -/
-noncomputable def mobilenetv4ForwardBFullHasVJPAt (N : Nat) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (x : Vec (N * (3 * 224 * 224))) (hx : Mnv4SmoothAt N w x) :
-    HasVJPAt (mobilenetv4ForwardBFull N w) x :=
-  (mnv4ChainB N w x hx).fst
+noncomputable def mobilenetv4ForwardBFullHasVJPAt (N f : Nat) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) (hx : Mnv4SmoothAt N f w x) :
+    HasVJPAt (mobilenetv4ForwardBFull N f w) x :=
+  (mnv4ChainB N f w x hx).fst
 
 /-- The committed forward is differentiable at every smooth point — the chain's `.snd`. What the
     seal's `seal_differentiableAt` needs. -/
-theorem mobilenetv4ForwardBFull_differentiableAt (N : Nat) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (x : Vec (N * (3 * 224 * 224))) (hx : Mnv4SmoothAt N w x) :
-    DifferentiableAt ℝ (mobilenetv4ForwardBFull N w) x :=
-  (mnv4ChainB N w x hx).snd
+theorem mobilenetv4ForwardBFull_differentiableAt (N f : Nat) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) (hx : Mnv4SmoothAt N f w x) :
+    DifferentiableAt ℝ (mobilenetv4ForwardBFull N f w) x :=
+  (mnv4ChainB N f w x hx).snd
 
 /-- The `.correct` field of `mobilenetv4ForwardBFullHasVJPAt`, restated: at a point satisfying
     `Mnv4SmoothAt`, its backward is the `pdiv`-contracted Jacobian of `mobilenetv4ForwardBFull`,
     at every batch size and class count. -/
-theorem mobilenetv4ForwardBFullHasVJPAt_correct (N : Nat) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (x : Vec (N * (3 * 224 * 224))) (hx : Mnv4SmoothAt N w x)
-    (dy : Vec (N * nCls)) (i : Fin (N * (3 * 224 * 224))) :
-    (mobilenetv4ForwardBFullHasVJPAt N w x hx).backward dy i
-      = ∑ j : Fin (N * nCls), pdiv (mobilenetv4ForwardBFull N w) x i j * dy j :=
-  (mobilenetv4ForwardBFullHasVJPAt N w x hx).correct dy i
+theorem mobilenetv4ForwardBFullHasVJPAt_correct (N f : Nat) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) (hx : Mnv4SmoothAt N f w x)
+    (dy : Vec (N * nCls)) (i : Fin (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) :
+    (mobilenetv4ForwardBFullHasVJPAt N f w x hx).backward dy i
+      = ∑ j : Fin (N * nCls), pdiv (mobilenetv4ForwardBFull N f w) x i j * dy j :=
+  (mobilenetv4ForwardBFullHasVJPAt N f w x hx).correct dy i
 
 end StableHLO
 

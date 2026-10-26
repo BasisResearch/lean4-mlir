@@ -51,7 +51,7 @@ its VJP is `cbReluStridedBHasVJPAt`, and the net-level VJP composes the two with
 | | |
 |---|---|
 | depth | 21 UIB blocks + the fused stage; 13 ExtraDW / 4 ConvNeXt-like / 4 FFN, and **no IB** |
-| ladder | 224 →(stem s2) 112 →(fused s2) 56 →(blk1) 28 →(blk3) 14 →(blk11) 7 → GAP |
+| ladder | `32f` →(stem s2) `16f` →(fused s2) `8f` →(blk1) `4f` →(blk3) `2f` →(blk11) `f` → GAP; `f = 7` is the 224-px net, `f = 8` the paper tier's 256-px one |
 | channels | 32 → 48 → 80 → 160 → 256, head 256 → 960 → 1280 |
 | BatchNorm | **batch** (`bnBatchLA`, reduce `[0,2,3]`, width `N·h·w`) at all 77 sites |
 | activation | **relu**, not relu6 (MobileNetV2 sits one file over and uses relu6), after every expand, post-DW, the stem, stage 0 and both head convs; the pre-DW and the project are BN only |
@@ -59,13 +59,21 @@ its VJP is `cbReluStridedBHasVJPAt`, and the net-level VJP composes the two with
 | stride | the three stride-2 rows (1, 3, 11) stride their POST-DW (timm's `dw_mid`); the pre-DW and the expand run at the input resolution |
 | head | 1×1 256 → 960 conv-bn-relu at 7×7, GAP, then `conv_head` 960 → 1280 conv-bn-relu on the pooled `[N, 960, 1, 1]` (its BN over the batch alone), then dense |
 | census | **233** parameter slots at `nCls = 10` (8,447,322 scalars; 9,715,512 at 1000), bias-free by construction |
-| artifacts | `mnv4_fwd`, `mnv4in_fwd`, and the 224×224 train steps at either precision — `bf16 := false` for `mnv4_adam_train_step`, `mnv4in_adam64`, `mnv4in_adamdp64`, `true` for the `*bf16` ones' trunk. Not this graph: the frozen-statistics evals `mnv4{,in}_fwd_eval` and the 256×256 `mnv4in_fwd_eval_s256` (stated in `MobileNetV4FullBEval`, at any input size, f32), the classifier-dropout variants `mnv4in_emaacc{,dp}8x128wxdowd005bf16` (a `%do` operand; `mnv4FwdGraphBFullDo` below at `bf16 := true`), and the stochastic-depth train steps `mnv4in_acc{,dp}8x128wxdropdowd01bf16` (a drop-path site on each of the 18 skip rows; `MobileNetV4FullBDrop`'s graph at `bf16 := true`) |
+| artifacts | `mnv4_fwd`, `mnv4in_fwd`, and the train steps at either precision and either side — `bf16 := false` for `mnv4_adam_train_step`, `mnv4in_adam64`, `mnv4in_adamdp64`, `true` for the `*bf16` ones' trunk, `f := 8` for the paper tier's `mnv4in256_*`. Not this graph: the frozen-statistics evals `mnv4{,in}_fwd_eval` and the 256×256 `mnv4in_fwd_eval_s256` (stated in `MobileNetV4FullBEval`, at any input size, f32), the classifier-dropout variants `mnv4in_emaacc{,dp}8x128wxdowd005bf16` (a `%do` operand; `mnv4FwdGraphBFullDo` below at `bf16 := true`), and the stochastic-depth train steps `mnv4in_acc{,dp}8x128wxdropdowd01bf16` (a drop-path site on each of the 18 skip rows; `MobileNetV4FullBDrop`'s graph at `bf16 := true`) |
 
 `N` stays a binder throughout, as at r34/R50. On the data-parallel artifacts the render's `N` is
 the per-replica batch and BatchNorm is synchronised across replicas; `MobileNetV4SyncB.lean` is
 this file's twin for them: replica `r`'s forward graph denotes shard `r` of
-`mobilenetv4ForwardBFull (R * N)`, this file's forward at the global batch. Unlike R50 there is
-no resolution binder `q`: the statements are at 224×224.
+`mobilenetv4ForwardBFull (R * N)`, this file's forward at the global batch. The final side `f`
+is a binder too, as R50's `q`: the rows `mnv4Row1 … mnv4Row21` read it (`2 * (2 * f)`, `2 * f`,
+`f`), the stem and the fused stage sit at `2 * (2 * (2 * (2 * f)))` and `2 * (2 * (2 * f))`, and
+the input is `3 * 32f * 32f` written as that nest. `f = 7` is every 224 artifact and `f = 8` the
+paper tier's `mnv4in256` ones, so one statement covers both; the nests are not products
+(`2 * (4 * f)` and `8 * f` are equal Nats, not definitionally equal terms at a variable `f`), so a
+strided row's input side is its output side's `2 * h` by the types alone. The weight record
+`Mnv4BWeights` is typed at the table's own side (`UibParams (mnv4Row{k} 7)`) and passes to the
+chain at any `f` with no transport, because `UibParams` never reads `s.h`
+(`MobileNetV4BackB0`).
 
 **Rows 4/5/7, 8/10, 12/18, 13/14 and 15/19/20 are shape-identical** (same `ic, oc, expand,
 preDWk, postDWk, h`), so their `UibParams` records have the same type and swapping their weights
@@ -100,33 +108,33 @@ The `#guard` below is the whole safety of that move: these 21 constants are pinn
 `mnv4Blocks` — the ONE table `mnv4FwdChainB`, the backward, the parameter signature and the BN stat
 list all fold over — so a typo here is a build failure rather than a proof about a different net. -/
 
-abbrev mnv4Row1 : UibSpec := ⟨"1",  48,  80, 4, 3, 5, 28, true⟩  -- ExtraDW, stride 2
-abbrev mnv4Row2 : UibSpec := ⟨"2",  80,  80, 2, 3, 3, 28, false⟩  -- ExtraDW
-abbrev mnv4Row3 : UibSpec := ⟨"3",  80, 160, 6, 3, 5, 14, true⟩  -- ExtraDW, stride 2
-abbrev mnv4Row4 : UibSpec := ⟨"4", 160, 160, 4, 3, 3, 14, false⟩  -- ExtraDW
-abbrev mnv4Row5 : UibSpec := ⟨"5", 160, 160, 4, 3, 3, 14, false⟩  -- ExtraDW
-abbrev mnv4Row6 : UibSpec := ⟨"6", 160, 160, 4, 3, 5, 14, false⟩  -- ExtraDW
-abbrev mnv4Row7 : UibSpec := ⟨"7", 160, 160, 4, 3, 3, 14, false⟩  -- ExtraDW
-abbrev mnv4Row8 : UibSpec := ⟨"8", 160, 160, 4, 3, 0, 14, false⟩  -- ConvNeXt-like
-abbrev mnv4Row9 : UibSpec := ⟨"9", 160, 160, 2, 0, 0, 14, false⟩  -- FFN
-abbrev mnv4Row10 : UibSpec := ⟨"10", 160, 160, 4, 3, 0, 14, false⟩  -- ConvNeXt-like
-abbrev mnv4Row11 : UibSpec := ⟨"11", 160, 256, 6, 5, 5,  7, true⟩  -- ExtraDW, stride 2
-abbrev mnv4Row12 : UibSpec := ⟨"12", 256, 256, 4, 5, 5,  7, false⟩  -- ExtraDW
-abbrev mnv4Row13 : UibSpec := ⟨"13", 256, 256, 4, 3, 5,  7, false⟩  -- ExtraDW
-abbrev mnv4Row14 : UibSpec := ⟨"14", 256, 256, 4, 3, 5,  7, false⟩  -- ExtraDW
-abbrev mnv4Row15 : UibSpec := ⟨"15", 256, 256, 4, 0, 0,  7, false⟩  -- FFN
-abbrev mnv4Row16 : UibSpec := ⟨"16", 256, 256, 4, 3, 0,  7, false⟩  -- ConvNeXt-like
-abbrev mnv4Row17 : UibSpec := ⟨"17", 256, 256, 2, 3, 5,  7, false⟩  -- ExtraDW
-abbrev mnv4Row18 : UibSpec := ⟨"18", 256, 256, 4, 5, 5,  7, false⟩  -- ExtraDW
-abbrev mnv4Row19 : UibSpec := ⟨"19", 256, 256, 4, 0, 0,  7, false⟩  -- FFN
-abbrev mnv4Row20 : UibSpec := ⟨"20", 256, 256, 4, 0, 0,  7, false⟩  -- FFN
-abbrev mnv4Row21 : UibSpec := ⟨"21", 256, 256, 2, 5, 0,  7, false⟩  -- ConvNeXt-like
+abbrev mnv4Row1 (f : Nat) : UibSpec := ⟨"1", 48, 80, 4, 3, 5, 2 * (2 * f), true⟩  -- ExtraDW, stride 2
+abbrev mnv4Row2 (f : Nat) : UibSpec := ⟨"2", 80, 80, 2, 3, 3, 2 * (2 * f), false⟩  -- ExtraDW
+abbrev mnv4Row3 (f : Nat) : UibSpec := ⟨"3", 80, 160, 6, 3, 5, 2 * f, true⟩  -- ExtraDW, stride 2
+abbrev mnv4Row4 (f : Nat) : UibSpec := ⟨"4", 160, 160, 4, 3, 3, 2 * f, false⟩  -- ExtraDW
+abbrev mnv4Row5 (f : Nat) : UibSpec := ⟨"5", 160, 160, 4, 3, 3, 2 * f, false⟩  -- ExtraDW
+abbrev mnv4Row6 (f : Nat) : UibSpec := ⟨"6", 160, 160, 4, 3, 5, 2 * f, false⟩  -- ExtraDW
+abbrev mnv4Row7 (f : Nat) : UibSpec := ⟨"7", 160, 160, 4, 3, 3, 2 * f, false⟩  -- ExtraDW
+abbrev mnv4Row8 (f : Nat) : UibSpec := ⟨"8", 160, 160, 4, 3, 0, 2 * f, false⟩  -- ConvNeXt-like
+abbrev mnv4Row9 (f : Nat) : UibSpec := ⟨"9", 160, 160, 2, 0, 0, 2 * f, false⟩  -- FFN
+abbrev mnv4Row10 (f : Nat) : UibSpec := ⟨"10", 160, 160, 4, 3, 0, 2 * f, false⟩  -- ConvNeXt-like
+abbrev mnv4Row11 (f : Nat) : UibSpec := ⟨"11", 160, 256, 6, 5, 5, f, true⟩  -- ExtraDW, stride 2
+abbrev mnv4Row12 (f : Nat) : UibSpec := ⟨"12", 256, 256, 4, 5, 5, f, false⟩  -- ExtraDW
+abbrev mnv4Row13 (f : Nat) : UibSpec := ⟨"13", 256, 256, 4, 3, 5, f, false⟩  -- ExtraDW
+abbrev mnv4Row14 (f : Nat) : UibSpec := ⟨"14", 256, 256, 4, 3, 5, f, false⟩  -- ExtraDW
+abbrev mnv4Row15 (f : Nat) : UibSpec := ⟨"15", 256, 256, 4, 0, 0, f, false⟩  -- FFN
+abbrev mnv4Row16 (f : Nat) : UibSpec := ⟨"16", 256, 256, 4, 3, 0, f, false⟩  -- ConvNeXt-like
+abbrev mnv4Row17 (f : Nat) : UibSpec := ⟨"17", 256, 256, 2, 3, 5, f, false⟩  -- ExtraDW
+abbrev mnv4Row18 (f : Nat) : UibSpec := ⟨"18", 256, 256, 4, 5, 5, f, false⟩  -- ExtraDW
+abbrev mnv4Row19 (f : Nat) : UibSpec := ⟨"19", 256, 256, 4, 0, 0, f, false⟩  -- FFN
+abbrev mnv4Row20 (f : Nat) : UibSpec := ⟨"20", 256, 256, 4, 0, 0, f, false⟩  -- FFN
+abbrev mnv4Row21 (f : Nat) : UibSpec := ⟨"21", 256, 256, 2, 5, 0, f, false⟩  -- ConvNeXt-like
 
 -- The 21 constants ARE `mnv4Blocks`, in order. Nothing below can be about a different net.
 #guard mnv4Blocks = [
-  mnv4Row1, mnv4Row2, mnv4Row3, mnv4Row4, mnv4Row5, mnv4Row6, mnv4Row7, mnv4Row8, mnv4Row9,
-  mnv4Row10, mnv4Row11, mnv4Row12, mnv4Row13, mnv4Row14, mnv4Row15, mnv4Row16, mnv4Row17,
-  mnv4Row18, mnv4Row19, mnv4Row20, mnv4Row21
+  mnv4Row1 7, mnv4Row2 7, mnv4Row3 7, mnv4Row4 7, mnv4Row5 7, mnv4Row6 7, mnv4Row7 7, mnv4Row8 7, mnv4Row9 7,
+  mnv4Row10 7, mnv4Row11 7, mnv4Row12 7, mnv4Row13 7, mnv4Row14 7, mnv4Row15 7, mnv4Row16 7, mnv4Row17 7,
+  mnv4Row18 7, mnv4Row19 7, mnv4Row20 7, mnv4Row21 7
   ]
 
 -- The families these rows denote, recomputed here rather than restated: 13 / 4 / 4, no IB.
@@ -161,14 +169,14 @@ abbrev mnv4Row21 : UibSpec := ⟨"21", 256, 256, 2, 5, 0,  7, false⟩  -- ConvN
     names are the render's own SSA prefixes, so a reader can match a parameter to its emitted name
     without a table. -/
 structure Mnv4BWeights (nCls : Nat) where
-  /-- stem `%sW`/`%sg`/`%sbt`: 3×3/s2, symmetric, 3 → 32, 224 → 112. -/
+  /-- stem `%sW`/`%sg`/`%sbt`: 3×3/s2, symmetric, 3 → 32, `32f → 16f`. -/
   sW : Kernel4 32 3 3 3
   sb : Vec 32
   sE : ℝ
   hsE : 0 < sE
   sg : Vec 32
   sbt : Vec 32
-  /-- fused stage `%f0cW`: 3×3/s2 symmetric, 32 → 128, 112 → 56, then relu. -/
+  /-- fused stage `%f0cW`: 3×3/s2 symmetric, 32 → 128, `16f → 8f`, then relu. -/
   f0cW : Kernel4 128 32 3 3
   f0cb : Vec 128
   f0cE : ℝ
@@ -182,49 +190,49 @@ structure Mnv4BWeights (nCls : Nat) where
   hf0pE : 0 < f0pE
   f0pg : Vec 48
   f0pbt : Vec 48
-  /-- block 1: `%u1*`, 48 → 80, expand 4, dw 3/5, at 28×28. -/
-  b1 : UibParams mnv4Row1
-  /-- block 2: `%u2*`, 80 → 80, expand 2, dw 3/3, at 28×28. -/
-  b2 : UibParams mnv4Row2
-  /-- block 3: `%u3*`, 80 → 160, expand 6, dw 3/5, at 14×14. -/
-  b3 : UibParams mnv4Row3
-  /-- block 4: `%u4*`, 160 → 160, expand 4, dw 3/3, at 14×14. -/
-  b4 : UibParams mnv4Row4
-  /-- block 5: `%u5*`, 160 → 160, expand 4, dw 3/3, at 14×14. -/
-  b5 : UibParams mnv4Row5
-  /-- block 6: `%u6*`, 160 → 160, expand 4, dw 3/5, at 14×14. -/
-  b6 : UibParams mnv4Row6
-  /-- block 7: `%u7*`, 160 → 160, expand 4, dw 3/3, at 14×14. -/
-  b7 : UibParams mnv4Row7
-  /-- block 8: `%u8*`, 160 → 160, expand 4, dw 3/0, at 14×14. -/
-  b8 : UibParams mnv4Row8
-  /-- block 9: `%u9*`, 160 → 160, expand 2, dw 0/0, at 14×14. -/
-  b9 : UibParams mnv4Row9
-  /-- block 10: `%u10*`, 160 → 160, expand 4, dw 3/0, at 14×14. -/
-  b10 : UibParams mnv4Row10
-  /-- block 11: `%u11*`, 160 → 256, expand 6, dw 5/5, at 7×7. -/
-  b11 : UibParams mnv4Row11
-  /-- block 12: `%u12*`, 256 → 256, expand 4, dw 5/5, at 7×7. -/
-  b12 : UibParams mnv4Row12
-  /-- block 13: `%u13*`, 256 → 256, expand 4, dw 3/5, at 7×7. -/
-  b13 : UibParams mnv4Row13
-  /-- block 14: `%u14*`, 256 → 256, expand 4, dw 3/5, at 7×7. -/
-  b14 : UibParams mnv4Row14
-  /-- block 15: `%u15*`, 256 → 256, expand 4, dw 0/0, at 7×7. -/
-  b15 : UibParams mnv4Row15
-  /-- block 16: `%u16*`, 256 → 256, expand 4, dw 3/0, at 7×7. -/
-  b16 : UibParams mnv4Row16
-  /-- block 17: `%u17*`, 256 → 256, expand 2, dw 3/5, at 7×7. -/
-  b17 : UibParams mnv4Row17
-  /-- block 18: `%u18*`, 256 → 256, expand 4, dw 5/5, at 7×7. -/
-  b18 : UibParams mnv4Row18
-  /-- block 19: `%u19*`, 256 → 256, expand 4, dw 0/0, at 7×7. -/
-  b19 : UibParams mnv4Row19
-  /-- block 20: `%u20*`, 256 → 256, expand 4, dw 0/0, at 7×7. -/
-  b20 : UibParams mnv4Row20
-  /-- block 21: `%u21*`, 256 → 256, expand 2, dw 5/0, at 7×7. -/
-  b21 : UibParams mnv4Row21
-  /-- head conv 1 `%h1W`: 1×1, 256 → 960, at 7×7. -/
+  /-- block 1: `%u1*`, 48 → 80, expand 4, dw 3/5. -/
+  b1 : UibParams (mnv4Row1 7)
+  /-- block 2: `%u2*`, 80 → 80, expand 2, dw 3/3. -/
+  b2 : UibParams (mnv4Row2 7)
+  /-- block 3: `%u3*`, 80 → 160, expand 6, dw 3/5. -/
+  b3 : UibParams (mnv4Row3 7)
+  /-- block 4: `%u4*`, 160 → 160, expand 4, dw 3/3. -/
+  b4 : UibParams (mnv4Row4 7)
+  /-- block 5: `%u5*`, 160 → 160, expand 4, dw 3/3. -/
+  b5 : UibParams (mnv4Row5 7)
+  /-- block 6: `%u6*`, 160 → 160, expand 4, dw 3/5. -/
+  b6 : UibParams (mnv4Row6 7)
+  /-- block 7: `%u7*`, 160 → 160, expand 4, dw 3/3. -/
+  b7 : UibParams (mnv4Row7 7)
+  /-- block 8: `%u8*`, 160 → 160, expand 4, dw 3/0. -/
+  b8 : UibParams (mnv4Row8 7)
+  /-- block 9: `%u9*`, 160 → 160, expand 2, dw 0/0. -/
+  b9 : UibParams (mnv4Row9 7)
+  /-- block 10: `%u10*`, 160 → 160, expand 4, dw 3/0. -/
+  b10 : UibParams (mnv4Row10 7)
+  /-- block 11: `%u11*`, 160 → 256, expand 6, dw 5/5. -/
+  b11 : UibParams (mnv4Row11 7)
+  /-- block 12: `%u12*`, 256 → 256, expand 4, dw 5/5. -/
+  b12 : UibParams (mnv4Row12 7)
+  /-- block 13: `%u13*`, 256 → 256, expand 4, dw 3/5. -/
+  b13 : UibParams (mnv4Row13 7)
+  /-- block 14: `%u14*`, 256 → 256, expand 4, dw 3/5. -/
+  b14 : UibParams (mnv4Row14 7)
+  /-- block 15: `%u15*`, 256 → 256, expand 4, dw 0/0. -/
+  b15 : UibParams (mnv4Row15 7)
+  /-- block 16: `%u16*`, 256 → 256, expand 4, dw 3/0. -/
+  b16 : UibParams (mnv4Row16 7)
+  /-- block 17: `%u17*`, 256 → 256, expand 2, dw 3/5. -/
+  b17 : UibParams (mnv4Row17 7)
+  /-- block 18: `%u18*`, 256 → 256, expand 4, dw 5/5. -/
+  b18 : UibParams (mnv4Row18 7)
+  /-- block 19: `%u19*`, 256 → 256, expand 4, dw 0/0. -/
+  b19 : UibParams (mnv4Row19 7)
+  /-- block 20: `%u20*`, 256 → 256, expand 4, dw 0/0. -/
+  b20 : UibParams (mnv4Row20 7)
+  /-- block 21: `%u21*`, 256 → 256, expand 2, dw 5/0. -/
+  b21 : UibParams (mnv4Row21 7)
+  /-- head conv 1 `%h1W`: 1×1, 256 → 960. -/
   h1W : Kernel4 960 256 1 1
   h1b : Vec 960
   h1E : ℝ
@@ -261,18 +269,18 @@ structure Mnv4BWeights (nCls : Nat) where
 
 /-- **The fused stage (stage 0)**: 3×3/s2 symmetric conv-bn-relu 32 → 128 at 112 → 56, then the
     1×1 project 128 → 48 (timm's `EdgeResidual`). -/
-noncomputable def mnv4FusedStack (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
-    CertLayer (N * (32 * 112 * 112)) (N * (48 * 56 * 56)) :=
+noncomputable def mnv4FusedStack (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
+    CertLayer (N * (32 * (2 * (2 * (2 * (2 * f)))) * (2 * (2 * (2 * (2 * f)))))) (N * (48 * (2 * (2 * (2 * f))) * (2 * (2 * (2 * f))))) :=
   mnv4FusedStage N
-    (cbReluStridedLayer (h := 56) (w := 56) N w.f0cW w.f0cb w.f0cE w.hf0cE w.f0cg w.f0cbt)
-    (projLayer (h := 56) (w := 56) N w.f0pW w.f0pb w.f0pE w.hf0pE w.f0pg w.f0pbt)
+    (cbReluStridedLayer (h := 2 * (2 * (2 * f))) (w := 2 * (2 * (2 * f))) N w.f0cW w.f0cb w.f0cE w.hf0cE w.f0cg w.f0cbt)
+    (projLayer (h := 2 * (2 * (2 * f))) (w := 2 * (2 * (2 * f))) N w.f0pW w.f0pb w.f0pE w.hf0pE w.f0pg w.f0pbt)
 
 /-- **The head**, timm's order: 1×1 256 → 960 conv-bn-relu at 7×7, GAP, `conv_head` 1×1
     960 → 1280 conv-bn-relu on the pooled features (its BN over the batch alone), classifier. -/
-noncomputable def mnv4HeadStack (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
-    CertLayer (N * (256 * 7 * 7)) (N * nCls) :=
-  mnv4Head N (cbReluLayer (h := 7) (w := 7) N w.h1W w.h1b w.h1E w.hh1E w.h1g w.h1bt)
-    (gapLayer N (c := 960) (h := 7) (w := 7))
+noncomputable def mnv4HeadStack (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
+    CertLayer (N * (256 * f * f)) (N * nCls) :=
+  mnv4Head N (cbReluLayer (h := f) (w := f) N w.h1W w.h1b w.h1E w.hh1E w.h1g w.h1bt)
+    (gapLayer N (c := 960) (h := f) (w := f))
     (cbReluLayer (h := 1) (w := 1) N w.hW w.hb w.hE w.hhE w.hg w.hbt)
     (denseLayer N w.Wd w.bd)
 
@@ -284,45 +292,45 @@ six rewrites over them. The grouping is the ladder a reader already knows — 56
 it costs nothing in readability and buys a bounded proof. -/
 
 /-- Trunk group **Res28** — rows 1–2: the 56→28 reduction and the block that follows it. -/
-noncomputable def mnv4Res28Layer (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
-    CertLayer (N * (48 * 56 * 56)) (N * (80 * 28 * 28)) :=
-  (mnv4StridedBodyOfRow N mnv4Row1 w.b1).comp
-      (CertLayer.residual (mnv4BodyOfRow N mnv4Row2 w.b2))
+noncomputable def mnv4Res28Layer (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
+    CertLayer (N * (48 * (2 * (2 * (2 * f))) * (2 * (2 * (2 * f))))) (N * (80 * (2 * (2 * f)) * (2 * (2 * f)))) :=
+  (mnv4StridedBodyOfRow N (mnv4Row1 f) w.b1).comp
+      (CertLayer.residual (mnv4BodyOfRow N (mnv4Row2 f) w.b2))
 
 /-- Trunk group **Res14a** — rows 3–6: the 28→14 reduction, then three ExtraDW blocks. -/
-noncomputable def mnv4Res14aLayer (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
-    CertLayer (N * (80 * 28 * 28)) (N * (160 * 14 * 14)) :=
-  (mnv4StridedBodyOfRow N mnv4Row3 w.b3).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row4 w.b4)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row5 w.b5)).comp
-      (CertLayer.residual (mnv4BodyOfRow N mnv4Row6 w.b6))))
+noncomputable def mnv4Res14aLayer (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
+    CertLayer (N * (80 * (2 * (2 * f)) * (2 * (2 * f)))) (N * (160 * (2 * f) * (2 * f))) :=
+  (mnv4StridedBodyOfRow N (mnv4Row3 f) w.b3).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row4 f) w.b4)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row5 f) w.b5)).comp
+      (CertLayer.residual (mnv4BodyOfRow N (mnv4Row6 f) w.b6))))
 
 /-- Trunk group **Res14b** — rows 7–10 at 14×14: ExtraDW, ConvNeXt, FFN, ConvNeXt — three families in four blocks. -/
-noncomputable def mnv4Res14bLayer (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
-    CertLayer (N * (160 * 14 * 14)) (N * (160 * 14 * 14)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row7 w.b7)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row8 w.b8)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row9 w.b9)).comp
-      (CertLayer.residual (mnv4BodyOfRow N mnv4Row10 w.b10))))
+noncomputable def mnv4Res14bLayer (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
+    CertLayer (N * (160 * (2 * f) * (2 * f))) (N * (160 * (2 * f) * (2 * f))) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row7 f) w.b7)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row8 f) w.b8)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row9 f) w.b9)).comp
+      (CertLayer.residual (mnv4BodyOfRow N (mnv4Row10 f) w.b10))))
 
 /-- Trunk group **Res7a** — rows 11–15: the last reduction (14→7), then four blocks at 7×7. -/
-noncomputable def mnv4Res7aLayer (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
-    CertLayer (N * (160 * 14 * 14)) (N * (256 * 7 * 7)) :=
-  (mnv4StridedBodyOfRow N mnv4Row11 w.b11).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row12 w.b12)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row13 w.b13)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row14 w.b14)).comp
-      (CertLayer.residual (mnv4BodyOfRow N mnv4Row15 w.b15)))))
+noncomputable def mnv4Res7aLayer (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
+    CertLayer (N * (160 * (2 * f) * (2 * f))) (N * (256 * f * f)) :=
+  (mnv4StridedBodyOfRow N (mnv4Row11 f) w.b11).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row12 f) w.b12)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row13 f) w.b13)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row14 f) w.b14)).comp
+      (CertLayer.residual (mnv4BodyOfRow N (mnv4Row15 f) w.b15)))))
 
 /-- Trunk group **Res7b** — rows 16–21 at 7×7: the net's tail. -/
-noncomputable def mnv4Res7bLayer (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
-    CertLayer (N * (256 * 7 * 7)) (N * (256 * 7 * 7)) :=
-  (CertLayer.residual (mnv4BodyOfRow N mnv4Row16 w.b16)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row17 w.b17)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row18 w.b18)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row19 w.b19)).comp
-      ((CertLayer.residual (mnv4BodyOfRow N mnv4Row20 w.b20)).comp
-      (CertLayer.residual (mnv4BodyOfRow N mnv4Row21 w.b21))))))
+noncomputable def mnv4Res7bLayer (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) :
+    CertLayer (N * (256 * f * f)) (N * (256 * f * f)) :=
+  (CertLayer.residual (mnv4BodyOfRow N (mnv4Row16 f) w.b16)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row17 f) w.b17)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row18 f) w.b18)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row19 f) w.b19)).comp
+      ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row20 f) w.b20)).comp
+      (CertLayer.residual (mnv4BodyOfRow N (mnv4Row21 f) w.b21))))))
 
 /-! **The seven groups are composed by a prefix chain, not by one more `CertLayer.comp`.**
 
@@ -342,46 +350,47 @@ conditions at their own activations, so the 38 relu clauses are never written do
 and no `0 < ε` hypothesis appears at all. R50's two apex bundles carry 35 fields.
 
 More generally, a net whose resolutions are literals cannot afford the proof idioms a net with a
-resolution binder can: ResNet-50's `q` keeps `den` stuck, MNv4's 224/112/56/28/14/7 let it run.
-The stem graph builder's genericity, the prefix chain and the capstone's `rw` in place of
-`simp only` all trace to that. -/
+resolution binder can: ResNet-50's `q` keeps `den` stuck, and MNv4's 224/112/56/28/14/7 let it run
+until the side became the binder `f` (2026-10-26). The stem graph builder's genericity, the prefix
+chain and the capstone's `rw` in place of `simp only` all trace to that, and stay: they cost
+nothing at a binder and the 224 instance is still a kernel check at literals. -/
 
 /-- Prefix 0: the stem's output. -/
-@[reducible] noncomputable def mnv4Pre0 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (32 * 112 * 112)) :=
-  mnv4StemB N 112 112 w.sW w.sb w.sE w.sg w.sbt x
+@[reducible] noncomputable def mnv4Pre0 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (32 * (2 * (2 * (2 * (2 * f)))) * (2 * (2 * (2 * (2 * f)))))) :=
+  mnv4StemB N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt x
 
 /-- Prefix 1: through the fused stage, at 56×56. -/
-@[reducible] noncomputable def mnv4Pre1 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (48 * 56 * 56)) :=
-  (mnv4FusedStack N w).fwd (mnv4Pre0 N w x)
+@[reducible] noncomputable def mnv4Pre1 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (48 * (2 * (2 * (2 * f))) * (2 * (2 * (2 * f))))) :=
+  (mnv4FusedStack N f w).fwd (mnv4Pre0 N f w x)
 
 /-- Prefix 2: through rows 1–2, at 28×28. -/
-@[reducible] noncomputable def mnv4Pre2 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (80 * 28 * 28)) :=
-  (mnv4Res28Layer N w).fwd (mnv4Pre1 N w x)
+@[reducible] noncomputable def mnv4Pre2 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (80 * (2 * (2 * f)) * (2 * (2 * f)))) :=
+  (mnv4Res28Layer N f w).fwd (mnv4Pre1 N f w x)
 
 /-- Prefix 3: through rows 3–6, at 14×14. -/
-@[reducible] noncomputable def mnv4Pre3 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (mnv4Res14aLayer N w).fwd (mnv4Pre2 N w x)
+@[reducible] noncomputable def mnv4Pre3 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (mnv4Res14aLayer N f w).fwd (mnv4Pre2 N f w x)
 
 /-- Prefix 4: through rows 7–10, still at 14×14. -/
-@[reducible] noncomputable def mnv4Pre4 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (160 * 14 * 14)) :=
-  (mnv4Res14bLayer N w).fwd (mnv4Pre3 N w x)
+@[reducible] noncomputable def mnv4Pre4 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (160 * (2 * f) * (2 * f))) :=
+  (mnv4Res14bLayer N f w).fwd (mnv4Pre3 N f w x)
 
 /-- Prefix 5: through rows 11–15, at 7×7. -/
-@[reducible] noncomputable def mnv4Pre5 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (mnv4Res7aLayer N w).fwd (mnv4Pre4 N w x)
+@[reducible] noncomputable def mnv4Pre5 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (mnv4Res7aLayer N f w).fwd (mnv4Pre4 N f w x)
 
 /-- Prefix 6: through rows 16–21 — the whole trunk below the head. -/
-@[reducible] noncomputable def mnv4Pre6 (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * (256 * 7 * 7)) :=
-  (mnv4Res7bLayer N w).fwd (mnv4Pre5 N w x)
+@[reducible] noncomputable def mnv4Pre6 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * (256 * f * f)) :=
+  (mnv4Res7bLayer N f w).fwd (mnv4Pre5 N f w x)
 
-/-- **The full batch-BN MobileNetV4-Conv-M**, `N*(3*224*224) → N*nCls`.
+/-- **The full batch-BN MobileNetV4-Conv-M**, `N*(3*32f*32f) → N*nCls` at the final side `f`.
 
     The stem, the fused stage, the five resolution groups, the head. Every block inside those
     groups is `mnv4BodyOfRow` at its own row, so the `k = 0` dispatch is READ from `mnv4Blocks`
@@ -389,9 +398,9 @@ The stem graph builder's genericity, the prefix chain and the capstone's `rw` in
     establish, now carried to the net. The eighteen skips are `CertLayer.residual`, which
     typechecks with no transport because `s.oc` and `s.ic` reduce to the same literal at every
     stride-1 row (guarded there). -/
-noncomputable def mobilenetv4ForwardBFull (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) : Vec (N * nCls) :=
-  (mnv4HeadStack N w).fwd (mnv4Pre6 N w x)
+noncomputable def mobilenetv4ForwardBFull (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * nCls) :=
+  (mnv4HeadStack N f w).fwd (mnv4Pre6 N f w x)
 
 -- The stem's own arithmetic, checked rather than asserted: its input is the 224-px image and
 -- its output is what the fused stage reads. A wrong nest depth is well-typed at a variable.
@@ -401,9 +410,12 @@ noncomputable def mobilenetv4ForwardBFull (N : Nat) {nCls : Nat} (w : Mnv4BWeigh
 #guard 2 * 14 == 28
 #guard 2 * 7 == 14
 
--- `mobilenetv4ForwardBFull` really does bind at the literal 224-px image type.
-example (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) (x : Vec (N * (3 * 224 * 224))) :
-    mobilenetv4ForwardBFull N w x = mobilenetv4ForwardBFull N w x := rfl
+-- `mobilenetv4ForwardBFull` really does bind the two image types the artifacts render at: the
+-- nest at `f := 7` IS the 224-px image and at `f := 8` the paper tier's 256-px one.
+noncomputable example (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) (x : Vec (N * (3 * 224 * 224))) :
+    Vec (N * nCls) := mobilenetv4ForwardBFull N 7 w x
+noncomputable example (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls) (x : Vec (N * (3 * 256 * 256))) :
+    Vec (N * nCls) := mobilenetv4ForwardBFull N 8 w x
 
 -- ════════════════════════════════════════════════════════════════
 -- § The typed forward graph, at `mnv4FwdChainB`'s own tokens
@@ -666,150 +678,150 @@ private theorem mnv4HeadGraphB_faithful (epsStr : String) (N h w : Nat) {c mid o
 -- ════════════════════════════════════════════════════════════════
 
 /-- Trunk group **Res28**'s graph — rows 1–2: the 56→28 reduction and the block that follows it. -/
-def mnv4Res28GraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (bf16 : Bool) (e : SHlo (N * (48 * 56 * 56))) : SHlo (N * (80 * 28 * 28)) :=
-  mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row2 w.b2 bf16)
-      (mnv4StridedGraphB epsStr N mnv4Row1 w.b1 bf16
+def mnv4Res28GraphB (N f : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (bf16 : Bool) (e : SHlo (N * (48 * (2 * (2 * (2 * f))) * (2 * (2 * (2 * f)))))) : SHlo (N * (80 * (2 * (2 * f)) * (2 * (2 * f)))) :=
+  mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row2 f) w.b2 bf16)
+      (mnv4StridedGraphB epsStr N (mnv4Row1 f) w.b1 bf16
       (e))
 
-private theorem mnv4Res28GraphB_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (48 * 56 * 56))) :
-    den (mnv4Res28GraphB N epsStr w bf16 e) = (mnv4Res28Layer N w).fwd (den e) := by
+private theorem mnv4Res28GraphB_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (48 * (2 * (2 * (2 * f))) * (2 * (2 * (2 * f)))))) :
+    den (mnv4Res28GraphB N f epsStr w bf16 e) = (mnv4Res28Layer N f w).fwd (den e) := by
   simp only [mnv4Res28GraphB, mnv4Res28Layer, CertLayer.comp_fwd, CertLayer.residual_fwd,
     Function.comp_apply,
-    mnv4StridedGraphB_faithful epsStr N mnv4Row1 w.b1 bf16 (by decide),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row2 w.b2 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row2 w.b2 bf16 (by decide) (by decide)),]
+    mnv4StridedGraphB_faithful epsStr N (mnv4Row1 f) w.b1 bf16 (by simp),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row2 f) w.b2 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row2 f) w.b2 bf16 (by simp) (by simp)),]
 
 /-- Trunk group **Res14a**'s graph — rows 3–6: the 28→14 reduction, then three ExtraDW blocks. -/
-def mnv4Res14aGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (bf16 : Bool) (e : SHlo (N * (80 * 28 * 28))) : SHlo (N * (160 * 14 * 14)) :=
-  mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row6 w.b6 bf16)
-      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row5 w.b5 bf16)
-      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row4 w.b4 bf16)
-      (mnv4StridedGraphB epsStr N mnv4Row3 w.b3 bf16
+def mnv4Res14aGraphB (N f : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (bf16 : Bool) (e : SHlo (N * (80 * (2 * (2 * f)) * (2 * (2 * f))))) : SHlo (N * (160 * (2 * f) * (2 * f))) :=
+  mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row6 f) w.b6 bf16)
+      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row5 f) w.b5 bf16)
+      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row4 f) w.b4 bf16)
+      (mnv4StridedGraphB epsStr N (mnv4Row3 f) w.b3 bf16
       (e))))
 
-private theorem mnv4Res14aGraphB_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (80 * 28 * 28))) :
-    den (mnv4Res14aGraphB N epsStr w bf16 e) = (mnv4Res14aLayer N w).fwd (den e) := by
+private theorem mnv4Res14aGraphB_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (80 * (2 * (2 * f)) * (2 * (2 * f))))) :
+    den (mnv4Res14aGraphB N f epsStr w bf16 e) = (mnv4Res14aLayer N f w).fwd (den e) := by
   simp only [mnv4Res14aGraphB, mnv4Res14aLayer, CertLayer.comp_fwd, CertLayer.residual_fwd,
     Function.comp_apply,
-    mnv4StridedGraphB_faithful epsStr N mnv4Row3 w.b3 bf16 (by decide),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row4 w.b4 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row4 w.b4 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row5 w.b5 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row5 w.b5 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row6 w.b6 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row6 w.b6 bf16 (by decide) (by decide)),]
+    mnv4StridedGraphB_faithful epsStr N (mnv4Row3 f) w.b3 bf16 (by simp),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row4 f) w.b4 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row4 f) w.b4 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row5 f) w.b5 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row5 f) w.b5 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row6 f) w.b6 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row6 f) w.b6 bf16 (by simp) (by simp)),]
 
 /-- Trunk group **Res14b**'s graph — rows 7–10 at 14×14: ExtraDW, ConvNeXt, FFN, ConvNeXt — three families in four blocks. -/
-def mnv4Res14bGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (bf16 : Bool) (e : SHlo (N * (160 * 14 * 14))) : SHlo (N * (160 * 14 * 14)) :=
-  mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row10 w.b10 bf16)
-      (mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N mnv4Row9 w.b9 bf16)
-      (mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row8 w.b8 bf16)
-      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row7 w.b7 bf16)
+def mnv4Res14bGraphB (N f : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (bf16 : Bool) (e : SHlo (N * (160 * (2 * f) * (2 * f)))) : SHlo (N * (160 * (2 * f) * (2 * f))) :=
+  mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N (mnv4Row10 f) w.b10 bf16)
+      (mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N (mnv4Row9 f) w.b9 bf16)
+      (mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N (mnv4Row8 f) w.b8 bf16)
+      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row7 f) w.b7 bf16)
       (e))))
 
-private theorem mnv4Res14bGraphB_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (160 * 14 * 14))) :
-    den (mnv4Res14bGraphB N epsStr w bf16 e) = (mnv4Res14bLayer N w).fwd (den e) := by
+private theorem mnv4Res14bGraphB_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (160 * (2 * f) * (2 * f)))) :
+    den (mnv4Res14bGraphB N f epsStr w bf16 e) = (mnv4Res14bLayer N f w).fwd (den e) := by
   simp only [mnv4Res14bGraphB, mnv4Res14bLayer, CertLayer.comp_fwd, CertLayer.residual_fwd,
     Function.comp_apply,
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row7 w.b7 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row7 w.b7 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row8 w.b8 bf16) _
-      (mnv4ConvNeXtBodyGraphB_faithful epsStr N mnv4Row8 w.b8 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4FfnBodyGraphB epsStr N mnv4Row9 w.b9 bf16) _
-      (mnv4FfnBodyGraphB_faithful epsStr N mnv4Row9 w.b9 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row10 w.b10 bf16) _
-      (mnv4ConvNeXtBodyGraphB_faithful epsStr N mnv4Row10 w.b10 bf16 (by decide) (by decide)),]
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row7 f) w.b7 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row7 f) w.b7 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ConvNeXtBodyGraphB epsStr N (mnv4Row8 f) w.b8 bf16) _
+      (mnv4ConvNeXtBodyGraphB_faithful epsStr N (mnv4Row8 f) w.b8 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4FfnBodyGraphB epsStr N (mnv4Row9 f) w.b9 bf16) _
+      (mnv4FfnBodyGraphB_faithful epsStr N (mnv4Row9 f) w.b9 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ConvNeXtBodyGraphB epsStr N (mnv4Row10 f) w.b10 bf16) _
+      (mnv4ConvNeXtBodyGraphB_faithful epsStr N (mnv4Row10 f) w.b10 bf16 (by simp) (by simp)),]
 
 /-- Trunk group **Res7a**'s graph — rows 11–15: the last reduction (14→7), then four blocks at 7×7. -/
-def mnv4Res7aGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (bf16 : Bool) (e : SHlo (N * (160 * 14 * 14))) : SHlo (N * (256 * 7 * 7)) :=
-  mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N mnv4Row15 w.b15 bf16)
-      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row14 w.b14 bf16)
-      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row13 w.b13 bf16)
-      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row12 w.b12 bf16)
-      (mnv4StridedGraphB epsStr N mnv4Row11 w.b11 bf16
+def mnv4Res7aGraphB (N f : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (bf16 : Bool) (e : SHlo (N * (160 * (2 * f) * (2 * f)))) : SHlo (N * (256 * f * f)) :=
+  mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N (mnv4Row15 f) w.b15 bf16)
+      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row14 f) w.b14 bf16)
+      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row13 f) w.b13 bf16)
+      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row12 f) w.b12 bf16)
+      (mnv4StridedGraphB epsStr N (mnv4Row11 f) w.b11 bf16
       (e)))))
 
-private theorem mnv4Res7aGraphB_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (160 * 14 * 14))) :
-    den (mnv4Res7aGraphB N epsStr w bf16 e) = (mnv4Res7aLayer N w).fwd (den e) := by
+private theorem mnv4Res7aGraphB_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (160 * (2 * f) * (2 * f)))) :
+    den (mnv4Res7aGraphB N f epsStr w bf16 e) = (mnv4Res7aLayer N f w).fwd (den e) := by
   simp only [mnv4Res7aGraphB, mnv4Res7aLayer, CertLayer.comp_fwd, CertLayer.residual_fwd,
     Function.comp_apply,
-    mnv4StridedGraphB_faithful epsStr N mnv4Row11 w.b11 bf16 (by decide),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row12 w.b12 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row12 w.b12 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row13 w.b13 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row13 w.b13 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row14 w.b14 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row14 w.b14 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4FfnBodyGraphB epsStr N mnv4Row15 w.b15 bf16) _
-      (mnv4FfnBodyGraphB_faithful epsStr N mnv4Row15 w.b15 bf16 (by decide) (by decide)),]
+    mnv4StridedGraphB_faithful epsStr N (mnv4Row11 f) w.b11 bf16 (by simp),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row12 f) w.b12 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row12 f) w.b12 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row13 f) w.b13 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row13 f) w.b13 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row14 f) w.b14 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row14 f) w.b14 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4FfnBodyGraphB epsStr N (mnv4Row15 f) w.b15 bf16) _
+      (mnv4FfnBodyGraphB_faithful epsStr N (mnv4Row15 f) w.b15 bf16 (by simp) (by simp)),]
 
 /-- Trunk group **Res7b**'s graph — rows 16–21 at 7×7: the net's tail. -/
-def mnv4Res7bGraphB (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (bf16 : Bool) (e : SHlo (N * (256 * 7 * 7))) : SHlo (N * (256 * 7 * 7)) :=
-  mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row21 w.b21 bf16)
-      (mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N mnv4Row20 w.b20 bf16)
-      (mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N mnv4Row19 w.b19 bf16)
-      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row18 w.b18 bf16)
-      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N mnv4Row17 w.b17 bf16)
-      (mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row16 w.b16 bf16)
+def mnv4Res7bGraphB (N f : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (bf16 : Bool) (e : SHlo (N * (256 * f * f))) : SHlo (N * (256 * f * f)) :=
+  mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N (mnv4Row21 f) w.b21 bf16)
+      (mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N (mnv4Row20 f) w.b20 bf16)
+      (mnv4SkipGraphB (mnv4FfnBodyGraphB epsStr N (mnv4Row19 f) w.b19 bf16)
+      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row18 f) w.b18 bf16)
+      (mnv4SkipGraphB (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row17 f) w.b17 bf16)
+      (mnv4SkipGraphB (mnv4ConvNeXtBodyGraphB epsStr N (mnv4Row16 f) w.b16 bf16)
       (e))))))
 
-private theorem mnv4Res7bGraphB_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (256 * 7 * 7))) :
-    den (mnv4Res7bGraphB N epsStr w bf16 e) = (mnv4Res7bLayer N w).fwd (den e) := by
+private theorem mnv4Res7bGraphB_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (256 * f * f))) :
+    den (mnv4Res7bGraphB N f epsStr w bf16 e) = (mnv4Res7bLayer N f w).fwd (den e) := by
   simp only [mnv4Res7bGraphB, mnv4Res7bLayer, CertLayer.comp_fwd, CertLayer.residual_fwd,
     Function.comp_apply,
-    mnv4SkipGraphB_faithful (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row16 w.b16 bf16) _
-      (mnv4ConvNeXtBodyGraphB_faithful epsStr N mnv4Row16 w.b16 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row17 w.b17 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row17 w.b17 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N mnv4Row18 w.b18 bf16) _
-      (mnv4ExtraDWBodyGraphB_faithful epsStr N mnv4Row18 w.b18 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4FfnBodyGraphB epsStr N mnv4Row19 w.b19 bf16) _
-      (mnv4FfnBodyGraphB_faithful epsStr N mnv4Row19 w.b19 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4FfnBodyGraphB epsStr N mnv4Row20 w.b20 bf16) _
-      (mnv4FfnBodyGraphB_faithful epsStr N mnv4Row20 w.b20 bf16 (by decide) (by decide)),
-    mnv4SkipGraphB_faithful (mnv4ConvNeXtBodyGraphB epsStr N mnv4Row21 w.b21 bf16) _
-      (mnv4ConvNeXtBodyGraphB_faithful epsStr N mnv4Row21 w.b21 bf16 (by decide) (by decide)),]
+    mnv4SkipGraphB_faithful (mnv4ConvNeXtBodyGraphB epsStr N (mnv4Row16 f) w.b16 bf16) _
+      (mnv4ConvNeXtBodyGraphB_faithful epsStr N (mnv4Row16 f) w.b16 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row17 f) w.b17 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row17 f) w.b17 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ExtraDWBodyGraphB epsStr N (mnv4Row18 f) w.b18 bf16) _
+      (mnv4ExtraDWBodyGraphB_faithful epsStr N (mnv4Row18 f) w.b18 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4FfnBodyGraphB epsStr N (mnv4Row19 f) w.b19 bf16) _
+      (mnv4FfnBodyGraphB_faithful epsStr N (mnv4Row19 f) w.b19 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4FfnBodyGraphB epsStr N (mnv4Row20 f) w.b20 bf16) _
+      (mnv4FfnBodyGraphB_faithful epsStr N (mnv4Row20 f) w.b20 bf16 (by simp) (by simp)),
+    mnv4SkipGraphB_faithful (mnv4ConvNeXtBodyGraphB epsStr N (mnv4Row21 f) w.b21 bf16) _
+      (mnv4ConvNeXtBodyGraphB_faithful epsStr N (mnv4Row21 f) w.b21 bf16 (by simp) (by simp)),]
 
 /-- The fused stage's graph faithfulness, restated at `mnv4FusedStack` itself.
 
     This corollary exists so the whole-net proof never has to unfold `mnv4FusedStack`. It looks
-    redundant and is not: at MNv4's literal resolutions, letting anything unfold far enough for
+    redundant and is not: at a literal side (`f := 7`), letting anything unfold far enough for
     `den` to start recursing turns the kernel's check into an evaluation of the whole graph, which
     is the failure the group split above works around. Seven rewrites all of the shape
     `den <subgraph> = <subLayer>.fwd (den ·)` keep every stage opaque. -/
-theorem mnv4FusedStack_graph_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (32 * 112 * 112))) :
-    den (mnv4FusedGraphB epsStr N 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
+theorem mnv4FusedStack_graph_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (32 * (2 * (2 * (2 * (2 * f)))) * (2 * (2 * (2 * (2 * f))))))) :
+    den (mnv4FusedGraphB epsStr N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
           w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt bf16 e)
-      = (mnv4FusedStack N w).fwd (den e) :=
-  mnv4FusedGraphB_faithful epsStr N 56 56 w.f0cW w.f0cb w.f0cE w.hf0cE w.f0cg w.f0cbt
+      = (mnv4FusedStack N f w).fwd (den e) :=
+  mnv4FusedGraphB_faithful epsStr N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.hf0cE w.f0cg w.f0cbt
     w.f0pW w.f0pb w.f0pE w.hf0pE w.f0pg w.f0pbt bf16 e
 
 /-- The head's graph faithfulness, restated at `mnv4HeadStack` itself. Same reason. -/
-private theorem mnv4HeadStack_graph_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (256 * 7 * 7))) :
-    den (mnv4HeadGraphB epsStr N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt
+private theorem mnv4HeadStack_graph_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (256 * f * f))) :
+    den (mnv4HeadGraphB epsStr N f f w.h1W w.h1b w.h1E w.h1g w.h1bt
           w.hW w.hb w.hE w.hg w.hbt w.Wd w.bd bf16 e)
-      = (mnv4HeadStack N w).fwd (den e) :=
-  mnv4HeadGraphB_faithful epsStr N 7 7 w.h1W w.h1b w.h1E w.hh1E w.h1g w.h1bt
+      = (mnv4HeadStack N f w).fwd (den e) :=
+  mnv4HeadGraphB_faithful epsStr N f f w.h1W w.h1b w.h1E w.hh1E w.h1g w.h1bt
     w.hW w.hb w.hE w.hhE w.hg w.hbt w.Wd w.bd bf16 e
 
 /-- The stem's, likewise, at the net's own widths. -/
-theorem mnv4StemB_graph_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (3 * 224 * 224))) :
-    den (mnv4StemGraphB epsStr N 112 112 w.sW w.sb w.sE w.sg w.sbt bf16 e)
-      = mnv4StemB N 112 112 w.sW w.sb w.sE w.sg w.sbt (den e) :=
-  mnv4StemGraphB_faithful epsStr N 112 112 w.sW w.sb w.sE w.sg w.sbt bf16 e
+theorem mnv4StemB_graph_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) :
+    den (mnv4StemGraphB epsStr N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt bf16 e)
+      = mnv4StemB N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt (den e) :=
+  mnv4StemGraphB_faithful epsStr N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt bf16 e
 
 /-- **The full batch-BN MobileNetV4-Conv-M forward graph**, at `mnv4FwdChainB`'s own tokens
     and its own SSA names, so the typed graph diffs against `mnv4_fwd.mlir` and `mnv4in_fwd.mlir`
@@ -821,18 +833,18 @@ theorem mnv4StemB_graph_faithful (N : Nat) (epsStr : String) {nCls : Nat}
 
     The eighteen skip rows go through `mnv4SkipGraphB`, which is what keeps this term LINEAR in
     the depth — see that combinator's docstring for the failure mode it exists to prevent. -/
-def mnv4FwdGraphBFull (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls) (bf16 : Bool)
-    (e : SHlo (N * (3 * 224 * 224))) : SHlo (N * nCls) :=
-  mnv4HeadGraphB epsStr N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt
+def mnv4FwdGraphBFull (N f : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights nCls) (bf16 : Bool)
+    (e : SHlo (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : SHlo (N * nCls) :=
+  mnv4HeadGraphB epsStr N f f w.h1W w.h1b w.h1E w.h1g w.h1bt
     w.hW w.hb w.hE w.hg w.hbt w.Wd w.bd bf16
-    (mnv4Res7bGraphB N epsStr w bf16
-      (mnv4Res7aGraphB N epsStr w bf16
-        (mnv4Res14bGraphB N epsStr w bf16
-          (mnv4Res14aGraphB N epsStr w bf16
-            (mnv4Res28GraphB N epsStr w bf16
-              (mnv4FusedGraphB epsStr N 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
+    (mnv4Res7bGraphB N f epsStr w bf16
+      (mnv4Res7aGraphB N f epsStr w bf16
+        (mnv4Res14bGraphB N f epsStr w bf16
+          (mnv4Res14aGraphB N f epsStr w bf16
+            (mnv4Res28GraphB N f epsStr w bf16
+              (mnv4FusedGraphB epsStr N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
                 w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt bf16
-                (mnv4StemGraphB epsStr N 112 112 w.sW w.sb w.sE w.sg w.sbt bf16 e)))))))
+                (mnv4StemGraphB epsStr N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt bf16 e)))))))
 
 /-- **The MobileNetV4-Conv-M forward graph at batch BatchNorm denotes the whole-net forward.**
     Seven rewrites — the stem, the fused stage, the five resolution groups and the head — each of
@@ -841,9 +853,9 @@ def mnv4FwdGraphBFull (N : Nat) (epsStr : String) {nCls : Nat} (w : Mnv4BWeights
     Each group's proof discharges its blocks' dispatch hypotheses by `decide` at the concrete
     row, so what selects ExtraDW / ConvNeXt / FFN is the TABLE, not this file. A row wired to the
     wrong builder fails to elaborate rather than proving something about a different net. -/
-theorem mnv4FwdGraphBFull_faithful (N : Nat) (epsStr : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (3 * 224 * 224))) :
-    den (mnv4FwdGraphBFull N epsStr w bf16 e) = mobilenetv4ForwardBFull N w (den e) := by
+theorem mnv4FwdGraphBFull_faithful (N f : Nat) (epsStr : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (e : SHlo (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) :
+    den (mnv4FwdGraphBFull N f epsStr w bf16 e) = mobilenetv4ForwardBFull N f w (den e) := by
   -- `rw`, NOT `simp only`, and the difference is not cosmetic: the `simp only` spelling of
   -- this same chain elaborates for minutes and then dies in the KERNEL with a deterministic
   -- timeout. `simp only` traverses and rebuilds the whole term at each step, and at MNv4's literal
@@ -862,58 +874,58 @@ theorem mnv4FwdGraphBFull_faithful (N : Nat) (epsStr : String) {nCls : Nat}
 -- ════════════════════════════════════════════════════════════════
 
 /-- Trunk group **Res28** — rows 1–2, at 56 → 28 — as its own blocks, each at its table row (`mnv4Row1`, `mnv4Row2`). -/
-theorem mnv4Res28Layer_fwd_apply (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (v : Vec (N * (48 * 56 * 56))) :
-    (mnv4Res28Layer N w).fwd v
-      = (CertLayer.residual (mnv4BodyOfRow N mnv4Row2 w.b2)).fwd
-          ((mnv4StridedBodyOfRow N mnv4Row1 w.b1).fwd
+theorem mnv4Res28Layer_fwd_apply (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (v : Vec (N * (48 * (2 * (2 * (2 * f))) * (2 * (2 * (2 * f)))))) :
+    (mnv4Res28Layer N f w).fwd v
+      = (CertLayer.residual (mnv4BodyOfRow N (mnv4Row2 f) w.b2)).fwd
+          ((mnv4StridedBodyOfRow N (mnv4Row1 f) w.b1).fwd
           (v)) := by
   simp only [mnv4Res28Layer, CertLayer.comp_fwd_apply]
 
 /-- Trunk group **Res14a** — rows 3–6, at 28 → 14 — as its own blocks, each at its table row (`mnv4Row3`, `mnv4Row4`, `mnv4Row5`, `mnv4Row6`). -/
-theorem mnv4Res14aLayer_fwd_apply (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (v : Vec (N * (80 * 28 * 28))) :
-    (mnv4Res14aLayer N w).fwd v
-      = (CertLayer.residual (mnv4BodyOfRow N mnv4Row6 w.b6)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row5 w.b5)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row4 w.b4)).fwd
-          ((mnv4StridedBodyOfRow N mnv4Row3 w.b3).fwd
+theorem mnv4Res14aLayer_fwd_apply (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (v : Vec (N * (80 * (2 * (2 * f)) * (2 * (2 * f))))) :
+    (mnv4Res14aLayer N f w).fwd v
+      = (CertLayer.residual (mnv4BodyOfRow N (mnv4Row6 f) w.b6)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row5 f) w.b5)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row4 f) w.b4)).fwd
+          ((mnv4StridedBodyOfRow N (mnv4Row3 f) w.b3).fwd
           (v)))) := by
   simp only [mnv4Res14aLayer, CertLayer.comp_fwd_apply]
 
 /-- Trunk group **Res14b** — rows 7–10, at 14×14 — as its own blocks, each at its table row (`mnv4Row7`, `mnv4Row8`, `mnv4Row9`, `mnv4Row10`). -/
-theorem mnv4Res14bLayer_fwd_apply (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (v : Vec (N * (160 * 14 * 14))) :
-    (mnv4Res14bLayer N w).fwd v
-      = (CertLayer.residual (mnv4BodyOfRow N mnv4Row10 w.b10)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row9 w.b9)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row8 w.b8)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row7 w.b7)).fwd
+theorem mnv4Res14bLayer_fwd_apply (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (v : Vec (N * (160 * (2 * f) * (2 * f)))) :
+    (mnv4Res14bLayer N f w).fwd v
+      = (CertLayer.residual (mnv4BodyOfRow N (mnv4Row10 f) w.b10)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row9 f) w.b9)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row8 f) w.b8)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row7 f) w.b7)).fwd
           (v)))) := by
   simp only [mnv4Res14bLayer, CertLayer.comp_fwd_apply]
 
 /-- Trunk group **Res7a** — rows 11–15, at 14 → 7 — as its own blocks, each at its table row (`mnv4Row11`, `mnv4Row12`, `mnv4Row13`, `mnv4Row14`, `mnv4Row15`). -/
-theorem mnv4Res7aLayer_fwd_apply (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (v : Vec (N * (160 * 14 * 14))) :
-    (mnv4Res7aLayer N w).fwd v
-      = (CertLayer.residual (mnv4BodyOfRow N mnv4Row15 w.b15)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row14 w.b14)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row13 w.b13)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row12 w.b12)).fwd
-          ((mnv4StridedBodyOfRow N mnv4Row11 w.b11).fwd
+theorem mnv4Res7aLayer_fwd_apply (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (v : Vec (N * (160 * (2 * f) * (2 * f)))) :
+    (mnv4Res7aLayer N f w).fwd v
+      = (CertLayer.residual (mnv4BodyOfRow N (mnv4Row15 f) w.b15)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row14 f) w.b14)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row13 f) w.b13)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row12 f) w.b12)).fwd
+          ((mnv4StridedBodyOfRow N (mnv4Row11 f) w.b11).fwd
           (v))))) := by
   simp only [mnv4Res7aLayer, CertLayer.comp_fwd_apply]
 
 /-- Trunk group **Res7b** — rows 16–21, at 7×7 — as its own blocks, each at its table row (`mnv4Row16`, `mnv4Row17`, `mnv4Row18`, `mnv4Row19`, `mnv4Row20`, `mnv4Row21`). -/
-theorem mnv4Res7bLayer_fwd_apply (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (v : Vec (N * (256 * 7 * 7))) :
-    (mnv4Res7bLayer N w).fwd v
-      = (CertLayer.residual (mnv4BodyOfRow N mnv4Row21 w.b21)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row20 w.b20)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row19 w.b19)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row18 w.b18)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row17 w.b17)).fwd
-          ((CertLayer.residual (mnv4BodyOfRow N mnv4Row16 w.b16)).fwd
+theorem mnv4Res7bLayer_fwd_apply (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (v : Vec (N * (256 * f * f))) :
+    (mnv4Res7bLayer N f w).fwd v
+      = (CertLayer.residual (mnv4BodyOfRow N (mnv4Row21 f) w.b21)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row20 f) w.b20)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row19 f) w.b19)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row18 f) w.b18)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row17 f) w.b17)).fwd
+          ((CertLayer.residual (mnv4BodyOfRow N (mnv4Row16 f) w.b16)).fwd
           (v)))))) := by
   simp only [mnv4Res7bLayer, CertLayer.comp_fwd_apply]
 
@@ -950,16 +962,16 @@ private theorem mnv4Head_fwd_eq_feat (N h w : Nat) {c mid oc nCls : Nat}
 /-- **The MobileNetV4-Conv-M forward with classifier dropout** at the per-element mask `m` (the
     driver's inverted mask, `%do`): `mobilenetv4ForwardBFull` with `dropout m` on the classifier's
     input. -/
-noncomputable def mobilenetv4ForwardBFullDo (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (m : Vec (N * 1280)) (x : Vec (N * (3 * 224 * 224))) : Vec (N * nCls) :=
+noncomputable def mobilenetv4ForwardBFullDo (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (m : Vec (N * 1280)) (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : Vec (N * nCls) :=
   batchMap N (dense w.Wd w.bd) (dropout m
-    (mnv4HeadFeatB N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
-      (mnv4Pre6 N w x)))
+    (mnv4HeadFeatB N f f w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt
+      (mnv4Pre6 N f w x)))
 
 /-- At the all-ones mask the dropout forward is the certified forward. -/
-theorem mobilenetv4ForwardBFullDo_ones (N : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (x : Vec (N * (3 * 224 * 224))) :
-    mobilenetv4ForwardBFullDo N w (fun _ => 1) x = mobilenetv4ForwardBFull N w x := by
+theorem mobilenetv4ForwardBFullDo_ones (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (x : Vec (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) :
+    mobilenetv4ForwardBFullDo N f w (fun _ => 1) x = mobilenetv4ForwardBFull N f w x := by
   unfold mobilenetv4ForwardBFullDo mobilenetv4ForwardBFull mnv4HeadStack
   rw [dropout_ones_id, mnv4Head_fwd_eq_feat]
 
@@ -997,35 +1009,35 @@ private theorem mnv4HeadGraphBDo_faithful (epsStr mName : String) (N h w : Nat) 
   simp only [denOp, Function.comp_apply, reindexCLM_apply]
 
 /-- **The `%do` forward graph**: `mnv4FwdGraphBFull` with the dropout head. -/
-def mnv4FwdGraphBFullDo (N : Nat) (epsStr mName : String) {nCls : Nat} (w : Mnv4BWeights nCls)
-    (bf16 : Bool) (m : Vec (N * 1280)) (e : SHlo (N * (3 * 224 * 224))) : SHlo (N * nCls) :=
-  mnv4HeadGraphBDo epsStr mName N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt
+def mnv4FwdGraphBFullDo (N f : Nat) (epsStr mName : String) {nCls : Nat} (w : Mnv4BWeights nCls)
+    (bf16 : Bool) (m : Vec (N * 1280)) (e : SHlo (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) : SHlo (N * nCls) :=
+  mnv4HeadGraphBDo epsStr mName N f f w.h1W w.h1b w.h1E w.h1g w.h1bt
     w.hW w.hb w.hE w.hg w.hbt w.Wd w.bd bf16 m
-    (mnv4Res7bGraphB N epsStr w bf16
-      (mnv4Res7aGraphB N epsStr w bf16
-        (mnv4Res14bGraphB N epsStr w bf16
-          (mnv4Res14aGraphB N epsStr w bf16
-            (mnv4Res28GraphB N epsStr w bf16
-              (mnv4FusedGraphB epsStr N 56 56 w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
+    (mnv4Res7bGraphB N f epsStr w bf16
+      (mnv4Res7aGraphB N f epsStr w bf16
+        (mnv4Res14bGraphB N f epsStr w bf16
+          (mnv4Res14aGraphB N f epsStr w bf16
+            (mnv4Res28GraphB N f epsStr w bf16
+              (mnv4FusedGraphB epsStr N (2 * (2 * (2 * f))) (2 * (2 * (2 * f))) w.f0cW w.f0cb w.f0cE w.f0cg w.f0cbt
                 w.f0pW w.f0pb w.f0pE w.f0pg w.f0pbt bf16
-                (mnv4StemGraphB epsStr N 112 112 w.sW w.sb w.sE w.sg w.sbt bf16 e)))))))
+                (mnv4StemGraphB epsStr N (2 * (2 * (2 * (2 * f)))) (2 * (2 * (2 * (2 * f)))) w.sW w.sb w.sE w.sg w.sbt bf16 e)))))))
 
 /-- The dropout head's faithfulness at the net's widths — the barrier `mnv4HeadStack_graph_faithful`
     is for the plain head. -/
-theorem mnv4HeadDo_graph_faithful (N : Nat) (epsStr mName : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (m : Vec (N * 1280)) (e : SHlo (N * (256 * 7 * 7))) :
-    den (mnv4HeadGraphBDo epsStr mName N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt
+theorem mnv4HeadDo_graph_faithful (N f : Nat) (epsStr mName : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (m : Vec (N * 1280)) (e : SHlo (N * (256 * f * f))) :
+    den (mnv4HeadGraphBDo epsStr mName N f f w.h1W w.h1b w.h1E w.h1g w.h1bt
           w.hW w.hb w.hE w.hg w.hbt w.Wd w.bd bf16 m e)
       = batchMap N (dense w.Wd w.bd) (dropout m
-          (mnv4HeadFeatB N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt (den e))) :=
-  mnv4HeadGraphBDo_faithful epsStr mName N 7 7 w.h1W w.h1b w.h1E w.h1g w.h1bt
+          (mnv4HeadFeatB N f f w.h1W w.h1b w.h1E w.h1g w.h1bt w.hW w.hb w.hE w.hg w.hbt (den e))) :=
+  mnv4HeadGraphBDo_faithful epsStr mName N f f w.h1W w.h1b w.h1E w.h1g w.h1bt
     w.hW w.hb w.hE w.hg w.hbt w.Wd w.bd bf16 m e
 
 /-- **The `%do` forward graph denotes the dropout forward**, at every mask — the trunk by the
     same group rewrites as `mnv4FwdGraphBFull_faithful`. -/
-theorem mnv4FwdGraphBFullDo_faithful (N : Nat) (epsStr mName : String) {nCls : Nat}
-    (w : Mnv4BWeights nCls) (bf16 : Bool) (m : Vec (N * 1280)) (e : SHlo (N * (3 * 224 * 224))) :
-    den (mnv4FwdGraphBFullDo N epsStr mName w bf16 m e) = mobilenetv4ForwardBFullDo N w m (den e) := by
+theorem mnv4FwdGraphBFullDo_faithful (N f : Nat) (epsStr mName : String) {nCls : Nat}
+    (w : Mnv4BWeights nCls) (bf16 : Bool) (m : Vec (N * 1280)) (e : SHlo (N * (3 * (2 * (2 * (2 * (2 * (2 * f))))) * (2 * (2 * (2 * (2 * (2 * f)))))))) :
+    den (mnv4FwdGraphBFullDo N f epsStr mName w bf16 m e) = mobilenetv4ForwardBFullDo N f w m (den e) := by
   unfold mnv4FwdGraphBFullDo mobilenetv4ForwardBFullDo
     mnv4Pre6 mnv4Pre5 mnv4Pre4 mnv4Pre3 mnv4Pre2 mnv4Pre1 mnv4Pre0
   rw [mnv4HeadDo_graph_faithful, mnv4Res7bGraphB_faithful, mnv4Res7aGraphB_faithful,

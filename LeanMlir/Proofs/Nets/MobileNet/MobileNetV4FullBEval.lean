@@ -8,7 +8,7 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 /-! # MobileNetV4-Conv-M at inference — eval forward + graph + faithfulness, at every input side 32·f
 
 The eval twin of `MobileNetV4FullB.lean`. That file states Conv-M at TRAINING BatchNorm
-(`bnBatchLA`) at 224×224; this one states the same 21-row table at INFERENCE BatchNorm — frozen
+(`bnBatchLA`) at the same final side `f`; this one states the same 21-row table at INFERENCE BatchNorm — frozen
 running statistics at all **77** sites, one shared `ε` — and proves its typed `SHlo` graph denotes
 it (`mnv4FwdGraphBFullEval_faithful`). That is the graph of `mnv4_fwd_eval.mlir`,
 `mnv4in_fwd_eval.mlir` and `mnv4in_fwd_eval_s256.mlir`.
@@ -151,27 +151,27 @@ structure Mnv4BWeightsEval (nCls : Nat) where
   f0pbt : Vec 48
   f0pmu : Vec 48
   f0pv : Vec 48
-  b1 : UibEvalParams mnv4Row1
-  b2 : UibEvalParams mnv4Row2
-  b3 : UibEvalParams mnv4Row3
-  b4 : UibEvalParams mnv4Row4
-  b5 : UibEvalParams mnv4Row5
-  b6 : UibEvalParams mnv4Row6
-  b7 : UibEvalParams mnv4Row7
-  b8 : UibEvalParams mnv4Row8
-  b9 : UibEvalParams mnv4Row9
-  b10 : UibEvalParams mnv4Row10
-  b11 : UibEvalParams mnv4Row11
-  b12 : UibEvalParams mnv4Row12
-  b13 : UibEvalParams mnv4Row13
-  b14 : UibEvalParams mnv4Row14
-  b15 : UibEvalParams mnv4Row15
-  b16 : UibEvalParams mnv4Row16
-  b17 : UibEvalParams mnv4Row17
-  b18 : UibEvalParams mnv4Row18
-  b19 : UibEvalParams mnv4Row19
-  b20 : UibEvalParams mnv4Row20
-  b21 : UibEvalParams mnv4Row21
+  b1 : UibEvalParams (mnv4Row1 7)
+  b2 : UibEvalParams (mnv4Row2 7)
+  b3 : UibEvalParams (mnv4Row3 7)
+  b4 : UibEvalParams (mnv4Row4 7)
+  b5 : UibEvalParams (mnv4Row5 7)
+  b6 : UibEvalParams (mnv4Row6 7)
+  b7 : UibEvalParams (mnv4Row7 7)
+  b8 : UibEvalParams (mnv4Row8 7)
+  b9 : UibEvalParams (mnv4Row9 7)
+  b10 : UibEvalParams (mnv4Row10 7)
+  b11 : UibEvalParams (mnv4Row11 7)
+  b12 : UibEvalParams (mnv4Row12 7)
+  b13 : UibEvalParams (mnv4Row13 7)
+  b14 : UibEvalParams (mnv4Row14 7)
+  b15 : UibEvalParams (mnv4Row15 7)
+  b16 : UibEvalParams (mnv4Row16 7)
+  b17 : UibEvalParams (mnv4Row17 7)
+  b18 : UibEvalParams (mnv4Row18 7)
+  b19 : UibEvalParams (mnv4Row19 7)
+  b20 : UibEvalParams (mnv4Row20 7)
+  b21 : UibEvalParams (mnv4Row21 7)
   h1W : Kernel4 960 256 1 1
   h1b : Vec 960
   h1g : Vec 960
@@ -256,27 +256,27 @@ noncomputable def mobilenetv4ForwardBFullEval (N f : Nat) (ε : ℝ) {nCls : Nat
     Vec (N * nCls) :=
   mnv4HeadBEval N f ε w.h1W w.h1b w.h1g w.h1bt w.h1mu w.h1v
     w.hW w.hb w.hg w.hbt w.hmu w.hv w.Wd w.bd
-  (residual (mnv4BodyEval N f ε mnv4Row21 w.b21)
-  (residual (mnv4BodyEval N f ε mnv4Row20 w.b20)
-  (residual (mnv4BodyEval N f ε mnv4Row19 w.b19)
-  (residual (mnv4BodyEval N f ε mnv4Row18 w.b18)
-  (residual (mnv4BodyEval N f ε mnv4Row17 w.b17)
-  (residual (mnv4BodyEval N f ε mnv4Row16 w.b16)
-  (residual (mnv4BodyEval N f ε mnv4Row15 w.b15)
-  (residual (mnv4BodyEval N f ε mnv4Row14 w.b14)
-  (residual (mnv4BodyEval N f ε mnv4Row13 w.b13)
-  (residual (mnv4BodyEval N f ε mnv4Row12 w.b12)
-  (mnv4StridedEval N f ε mnv4Row11 w.b11
-  (residual (mnv4BodyEval N (2 * f) ε mnv4Row10 w.b10)
-  (residual (mnv4BodyEval N (2 * f) ε mnv4Row9 w.b9)
-  (residual (mnv4BodyEval N (2 * f) ε mnv4Row8 w.b8)
-  (residual (mnv4BodyEval N (2 * f) ε mnv4Row7 w.b7)
-  (residual (mnv4BodyEval N (2 * f) ε mnv4Row6 w.b6)
-  (residual (mnv4BodyEval N (2 * f) ε mnv4Row5 w.b5)
-  (residual (mnv4BodyEval N (2 * f) ε mnv4Row4 w.b4)
-  (mnv4StridedEval N (2 * f) ε mnv4Row3 w.b3
-  (residual (mnv4BodyEval N (2 * (2 * f)) ε mnv4Row2 w.b2)
-  (mnv4StridedEval N (2 * (2 * f)) ε mnv4Row1 w.b1
+  (residual (mnv4BodyEval N f ε (mnv4Row21 7) w.b21)
+  (residual (mnv4BodyEval N f ε (mnv4Row20 7) w.b20)
+  (residual (mnv4BodyEval N f ε (mnv4Row19 7) w.b19)
+  (residual (mnv4BodyEval N f ε (mnv4Row18 7) w.b18)
+  (residual (mnv4BodyEval N f ε (mnv4Row17 7) w.b17)
+  (residual (mnv4BodyEval N f ε (mnv4Row16 7) w.b16)
+  (residual (mnv4BodyEval N f ε (mnv4Row15 7) w.b15)
+  (residual (mnv4BodyEval N f ε (mnv4Row14 7) w.b14)
+  (residual (mnv4BodyEval N f ε (mnv4Row13 7) w.b13)
+  (residual (mnv4BodyEval N f ε (mnv4Row12 7) w.b12)
+  (mnv4StridedEval N f ε (mnv4Row11 7) w.b11
+  (residual (mnv4BodyEval N (2 * f) ε (mnv4Row10 7) w.b10)
+  (residual (mnv4BodyEval N (2 * f) ε (mnv4Row9 7) w.b9)
+  (residual (mnv4BodyEval N (2 * f) ε (mnv4Row8 7) w.b8)
+  (residual (mnv4BodyEval N (2 * f) ε (mnv4Row7 7) w.b7)
+  (residual (mnv4BodyEval N (2 * f) ε (mnv4Row6 7) w.b6)
+  (residual (mnv4BodyEval N (2 * f) ε (mnv4Row5 7) w.b5)
+  (residual (mnv4BodyEval N (2 * f) ε (mnv4Row4 7) w.b4)
+  (mnv4StridedEval N (2 * f) ε (mnv4Row3 7) w.b3
+  (residual (mnv4BodyEval N (2 * (2 * f)) ε (mnv4Row2 7) w.b2)
+  (mnv4StridedEval N (2 * (2 * f)) ε (mnv4Row1 7) w.b1
   (mnv4FusedBEval N (2 * (2 * (2 * f))) ε w.f0cW w.f0cb w.f0cg w.f0cbt w.f0cmu w.f0cv
     w.f0pW w.f0pb w.f0pg w.f0pbt w.f0pmu w.f0pv
   (mnv4CbReluSBEval N (h := 2 * (2 * (2 * (2 * f)))) (w := 2 * (2 * (2 * (2 * f))))
@@ -465,27 +465,27 @@ def mnv4FwdGraphBFullEval (N f : Nat) (epsStr : String) (ε : ℝ) {nCls : Nat}
     SHlo (N * nCls) :=
   mnv4HeadGraphBEval epsStr N f ε w.h1W w.h1b w.h1g w.h1bt w.h1mu w.h1v
     w.hW w.hb w.hg w.hbt w.hmu w.hv w.Wd w.bd
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row21 w.b21)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row20 w.b20)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row19 w.b19)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row18 w.b18)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row17 w.b17)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row16 w.b16)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row15 w.b15)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row14 w.b14)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row13 w.b13)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε mnv4Row12 w.b12)
-  (mnv4StridedGraphBEval epsStr N f ε mnv4Row11 w.b11
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε mnv4Row10 w.b10)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε mnv4Row9 w.b9)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε mnv4Row8 w.b8)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε mnv4Row7 w.b7)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε mnv4Row6 w.b6)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε mnv4Row5 w.b5)
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε mnv4Row4 w.b4)
-  (mnv4StridedGraphBEval epsStr N (2 * f) ε mnv4Row3 w.b3
-  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * (2 * f)) ε mnv4Row2 w.b2)
-  (mnv4StridedGraphBEval epsStr N (2 * (2 * f)) ε mnv4Row1 w.b1
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row21 7) w.b21)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row20 7) w.b20)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row19 7) w.b19)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row18 7) w.b18)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row17 7) w.b17)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row16 7) w.b16)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row15 7) w.b15)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row14 7) w.b14)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row13 7) w.b13)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N f ε (mnv4Row12 7) w.b12)
+  (mnv4StridedGraphBEval epsStr N f ε (mnv4Row11 7) w.b11
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε (mnv4Row10 7) w.b10)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε (mnv4Row9 7) w.b9)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε (mnv4Row8 7) w.b8)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε (mnv4Row7 7) w.b7)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε (mnv4Row6 7) w.b6)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε (mnv4Row5 7) w.b5)
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * f) ε (mnv4Row4 7) w.b4)
+  (mnv4StridedGraphBEval epsStr N (2 * f) ε (mnv4Row3 7) w.b3
+  (mnv4SkipGraphB (mnv4BodyGraphBEval epsStr N (2 * (2 * f)) ε (mnv4Row2 7) w.b2)
+  (mnv4StridedGraphBEval epsStr N (2 * (2 * f)) ε (mnv4Row1 7) w.b1
   (mnv4FusedGraphBEval epsStr N (2 * (2 * (2 * f))) ε w.f0cW w.f0cb w.f0cg w.f0cbt w.f0cmu w.f0cv
     w.f0pW w.f0pb w.f0pg w.f0pbt w.f0pmu w.f0pv
   (mnv4StemGraphBEval epsStr N (2 * (2 * (2 * (2 * f)))) ε
@@ -500,27 +500,27 @@ theorem mnv4FwdGraphBFullEval_faithful (N f : Nat) (epsStr : String) (ε : ℝ) 
     den (mnv4FwdGraphBFullEval N f epsStr ε w e) = mobilenetv4ForwardBFullEval N f ε w (den e) := by
   unfold mnv4FwdGraphBFullEval mobilenetv4ForwardBFullEval
   rw [mnv4HeadGraphBEval_faithful,
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row21 w.b21),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row20 w.b20),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row19 w.b19),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row18 w.b18),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row17 w.b17),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row16 w.b16),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row15 w.b15),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row14 w.b14),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row13 w.b13),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε mnv4Row12 w.b12),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row21 7) w.b21),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row20 7) w.b20),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row19 7) w.b19),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row18 7) w.b18),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row17 7) w.b17),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row16 7) w.b16),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row15 7) w.b15),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row14 7) w.b14),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row13 7) w.b13),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N f ε (mnv4Row12 7) w.b12),
     mnv4StridedGraphBEval_faithful,
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε mnv4Row10 w.b10),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε mnv4Row9 w.b9),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε mnv4Row8 w.b8),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε mnv4Row7 w.b7),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε mnv4Row6 w.b6),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε mnv4Row5 w.b5),
-    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε mnv4Row4 w.b4),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε (mnv4Row10 7) w.b10),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε (mnv4Row9 7) w.b9),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε (mnv4Row8 7) w.b8),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε (mnv4Row7 7) w.b7),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε (mnv4Row6 7) w.b6),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε (mnv4Row5 7) w.b5),
+    mnv4SkipGraphB_faithful _ _ (mnv4BodyGraphBEval_faithful epsStr N (2 * f) ε (mnv4Row4 7) w.b4),
     mnv4StridedGraphBEval_faithful,
     mnv4SkipGraphB_faithful _ _
-      (mnv4BodyGraphBEval_faithful epsStr N (2 * (2 * f)) ε mnv4Row2 w.b2),
+      (mnv4BodyGraphBEval_faithful epsStr N (2 * (2 * f)) ε (mnv4Row2 7) w.b2),
     mnv4StridedGraphBEval_faithful, mnv4FusedGraphBEval_faithful, mnv4StemGraphBEval_faithful]
 
 end Proofs.StableHLO
