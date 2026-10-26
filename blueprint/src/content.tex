@@ -270,7 +270,7 @@ Let's find out.
 \chapter*{How this book is organized}
 \addcontentsline{toc}{chapter}{How this book is organized}
 
-\emph{Getting started} comes next: four install steps, then one command per
+\emph{Getting started} comes next: five install steps, then one command per
 tier. A short \emph{Foundations} chapter follows it: what a derivative is in
 Mathlib, why the book tracks vector--Jacobian products rather than
 Jacobians, and what training adds to inference. Everything after assumes
@@ -415,7 +415,7 @@ cites \(\to\) move on.'' The dependency DAG is your friend.
 \chapter*{Getting started}
 \addcontentsline{toc}{chapter}{Getting started}
 
-Install first, read while it downloads. Four steps put a trained network on
+Install first, read while it downloads. Five steps put a trained network on
 your GPU, and after that every chapter opens with a command you can run. This
 is the default path, XLA through PJRT, and the one every number in this book
 was measured on. There is no compiler to build. The proofs-only track, the
@@ -485,7 +485,7 @@ group of verified trainers.
 \begin{verbatim}
 lake run mnist        # verified MNIST: linear, MLP, CNN              (~1 min)
 lake run cifar        # ch.4 cifar8w: SGD/momentum/AdamW x 3 norms   (~13 min)
-lake run imagenette   # the Part-I nets at 224^2, 80-epoch AdamW      (~6 h)
+lake run imagenette   # the Part-1 nets at 224^2, 80-epoch AdamW      (~6 h)
 lake run imagenet     # ImageNet-1k on 4 GPUs: plans; `start` runs it (Appendix C)
 \end{verbatim}
 
@@ -827,9 +827,10 @@ takes an upstream gradient, returns the downstream one. Every backward
 function in this book is a VJP built by composing the foundation here.
 That foundation is the partial-derivative function \(\pdiv\) (defined
 via Mathlib's \(\fderiv\)), its three structural rules of chain, sum,
-and product, and three VJP record types (\(\HasVJP\),
-\(\HasVJPMat\), \(\HasVJPthree\), one per tensor rank) that bundle a
-backward function with its correctness claim.
+and product, and one VJP record type, \(\HasVJP\), that bundles a
+backward function with its correctness claim; Chapters~\ref{chap:cnn}
+and~\ref{chap:attention} lift it to rank-3 tensors (\(\HasVJPthree\))
+and to matrices (\(\HasVJPMat\)).
 
 This is the densest chapter in the book, by design. Going
 from nothing to a complete trained model is the entire machinery, and we
@@ -884,8 +885,8 @@ done (trained MNIST-Linear via the proof-rendered StableHLO).
 
 Twelve epochs at about 224\,ms each, and 92.10\% on the full
 10,000-image test set. That is the going rate for a linear classifier on
-MNIST, and LeCun's original 1998 benchmark put a comparable model at
-around 92\%.
+MNIST, and LeCun's original 1998 benchmark put the plain linear classifier
+at 88\%, and at 92\% with deskewed inputs.
 
 The bracketed interval is worth reading once, because every accuracy in
 this book carries one. 92.10\% is 9,210 images out of 10,000, and a
@@ -1978,8 +1979,8 @@ reads to build its graph. Copy the layer list into a second definition
 and the proof would be about a different network than the one that runs.
 
 \paragraph{The whole program.}
-The trainer is 54 lines including its docstring, so here it is entire,
-with the comments stripped:
+The trainer is 58 lines including its docstring and module header, so here
+it is entire, with the comments and the header stripped:
 
 \begin{verbatim}
 import LeanMlir.Verified.NetsCore
@@ -2405,7 +2406,7 @@ survives to the GPU is the compiler's business --- common-subexpression
 elimination is a standard pass --- but the certified artifact contains
 both, and what this section shows is the artifact. Nothing is gained by
 pretending otherwise, and the duplication is a fair picture of what naive
-rendering costs: 27 operations where 19 would do.
+rendering costs: 27 operations where 18 would do.
 
 There is no fifth band, no copy-back, and no separate update kernel.
 Forward, loss, backward, and step are one compiled function, which is
@@ -2449,8 +2450,8 @@ three operations; and the loop around them counts epochs and slices
 batches, nothing more.
 
 \medskip\noindent\textbf{Where this stands.} The scheme above is the one
-every architecture in Part~I trains under, and the book's official claim
-is exactly this, no more and no less: every architecture in Part~I
+every architecture in Part~1 trains under, and the book's official claim
+is exactly this, no more and no less: every architecture in Part~1
 trained end-to-end under one machine-checked scheme. What stays open is
 three things, stated once here and accounted for in
 Appendix~\ref{app:verification}: the theorems are over \(\mathbb{R}\) while
@@ -5995,75 +5996,82 @@ denotation in the proofs' own vector type, and
 \texttt{bn\_back\_bridge} proves that denotation equal to
 \texttt{bnHasVJP}'s backward: the reduce/broadcast/elementwise graph is,
 by machine check, the three-term formula. Here it is in the chapter's
-trained artifact, \texttt{verified\_mlir/cifar8w\_bn\_sgd\_train\_step.mlir},
+trained artifact, \texttt{verified\_mlir/cifar8wb\_bbn\_sgd\_train\_step.mlir},
 at the eighth convolution's BatchNorm (32 channels at $4\times4$, batch
-128), with the recompute of the forward statistics elided down to the
-\texttt{rsqrt} (SSA names the artifact's, lines wrapped):
+128, so each channel's group is $128 \cdot 16 = 2048$ cells), with the
+recompute of the forward statistics elided down to the \texttt{rsqrt}
+(SSA names the artifact's, lines wrapped):
 
 \begin{verbatim}
-%v289 = stablehlo.reshape %v288 : (tensor<128x512xf32>)
+%v313 = stablehlo.reshape %v296 : (tensor<128x512xf32>)
       -> tensor<128x32x4x4xf32>
-%v290 = stablehlo.reshape %v219 : (tensor<128x512xf32>)
+%v297 = stablehlo.reshape %v219 : (tensor<128x512xf32>)
       -> tensor<128x32x4x4xf32>
-%v292 = stablehlo.constant dense<16.0> : tensor<128x32x4x4xf32>
+%v299 = stablehlo.constant dense<2048.0> : tensor<128x32x4x4xf32>
 // ...
-%v303 = stablehlo.rsqrt %v302 : tensor<128x32x4x4xf32>
-%v304 = stablehlo.multiply %v297, %v303 : tensor<128x32x4x4xf32>
-%v305 = stablehlo.broadcast_in_dim %g8, dims = [1] : (tensor<32xf32>)
+%v310 = stablehlo.rsqrt %v309 : tensor<128x32x4x4xf32>
+%v311 = stablehlo.multiply %v304, %v310 : tensor<128x32x4x4xf32>
+%v312 = stablehlo.broadcast_in_dim %g8, dims = [1] : (tensor<32xf32>)
       -> tensor<128x32x4x4xf32>
-%v306 = stablehlo.multiply %v305, %v289 : tensor<128x32x4x4xf32>
-%v307 = stablehlo.reduce(%v306 init: %v291)
-      applies stablehlo.add across dimensions = [2, 3]
-      : (tensor<128x32x4x4xf32>, tensor<f32>) -> tensor<128x32xf32>
-%v308 = stablehlo.broadcast_in_dim %v307, dims = [0, 1]
-      : (tensor<128x32xf32>) -> tensor<128x32x4x4xf32>
-%v309 = stablehlo.multiply %v304, %v306 : tensor<128x32x4x4xf32>
-%v310 = stablehlo.reduce(%v309 init: %v291)
-      applies stablehlo.add across dimensions = [2, 3]
-      : (tensor<128x32x4x4xf32>, tensor<f32>) -> tensor<128x32xf32>
-%v311 = stablehlo.broadcast_in_dim %v310, dims = [0, 1]
-      : (tensor<128x32xf32>) -> tensor<128x32x4x4xf32>
-%v312 = stablehlo.multiply %v306, %v292 : tensor<128x32x4x4xf32>
-%v313 = stablehlo.subtract %v312, %v308 : tensor<128x32x4x4xf32>
-%v314 = stablehlo.multiply %v304, %v311 : tensor<128x32x4x4xf32>
-%v315 = stablehlo.subtract %v313, %v314 : tensor<128x32x4x4xf32>
-%v316 = stablehlo.divide %v303, %v292 : tensor<128x32x4x4xf32>
-%v317 = stablehlo.multiply %v316, %v315 : tensor<128x32x4x4xf32>
+%v314 = stablehlo.multiply %v312, %v313 : tensor<128x32x4x4xf32>
+%v315 = stablehlo.reduce(%v314 init: %v298)
+      applies stablehlo.add across dimensions = [0, 2, 3]
+      : (tensor<128x32x4x4xf32>, tensor<f32>) -> tensor<32xf32>
+%v316 = stablehlo.broadcast_in_dim %v315, dims = [1] : (tensor<32xf32>)
+      -> tensor<128x32x4x4xf32>
+%v317 = stablehlo.multiply %v311, %v314 : tensor<128x32x4x4xf32>
+%v318 = stablehlo.reduce(%v317 init: %v298)
+      applies stablehlo.add across dimensions = [0, 2, 3]
+      : (tensor<128x32x4x4xf32>, tensor<f32>) -> tensor<32xf32>
+%v319 = stablehlo.broadcast_in_dim %v318, dims = [1] : (tensor<32xf32>)
+      -> tensor<128x32x4x4xf32>
+%v320 = stablehlo.multiply %v314, %v299 : tensor<128x32x4x4xf32>
+%v321 = stablehlo.subtract %v320, %v316 : tensor<128x32x4x4xf32>
+%v322 = stablehlo.multiply %v311, %v319 : tensor<128x32x4x4xf32>
+%v323 = stablehlo.subtract %v321, %v322 : tensor<128x32x4x4xf32>
+%v324 = stablehlo.divide %v310, %v299 : tensor<128x32x4x4xf32>
+%v325 = stablehlo.multiply %v324, %v323 : tensor<128x32x4x4xf32>
 \end{verbatim}
 
-\noindent Read it against the formula. \texttt{\%v289} is the incoming
-cotangent $dy$ and \texttt{\%v290} the layer's input $x$; \texttt{\%v303}
-is $\mathrm{istd}$ and \texttt{\%v304} is $\hat{x}$, recomputed from $x$
-rather than saved. \texttt{\%v306} is the affine backward $\gamma\,dy$,
+\noindent Read it against the formula. \texttt{\%v313} is the incoming
+cotangent $dy$ and \texttt{\%v297} the layer's input $x$; \texttt{\%v310}
+is $\mathrm{istd}$ and \texttt{\%v311} is $\hat{x}$, recomputed from $x$
+rather than saved. \texttt{\%v314} is the affine backward $\gamma\,dy$,
 with $\gamma$ (\texttt{\%g8}) broadcast along the channel axis. Each
-\texttt{reduce} across \texttt{dimensions = [2, 3]} followed by a
+\texttt{reduce} across \texttt{dimensions = [0, 2, 3]} followed by a
 \texttt{broadcast\_in\_dim} is one of the cross-coordinate sums:
-$\sum_k \gamma\,dy_k$ as \texttt{\%v308} and
-$\sum_k \hat{x}_k\,\gamma\,dy_k$ as \texttt{\%v311}. \texttt{\%v312} is
-$n\,\gamma\,dy$ with $n = 16$ (\texttt{\%v292}), \texttt{\%v313}
-subtracts the centering correction, \texttt{\%v315} subtracts the rank-1
+$\sum_k \gamma\,dy_k$ as \texttt{\%v316} and
+$\sum_k \hat{x}_k\,\gamma\,dy_k$ as \texttt{\%v319}. \texttt{\%v320} is
+$n\,\gamma\,dy$ with $n = 2048$ (\texttt{\%v299}), \texttt{\%v321}
+subtracts the centering correction, \texttt{\%v323} subtracts the rank-1
 normalization correction $\hat{x}\sum\hat{x}\,\gamma\,dy$, and
-\texttt{\%v317} scales the bracket by $\mathrm{istd}/n$ (\texttt{\%v316}).
-The graph folds $\gamma$ into \texttt{\%v306} up front, which is why that
+\texttt{\%v325} scales the bracket by $\mathrm{istd}/n$ (\texttt{\%v324}).
+The graph folds $\gamma$ into \texttt{\%v314} up front, which is why that
 leading scale is $\mathrm{istd}/n$ and not $\mathrm{istd}\,\gamma/n$: the
 same formula with $\gamma$ pulled inside the parenthesis.
 
-The reduction axes say which layer this is. \texttt{[2, 3]} are the two
-spatial axes, so each statistic is taken per image and per channel over
-the 16 cells of a $4\times4$ map, which is the per-image normalization
-the section ``What BN actually is'' above describes; a batch-statistics
-BatchNorm reduces over \texttt{[0, 2, 3]}, and that is what the ResNet
-and MobileNet artifacts of the next chapters emit. Both are instances of
+The reduction axes say which layer this is. \texttt{[0, 2, 3]} are the
+batch axis and the two spatial axes, so each statistic is taken per
+channel over every cell of every image in the batch: the batch-statistics
+form this chapter trains, and the one every BatchNorm net from
+Chapter~\ref{chap:residual} on renders. The per-image twin,
+\texttt{cifar8w\_bn\_sgd\_train\_step.mlir}, is the same graph with
+\texttt{[2, 3]} in both \texttt{reduce}s, $n = 16$, and a
+$128 \times 32$ statistic where this one has $32$. Both are instances of
 the one theorem, over groups of different width. The leaf theorem here is
-\texttt{bnPerChannelBack\_faithful}: the per-channel three-term graph
-denotes the input gradient of \texttt{bnPerChannelTensor3}, the
-block-diagonal Jacobian contracted against $dy$, under $\varepsilon > 0$;
-its batch-statistics twin is
-\texttt{bnBatchTensor4GradInput\_eq\_backward}.
-Theorems~\ref{thm:cifar8bn_step_tie} and~\ref{thm:cifar8_step_tieG} state
-that every parameter update in this file is the certified step at the
-cotangent the file's own backward delivers, the eight BatchNorms
-included.
+Theorem~\ref{thm:bnBatchTensor4HasVJP}: the renderable backward
+\texttt{bnBatchTensor4GradInput} is the batch-statistics layer's Jacobian
+contracted against $dy$, under $\varepsilon > 0$; its per-image twin is
+\texttt{bnPerChannelBack\_faithful}, over the block-diagonal Jacobian of
+\texttt{bnPerChannelTensor3}.
+Theorems~\ref{thm:cifar8bbn_step_tie}, \ref{thm:cifar8bbn_whole_back}
+and~\ref{thm:cifar8bbn_loss_grad} then say what this file's gradient
+nodes are: each is the certified batch gradient at the cotangent the
+file's own backward delivers, the eight BatchNorms included; the chain is
+the whole net's VJP; and each node is the loss's derivative in its
+parameter. Theorems~\ref{thm:cifar8bn_step_tie}
+and~\ref{thm:cifar8_step_tieG} are the same statements for the per-image
+renders.
 
 \medskip\noindent Because LayerNorm is BatchNorm along a different axis, the
 very same emitted graph denotes the LayerNorm backward
@@ -6796,7 +6804,7 @@ back, $y = f(x) + x$.
 ]
   \node[io]                            (input) {Input \;\; $224\times224\times3$};
   \node[convbn, below=0.18cm of input] (stem) {\textbf{ConvBN} stem $3\to64$, $7\times7$, /2};
-  \node[pool,   below=0.18cm of stem]  (mp)   {\textbf{maxPool} $2\times2$ \;\; $112\to56$};
+  \node[pool,   below=0.18cm of stem]  (mp)   {\textbf{maxPool} $3\times3$, /2 \;\; $112\to56$};
   \node[resid,  below=0.18cm of mp]    (s1)   {$3\times$ \textbf{Residual} $64\to64$ \;\; $56\times56$};
   \node[resid,  below=0.18cm of s1]    (s2)   {$4\times$ \textbf{Residual} $64\to128$, /2 \;\; $28\times28$};
   \node[resid,  below=0.18cm of s2]    (s3)   {$6\times$ \textbf{Residual} $128\to256$, /2 \;\; $14\times14$};
@@ -7317,8 +7325,8 @@ adaptive optimizer's insensitivity to that rate hides the dependence. The figure
 measures the recipe as tuned, not its ingredients in isolation.
 
 \medskip\noindent \textbf{Augmentation is the largest single contribution}
-($-7.33 \pm 0.49$ fp32, $-7.11 \pm 0.38$ bf16; three times the next-largest
-knob). Imagenette has 9{,}469 training images for a 21.3M-parameter network, so
+($-7.33 \pm 0.49$ fp32, $-7.11 \pm 0.38$ bf16; half again the next-largest
+knob, the cosine schedule). Imagenette has 9{,}469 training images for a 21.3M-parameter network, so
 without the random crop and flip the model overfits hard. Most of what the rest
 of the recipe gets credit for is augmentation.
 
@@ -7458,10 +7466,12 @@ def resnet34ImagenetVerified : VerifiedNetSpec where
 #guard resnet34ImagenetVerified.toSpecs.pop.pop == resnet34Verified.toSpecs.pop.pop
 #guard resnet34ImagenetVerified.toSpecs.back!  == (#[1000], 2)
 
--- 2. 90 epochs at batch 256.
+-- 2. 90 epochs at batch 256, with the two host-side Bag-of-Tricks rows.
 def resnet34ImagenetConfig : VerifiedConfig where
   epochs    := 90
   batchSize := 256
+  zeroGammaInit := true   -- zero-γ on the 16 residual-closing BNs
+  bnMomentum := 0.9       -- BN running-stat decay (torchvision's momentum=0.1)
 
 -- 3. The entry point. Heavy-ball momentum, cosine with a 5-epoch warmup
 --    at peak 0.1, weight decay 1e-4, label smoothing 0.1.
@@ -7593,8 +7603,9 @@ Theorem~\ref{thm:resnet34_sync_tie} ties to one device's step at $256$.
 together.} The middle of the schedule is noisy on both paths --- at peak
 learning rate SGD moves top-1 by a point or two between consecutive
 epochs, in both directions, three at the worst on either path --- so the row
-is read for its ends. The verified path leads by one to three points
-through the first third and the lead closes as the cosine anneals: over the
+is read for its ends. At the tabulated epochs the verified path reads one
+to three points ahead through the first third, though epoch by epoch the
+two swap sides, and the gap closes as the cosine anneals: over the
 last fifteen epochs the two average within $0.15$ of each other on top-1
 and $0.20$ on top-5.
 Table~\ref{tab:r34_paths_epochs} is the selected epochs and
@@ -8072,7 +8083,7 @@ Label smoothing & $0.1$                & $0.0$                         & subsume
 Augmentation  & RRC + hflip            & RRC + hflip                   & unchanged, and it is the BASE both recipes train on; the two rows below are what A3 layers on top of it \\
 Mixup / CutMix & none                  & $\alpha\,0.1$ / $\alpha\,1.0$ & interpolate/paste samples $\to$ soft multi-hot targets, strong regularizer \\
 RandAugment   & none                   & \texttt{m6 N2 mstd0.5 inc1}   & automated heavy color+geometric augmentation policy \\
-Weight decay  & $10^{-4}$, all params  & $0.02$, skip BN $\gamma/\beta$ + bias & $200\times$ stronger, but never decays scale/shift/bias params \\
+Weight decay  & $10^{-4}$, weights only & $0.02$, skip BN $\gamma/\beta$ + bias & $200\times$ stronger; both leave scale, shift and bias undecayed \\
 Train / eval res & $224$ / $224$        & $160$ / $224$                 & FixRes: train at cheap low res ($\sim$2$\times$ faster/step), test at high res --- the train/test gap helps \\
 BN statistics & global over batch      & Ghost-BN over 512             & side-effect of grad-accum (each micro-step normalizes its own 512); a single big-memory card would remove it \\
 \hline
@@ -9469,7 +9480,7 @@ batch, the weight decay and the decay rate --- $\times0.98$ per epoch ---
 and leaves the length of the schedule unstated. The README's command does
 not: about $700$K steps on eight clones of $96$, which is $700{,}000 \times
 768 / 1{,}281{,}167 \approx 420$ epochs of data, with the stair every $2.5$
-epochs rather than every one. That staircase decays a fifth as often as the
+epochs rather than every one. That staircase decays two fifths as often as the
 paper's sentence, so at epoch $420$ the rate is still $0.12 \times
 0.98^{167} \approx 4.1 \times 10^{-3}$, and the end-of-schedule polish a
 cosine run gets from annealing to zero comes here from the weight average
@@ -9671,7 +9682,7 @@ weights scored       & EMA $0.9999$, epoch 420  & EMA $0.9999$, epoch 420 \\
 \noindent The BatchNorm group is held equal too: the reference normalizes over the global $256$ under its mesh, and the
 verified render all-reduces to the same $256$.
 
-\medskip\noindent\textbf{The two paths tie}, $-0.15$ on top-1 (77 images)
+\medskip\noindent\textbf{The two paths tie}, $-0.15$ on top-1 (78 images)
 and $-0.01$ on top-5, inside the 95\% Wilson interval ($\pm0.40$ at $71\%$
 on $50{,}000$ images) at one seed each, and the curves sit on each other the
 whole way: the training losses agree to within $0.005$ in every 25-epoch
@@ -9699,7 +9710,7 @@ epoch & 10 & 50 & 100 & 150 & 200 & 300 & 400 & 420 \\
 \hline
 reference (JAX)       & 56.19 & 65.41 & 67.93 & 69.22 & 70.20 & 71.27 & 71.69 & 71.84 \\
 verified path (PJRT)  & 56.12 & 65.25 & 67.70 & 69.02 & 69.99 & 70.92 & 71.70 & 71.69 \\
-$\Delta$              & $-0.07$ & $-0.16$ & $-0.22$ & $-0.20$ & $-0.21$ & $-0.35$ & $+0.02$ & $-0.15$ \\
+$\Delta$              & $-0.07$ & $-0.16$ & $-0.23$ & $-0.20$ & $-0.21$ & $-0.35$ & $+0.01$ & $-0.15$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -9759,7 +9770,7 @@ Knob & ResNet-34 (2018) & MobileNetV2 (2018) & What the MNv2 choice buys \\
 Backbone      & basic block, 21.8\,M   & inverted residual, 3.5\,M     & depthwise $3\times3$ at the wide point between $1\times1$s, at $1/6$ the parameters \\
 Optimizer     & SGD + momentum $0.9$   & RMSProp                       & $\rho{=}0.9$, $\mu{=}0.9$, $\varepsilon{=}1.0$, where the huge $\varepsilon$ keeps the adaptive step damped (B0 shrinks it to $10^{-3}$ and pays for it) \\
 Peak LR       & $0.1$                  & $0.045$ per 96, $0.12$ at 256 & RMSProp's scale, not comparable to SGD's $0.1$; the README scales it with the clones \\
-LR schedule   & cosine to zero         & exponential, $\times0.98$ per $2.5$ epochs & the TF-lineage staircase the whole family inherits, a fifth as often as the paper's sentence \\
+LR schedule   & cosine to zero         & exponential, $\times0.98$ per $2.5$ epochs & the TF-lineage staircase the whole family inherits, two fifths as often as the paper's sentence \\
 Epochs        & 90                     & $420$                         & the README's 700K steps, the long-haul schedule the slow stair makes non-negotiable \\
 Weight decay  & $10^{-4}$, weights only & $4\times10^{-5}$, kernels only & depthwise filters are 9 weights per channel, and slim regularizes \texttt{conv2d} alone: not BN, not biases, not the depthwise \\
 Label smoothing & $0.1$                & $0.1$                         & the paper names none; the README's command sets it \\
@@ -9820,7 +9831,7 @@ diff.
 
 \begin{table}[H]
 \centering
-\caption{MobileNetV4-Conv-M against MobileNetV2, knob by knob.}
+\caption{MobileNetV4-Conv-M against MobileNetV2 as Table~\ref{tab:mnv2_vs_2018} trains it, knob by knob.}
 \label{tab:mnv4_vs_mnv2}
 \begin{tabular}{@{}l p{2.9cm} p{3.2cm} p{6.3cm}@{}}
 \hline
@@ -9829,16 +9840,16 @@ Knob & MobileNetV2 (2018) & MNv4-Conv-M (2024) & What the v4 choice buys \\
 Block         & inverted residual      & UIB (+ fused IB stage)        & the two optional depthwise slots subsume MNv2's block, ConvNeXt's, and an FFN in one template \\
 Parameters    & 3.5\,M                 & 9.7\,M                        & ``mobile'' now means fits-the-phone, not smallest-possible \\
 Paper top-1   & $72.0\%$               & $79.9\%$                      & non-distilled, and distillation pushes the family higher still \\
-Resolution    & $224$                  & $256$                         & timm also publishes the $224$ variant this book trains at \\
+Resolution    & $224$                  & $256$                         & timm also publishes the $224$ variant the \texttt{default} tier trains at \\
 Optimizer     & RMSProp ($\varepsilon{=}1.0$) & AdamW $\beta(0.9, 0.999)$ & the TF-lineage staircase gives way to the transformer-era default \\
-Peak LR       & $0.045$ @ 256          & $0.004$ @ 4096                & effective batch 4096 (run here as $512 \times 8$ grad-accum) \\
-LR schedule   & exponential, $\times0.98$ per epoch & cosine, 5-epoch warmup & the anneal every post-2020 recipe in this book uses \\
-Epochs        & $\sim$300--400         & 500                           & the family's long-haul habit, taken further \\
-Weight decay  & $4\times10^{-5}$       & $0.1$, skip norm/bias         & $2500\times$ stronger, applied selectively, because AdamW makes heavy decay usable \\
-Augmentation  & RRC + hflip            & + RandAugment (N2, m15, p0.7) & heavy learned augmentation, and still no Mixup/CutMix for Conv-M \\
-Label smoothing & none                 & $0.1$                         & standard by 2024 \\
+Peak LR       & $0.12$ @ 256 ($0.045$ per 96) & $0.004$ @ 4096                & effective batch 4096 (run here as $512 \times 8$ grad-accum) \\
+LR schedule   & exponential, $\times0.98$ per $2.5$ epochs & cosine, 5-epoch warmup & the anneal every post-2020 recipe in this book uses \\
+Epochs        & $420$                  & 500                           & the family's long-haul habit, taken further \\
+Weight decay  & $4\times10^{-5}$, kernels only & $0.1$, skip norm/bias         & $2500\times$ stronger, applied selectively, because AdamW makes heavy decay usable \\
+Augmentation  & slim's crop + hflip + colour & RRC + RandAugment (N2, m15, p0.7) & heavy learned augmentation, and still no Mixup/CutMix for Conv-M \\
+Label smoothing & $0.1$                & $0.1$                         & unchanged \\
 Stochastic depth & none                & drop-path $0.075$             & linear ramp over the 21 UIB blocks, applied at the 18 that carry a skip \\
-EMA           & none                   & none                          & the \texttt{default} tier adds a warmup-corrected $0.9999$ shadow, BN buffers included (see the EfficientNet notes); the paper tier scores the live weights \\
+EMA           & $0.9999$               & none                          & the paper tier scores the live weights; the \texttt{default} tier adds a warmup-corrected $0.9999$ shadow, BN buffers included (see the EfficientNet notes) \\
 \hline
 \end{tabular}
 \end{table}
@@ -9847,7 +9858,7 @@ EMA           & none                   & none                          & the \te
 Chapters~\ref{chap:se} and~\ref{chap:layernorm}: by 2024 the mobile
 lineage has converged on the same transformer-era training
 recipe as everything else (AdamW at large effective batch,
-cosine, heavy selective decay, RandAugment, EMA) while the block
+cosine, heavy selective decay, RandAugment) while the block
 template generalized enough to absorb its rivals.
 
 \texttt{mobilenet-v4-imagenet} ships the paper recipe as \texttt{full}, and a
@@ -10318,7 +10329,7 @@ runs three operations in sequence:
 \end{enumerate}
 
 That's it. The MLP operates on a \([B, C]\) tensor, not
-\([B, C, H, W]\), so it's tiny, at \(C^2 / r + C/r + C\) parameters
+\([B, C, H, W]\), so it's tiny, at \(2C^2 / r + C/r + C\) parameters
 per block against millions for a standard conv at the same width.
 
 \prosesection{From the framework: it's an elementwise product}
@@ -10803,7 +10814,8 @@ arm and nowhere else in the spec.
 downsampling pattern is fixed by the architecture rather than chosen per
 block, so it lives in the renderer, which emits \texttt{b1} as
 no-expand, \texttt{b2}, \texttt{b4}, \texttt{b6} and \texttt{b12} as
-strided, and the remaining nine as residual. The spec's job is the
+strided, \texttt{b9} and \texttt{b16} as plain stride-1 blocks whose
+channel count changes, and the remaining nine as residual. The spec's job is the
 parameter layout, and \texttt{efficientnetVerified.toSpecs} is
 kernel-\texttt{\#guard}ed against an independently audited hand-list.
 
@@ -10864,11 +10876,11 @@ are one run each.
   than ResNet-34 and in six fewer minutes. MobileNetV2 keeps top-5 by four
   tenths, which is the one place the larger model does not win.
 
-\item \textbf{SE and Swish buy $+0.71$ top-1 over MobileNetV2 for
+\item \textbf{SE and Swish buy $+0.79$ top-1 over MobileNetV2 for
   $1.80\times$ the parameters} (4.02M against 2.24M). That is a real
   return rather than a bargain: the cost is the two-layer MLP inside
   every one of the sixteen MBConv blocks. Whether $1.8\times$ the
-  parameters is worth seven tenths of a point is a judgement, but it is a
+  parameters is worth eight tenths of a point is a judgement, but it is a
   much better trade than it looks on the ImageNet leaderboard, where B0
   is usually compared against far larger models.
 
@@ -11031,7 +11043,7 @@ def efficientNetB0ImagenetConfig : TrainConfig where
   rmspropEps     := 1e-3      -- EfficientNet uses ε=1e-3
   gradClipNorm   := 0.0       -- off: the paper uses none
   weightDecay    := 1e-5
-  wdExcludeNormBias := true   -- no decay on BN γ/β or biases
+  wdExcludeNormBias := true   -- no decay on BN γ/β; biases follow wdDecayBiases
   cosineDecay      := false   -- the paper's exponential decay instead
   expLRDecayRate   := 0.97    -- ×0.97 every 2.4 epochs
   expLRDecayEpochs := 2.4
@@ -11409,7 +11421,7 @@ epoch & 10 & 50 & 100 & 150 & 200 & 300 & 350 \\
 \hline
 reference (JAX)       & 62.81 & 71.30 & 74.01 & 75.21 & 76.14 & 77.06 & 77.17 \\
 verified path (PJRT)  & 62.95 & 71.42 & 74.19 & 75.51 & 76.14 & 77.01 & 77.21 \\
-$\Delta$              & $+0.14$ & $+0.12$ & $+0.17$ & $+0.30$ & $+0.01$ & $-0.05$ & $+0.04$ \\
+$\Delta$              & $+0.14$ & $+0.12$ & $+0.18$ & $+0.30$ & $0.00$ & $-0.05$ & $+0.04$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -11544,8 +11556,8 @@ expensive in memory traffic. The fused block is already in the kit as
 The chapter's other lesson is that a recipe is a specification, not a list
 of hyperparameters: RMSProp in TensorFlow's form, the EMA shadowing the
 BatchNorm buffers, the warmup-corrected decay, each a detail that moves
-the number. The two paths land close and not on top of each other, and the
-section says which rows are the suspects. The next chapter takes the recipe
+the number. The two paths tie, every recipe row held equal by construction, and the
+section says which rows did the work. The next chapter takes the recipe
 idea to its conclusion, a ResNet modernized one transformer-era choice at a
 time, and brings the two operations that era runs on, LayerNorm and GELU.
 
@@ -11731,9 +11743,10 @@ residual unit:
 \]
 
 Two pieces: the \emph{inverted bottleneck}
-($1 \times 1$ expand 4$\times$, depthwise spatial conv at the wide
-point, $1 \times 1$ project) is exactly the MobileNetV2 inverted
-residual from Chapter~\ref{chap:depthwise}. ConvNeXt is paying the
+(depthwise $7 \times 7$ at the block width, then $1 \times 1$ expand
+4$\times$ and $1 \times 1$ project) is the MobileNetV2 inverted residual
+from Chapter~\ref{chap:depthwise} with the depthwise moved in front of
+the expansion. ConvNeXt is paying the
 MobileNet idea forward. \emph{LayerScale} (Touvron et al.\ 2021) is
 a learnable per-channel scalar \(\gamma\) initialized to \(10^{-6}\)
 that multiplies the block's contribution before the residual add,
@@ -12227,7 +12240,7 @@ add.
   stage/.style  = {font=\sffamily\scriptsize\itshape, gray!55!black, anchor=west},
 ]
   \node[io]                          (input){Input \;\; $224\times224\times3$};
-  \node[convbn, below=0.16cm of input] (stem) {\textbf{ConvBN} patchify $3\to96$, $4\times4$, /4 \;\; $56{\times}56$};
+  \node[convbn, below=0.16cm of input] (stem) {\textbf{Conv $+$ LN} patchify $3\to96$, $4\times4$, /4 \;\; $56{\times}56$};
   \node[blk, below=0.16cm of stem]   (c1)   {$3\times$ \textbf{ConvNeXt} block @\,96 \;\; $56{\times}56$};
   \node[norm, below=0.16cm of c1]    (n1)   {downsample $96\to192$ (LN $+$ $2\times2$/2) \;\; $28{\times}28$};
   \node[blk, below=0.16cm of n1]     (c2)   {$3\times$ \textbf{ConvNeXt} block @\,192 \;\; $28{\times}28$};
@@ -12451,7 +12464,7 @@ ConvNeXt-T       & \textbf{27.83M} & 1{,}019\,KB & 188 ms & 1.2 h & 82.27\% & 96
     block, and the $4\times$ expansion makes its $1 \times 1$s the largest
     matmuls in the column.
   \item \textbf{The MLIR is mid-pack at 1{,}019\,KB}, above ResNet-34's 754
-    and below MobileNetV2's 1,047 and EfficientNet-B0's 1,316. Block
+    and below MobileNetV2's 1,071 and EfficientNet-B0's 1,317. Block
     count is not what separates them, since ConvNeXt's eighteen is more
     than either. What separates them is what one block costs to emit:
     ConvNeXt spends three convolutions and a single LayerNorm per block,
@@ -12471,7 +12484,7 @@ the backward multiplying by the same $\gamma$ the forward did. There is
 nothing to bridge past that identity, so the emitted graph is two
 \texttt{multiply}s against one tensor. Here they are in
 \texttt{verified\_mlir/convnext\_adam\_train\_step.mlir}, at the last
-block of the third stage (\texttt{s3b2}: 768 channels at $7\times7$,
+block of the fourth stage (\texttt{s3b2}, stages counted from zero: 768 channels at $7\times7$,
 batch 32; SSA names the artifact's, lines wrapped):
 
 \begin{verbatim}
@@ -15284,7 +15297,10 @@ The same accounting holds for every verified ImageNet run in this book.
 
 \medskip\noindent\textbf{Paired per image, it is still a tie.} Both runs
 score the same $50{,}000$ images, so the comparison can be made image by
-image, as \S\ref{sec:r34_pjrt} does. The reference is right on $2{,}347$
+image, as \S\ref{sec:r34_pjrt} does; the reference arm here is its final
+checkpoint rescored on CPU in fp32, $35{,}826$ correct, seven images over
+its in-run line, so the pair sits twenty images apart rather than
+thirteen. The reference is right on $2{,}347$
 images the verified model misses, and the verified model on $2{,}327$
 the reference misses; McNemar's exact test gives $p = 0.78$. The two
 checkpoints cannot be told apart on this validation set. Matched row for
@@ -15438,7 +15454,7 @@ chapters 1--9 and proved each one's backward pass:
   \item Atomic ops: \texttt{.dense}, \texttt{.flatten},
     \texttt{.conv2d}, \texttt{.maxPool}, \texttt{.convBn},
     \texttt{.globalAvgPool}, plus the \texttt{Activation} enum
-    (Ch 2--5).
+    (Ch 1--5).
   \item \texttt{.residualBlock} (Ch 5, ResNet-34).
   \item \texttt{.invertedResidual} (Ch 6, MobileNet V2).
   \item \texttt{.mbConv} with optional Squeeze-and-Excitation
@@ -15453,7 +15469,10 @@ Call this the \emph{primary-sequence toolbox} --- everything a
 reader has internalized after finishing Part 1. The \textbf{bestiary}
 is Part 2: a catalogue of famous architectures expressed as pure
 \texttt{NetSpec} values, no training runs, no VJP commitments, just
-``here's what this architecture looks like in $\sim$15 lines of Lean.''
+``here's what this architecture looks like in $\sim$15 lines of Lean''
+--- and, beside the catalogue, twelve demos that do train, through the
+chapter nets and the four codegen-backed primitives of
+\S\ref{sec:bestiary_primitives}.
 
 \paragraph*{What ``\(N\) new primitives'' means.}
 Every bestiary entry leads with how many new \texttt{Layer}
@@ -15546,12 +15565,12 @@ inventory.
 \opchiprow{cOr}{\PB}{-3.5}{sepConv, darknet}
 \draw[band] (0,-4.65) -- (15.7,-4.65);
 \node[catlbl] at (2.15,-5.6) {Norm $\cdot$ pool\\reshape $\cdot$ embed};
-\opchiprowD{cTe}{\PA}{-5.0}{batchNorm/g, maxPool/g, globalAvgPool/g, flatten/g, layerNorm/r, patchEmbed/r, tokenEmbed/r}
-\opchiprow{cTe}{\PB}{-5.0}{patchMerge, transition, posEncode}
+\opchiprowD{cTe}{\PA}{-5.0}{batchNorm/g, maxPool/g, globalAvgPool/g, flatten/g, layerNorm/r, patchEmbed/r}
+\opchiprow{cTe}{\PB}{-5.0}{patchMerge, transition, posEncode, tokenEmbed, pairTile}
 \draw[band] (0,-6.75) -- (15.7,-6.75);
 \node[catlbl] at (2.15,-7.7) {Residual\\skip $\cdot$ merge};
 \opchiprowD{cBr}{\PA}{-7.1}{residual/g, invResidual/y, layerScale/r}
-\opchiprow{cBr}{\PB}{-7.1}{bottleneck, denseBlock, cspBlock, fpn, unetDown, unetUp}
+\opchiprow{cBr}{\PB}{-7.1}{denseBlock, cspBlock, fpn, fpnDetect, unetDown, unetUp}
 \draw[band] (0,-8.85) -- (15.7,-8.85);
 \node[catlbl] at (2.15,-9.5) {Multi-branch\\parallel};
 \opchiprowD{cVi}{\PA}{-9.2}{squeeze-excite/y}
@@ -15574,18 +15593,19 @@ inventory.
 \label{fig:operation_inventory}
 \end{figure}
 
-\section{Bestiary-only \texttt{Layer} primitives}
+\section{The bestiary's \texttt{Layer} primitives}
 \label{sec:bestiary_primitives}
 
-Twenty-five of the bestiary's \texttt{Layer} constructors are described here. The two
+Twenty-six of the bestiary's \texttt{Layer} constructors are described here. The two
 plain ones, \texttt{.separableConv} (Xception, QANet) and
 \texttt{.fireModule} (SqueezeNet), are described in their entries; the
-twenty-three bundled ones are defined here. Three of these are codegen-backed,
-\texttt{.unetDown} and \texttt{.unetUp}, which the segmentation and diffusion
-demos train through, and \texttt{.pairTile}, the structure demo's stem; the rest
-have no emitter, the reference codegen refuses a spec
-that contains one, and their goal
-is pedagogical shape and parameter accounting, not training runs.
+twenty-four bundled ones are defined here. Four of these are codegen-backed:
+\texttt{.unetUp}, which the segmentation demo's decoder trains through,
+\texttt{.unetDown} beside it in the diffusion demo, \texttt{.fpnDetect}, the
+detection demos' head, and \texttt{.pairTile}, the structure demo's stem; the
+rest have no emitter, the reference codegen refuses a spec that contains one,
+and their goal is pedagogical shape and parameter accounting, not training
+runs.
 
 \begin{definition}[Inception module]
   \label{layer:inceptionModule}
@@ -15694,8 +15714,9 @@ is pedagogical shape and parameter accounting, not training runs.
   YOLOv3's Darknet-53 residual stack (Redmon \& Farhadi 2018).
   \texttt{nBlocks} residual blocks at fixed \texttt{channels}, each
   being 1$\times$1 conv ($c \to c/2$) $+$ 3$\times$3 conv ($c/2 \to c$)
-  $+$ residual add. Lighter than a standard ResNet bottleneck; heavier
-  than a ResNet-18 basic block. Signature:
+  $+$ residual add. At equal width, heavier than a ResNet bottleneck
+  ($5c^2$ against about $c^2$) and lighter than a ResNet-18 basic block
+  ($18c^2$). Signature:
   \texttt{darknetBlock (channels nBlocks : Nat)}.
 \end{definition}
 
@@ -15727,6 +15748,23 @@ is pedagogical shape and parameter accounting, not training runs.
   kit in 2-stage detectors (Mask R-CNN, Cascade R-CNN) and
   single-stage detectors (RetinaNet). Signature:
   \texttt{fpnModule (c2 c3 c4 c5 target : Nat)}.
+\end{definition}
+
+\begin{definition}[FPN detection head]
+  \label{layer:fpnDetect}
+  \lean{Layer.fpnDetect}
+  \leanok
+  The multi-scale head the detection demos train
+  (\S\ref{sec:bestiary_detection}, \S\ref{sec:bestiary_inspection}). Taps
+  the three preceding backbone stages C3/C4/C5 (channels \texttt{c3} /
+  \texttt{c4} / \texttt{c5} at strides $8/16/32$), runs a top-down neck to
+  \texttt{oc} channels, an optional RetinaNet tower of \texttt{tower}
+  $3\times3$ convs per level, then a per-scale $1\times1$ head
+  (\texttt{oc} $\to$ \texttt{A}$\cdot 15$) and flattens the three grids into
+  one output; \texttt{g5} is the coarsest grid, \texttt{imageH}/32.
+  Codegen-backed, forward and backward: the cross-scale join is the one
+  place a linear \texttt{NetSpec} reaches back to earlier layers, and the
+  emitter owns it. Signature: \texttt{fpnDetect (oc c3 c4 c5 g5 A tower : Nat)}.
 \end{definition}
 
 \begin{definition}[Transformer decoder (DETR-style)]
@@ -15781,7 +15819,7 @@ is pedagogical shape and parameter accounting, not training runs.
   model's contact map, a template distogram --- ride behind the blocks and
   are concatenated as the map's last $K$ channels. Codegen-backed: the
   structure demo trains through it, and its two weight VJPs are
-  \texttt{Proofs/Foundation/PairTile.lean}. Signature: \texttt{pairTile (seqLen inDim outDim : Nat)
+  \texttt{LeanMlir/Proofs/Foundation/PairTile.lean}. Signature: \texttt{pairTile (seqLen inDim outDim : Nat)
   (pairIn : Nat := 0)}.
 \end{definition}
 
@@ -15883,8 +15921,8 @@ is pedagogical shape and parameter accounting, not training runs.
 The entries are grouped by task domain, over three chapters. This one is
 recognition: the chapter nets on pictures, at real-world scale and then on
 real problems --- classification backbones first, where every layer is one
-Part 1 proved, then detection, inspection, sign language, leaves and
-tumours, each with a dataset, the field's own baseline to beat, and beside
+Part 1 proved, then detection, inspection, sign language, leaves, satellite
+chips and tumours, each with a dataset, the field's own baseline to beat, and beside
 the demo the architectures that field uses. Chapter~\ref{chap:bestiary_beyond}
 leaves recognition behind, and Chapter~\ref{chap:bestiary_games} plays games
 against their exact solutions.
@@ -15893,7 +15931,7 @@ against their exact solutions.
 
 Image-classification backbones built out of conv / pool / batch-norm /
 residual / attention / patch-embed --- the exact layer kit VJP'd in
-Part 1. If a chapter of Part 1 proved it, a bestiary entry below puts
+Part 1. If a chapter of Part 1 proved it, an entry of this section puts
 it to work.
 
 \subsection*{LeNet (\texttt{Bestiary/LeNet.lean})}
@@ -15926,17 +15964,17 @@ def leNet5 : NetSpec where
 \emph{Zero} new primitives --- five convs, three FCs, pools. The 2012
 ImageNet winner that restarted modern deep learning (Krizhevsky et al.\ 2012,
 \href{https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html}{NeurIPS 2012}). Variants:
-AlexNet (62M, paper-exact at 60M; the first FC's fan-in is pinned to the
+AlexNet (62M against the paper's 60M; the first FC's fan-in is pinned to the
 paper's $6 \cdot 6 \cdot 256$, while the spec's own body ends at $7 \times 7$) + tiny CIFAR fixture. $\sim$58M of
 the 62M live in the three FC layers, which is precisely why every
 post-2015 CNN dropped FC stacks for \texttt{globalAvgPool} + one final
 dense. LRN is omitted (replaced in the field by BatchNorm in 2015);
 dropout is training-time only.
 
-Krizhevsky trained on two GTX 580 cards (3 GB each) for $\sim$6 days,
+Krizhevsky trained on two GTX 580 cards (3 GB each) for $\sim$6 days;
 the two-tower model is a hardware constraint, not a design choice.
-The winning submission combines convnets with KNN sampling and
-10-crop test-time averaging.
+The winning submission averaged seven convnets, each with 10-crop
+test-time averaging.
 
 \begin{verbatim}
 def alexNet : NetSpec where
@@ -15953,7 +15991,7 @@ def alexNet : NetSpec where
     .conv2d 384 256 3 .same .relu,
     .maxPool 2 2,
     .flatten,
-    .dense (6 * 6 * 256) 4096 .relu,      -- ~95% of params live here
+    .dense (6 * 6 * 256) 4096 .relu,      -- 38M of the 62M; the three FCs hold 58M
     .dense 4096 4096 .relu,
     .dense 4096 1000 .identity
   ]
@@ -16015,15 +16053,15 @@ def vgg16 : NetSpec where
 \end{verbatim}
 
 VGG-16 / VGG-19 still appear in production today as feature
-extractors (perceptual loss, style transfer) --- those FC features
-turn out to encode useful image structure even after the
+extractors (perceptual loss, style transfer) --- the convolutional
+features turn out to encode useful image structure even after the
 classification head fell out of favor.
 
 \subsection*{Highway Networks (\texttt{Bestiary/Highway.lean})}
 \emph{Zero} new math --- the architecture is built entirely from the
 product rule and additive fan-in (Chapter~\ref{chap:tensor}'s
 toolkit) applied to two parallel dense / conv paths, and \emph{zero}
-new primitives: the two paths are two \texttt{NetSpec}s below and the
+new primitives: the two paths are the two \texttt{NetSpec}s listed and the
 gate-blend is prose (Srivastava, Greff, Schmidhuber 2015,
 \href{https://arxiv.org/abs/1505.00387}{arXiv:1505.00387}). Variants:
 one highway layer at the paper's width of 50 units, the same layer at
@@ -16062,7 +16100,7 @@ def highway50Gate : NetSpec where
 The pedagogical hook: ResNet (Chapter~\ref{chap:residual}) drops the
 gate altogether and sums both paths, \(y = H(x) + x\). Highway showed in 2015 that
 some kind of bypass made very deep networks trainable; ResNet showed
-six months later that the gate could be a constant and you'd save the
+seven months later that the gate could be a constant and you'd save the
 parameters. ResNet won by simplifying away $T$, but the underlying
 calculus is identical --- product + additive fan-in either way.
 
@@ -16103,7 +16141,9 @@ $3\times 3$ stride-2 max pool), the same 4-stage layout and the same
 GAP + single-FC head; the basic variants run the stages at
 $64 \to 128 \to 256 \to 512$ channels, the bottleneck ones at
 $256 \to 512 \to 1024 \to 2048$. They differ only in block type and
-stage block-counts.
+stage block-counts. The listing is the ImageNet ResNet-50 of
+\texttt{LeanMlir/ReferenceNets.lean}, the spec Chapter~\ref{chap:residual}
+trains; \texttt{Bestiary/ResNet.lean} holds the five variants of the table.
 
 \begin{verbatim}
 def resnet50Imagenet : NetSpec where
@@ -16205,7 +16245,7 @@ SqueezeNet 1.1 & 3$\times$3 stride 2 (64 ch), earlier downsample & 1.24M \\
 \end{table}
 
 Both paper-exact, plus a tiny fixture. SqueezeNet 1.1 is the
-default for downstream use: same accuracy at $\sim$2$\times$
+default for downstream use: same accuracy at $\sim$2.4$\times$
 fewer FLOPs.
 
 \begin{verbatim}
@@ -16232,7 +16272,7 @@ def squeezeNet1_1 : NetSpec where
 \end{verbatim}
 
 \subsection*{GoogLeNet / Inception v1 (\texttt{Bestiary/Inception.lean})}
-\emph{One} new primitive (\S~\ref{layer:inceptionModule}). The
+\emph{One} new primitive (Definition~\ref{layer:inceptionModule}). The
 parallel-branch architecture that won ImageNet 2014 (Szegedy et
 al.\ 2014, \href{https://arxiv.org/abs/1409.4842}{arXiv:1409.4842}).
 Three durable contributions, each still standard kit:
@@ -16290,7 +16330,7 @@ def googLeNet : NetSpec where
 
 \subsection*{Inception v3 / v4 (\texttt{Bestiary/Inception.lean})}
 \emph{Zero} new primitives --- reuses
-\S~\ref{layer:inceptionModule}. Inception v3 (Szegedy et al.\ 2015,
+Definition~\ref{layer:inceptionModule}. Inception v3 (Szegedy et al.\ 2015,
 \href{https://arxiv.org/abs/1512.00567}{arXiv:1512.00567}) and v4
 (2016, \href{https://arxiv.org/abs/1602.07261}{arXiv:1602.07261})
 are recipe-and-refinement papers more than architecture papers.
@@ -16303,8 +16343,8 @@ Three contributions worth pulling out from v3:
     $\varepsilon = 0.1$, $K = 10$) and $\varepsilon / K$ elsewhere,
     instead of a hard one-hot. Prevents the softmax from
     collapsing all probability onto the argmax, which improves
-    calibration and ImageNet accuracy. Now standard in every
-    modern recipe (DeiT, ConvNeXt, our own
+    calibration and ImageNet accuracy. Standard in most modern
+    recipes (DeiT, ConvNeXt, our own
     \texttt{TrainConfig.labelSmoothing}).
   \item \textbf{Asymmetric factorizations}: a 7$\times$1 followed
     by a 1$\times$7 conv replaces a single 7$\times$7 with the
@@ -16315,9 +16355,9 @@ Three contributions worth pulling out from v3:
     rather than a gradient-injection mechanism.
 \end{itemize}
 
-Inception v4 layers more refinement on top: a wider initial stem
-(stem-A / stem-B / stem-C blocks), three Inception module variants
-specialized per spatial resolution, and a residual variant
+Inception v4 layers more refinement on top: a wider initial stem,
+three Inception module variants (A / B / C) specialized per spatial
+resolution, and a residual variant
 (Inception-ResNet) tested in the same paper. Variants here:
 Inception-v3 (23.8M, paper 23M), Inception-v4 (33M, paper 42M ---
 a bit low because our unified \texttt{.inceptionModule} primitive
@@ -16327,9 +16367,10 @@ approximates v3/v4's richer module catalog).
 \emph{One} new primitive (\texttt{.separableConv}).
 ``Extreme Inception'' (Chollet 2017,
 \href{https://arxiv.org/abs/1610.02357}{arXiv:1610.02357}): every conv
-is a depthwise-separable conv. The
-design choice that made MobileNet possible a year later. Variants:
-Xception (21.9M, paper-exact at 22M), tiny fixture. Residual skips
+after the two-layer stem is a depthwise-separable conv. The
+design choice MobileNet built on within the year. Variants:
+Xception (21.9M against the paper's 22.9M; the four $1\times1$ residual
+projections are the gap), tiny fixture. Residual skips
 around each block-of-three-sep-convs are implicit in the linear
 NetSpec.
 
@@ -16401,7 +16442,7 @@ testing.
 The dense connectivity pattern doesn't fit a linear NetSpec at the
 sub-layer granularity (each sub-layer reads a growing concatenation of
 its predecessors), so the block is bundled as a shape-only primitive
-\texttt{Layer.denseBlock ic growth\_rate n\_layers} alongside
+\texttt{Layer.denseBlock ic growthRate nLayers} alongside
 \texttt{Layer.transitionLayer ic oc} (BN + 1$\times$1 conv +
 2$\times$2 avg-pool, halves channels and spatial between blocks).
 Same modeling trick we use for \texttt{mambaBlock}, \texttt{swinStage},
@@ -16437,7 +16478,7 @@ took the per-layer-parameter-efficiency lesson but dropped the
 all-pairs concatenation in favor of standard residual paths.
 
 \subsection*{ShuffleNet (\texttt{Bestiary/ShuffleNet.lean})}
-\emph{One} new primitive (\S~\ref{layer:shuffleBlock}). Grouped
+\emph{One} new primitive (Definition~\ref{layer:shuffleBlock}). Grouped
 1$\times$1 convs + channel shuffle (Zhang et al.\ 2017,
 \href{https://arxiv.org/abs/1707.01083}{arXiv:1707.01083}).
 Variants: ShuffleNet 0.5$\times$ /
@@ -16460,7 +16501,7 @@ def shuffleNet1x : NetSpec where
 \end{verbatim}
 
 \subsection*{ShuffleNet v2 (\texttt{Bestiary/ShuffleNetV2.lean})}
-\emph{One} new primitive (\S~\ref{layer:shuffleV2Block}). The
+\emph{One} new primitive (Definition~\ref{layer:shuffleV2Block}). The
 efficient-CNN paper (Ma et al.\ 2018,
 \href{https://arxiv.org/abs/1807.11164}{arXiv:1807.11164}) that called
 out FLOPs as a bad latency proxy: measured memory-access cost
@@ -16491,7 +16532,7 @@ def shuffleV2_1_0 : NetSpec where
 \end{verbatim}
 
 \subsection*{MobileViT (\texttt{Bestiary/MobileViT.lean})}
-\emph{One} new primitive (\S~\ref{layer:mobileVitBlock}); reuses existing
+\emph{One} new primitive (Definition~\ref{layer:mobileVitBlock}); reuses existing
 \texttt{invertedResidual} for the MV2 stages. Hybrid mobile backbone
 (Mehta \& Rastegari 2022,
 \href{https://arxiv.org/abs/2110.02178}{arXiv:2110.02178}):
@@ -16524,10 +16565,10 @@ def mobileViTS : NetSpec where
 \end{verbatim}
 
 \subsection*{Swin Transformer (\texttt{Bestiary/SwinT.lean})}
-\emph{Two} new primitives (\S~\ref{layer:swinStage},
-\S~\ref{layer:patchMerging}). Variants: Swin-T / -S / -B / tiny.
+\emph{Two} new primitives (Definition~\ref{layer:swinStage},
+Definition~\ref{layer:patchMerging}). Variants: Swin-T / -S / -B / tiny.
 Swin-T lands at 28.6M params against the paper's 28M (Liu et al.\ 2021,
-\href{https://arxiv.org/abs/2103.14030}{arXiv:2103.14030}) exactly.
+\href{https://arxiv.org/abs/2103.14030}{arXiv:2103.14030}).
 
 \begin{verbatim}
 def swinT : NetSpec where
@@ -16553,21 +16594,22 @@ def swinT : NetSpec where
 
 Localize and classify. Detection heads are where the linear
 \texttt{NetSpec} shape starts to creak: multi-scale FPN outputs need a
-graph, not a list. The bestiary entries show the single-scale view and
-defer the multi-head refactor to the limitations discussion.
+graph, not a list. The catalogue entries keep the single-scale view; the
+demo trains the multi-scale head, \texttt{.fpnDetect}
+(Definition~\ref{layer:fpnDetect}).
 
 \paragraph{The working detector.}
 A ResNet-34 backbone, trained by this stack on ImageNet, feeding an FPN
 top-down neck into three anchor heads at strides $8/16/32$; DIoU box loss,
 focal objectness, focal class CE; $448$\,px input, 30 epochs, photometric
 and box-aware scale augmentation. VisDrone is the harder half of detection:
-drone-altitude imagery where a median image holds seventy objects and
+drone-altitude imagery where an image holds seventy objects on average and
 many are $2$--$5$\,px after the resize --- the regime where a single coarse
 grid structurally cannot emit the objects, and what makes the multi-scale head
 of Definition~\ref{layer:fpnModule} necessary rather than decorative. Scored
 against VisDrone's uncapped validation ground truth --- all $38{,}759$
 boxes, not the 56-box-truncated training record, which drops $34.9\%$ of them
-and is not the benchmark's protocol. The catalog entry below keeps the
+and is not the benchmark's protocol. The YOLO catalogue entry keeps the
 paper-exact YOLOv1 shape for the historical record; Table~\ref{tab:visdrone_results}
 is the trained detector beside it, and Figure~\ref{fig:visdrone_fpn} is its top row on
 four validation frames.
@@ -16600,8 +16642,7 @@ YOLOv8s, 100\,ep, 640\,px, full aug & 0.391 & 0.400 & --- \\
 above, the R34+FPN's boxes below, at the top row of the table (30 epochs, scale
 augmentation, mAP@0.5 $0.2363$). Box colour is the class, keyed along the bottom
 edge, and each frame's box count sits in its corner. The night market and the
-street market are where the misses live --- the small and the rare, exactly what
-the per-class spread below predicts.}
+street market are where the misses live --- the small and the rare.}
 \label{fig:visdrone_fpn}
 \end{figure}
 
@@ -16610,14 +16651,15 @@ and the top five rows only mean something together.} Quadrupling the schedule
 with augmentation off costs $19\%$ --- ordinary overfitting on $6{,}471$
 images. Photometric augmentation recovers it, but at that strength 12 epochs
 still beats 50. Augmentation that changes object scale inverts the
-ordering again: it makes 30 epochs worth $44\%$ more than 12. A stronger
+ordering again: the 30-epoch scale-augmented run scores a fifth above the
+best 12-epoch row, $0.2363$ against $0.1961$. A stronger
 augmentation needs a longer schedule to absorb, so \textbf{the optimum epoch
 count is a property of the augmentation pack} --- there is no schedule that can
 be tuned once and carried across packs.
 
 \medskip\noindent \textbf{The mean hides where detection fails.} Per-class
 AP runs from car down to bicycle, a spread of $19\times$, and scale augmentation
-narrowed it from $43\times$ by lifting exactly the classes that were worst:
+narrowed it from $25\times$ by lifting exactly the classes that were worst:
 awning-tricycle by $59\%$, bicycle by $41\%$, tricycle by $40\%$, against car's
 $7\%$. That the fix was data rather than objective is the substantive point.
 Reweighting a loss toward rare classes buys their recall at the expense of
@@ -16627,8 +16669,9 @@ class-agnostic AP columns move together to show. Detection on aerial imagery doe
 not degrade uniformly --- it collapses on whatever is simultaneously small
 and rare, and an averaged mAP is precisely the statistic that hides it.
 
-\medskip\noindent The stack beats the hand-written PyTorch replica of
-this same architecture by $54\%$, and runs at 65\,fps on one RTX 4060 Ti
+\medskip\noindent The stack matches the hand-written PyTorch replica of
+this same architecture on the matched recipe, $0.1526$ against $0.1532$ at
+12 epochs without augmentation, and runs at 65\,fps on one RTX 4060 Ti
 --- or $55.9$\,fps on a 25\,W Jetson Orin Nano under TensorRT, with a
 uint8 input path and the clocks pinned. The replica, not YOLOv8, is the
 yardstick: it
@@ -16638,22 +16681,23 @@ interesting than either alone. At a matched budget it scores $0.140$ --- below
 this detector, though from random weights rather than an ImageNet-pretrained
 backbone --- while its ordinary-practice $0.391$ comes from $8\times$ the epochs,
 higher resolution, full augmentation and COCO pretraining. \textbf{The distance
-to the field is recipe, not architecture}, and one item of that recipe closes
-$31\%$ of it.
+to the field is recipe, not architecture}, and one item of that recipe, scale
+augmentation with the schedule it needs, closes a fifth of it.
 
 \subsection*{YOLO v1/v3/v5/v8/v11 (\texttt{Bestiary/YOLO.lean})}
 v1 (Redmon et al.\ 2016,
 \href{https://arxiv.org/abs/1506.02640}{arXiv:1506.02640}) uses
 \emph{zero} new primitives (\texttt{conv2d} + \texttt{maxPool} +
 \texttt{flatten} + \texttt{dense}; the YOLO-ness lives in the loss and
-output reshape, not the architecture). v3 adds \S~\ref{layer:darknetBlock}
-for the Darknet-53 body. v5/v8/v11 use \S~\ref{layer:cspBlock} for
+output reshape, not the architecture). v3 adds Definition~\ref{layer:darknetBlock}
+for the Darknet-53 body. v5/v8/v11 use Definition~\ref{layer:cspBlock} for
 their CSPDarknet backbones. Variants: YOLOv1 (271M, paper-exact; the first FC's fan-in is pinned to the
 paper's $7 \cdot 7 \cdot 1024$, while the spec's own body ends at $28 \times 28$), fast,
 tiny, YOLOv3 (40M backbone), YOLOv5s/m (3M/8M single-scale), YOLOv8n/s
-(0.7M/2.9M single-scale), YOLOv11n/m (backbone only). Multi-scale FPN
-detection heads don't linearize --- same skip-connection problem as
-UNet; all entries show a single-scale view.
+(0.7M/2.9M single-scale), YOLOv11n/m (backbone only). The entries show a
+single-scale view; the multi-scale head is the demo's \texttt{.fpnDetect}
+(Definition~\ref{layer:fpnDetect}), which taps three backbone stages the
+way \texttt{.unetUp} taps its skips.
 
 \begin{verbatim}
 def yolo : NetSpec where
@@ -16695,7 +16739,7 @@ def yolo : NetSpec where
 \end{verbatim}
 
 \subsection*{Mask R-CNN (\texttt{Bestiary/MaskRCNN.lean})}
-\emph{One} new primitive (\S~\ref{layer:fpnModule}); the \texttt{.bottleneckBlock} backbone is Chapter~\ref{chap:residual}'s ResNet-50. The canonical two-stage detector +
+\emph{One} new primitive (Definition~\ref{layer:fpnModule}); the \texttt{.bottleneckBlock} backbone is built from the block Chapter~\ref{chap:residual} proves for ResNet-50, here at ResNet-101's depth. The canonical two-stage detector +
 instance segmentation reference (He et al.\ 2017,
 \href{https://arxiv.org/abs/1703.06870}{arXiv:1703.06870}). Five architectural
 pieces: ResNet-FPN backbone, RPN for anchor-box proposals, ROI-Align
@@ -16704,7 +16748,7 @@ layer), a 2-layer FC box head for classification + bbox regression,
 and a 4-conv + transposed-conv mask head for per-class $28 \times
 28$ masks. Shown as separate NetSpecs per head (SAM-style
 decomposition). Param totals: backbone+FPN 45.8M, box head 14.3M,
-mask head 2.6M, RPN 0.6M --- $\sim$63M in total, matching paper. The
+mask head 2.6M, RPN 0.6M --- $\sim$63M in total. The
 FPN cross-scale add is the one thing that demanded a new bundled
 primitive; everything else reuses existing ResNet / conv / dense
 primitives. DETR is its end-to-end transformer-era cousin; Mask2Former
@@ -16729,8 +16773,8 @@ def maskRCNNBackboneR101 : NetSpec where
 \end{verbatim}
 
 \subsection*{DETR (\texttt{Bestiary/DETR.lean})}
-\emph{Two} new primitives (\S~\ref{layer:transformerDecoder},
-\S~\ref{layer:detrHeads}; Carion et al.\ 2020,
+\emph{Two} new primitives (Definition~\ref{layer:transformerDecoder},
+Definition~\ref{layer:detrHeads}; Carion et al.\ 2020,
 \href{https://arxiv.org/abs/2005.12872}{arXiv:2005.12872}); reuses
 existing \texttt{bottleneckBlock} (ResNet backbone),
 \texttt{patchEmbed} (absorbs the DETR 1$\times$1 channel reduce), and
@@ -16784,7 +16828,8 @@ a fixed seed. Epochs are chosen on the validation $360$ and the numbers in
 Table~\ref{tab:neudet_results} are the test $360$ at that epoch, scored by the VisDrone protocol against
 uncapped ground truth. The single-grid arm is the same ResNet-34 and the same
 bootstrap under a one-grid YOLOv1 head at $448/14$, run for the same 30
-epochs. Table~\ref{tab:neudet_visdrone_heads} is the same two heads on
+epochs here (its VisDrone run was 12 epochs without the scale
+augmentation). Table~\ref{tab:neudet_visdrone_heads} is the same two heads on
 VisDrone, and Figure~\ref{fig:neudet_fpn} is both on one crop of each defect.
 
 \begin{table}[H]
@@ -16836,7 +16881,9 @@ with the truth and with each other.}
 \noindent \textbf{Table~\ref{tab:neudet_visdrone_heads} is the result.} On steel the single grid
 matches the multi-scale head, $0.607$ against $0.623$; on drones it is six
 times behind, $0.039$ against $0.236$, with recall $0.18$ against $0.77$ ---
-same backbone, same bootstrap, same scorer, same lowerer in all four cells.
+same backbone, same bootstrap, same scorer, same lowerer in all four cells
+(against the FPN's own 12-epoch unaugmented row, $0.1526$, the grid is four
+times behind).
 The FPN pays for itself only where objects are small; on NEU-DET it runs three
 heads for one level's worth of work, and the head that collapses on VisDrone
 is not wrong, it is wrong for drones. Recall is not the limit on steel:
@@ -16845,7 +16892,7 @@ crazing at $0.29$ and rolled-in scale at $0.41$ against $0.66$--$0.84$ for the
 other four --- the diffuse textures whose ``box'' is most of the crop, the
 worst two in every published NEU-DET table and the worst two for both heads
 here. The ImageNet prefix is worth $+0.07$ at $1{,}080$ training images, a gap
-that has not closed by epoch 30. Photometric augmentation's $+0.007$ is one
+that has not closed by epoch 30. Photometric augmentation's $-0.007$ is one
 run against one run; no seed spread has been measured on this detector, so
 it is not a result in either direction.
 
@@ -16884,8 +16931,8 @@ permutation, and \texttt{blocked}, each class's capture order cut at the
 $80\%$ and $90\%$ marks with each cut moved to the nearest chain boundary.
 An audit then measures what the split did: for every test image, the
 nearest training image of any class at $16\times16$. Under \texttt{random},
-$92.3\%$ of test images have a training image within $6$ grey levels and
-$95.7\%$ of those neighbours carry the test image's own label; under
+$92.3\%$ of test images have a training image within $6$ grey levels, and
+the nearest training image's label is right $95.7\%$ of the time; under
 \texttt{blocked}, $6.4\%$ and $28.6\%$. The residual $6\%$ is the same hand
 returning a median $306$ files later, which a release without signer ids
 cannot separate.
@@ -16896,7 +16943,8 @@ convolutions in four conv-conv-pool stages at 16, 16, 32, 32 channels into
 the $2\times512$ head --- takes a one-channel stem and a 32-way output; on
 the native $64\times64$ input the four pools end at $4\times4$, so the
 flatten is $512$ wide and the net is $0.58$\,M parameters. The recipe is the
-gravitational-wave demo's, unchanged: the ordinary train step with integer
+one the gravitational-wave demo (\S\ref{sec:bestiary_signal}) also uses: the
+ordinary train step with integer
 labels, Adam at $10^{-3}$ with one warm-up epoch and cosine decay, batch 64,
 30 epochs, no flip (a mirrored hand is a different sign for some letters),
 five minutes on one card. The chapter's linear and MLP rungs run through
@@ -17002,7 +17050,7 @@ on the plant, several per frame, soil and sky behind them, phone lighting
 --- in 28 classes that all map onto PlantVillage's. The net here is
 Chapter~\ref{chap:residual}'s ResNet-34 from its ImageNet weights with a
 38-way head, ten epochs on PlantVillage, forty minutes on one card; PlantDoc
-is never seen in training except by the last two rows of
+is never seen in training except by the three field-label rows of
 Table~\ref{tab:plantvillage_results}, which
 learn from it five-fold and are scored only on field images they did not
 train on. (A near-duplicate audit of PlantVillage finds none, and the
@@ -17071,7 +17119,7 @@ background, and asks how much of the class score each is responsible for;
 with two players it is exact from four forward passes (the image, the leaf
 alone, the background alone, neither), and the two shares add up to the
 whole score. Both explainers say the same reassuring thing: the evidence is
-the leaf, $85\%$ of it. The counterfactuals say otherwise. Put the same leaf
+mostly the leaf, $85\%$ of the Shapley share and $71\%$ of the map. The counterfactuals say otherwise. Put the same leaf
 on black and the net loses forty points; show it the background with the
 leaf painted out and it is right one time in four; show it a flat rectangle
 of the background's colour and it still beats chance. The background
@@ -17102,7 +17150,7 @@ background alone falls toward chance, the leaf's Shapley share rises to
 $96\%$. In the field it buys three and a half points, $17.8 \pm 1.8$ to
 $21.5 \pm 1.3$ over three seeds each. Stronger augmentation --- colour,
 rotation, erasing --- changes none of the diagnostics and stays inside the
-seed noise. Field labels are what work: ten per class buy seven points, all
+seed noise. Field labels are what work: ten per class buy five points, all
 two thousand buy twenty-seven, and the two fixes stack only while labels are
 scarce. The laboratory artefact is real and removable, and removing it is
 not what gets the net into the field.
@@ -17115,7 +17163,7 @@ photograph a grower would take, is the right-hand column.
 \section{Remote sensing --- demo: which wavelengths travel, EuroSAT to the Amazon and the Cerrado}
 \label{sec:bestiary_remote_sensing}
 
-Networks that look down. The demo trains the chapter-4 CNN on satellite
+Networks that look down. The demo trains the Chapter~\ref{chap:bn} CNN on satellite
 chips whose input is not a photograph --- thirteen bands of Sentinel-2,
 ten of them outside what a camera sees --- five times, each time allowed a
 different part of the spectrum, and then asks the trained nets, unchanged,
@@ -17134,7 +17182,7 @@ the light that chlorophyll absorbs in the red, and dark in the short-wave
 infrared, where its water absorbs; the red edge is the step between the
 two. Colour-infrared film found camouflage on that principle in the 1940s,
 and the vegetation indices of the 1970s are ratios of exactly these bands.
-The Brazil chips were cut for this section (data appendix): the same 640~m
+The Brazil chips were cut for this section (Appendix~\ref{app:data}): the same 640~m
 squares from Sentinel-2 scenes of 2023 over Rond\^onia in June, and over
 western Bahia in September and again, the same $3{,}620$ squares, in
 March, each labelled by majority vote from MapBiomas, Brazil's 10~m
@@ -17142,8 +17190,8 @@ land-cover map, through the seven classes EuroSAT's ten collapse into
 (forest, pasture, herbaceous, annual crop, perennial crop, built, water).
 The Cerrado's own class --- savanna, woody and herbaceous at once,
 $2{,}000$ chips --- has no European name and is kept aside. The net is
-Chapter~\ref{chap:bn}'s CIFAR CNN with the stem's input channels as the
-only change: \texttt{rgb} (three bands), \texttt{rgbn} (plus near
+Chapter~\ref{chap:bn}'s CIFAR CNN with the stem's input channels and, at
+$64\times64$, the flatten width as the only changes: \texttt{rgb} (three bands), \texttt{rgbn} (plus near
 infrared), \texttt{ms10} (the ten bands at 10 and 20~m), \texttt{all}
 (thirteen), and \texttt{ir} (red edge, near and short-wave infrared, and
 no visible light at all); 80 epochs with flips and rotations, three seeds,
@@ -17181,8 +17229,9 @@ see are enough on their own (\texttt{ir}, 97.9); the published ordering
 ImageNet pretraining, not the spectrum. In the Amazon the
 same bands are worth ten. Rond\^onia is forest and pasture; every arm finds
 the forest ($99.8\%$ of it), and RGB loses a quarter of the pasture ($74\%$
-recall) where the ten-band arm keeps $95\%$. Near infrared alone buys four
-of the ten points and the red edge and short-wave infrared buy the rest;
+recall) where the ten-band arm keeps $95\%$. Near infrared alone buys two
+of the ten points and the red edge and short-wave infrared buy the other
+eight;
 the arm with no visible light at all reads 91.7.
 
 \textbf{The Cerrado is the harder question, twice.} In September every arm
@@ -17215,8 +17264,9 @@ passes per chip --- says where the thirteen-band net's evidence came from:
 a third of it from visible light on either continent, the short-wave share
 rising from $13\%$ at home to $22\%$ abroad, and the atmospheric bands
 worth less than nothing in Brazil ($-3.0$ nats of log-probability in the
-Amazon). They had learned Europe's sky, which is why the arm without them
-travels best. Figure~\ref{fig:remote_sensing_wavelengths} is three of the
+Amazon). They had learned Europe's sky, which is why the arm without them gives
+up nothing: \texttt{ms10} ties \texttt{all} in the Amazon and leads it in
+March. Figure~\ref{fig:remote_sensing_wavelengths} is three of the
 Brazilian windows under three of the arms.
 
 \begin{figure}[H]
@@ -17271,7 +17321,7 @@ imbalanced: enhancing tumour is $\sim$0.5\% of voxels.
 Scored on the clinical literature's regions --- Dice over the nested WT (whole
 tumour), TC (tumour core) and ET (enhancing tumour) --- pooled over the 2{,}569
 tumour-bearing validation slices, ten epochs of plain per-pixel cross-entropy
-gives:
+gives Table~\ref{tab:brats_dice}:
 
 \begin{table}[H]
 \centering
@@ -17281,7 +17331,7 @@ gives:
 \hline
  & mIoU & WT & TC & ET \\
 \hline
-ResNet-34 UNet (\texttt{unet-brats-r34}) & 0.741 & 0.910 & 0.867 & 0.856 \\
+ResNet-34 UNet, from scratch (\texttt{unet-brats-r34}) & 0.741 & 0.910 & 0.867 & 0.856 \\
 \hline
 \end{tabular}
 \end{table}
@@ -17308,8 +17358,8 @@ contracting path rather than a stack of \texttt{.unetDown}s; the decoder is
 four \texttt{.unetUp} stages, and the skips come off the backbone. The two
 codegen primitives this rests on --- bilinear upsample (forward + VJP) and
 channel concat --- are exposed at the \texttt{Layer} level as
-\texttt{.unetDown} and \texttt{.unetUp}, which the canonical bestiary UNet
-below also uses. Three things change relative to the image
+\texttt{.unetDown} and \texttt{.unetUp}, which the catalogue UNet of this
+section also uses. Three things change relative to the image
 classifiers of Part~1:
 
 \begin{itemize}
@@ -17319,9 +17369,9 @@ classifiers of Part~1:
     vector per pixel (shape $B \times K \times H \times W$, with
     $H \times W$ matching the input) and compare against a
     shape-identical ground-truth mask. Cross-entropy is computed per
-    pixel, averaged spatially. This rides the same \texttt{useSeg} flag
-    in \texttt{TrainConfig} that the NLP subsection's TinyGPT uses for
-    per-token loss, applied across the spatial axes instead of the
+    pixel, averaged spatially. This rides the same per-position loss
+    (\texttt{useSeg}, derived from the config's \texttt{lossKind}) that
+    the TinyGPT demo of \S\ref{sec:bestiary_nlp} uses per token, applied across the spatial axes instead of the
     token axis --- no new VJP machinery; the per-pixel softmax-CE
     backward is the same one Ch~\ref{chap:tensor} derived, fired $HW$
     times in parallel.
@@ -17342,14 +17392,14 @@ classifiers of Part~1:
     you do with the logits: \texttt{argmax} per pixel and render as a
     colored mask. The \texttt{brats-predict} executable is the smallest
     example of that path --- same artifact the trainer produced, plus a
-    small C colormap routine.
+    small colormap routine.
 \end{itemize}
 
-\paragraph{What the skips are worth, measured.} The second bullet above is the
-one claim in this subsection that is cheap to test rather than assert. Running
+\paragraph{What the skips are worth, measured.} The second bullet is the
+one claim in this section that is cheap to test rather than assert. Running
 the same backbone, data and schedule with the decoder's skip connections
 removed --- upsample and convolve, but never concatenate the encoder feature ---
-isolates exactly what they contribute:
+isolates exactly what they contribute, Table~\ref{tab:brats_skips}:
 
 \begin{table}[H]
 \centering
@@ -17382,7 +17432,7 @@ that paints anyway. \texttt{brats-eval} (\texttt{demos/MainBratsEval.lean})
 computes that from a whole-volume export of the 73 validation patients
 (\texttt{preprocess\_brats.py --val-full}), and first re-derives the pooled
 number on the same slices, where it agrees with the trainer's log line to
-$0.0004$. Best-by-val checkpoints:
+$0.0004$. Table~\ref{tab:brats_per_patient} is the best-by-val checkpoints:
 
 \begin{table}[H]
 \centering
@@ -17410,7 +17460,7 @@ per-patient mean sits two to seven points below the pooled number with a wide
 spread (standard deviations of $0.07$ on WT to $0.19$ on ET): the medians are
 at the pooled values, and the means are pulled down by a tail of small-tumour
 patients --- which is what the per-patient protocol exists to expose. The skips
-are worth more per patient than per pixel, $+0.17$ on ET against $+0.12$. These
+are worth more per patient than per pixel, $+0.16$ on ET against $+0.12$. These
 are the numbers to put beside published BraTS work, with the remaining caveat
 that the 484-case MSD Task01 is not the 1{,}251-case BraTS~2021 set.
 
@@ -17419,12 +17469,12 @@ below. The last two rows measure what that costs, two ways. \texttt{unet-brats-r
 ctx=1} is the same net with the two neighbouring slices fed in as eight extra
 input channels (a 2.5D build from \texttt{preprocess\_brats.py --context 1};
 the stem is the only tensor that changes, and the records, their order, the seed
-and the schedule are the 2D run's): it ties the 2D anchor within $0.004$ on every
+and the schedule are the 2D run's): it ties the 2D anchor within $0.005$ on every
 metric, pooled and per patient. At 1~mm spacing the neighbours are nearly the
 centre slice again, so this says adjacent slices add nothing the slice model
 cannot infer, not that volumetric context is useless. The direct test is a 3D
-UNet --- this section's UNet with $3^3$ kernels and $2^3$ pools, 23.5M
-parameters --- trained in JAX on random $128^3$ patches for 20{,}000 steps,
+UNet --- the from-scratch \texttt{unetBrats} of the table with $3^3$ kernels
+and $2^3$ pools, 23.5M parameters --- trained in JAX on random $128^3$ patches for 20{,}000 steps,
 a little over five hours on one card (\texttt{jax/scripts/unet3d\_brats.py},
 the reference a Lean rank-5 port would be tied to). In
 Table~\ref{tab:brats_per_patient} its means are ahead of the anchor's by under a point on WT and TC and by two on
@@ -17456,12 +17506,12 @@ part. On tumour core the 3D net's worst tenth is above both 2D seeds' on
 both of its own, and it raises a false enhancing-tumour alarm on under half
 as many slices, a gap twenty times the seed-to-seed spread on either side. On
 enhancing tumour its worst tenth is ahead on both seeds too, on one of them
-by less than the two 3D seeds differ from each other. Rank-5 convolution itself runs at 77\% of
+by less than the two 3D seeds differ from each other. The 3D step runs at roughly three quarters of
 the 2D per-voxel rate through XLA on this card, so the port is affordable;
 it is not built, and this section's Lean trainer is the slice model.
 
 \paragraph{Pairing a decoder to a backbone that has no \texttt{unetDown}.} The
-canonical UNet below pairs skips implicitly --- $i$-th \texttt{unetUp} from the
+catalogue UNet pairs skips implicitly --- $i$-th \texttt{unetUp} from the
 bottom with $i$-th \texttt{unetDown} from the top --- which a ResNet encoder
 cannot satisfy. So \texttt{unetUp} also pairs \textbf{by shape}, with a
 preceding residual stage or a bare \texttt{.maxPool}'s input; that
@@ -17472,14 +17522,13 @@ gives bit-identical parameters.
 
 The encoder-decoder-with-skips shape is not specific to segmentation
 either: it later became the diffusion-model backbone (DDPM, Stable
-Diffusion, in the diffusion subsection below, \S\ref{sec:bestiary_diffusion}),
-and the same two primitives
-carry that subsection's generative pipeline. The layer kit is shared;
+Diffusion, \S\ref{sec:bestiary_diffusion}), and the same two primitives
+carry that section's generative pipeline. The layer kit is shared;
 only the loss and the inference procedure change.
 
 \subsection*{UNet (\texttt{Bestiary/UNet.lean})}
-\emph{Two} new primitives (\S~\ref{layer:unetDown},
-\S~\ref{layer:unetUp}). Skip connections are implicit --- the $i$-th \texttt{unetUp} from the bottom
+\emph{Two} new primitives (Definition~\ref{layer:unetDown},
+Definition~\ref{layer:unetUp}). Skip connections are implicit --- the $i$-th \texttt{unetUp} from the bottom
 pairs with the $i$-th \texttt{unetDown} from the top. Variants:
 original (1-channel, 2-class), RGB, small, tiny. Original lands at 31M
 params matching Ronneberger (Ronneberger et al.\ 2015,
@@ -17506,7 +17555,7 @@ def unet : NetSpec where
 \end{verbatim}
 
 \subsection*{DeepLab v3+ (\texttt{Bestiary/DeepLabV3Plus.lean})}
-\emph{One} new primitive (\S~\ref{layer:asppModule}). The pre-transformer segmentation
+\emph{One} new primitive (Definition~\ref{layer:asppModule}). The pre-transformer segmentation
 workhorse (Chen et al.\ 2018,
 \href{https://arxiv.org/abs/1802.02611}{arXiv:1802.02611}) --- still deployed widely in remote
 sensing, medical imaging, and autonomous-driving perception
@@ -17544,7 +17593,7 @@ def deeplabv3plusResnet101 : NetSpec where
 \end{verbatim}
 
 \subsection*{SegFormer (\texttt{Bestiary/SegFormer.lean})}
-\emph{One} new primitive (\S~\ref{layer:patchMerging}). Semantic segmentation (Xie et al.\ 2021,
+\emph{One} new primitive (Definition~\ref{layer:patchMerging}). Semantic segmentation (Xie et al.\ 2021,
 \href{https://arxiv.org/abs/2105.15203}{arXiv:2105.15203}) via a
 hierarchical transformer pyramid (MiT encoder: 4 stages of
 \texttt{.transformerEncoder} glued by \texttt{.patchMerging}) and a
@@ -17553,8 +17602,8 @@ decoder stays trivially small across all B0--B5 encoder sizes --- the
 design argument of the paper is precisely that a good pretrained
 transformer feature pyramid makes the segmentation head cheap.
 Variants: MiT-B0 encoder (2.6M, paper 3.7M), B2 (19M, paper 25M),
-B5 (61M, paper 82M), shared MLP decoder (1M single-scale approx),
-tiny fixture. Uniform $\sim$25\% undercount across all encoder sizes
+B5 (61M, paper 82M), shared MLP decoder (1M as the single-scale
+approximation here, $\sim$3M in the paper), tiny fixture. Uniform $\sim$25\% undercount across all encoder sizes
 because real MiT uses depthwise convs inside the FFN, a strided
 convolution and norm for spatial-reduction attention, and overlapping
 patch embeddings at inter-stage transitions; our
@@ -17585,7 +17634,7 @@ def segformerB2 : NetSpec where
 \end{verbatim}
 
 \subsection*{SAM (\texttt{Bestiary/SAM.lean})}
-\emph{One} new primitive (\S~\ref{layer:transformerDecoder}). Promptable segmentation (Kirillov et
+\emph{One} new primitive (Definition~\ref{layer:transformerDecoder}). Promptable segmentation (Kirillov et
 al.\ 2023, \href{https://arxiv.org/abs/2304.02643}{arXiv:2304.02643}): a ViT image encoder runs once per image, a tiny prompt
 encoder tokenizes clicks / boxes / masks, a lightweight transformer
 mask decoder cross-attends between image tokens, prompt tokens, and
@@ -17595,7 +17644,7 @@ mask decoder is a small \texttt{.transformerDecoder} (from DETR,
 4 queries, 2 blocks). Variants: SAM ViT-B encoder (88M, paper total
 91M), ViT-L (307M, paper 308M), ViT-H (635M, paper 636M), shared
 3.3M mask decoder, tinySAM fixture. The image encoder accounts for
-$\sim$99\% of each variant's parameter budget, which is why
+$96$--$99\%$ of each variant's parameter budget, which is why
 EfficientSAM (\href{https://arxiv.org/abs/2312.00863}{Xiong et al.\ 2023})
 focused its distillation there.
 
@@ -17751,7 +17800,7 @@ classification head); the architectural differences between them are
 smaller than the chapter-to-chapter deltas in Part~1.
 
 \subsection*{Mamba (\texttt{Bestiary/Mamba.lean})}
-\emph{One} new primitive (\S~\ref{layer:mambaBlock}). Variants: Mamba-130M / 370M / 790M /
+\emph{One} new primitive (Definition~\ref{layer:mambaBlock}). Variants: Mamba-130M / 370M / 790M /
 tiny, matching Gu \& Dao's (2023,
 \href{https://arxiv.org/abs/2312.00752}{arXiv:2312.00752}) param counts
 within $\sim$5\%.
@@ -17910,7 +17959,7 @@ segmentation (UNet again). Diffusion models, also generative, are the
 subsection after this one.
 
 \subsection*{VAE (\texttt{Bestiary/VAE.lean})}
-\emph{One} new primitive (\S~\ref{layer:unetUp}). The classical variational autoencoder
+\emph{One} new primitive (Definition~\ref{layer:unetUp}). The classical variational autoencoder
 (Kingma \& Welling 2013, \href{https://arxiv.org/abs/1312.6114}{arXiv:1312.6114}): encoder outputs
 $(\mu, \log \sigma^2)$ (represented as a single tensor with doubled
 final width), the reparameterization trick
@@ -17972,7 +18021,7 @@ def dcganGenerator : NetSpec where
 \end{verbatim}
 
 \subsection*{Pix2Pix (\texttt{Bestiary/Pix2Pix.lean})}
-\emph{Two} new primitives (\S~\ref{layer:unetDown}, \S~\ref{layer:unetUp}). The paired-data ancestor of CycleGAN,
+\emph{Two} new primitives (Definition~\ref{layer:unetDown}, Definition~\ref{layer:unetUp}). The paired-data ancestor of CycleGAN,
 from the same lab 9 months earlier (Isola et al.\ 2017,
 \href{https://arxiv.org/abs/1611.07004}{arXiv:1611.07004}). UNet
 generator (8 levels, $\sim$62M vs paper $\sim$54M --- our
@@ -18081,13 +18130,13 @@ indistinguishable from a broken one. Table~\ref{tab:ddpm_scores} is the bracket.
 
 \begin{table}[H]
 \centering
-\caption{Generated MNIST scored by the verified CNN, bracketed by real data above and unstructured pixels below.}
+\caption{Generated MNIST scored by the verified CNN, bracketed by real data and by unstructured pixels; the energy floor is real against real, $0.0016$.}
 \label{tab:ddpm_scores}
 \begin{tabular}{@{}l c c r c@{}}
 \hline
 & coverage & confidence & energy ($\times$ floor) & pixel mean \\
 \hline
-real MNIST, scored as if generated & 10/10 & $99.40\%$ & $0.0020$ \;($1\times$)  & $0.122$ \\
+real MNIST, scored as if generated & 10/10 & $99.40\%$ & $0.0020$ \;($1.2\times$)  & $0.122$ \\
 the model, ancestral sampling      & 10/10 & $92.98\%$ & $0.0067$ \;($4\times$)  & $0.118$ \\
 the model, deterministic DDIM      & 10/10 & $90.94\%$ & $0.0237$ \;($15\times$) & $0.138$ \\
 unstructured pixels                &  4/10 & $58.47\%$ & $0.3674$ \;($231\times$)& $0.132$ \\
@@ -18172,10 +18221,10 @@ cross-attention spliced in. Encoder-decoder-with-skips plus a sampling loop is
 the whole generative pipeline.
 
 \subsection*{DDPM (\texttt{Bestiary/Diffusion.lean})}
-\emph{Three} new primitives (\S~\ref{layer:unetDown}, \S~\ref{layer:unetUp}, \S~\ref{layer:positionalEncoding}). The denoiser in Ho et al.'s DDPM (2020,
+\emph{Three} new primitives (Definition~\ref{layer:unetDown}, Definition~\ref{layer:unetUp}, Definition~\ref{layer:positionalEncoding}). The denoiser in Ho et al.'s DDPM (2020,
 \href{https://arxiv.org/abs/2006.11239}{arXiv:2006.11239}) is a UNet
---- literally the same \S~\ref{layer:unetDown} and
-\S~\ref{layer:unetUp} Ronneberger shipped in 2015. Everything ``diffusion'' lives in the training loop:
+--- literally the same Definition~\ref{layer:unetDown} and
+Definition~\ref{layer:unetUp} Ronneberger shipped in 2015. Everything ``diffusion'' lives in the training loop:
 a forward noise schedule adds Gaussian noise over $T$ steps, a reverse
 process learns to predict the added noise, sampling iterates the
 reverse from pure noise back to a clean image. None of that is a
@@ -18209,7 +18258,7 @@ def ddpmCifar : NetSpec where
 \end{verbatim}
 
 \subsection*{Stable Diffusion (\texttt{Bestiary/StableDiffusion.lean})}
-\emph{Three} new primitives (\S~\ref{layer:unetDown}, \S~\ref{layer:unetUp}, \S~\ref{layer:transformerDecoder}). The paper that made generative image
+\emph{Three} new primitives (Definition~\ref{layer:unetDown}, Definition~\ref{layer:unetUp}, Definition~\ref{layer:transformerDecoder}). The paper that made generative image
 models consumer-reachable (Rombach et al.\ 2022,
 \href{https://arxiv.org/abs/2112.10752}{arXiv:2112.10752}). Two architectural
 moves over DDPM, each individually small: (a) \emph{latent diffusion}
@@ -18314,7 +18363,7 @@ into the wells in fifty Euler steps, seventy of the $2{,}048$ paths, hollow at
 the noise end, and every sample at $t = 0$. (c) At $kT = 8$ a chain started in
 well B and run for $2 \times 10^5$ steps never crosses the barrier; the model's
 samples, drawn once at $kT = 20$ and reweighted, report the quadrature
-populations to three decimals.}
+populations to within $0.001$.}
 \label{fig:boltzmann_mb}
 \end{figure}
 
@@ -18346,7 +18395,8 @@ $N(0, I)$ prior, no flow                  & $0.419 \,/\, 0.195 \,/\, 0.385$ &   
 
 \noindent The model is faithful to its training set, not to the physics: it
 over-weights A because the Langevin chains do. Reweighting its own samples by
-$p_{20} / p_\theta$ recovers the quadrature row to the last digit. At NFE 2
+$p_{20} / p_\theta$ recovers the quadrature populations to within $0.001$,
+$\Delta F$ to $0.1$ and $\langle U \rangle$ to under a unit. At NFE 2
 well B empties while the populations still look plausible, which is why
 $\langle U \rangle$ and $\Delta F$ are columns.
 
@@ -18587,7 +18637,7 @@ $Q$-function. Three things change relative to the CIFAR demo:
   \item \textbf{The data is real detector noise with the signal we chose.}
     Twenty-six file pairs of O3a strain from H1 and L1, science-mode and free
     of hardware injections, cut into $2$\,s windows and whitened by each
-    file's own median-Welch PSD over 20--500\,Hz. Half the windows carry an
+    file's own median-Welch PSD over 20--500\,Hz. Half the training windows and a third of the validation windows carry an
     IMRPhenomD chirp from PyCBC, masses uniform in $[10, 50]\,M_\odot$, random
     sky position, projected onto both detectors and scaled to a network SNR
     uniform in $[4, 20]$. Two noise sets share every window and every
@@ -18682,7 +18732,7 @@ teaches the glitch tail. % TODO Phase 4: the catalogue table (which GWTC
 % Gravity Spy glitch row.
 
 \subsection*{WaveNet (\texttt{Bestiary/WaveNet.lean})}
-\emph{One} new primitive (\S~\ref{layer:waveNetBlock}). Dilated causal
+\emph{One} new primitive (Definition~\ref{layer:waveNetBlock}). Dilated causal
 convolutions for raw audio sample prediction (van den Oord et al.\
 2016, \href{https://arxiv.org/abs/1609.03499}{arXiv:1609.03499}): exponential receptive field, linear parameter
 growth. The foundation of neural TTS and PixelCNN. Variants: single
@@ -18709,7 +18759,7 @@ def waveNet : NetSpec where
 \end{verbatim}
 
 \subsection*{Whisper (\texttt{Bestiary/Whisper.lean})}
-\emph{One} new primitive (\S~\ref{layer:transformerDecoder}). Encoder-decoder transformer over log-mel
+\emph{One} new primitive (Definition~\ref{layer:transformerDecoder}). Encoder-decoder transformer over log-mel
 spectrograms (Radford et al.\ 2022,
 \href{https://arxiv.org/abs/2212.04356}{arXiv:2212.04356}). Encoder is
 \texttt{.transformerEncoder} on the 1500 post-stem audio tokens;
@@ -18720,9 +18770,9 @@ cross-attn + FFN, text tokens coming from a separate
 tiny (7M enc, paper 39M total), base (19M enc, paper 74M), small
 (85M enc + 153M dec+emb = 238M vs paper 244M), medium (302M enc,
 paper 769M), large (629M enc, paper 1.55B total), plus a shared
-decoder spec and tinyWhisper fixture. Encoder and decoder are the
-same size per variant; adding them together recovers paper totals
-within 2--3\%. The multitask interface (swap a prefix token to change
+decoder spec and tinyWhisper fixture. Encoder and decoder share width
+and depth per variant, and the paper totals are encoder, decoder and the
+tied token embedding together (small: $85 + 153 = 238$M against 244M). The multitask interface (swap a prefix token to change
 language or switch between transcribe / translate) is
 prompt-engineering, not architecture --- Whisper's architectural
 novelty is essentially zero.
@@ -18919,8 +18969,8 @@ where the ansatz says it does. The trainer is
 every table are \texttt{scripts/demos/\allowbreak nqs\_metrics.py}.
 
 \subsection*{NeRF (\texttt{Bestiary/NeRF.lean})}
-\emph{Two} new primitives (\S~\ref{layer:positionalEncoding},
-\S~\ref{layer:nerfMLP}). The "it's literally just an MLP" paper
+\emph{Two} new primitives (Definition~\ref{layer:positionalEncoding},
+Definition~\ref{layer:nerfMLP}). The "it's literally just an MLP" paper
 (Mildenhall et al.\ 2020,
 \href{https://arxiv.org/abs/2003.08934}{arXiv:2003.08934}). Under 600K params at canonical
 config; the architectural novelty is nonexistent. What makes NeRF work
@@ -19034,7 +19084,7 @@ The input is a single sequence, and the language model runs once, outside
 the proof. The network is Chapter~\ref{chap:residual}'s ResNet with its strides
 removed --- sixteen of its basic blocks at 128 channels,
 \texttt{residualBlock 128 128 16 1} --- with one new layer in front (the pair
-tile, \S~\ref{layer:pairTile}: two dense maps and an outer sum) and a
+tile, Definition~\ref{layer:pairTile}: two dense maps and an outer sum) and a
 $1 \times 1$ head of 132 channels --- the 66-class distance head, which is
 the 64 bins, a ``beyond 22\,Å'' class and an ``unobserved'' class at
 weight zero, how a missing residue leaves the loss, and trRosetta's three
@@ -19216,8 +19266,8 @@ fold, scoring, table and figures \texttt{scripts/demos/\allowbreak
 casp16\_*.py}.
 
 \subsection*{AlphaFold 2 Evoformer (\texttt{Bestiary/Evoformer.lean})}
-\emph{Two} new primitives (\S~\ref{layer:evoformerBlock},
-\S~\ref{layer:structureModule}). Dual-representation (MSA + pair)
+\emph{Two} new primitives (Definition~\ref{layer:evoformerBlock},
+Definition~\ref{layer:structureModule}). Dual-representation (MSA + pair)
 doesn't fit a linear \texttt{NetSpec} cleanly; the bestiary shows the
 two bundled primitives and notes the limitation (Jumper et al.\ 2021,
 \href{https://www.nature.com/articles/s41586-021-03819-2}{Nature}). Variants: full (76M), mini, tiny.
@@ -19267,8 +19317,8 @@ iteration on the protein's 3D structure.
 
 The bundled-primitive shortcut means Lean sees one \texttt{NetSpec}
 with two layers; the actual graph is a much larger DAG with the dual
-representation and the cross-stage handoff. \S~\ref{layer:evoformerBlock}
-and \S~\ref{layer:structureModule} document the bundling explicitly.
+representation and the cross-stage handoff. Definition~\ref{layer:evoformerBlock}
+and Definition~\ref{layer:structureModule} document the bundling explicitly.
 
 
 \chapter{Game theory}
@@ -19280,8 +19330,9 @@ own later estimate, and the ceiling is exact where the game allows it --- poker'
 the best response to the trained strategy, tic-tac-toe's by the solved game --- and,
 for Pong, a twin fed the six numbers the renderer draws from. The ladder runs a DQN
 from pixels, then regret minimisation under hidden information, then self-play and
-tree search; every rung goes through the squared-error block of the diffusion demo
-with a host-built target, and none of it is new codegen. The catalogue beside the
+tree search, then search inside a learned model; every rung goes through the
+squared-error block of the diffusion demo with a host-built target, and none of it
+is new codegen but MuZero's unrolled model. The catalogue beside the
 demos is the AlphaGo family and Deep CFR, the same loops at the scale that made them
 famous.
 
@@ -20412,8 +20463,8 @@ and bounded:
     \texttt{git diff}s its artifact;
     \texttt{scripts/gates/check\_render\_coverage.py} reports the ones it
     cannot, baselined in \texttt{scripts/gates/render\_guard\_baseline.txt},
-    and of the artifacts the ``MLIR'' sections quote, the CIFAR BatchNorm
-    step is the one on that list, with the other CIFAR-8 train steps.
+    and none of the artifacts the ``MLIR'' sections quote is on that list;
+    the per-image CIFAR-8 train steps are.
   \item \emph{Trusted} (validated numerically, not proven): that the
     StableHLO text faithfully denotes $[\![\cdot]\!]$, which is the
     per-token text above. Beyond it, three things are trusted: a formal
