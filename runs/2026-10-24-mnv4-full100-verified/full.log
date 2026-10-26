@@ -1,0 +1,3443 @@
+===== 2026-10-25 13:55:59 attempt 1 (from epoch 0) =====
+I1025 13:55:59.812878 4090698 service.cc:154] XLA service 0x7458cc79ba00 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I1025 13:55:59.812940 4090698 service.cc:170]   StreamExecutor [0]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1025 13:55:59.812948 4090698 service.cc:170]   StreamExecutor [1]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1025 13:55:59.812953 4090698 service.cc:170]   StreamExecutor [2]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1025 13:55:59.812957 4090698 service.cc:170]   StreamExecutor [3]: NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9 (Driver: 12.9.0[575.57.8]; Runtime: 12.9.0; Toolkit: 12.9.0; DNN: 9.23.2)
+I1025 13:55:59.816279 4090698 se_gpu_pjrt_client.cc:1342] Using BFC allocator.
+I1025 13:55:59.816306 4090698 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 0 for BFCAllocator.
+I1025 13:55:59.816345 4090698 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 1 for BFCAllocator.
+I1025 13:55:59.816357 4090698 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 2 for BFCAllocator.
+I1025 13:55:59.816371 4090698 gpu_helpers.cc:162] XLA backend allocating 11.68GiB (12543066112 bytes) on device 3 for BFCAllocator.
+I1025 13:55:59.826653 4090698 cuda_dnn.cc:440] Loaded cuDNN version 92302
+[pjrt_ffi] XLA backend: PJRT 0.114, 4 device(s)
+[pjrt_ffi] command buffers: enabled (CUDA default)
+[pjrt_ffi] residency: on — parameters stay on the device between steps (default)
+E1025 13:56:03.969004 4090762 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:05.215646 4090786 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+I1025 13:56:06.876690 4090755 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 80 bytes spill stores, 48 bytes spill loads
+
+I1025 13:56:06.992675 4090764 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_2', 88 bytes spill stores, 56 bytes spill loads
+
+I1025 13:56:08.243092 4090756 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot_6', 132 bytes spill stores, 72 bytes spill loads
+
+E1025 13:56:08.644184 4090771 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:09.796476 4090771 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:11.018420 4090771 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:13.267275 4090786 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:14.178431 4090786 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:15.097778 4090786 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:17.214053 4090786 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:20.394985 4090778 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[pjrt_ffi] compiled verified_mlir/mnv4in256_accdp8x128wxdropdowd01bf16_train_step.mlir (@mnv4in256_accdp8x128wxdropdowd01bf16_train_step, 1110 outputs, 4 replicas) in 40458 ms
+I1025 13:56:41.639122 4090765 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 12 bytes spill stores, 12 bytes spill loads
+
+E1025 13:56:41.667910 4090775 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+I1025 13:56:41.689627 4090777 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 872 bytes spill stores, 616 bytes spill loads
+
+E1025 13:56:41.782549 4090767 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+I1025 13:56:41.864802 4090779 subprocess_compilation.cc:349] ptxas warning : Registers are spilled to local memory in function 'gemm_fusion_dot', 112 bytes spill stores, 112 bytes spill loads
+
+E1025 13:56:42.095860 4090755 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1025 13:56:43.485675 4090756 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+[pjrt_ffi] compiled verified_mlir/mnv4in256_fwd.mlir (@mnv4in256_fwd, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 4499 ms
+[pjrt_ffi] compiled verified_mlir/mnv4in256_fwd_eval.mlir (@mnv4in256_fwd_eval, 1 outputs, 4 replicas, SHARDED — outputs gathered from every replica) in 387 ms
+  ▸ RECIPE: full — augmentation from generated_mobilenet_v4_imagenet_full_shim.py; 256²
+MobileNetV4-Conv-M on full 1000-class ImageNet at the paper's 256², the paper's 500-epoch recipe as its own training config has it (RandAugment m15, dropout 0.2, drop-path 0.075 over the 26-entry block list, BN 0.997 / 1e-3), via the VERIFIED renderer.
+  xla/pjrt verified_mlir/mnv4in256_accdp8x128wxdropdowd01bf16_train_step.mlir
+  xla/pjrt verified_mlir/mnv4in256_fwd.mlir  (eval, SHARDED over 4 replicas)
+  xla/pjrt verified_mlir/mnv4in256_fwd_eval.mlir  (eval, SHARDED over 4 replicas)
+  imagenet: val streams per pass (50,000 images at eval width 196608) — nothing is held
+  train 1281167, test 50000; bs 128, MobileNetV4-Conv-M (ImageNet-1k, paper tier, 256²) accdp8x128wxdropdowd01bf16 (cosine+warmup 5ep, baseLR 0.004000), He init
+  ▸ LR SCHEDULE: per step, tf-models CosineDecay over every step of the 100 epochs counted from step 0 (floor 0.000000), LinearWarmup 0→cosine(5 ep) over 5 epochs on top; the step 0-based
+  ▸ STOCHASTIC DEPTH: 18 drop sites, keeps #[0.988000, 0.983000, 0.980000, 0.977000, 0.974000, 0.971000, 0.968000, 0.965000, 0.960000, 0.957000, 0.954000, 0.951000, 0.948000, 0.945000, 0.942000, 0.939000, 0.937000, 0.934000] — host-drawn per step, 1/keep folded in, NOT on the resident path. Eval is the identity (drop-free forward).
+  ▸ CLASSIFIER DROPOUT: keep 0.800000, mask tensor<512x1280xf32> (PER-ELEMENT, one Bernoulli per example×feature — not per-example like the drop scales), host-drawn per step at seed+999983, 1/keep folded in. Eval is the identity (drop-free forward).
+  ▸ GRADIENT ACCUMULATION: k = 8, blob region 3 of 4 [θ|m|v|G]. Micro-batch 512 x 8 = EFFECTIVE BATCH 4096. 2496 micro-batches/epoch = 312 updates/epoch; the LR schedule and Adam's bias correction run on UPDATES, the augmentation and the prefetch on micro-batches.
+  eval batch 64 (the batch @mnv4in256_fwd_eval was RENDERED at) != train batch 128 — sound because eval is class-batch-independent
+  running-stats BN: 77 layers, 67904 stat floats → eval via @mnv4in256_fwd_eval
+     decay 0.997000 (TF sense; = PyTorch/timm momentum 0.003000), new-batch weight 0.000375 = 1 − 0.997000^(1/8), compensated for grad-accum
+  DATA-PARALLEL: 4 replicas x bs 128 = global batch 512, 2496 steps/epoch
+  EVAL SHARDED: 4 replicas x 64 = 256 test images per invoke, 196 invokes, last one 80 real + 176 pad
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792936605.784133 4093003 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792936609.382060 4093144 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792936609.616726 4093112 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792936613.971595 4093377 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792936614.217623 4093346 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792936618.619351 4093593 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792936618.825325 4093562 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792936623.822403 4093834 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_accdp8x128wxdropdowd01bf16_train_step holds 932 parameter tensors (148.2 MB) on 4 devices; they stop crossing PCIe from here
+I1025 13:57:05.834208 4090749 cuda_dnn.cc:440] Loaded cuDNN version 92302
+I1025 13:57:05.834229 4090752 cuda_dnn.cc:440] Loaded cuDNN version 92302
+I1025 13:57:05.834259 4090746 cuda_dnn.cc:440] Loaded cuDNN version 92302
+  ▸ INIT: depthwise fan = k² (the JAX reference's rule), not He fan-out C·k²
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 1), UINT8 wire (normalized in C)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 2), UINT8 wire (normalized in C)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 3), UINT8 wire (normalized in C)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 4), UINT8 wire (normalized in C)
+  imagenet shim: 4 sharded producers (round-robin over batches)
+  ▸ SHIM RESPAWN: one producer every 10 epoch(s), round-robin over 4 — no loader lives past 40 epochs.
+  ▸ SHIM PREFETCH: ON (depth 4 over 4 producer handle(s) — each step's read is issued before the previous step's invoke, one in flight PER HANDLE, so every producer drains during compute instead of blocking in write()). Measured 377 → 224 ms/step on R34/ImageNet 4×bs64 for depth 1. Batch buffers are allocated and freed on the main thread; the pool only fills them.
+  step 0/2496: loss=7.205194
+  step 1/2496: loss=7.296108
+  step 2/2496: loss=7.221290
+  step 100/2496: loss=7.289649
+  step 200/2496: loss=7.116378
+  step 300/2496: loss=6.998983
+  step 400/2496: loss=6.912409
+  step 500/2496: loss=7.017095
+  step 600/2496: loss=7.009716
+  step 700/2496: loss=6.964847
+  step 800/2496: loss=6.946033
+  step 900/2496: loss=6.920595
+  step 1000/2496: loss=6.884255
+  step 1100/2496: loss=6.878356
+  step 1200/2496: loss=6.906602
+  step 1300/2496: loss=6.780239
+  step 1400/2496: loss=6.793667
+  step 1500/2496: loss=6.902124
+  step 1600/2496: loss=6.806659
+  step 1700/2496: loss=6.769989
+  step 1800/2496: loss=6.697515
+  step 1900/2496: loss=6.717595
+  step 2000/2496: loss=6.674150
+  step 2100/2496: loss=6.547712
+  step 2200/2496: loss=6.613797
+  step 2300/2496: loss=6.624441
+  step 2400/2496: loss=6.487720
+Epoch 1/100: loss=6.858500 lr=0.000793
+  epoch 1: eval skipped (valEveryEpochs = 5; next scored epoch 5)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 1942970907434234615)
+  step 0/2496: loss=6.420688
+  step 1/2496: loss=6.487745
+  step 2/2496: loss=6.607025
+  step 100/2496: loss=6.661286
+  step 200/2496: loss=6.526106
+  step 300/2496: loss=6.401918
+  step 400/2496: loss=6.343210
+  step 500/2496: loss=6.640776
+  step 600/2496: loss=6.383664
+  step 700/2496: loss=6.445073
+  step 800/2496: loss=6.288668
+  step 900/2496: loss=6.264832
+  step 1000/2496: loss=6.445341
+  step 1100/2496: loss=6.533678
+  step 1200/2496: loss=6.443317
+  step 1300/2496: loss=6.321460
+  step 1400/2496: loss=6.261114
+  step 1500/2496: loss=6.223786
+  step 1600/2496: loss=6.271399
+  step 1700/2496: loss=6.078506
+  step 1800/2496: loss=6.219829
+  step 1900/2496: loss=5.996001
+  step 2000/2496: loss=6.154589
+  step 2100/2496: loss=6.106315
+  step 2200/2496: loss=6.029294
+  step 2300/2496: loss=6.105957
+  step 2400/2496: loss=6.068377
+Epoch 2/100: loss=6.279848 lr=0.001588
+  epoch 2: eval skipped (valEveryEpochs = 5; next scored epoch 5)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 12311997730201715121)
+  step 0/2496: loss=6.041493
+  step 1/2496: loss=6.018230
+  step 2/2496: loss=5.984735
+  step 100/2496: loss=5.886133
+  step 200/2496: loss=6.120190
+  step 300/2496: loss=6.241268
+  step 400/2496: loss=5.745197
+  step 500/2496: loss=5.742781
+  step 600/2496: loss=5.709542
+  step 700/2496: loss=5.800363
+  step 800/2496: loss=5.856192
+  step 900/2496: loss=5.703153
+  step 1000/2496: loss=5.898448
+  step 1100/2496: loss=5.795390
+  step 1200/2496: loss=5.885899
+  step 1300/2496: loss=5.909104
+  step 1400/2496: loss=5.785238
+  step 1500/2496: loss=5.701320
+  step 1600/2496: loss=5.579779
+  step 1700/2496: loss=5.893450
+  step 1800/2496: loss=5.869574
+  step 1900/2496: loss=5.564402
+  step 2000/2496: loss=5.785914
+  step 2100/2496: loss=5.509855
+  step 2200/2496: loss=5.775926
+  step 2300/2496: loss=5.612812
+  step 2400/2496: loss=5.332016
+Epoch 3/100: loss=5.780117 lr=0.002383
+  epoch 3: eval skipped (valEveryEpochs = 5; next scored epoch 5)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 16062657607745314875)
+  step 0/2496: loss=5.217505
+  step 1/2496: loss=5.366788
+  step 2/2496: loss=5.827067
+  step 100/2496: loss=5.446609
+  step 200/2496: loss=5.582179
+  step 300/2496: loss=5.518045
+  step 400/2496: loss=5.411172
+  step 500/2496: loss=5.375768
+  step 600/2496: loss=5.380420
+  step 700/2496: loss=5.450294
+  step 800/2496: loss=5.262909
+  step 900/2496: loss=5.358207
+  step 1000/2496: loss=5.254041
+  step 1100/2496: loss=5.506696
+  step 1200/2496: loss=5.095805
+  step 1300/2496: loss=5.015505
+  step 1400/2496: loss=5.394359
+  step 1500/2496: loss=5.112405
+  step 1600/2496: loss=5.143000
+  step 1700/2496: loss=5.075256
+  step 1800/2496: loss=5.250366
+  step 1900/2496: loss=5.264336
+  step 2000/2496: loss=5.119745
+  step 2100/2496: loss=5.144283
+  step 2200/2496: loss=4.870351
+  step 2300/2496: loss=4.891394
+  step 2400/2496: loss=5.386836
+Epoch 4/100: loss=5.298165 lr=0.003178
+  epoch 4: eval skipped (valEveryEpochs = 5; next scored epoch 5)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 5830103305951279954)
+  step 0/2496: loss=5.308104
+  step 1/2496: loss=5.053582
+  step 2/2496: loss=5.238100
+  step 100/2496: loss=5.171757
+  step 200/2496: loss=5.084696
+  step 300/2496: loss=4.806021
+  step 400/2496: loss=4.835499
+  step 500/2496: loss=5.046845
+  step 600/2496: loss=5.106952
+  step 700/2496: loss=4.867422
+  step 800/2496: loss=4.916696
+  step 900/2496: loss=5.127280
+  step 1000/2496: loss=4.897240
+  step 1100/2496: loss=5.029713
+  step 1200/2496: loss=5.014153
+  step 1300/2496: loss=5.126824
+  step 1400/2496: loss=4.814761
+  step 1500/2496: loss=5.026326
+  step 1600/2496: loss=4.626270
+  step 1700/2496: loss=4.716014
+  step 1800/2496: loss=4.774652
+  step 1900/2496: loss=4.671051
+  step 2000/2496: loss=4.827009
+  step 2100/2496: loss=4.876856
+  step 2200/2496: loss=4.910331
+  step 2300/2496: loss=4.782983
+  step 2400/2496: loss=4.596000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792939632.209798 4106839 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792939634.357249 4106988 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792939634.986128 4107065 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792939637.095634 4107213 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 5/100: loss=4.879551 lr=0.003973
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 5: test_acc = 2816/50000 = 5.632000%  top5 = 8158/50000 = 16.316000%  [95% CI 5.43–5.84]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e5.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 3686798875482017108)
+  step 0/2496: loss=4.871814
+  step 1/2496: loss=4.408743
+  step 2/2496: loss=4.923348
+  step 100/2496: loss=4.796395
+  step 200/2496: loss=4.730077
+  step 300/2496: loss=4.492212
+  step 400/2496: loss=4.689779
+  step 500/2496: loss=4.710044
+  step 600/2496: loss=4.807462
+  step 700/2496: loss=4.235790
+  step 800/2496: loss=4.583125
+  step 900/2496: loss=4.599720
+  step 1000/2496: loss=4.583013
+  step 1100/2496: loss=4.599217
+  step 1200/2496: loss=4.961340
+  step 1300/2496: loss=4.483421
+  step 1400/2496: loss=4.695389
+  step 1500/2496: loss=4.531850
+  step 1600/2496: loss=4.392367
+  step 1700/2496: loss=4.742605
+  step 1800/2496: loss=4.837699
+  step 1900/2496: loss=4.244122
+  step 2000/2496: loss=4.338056
+  step 2100/2496: loss=4.282570
+  step 2200/2496: loss=4.279671
+  step 2300/2496: loss=4.395808
+  step 2400/2496: loss=4.650953
+Epoch 6/100: loss=4.558055 lr=0.003965
+  epoch 6: eval skipped (valEveryEpochs = 5; next scored epoch 10)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2352429294476938468)
+  step 0/2496: loss=4.489805
+  step 1/2496: loss=4.265415
+  step 2/2496: loss=4.242027
+  step 100/2496: loss=4.471880
+  step 200/2496: loss=4.186729
+  step 300/2496: loss=4.612406
+  step 400/2496: loss=4.392093
+  step 500/2496: loss=4.706725
+  step 600/2496: loss=4.483367
+  step 700/2496: loss=4.440090
+  step 800/2496: loss=4.414516
+  step 900/2496: loss=4.358749
+  step 1000/2496: loss=4.472909
+  step 1100/2496: loss=4.195948
+  step 1200/2496: loss=4.587760
+  step 1300/2496: loss=4.219020
+  step 1400/2496: loss=4.452529
+  step 1500/2496: loss=4.375524
+  step 1600/2496: loss=4.407619
+  step 1700/2496: loss=4.140788
+  step 1800/2496: loss=4.235331
+  step 1900/2496: loss=4.296260
+  step 2000/2496: loss=4.173517
+  step 2100/2496: loss=4.232359
+  step 2200/2496: loss=4.597467
+  step 2300/2496: loss=4.047945
+  step 2400/2496: loss=4.415323
+Epoch 7/100: loss=4.306860 lr=0.003952
+  epoch 7: eval skipped (valEveryEpochs = 5; next scored epoch 10)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 8151098211738472439)
+  step 0/2496: loss=4.265613
+  step 1/2496: loss=4.490471
+  step 2/2496: loss=3.966055
+  step 100/2496: loss=4.361366
+  step 200/2496: loss=4.172038
+  step 300/2496: loss=3.919963
+  step 400/2496: loss=4.448699
+  step 500/2496: loss=4.304106
+  step 600/2496: loss=4.082528
+  step 700/2496: loss=3.989633
+  step 800/2496: loss=4.043551
+  step 900/2496: loss=3.998822
+  step 1000/2496: loss=3.919205
+  step 1100/2496: loss=4.193542
+  step 1200/2496: loss=3.859008
+  step 1300/2496: loss=4.158458
+  step 1400/2496: loss=4.388615
+  step 1500/2496: loss=3.960298
+  step 1600/2496: loss=4.207767
+  step 1700/2496: loss=4.103234
+  step 1800/2496: loss=4.216206
+  step 1900/2496: loss=4.102744
+  step 2000/2496: loss=4.056092
+  step 2100/2496: loss=3.903023
+  step 2200/2496: loss=3.998780
+  step 2300/2496: loss=4.391394
+  step 2400/2496: loss=4.092881
+Epoch 8/100: loss=4.119697 lr=0.003937
+  epoch 8: eval skipped (valEveryEpochs = 5; next scored epoch 10)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2841136966418870828)
+  step 0/2496: loss=4.105516
+  step 1/2496: loss=3.931482
+  step 2/2496: loss=4.202115
+  step 100/2496: loss=4.121181
+  step 200/2496: loss=4.233530
+  step 300/2496: loss=4.146579
+  step 400/2496: loss=4.306576
+  step 500/2496: loss=4.418530
+  step 600/2496: loss=4.072864
+  step 700/2496: loss=4.061640
+  step 800/2496: loss=4.189903
+  step 900/2496: loss=3.951297
+  step 1000/2496: loss=3.920217
+  step 1100/2496: loss=3.882817
+  step 1200/2496: loss=4.120997
+  step 1300/2496: loss=4.237373
+  step 1400/2496: loss=3.674004
+  step 1500/2496: loss=3.886778
+  step 1600/2496: loss=3.891191
+  step 1700/2496: loss=3.951045
+  step 1800/2496: loss=3.945623
+  step 1900/2496: loss=4.033516
+  step 2000/2496: loss=4.068958
+  step 2100/2496: loss=3.861456
+  step 2200/2496: loss=4.365114
+  step 2300/2496: loss=3.764949
+  step 2400/2496: loss=4.194383
+Epoch 9/100: loss=3.995950 lr=0.003921
+  epoch 9: eval skipped (valEveryEpochs = 5; next scored epoch 10)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 824170768686933029)
+  step 0/2496: loss=3.805014
+  step 1/2496: loss=4.255204
+  step 2/2496: loss=4.044004
+  step 100/2496: loss=3.943853
+  step 200/2496: loss=3.776194
+  step 300/2496: loss=3.940296
+  step 400/2496: loss=3.791371
+  step 500/2496: loss=3.758480
+  step 600/2496: loss=3.848953
+  step 700/2496: loss=3.904764
+  step 800/2496: loss=3.830411
+  step 900/2496: loss=3.712390
+  step 1000/2496: loss=3.717448
+  step 1100/2496: loss=3.859681
+  step 1200/2496: loss=3.898094
+  step 1300/2496: loss=3.855401
+  step 1400/2496: loss=3.869564
+  step 1500/2496: loss=4.150273
+  step 1600/2496: loss=3.860995
+  step 1700/2496: loss=3.966667
+  step 1800/2496: loss=3.903372
+  step 1900/2496: loss=3.848960
+  step 2000/2496: loss=3.805408
+  step 2100/2496: loss=3.586293
+  step 2200/2496: loss=4.020355
+  step 2300/2496: loss=4.093963
+  step 2400/2496: loss=4.093550
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792942684.231107 4119192 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792942686.316074 4119332 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792942686.933531 4119409 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792942689.041339 4119549 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 10/100: loss=3.879878 lr=0.003902
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 10: test_acc = 19557/50000 = 39.114000%  top5 = 32586/50000 = 65.172000%  [95% CI 38.69–39.54]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e10.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 1863175830126432990)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792942731.534521 4119798 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 5), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 0 of 4 replaced after epoch 10 (generation 1, seed 5)
+I0000 00:00:1792942735.155862 4119952 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 0/2496: loss=3.601536
+  step 1/2496: loss=3.842023
+  step 2/2496: loss=4.068332
+  step 100/2496: loss=3.573821
+  step 200/2496: loss=3.894253
+  step 300/2496: loss=3.860951
+  step 400/2496: loss=3.570892
+  step 500/2496: loss=4.121599
+  step 600/2496: loss=3.890714
+  step 700/2496: loss=4.222002
+  step 800/2496: loss=3.921631
+  step 900/2496: loss=3.651726
+  step 1000/2496: loss=3.614376
+  step 1100/2496: loss=3.938667
+  step 1200/2496: loss=3.785310
+  step 1300/2496: loss=3.730169
+  step 1400/2496: loss=3.877235
+  step 1500/2496: loss=3.826997
+  step 1600/2496: loss=3.912549
+  step 1700/2496: loss=3.830391
+  step 1800/2496: loss=3.623280
+  step 1900/2496: loss=3.774274
+  step 2000/2496: loss=3.613388
+  step 2100/2496: loss=4.005402
+  step 2200/2496: loss=3.716926
+  step 2300/2496: loss=4.073075
+  step 2400/2496: loss=3.814250
+Epoch 11/100: loss=3.798668 lr=0.003882
+  epoch 11: eval skipped (valEveryEpochs = 5; next scored epoch 15)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 8663357020957910791)
+  step 0/2496: loss=3.880882
+  step 1/2496: loss=3.569029
+  step 2/2496: loss=4.084956
+  step 100/2496: loss=3.592675
+  step 200/2496: loss=3.979613
+  step 300/2496: loss=3.631038
+  step 400/2496: loss=3.890242
+  step 500/2496: loss=3.746839
+  step 600/2496: loss=3.782179
+  step 700/2496: loss=3.851968
+  step 800/2496: loss=4.014966
+  step 900/2496: loss=3.949438
+  step 1000/2496: loss=3.836509
+  step 1100/2496: loss=3.778162
+  step 1200/2496: loss=3.634533
+  step 1300/2496: loss=3.435372
+  step 1400/2496: loss=4.004954
+  step 1500/2496: loss=3.928457
+  step 1600/2496: loss=3.711481
+  step 1700/2496: loss=3.968631
+  step 1800/2496: loss=3.782327
+  step 1900/2496: loss=3.682660
+  step 2000/2496: loss=3.700040
+  step 2100/2496: loss=3.323204
+  step 2200/2496: loss=3.706892
+  step 2300/2496: loss=3.566754
+  step 2400/2496: loss=3.530075
+Epoch 12/100: loss=3.737045 lr=0.003860
+  epoch 12: eval skipped (valEveryEpochs = 5; next scored epoch 15)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 13106758144432397277)
+  step 0/2496: loss=3.726903
+  step 1/2496: loss=3.682473
+  step 2/2496: loss=3.815178
+  step 100/2496: loss=4.155385
+  step 200/2496: loss=3.535857
+  step 300/2496: loss=3.360899
+  step 400/2496: loss=3.804445
+  step 500/2496: loss=3.781546
+  step 600/2496: loss=3.837425
+  step 700/2496: loss=3.819575
+  step 800/2496: loss=3.541418
+  step 900/2496: loss=3.635926
+  step 1000/2496: loss=3.779406
+  step 1100/2496: loss=3.688636
+  step 1200/2496: loss=3.631525
+  step 1300/2496: loss=3.507091
+  step 1400/2496: loss=3.657228
+  step 1500/2496: loss=3.514758
+  step 1600/2496: loss=3.326688
+  step 1700/2496: loss=3.595239
+  step 1800/2496: loss=3.708928
+  step 1900/2496: loss=3.813548
+  step 2000/2496: loss=3.521405
+  step 2100/2496: loss=3.748662
+  step 2200/2496: loss=3.475714
+  step 2300/2496: loss=3.842731
+  step 2400/2496: loss=3.563343
+Epoch 13/100: loss=3.664849 lr=0.003836
+  epoch 13: eval skipped (valEveryEpochs = 5; next scored epoch 15)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 17157440724909850156)
+  step 0/2496: loss=3.495715
+  step 1/2496: loss=3.555453
+  step 2/2496: loss=3.661454
+  step 100/2496: loss=3.511055
+  step 200/2496: loss=3.768931
+  step 300/2496: loss=3.833111
+  step 400/2496: loss=3.792730
+  step 500/2496: loss=3.490201
+  step 600/2496: loss=3.844014
+  step 700/2496: loss=3.575239
+  step 800/2496: loss=3.321424
+  step 900/2496: loss=4.029338
+  step 1000/2496: loss=3.771981
+  step 1100/2496: loss=3.600554
+  step 1200/2496: loss=3.465483
+  step 1300/2496: loss=3.619551
+  step 1400/2496: loss=3.492496
+  step 1500/2496: loss=3.480592
+  step 1600/2496: loss=3.490871
+  step 1700/2496: loss=3.683124
+  step 1800/2496: loss=3.363086
+  step 1900/2496: loss=3.645231
+  step 2000/2496: loss=3.572349
+  step 2100/2496: loss=3.766772
+  step 2200/2496: loss=3.550204
+  step 2300/2496: loss=3.933433
+  step 2400/2496: loss=3.482533
+Epoch 14/100: loss=3.617469 lr=0.003810
+  epoch 14: eval skipped (valEveryEpochs = 5; next scored epoch 15)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2056968068361004403)
+  step 0/2496: loss=3.857461
+  step 1/2496: loss=3.741838
+  step 2/2496: loss=3.638089
+  step 100/2496: loss=3.676645
+  step 200/2496: loss=3.483193
+  step 300/2496: loss=3.503330
+  step 400/2496: loss=3.546964
+  step 500/2496: loss=3.360982
+  step 600/2496: loss=3.728003
+  step 700/2496: loss=3.267420
+  step 800/2496: loss=3.218950
+  step 900/2496: loss=3.470850
+  step 1000/2496: loss=3.453774
+  step 1100/2496: loss=3.395246
+  step 1200/2496: loss=3.538303
+  step 1300/2496: loss=3.396396
+  step 1400/2496: loss=3.686515
+  step 1500/2496: loss=4.033475
+  step 1600/2496: loss=3.604640
+  step 1700/2496: loss=3.488991
+  step 1800/2496: loss=3.569933
+  step 1900/2496: loss=3.609843
+  step 2000/2496: loss=3.505806
+  step 2100/2496: loss=3.625043
+  step 2200/2496: loss=3.542503
+  step 2300/2496: loss=3.771079
+  step 2400/2496: loss=3.882413
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792945797.775779 4132099 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792945799.887300 4132248 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792945800.526362 4132323 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792945802.630171 4132491 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 15/100: loss=3.583433 lr=0.003782
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 15: test_acc = 26622/50000 = 53.244000%  top5 = 39045/50000 = 78.090000%  [95% CI 52.81–53.68]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e15.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7104470013734237055)
+  step 0/2496: loss=3.227275
+  step 1/2496: loss=3.483637
+  step 2/2496: loss=3.691020
+  step 100/2496: loss=3.798744
+  step 200/2496: loss=3.183913
+  step 300/2496: loss=3.635721
+  step 400/2496: loss=3.471532
+  step 500/2496: loss=3.528863
+  step 600/2496: loss=3.311907
+  step 700/2496: loss=3.371399
+  step 800/2496: loss=3.560006
+  step 900/2496: loss=3.390267
+  step 1000/2496: loss=3.637554
+  step 1100/2496: loss=3.689413
+  step 1200/2496: loss=3.399806
+  step 1300/2496: loss=3.766160
+  step 1400/2496: loss=3.686373
+  step 1500/2496: loss=3.839892
+  step 1600/2496: loss=3.878985
+  step 1700/2496: loss=3.546706
+  step 1800/2496: loss=3.585541
+  step 1900/2496: loss=3.574835
+  step 2000/2496: loss=3.631541
+  step 2100/2496: loss=3.450365
+  step 2200/2496: loss=3.475893
+  step 2300/2496: loss=3.585397
+  step 2400/2496: loss=3.636798
+Epoch 16/100: loss=3.542265 lr=0.003753
+  epoch 16: eval skipped (valEveryEpochs = 5; next scored epoch 20)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 968151626994082726)
+  step 0/2496: loss=3.516853
+  step 1/2496: loss=3.570138
+  step 2/2496: loss=3.501298
+  step 100/2496: loss=3.314433
+  step 200/2496: loss=3.130601
+  step 300/2496: loss=3.590541
+  step 400/2496: loss=3.734324
+  step 500/2496: loss=3.250011
+  step 600/2496: loss=3.323101
+  step 700/2496: loss=3.648305
+  step 800/2496: loss=3.389467
+  step 900/2496: loss=3.471377
+  step 1000/2496: loss=3.628644
+  step 1100/2496: loss=3.564575
+  step 1200/2496: loss=3.656337
+  step 1300/2496: loss=3.676499
+  step 1400/2496: loss=3.528917
+  step 1500/2496: loss=3.975244
+  step 1600/2496: loss=3.543749
+  step 1700/2496: loss=3.450827
+  step 1800/2496: loss=3.578734
+  step 1900/2496: loss=3.204742
+  step 2000/2496: loss=3.366526
+  step 2100/2496: loss=3.287682
+  step 2200/2496: loss=3.698733
+  step 2300/2496: loss=3.424962
+  step 2400/2496: loss=3.435041
+Epoch 17/100: loss=3.502784 lr=0.003722
+  epoch 17: eval skipped (valEveryEpochs = 5; next scored epoch 20)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 959258068414793273)
+  step 0/2496: loss=3.731605
+  step 1/2496: loss=3.543500
+  step 2/2496: loss=3.386127
+  step 100/2496: loss=3.670103
+  step 200/2496: loss=3.235435
+  step 300/2496: loss=3.393395
+  step 400/2496: loss=3.867904
+  step 500/2496: loss=3.389159
+  step 600/2496: loss=3.231005
+  step 700/2496: loss=3.276841
+  step 800/2496: loss=3.603455
+  step 900/2496: loss=3.408990
+  step 1000/2496: loss=3.526801
+  step 1100/2496: loss=3.277466
+  step 1200/2496: loss=3.433831
+  step 1300/2496: loss=3.515712
+  step 1400/2496: loss=3.333410
+  step 1500/2496: loss=3.234226
+  step 1600/2496: loss=3.811402
+  step 1700/2496: loss=3.359824
+  step 1800/2496: loss=3.610808
+  step 1900/2496: loss=3.561444
+  step 2000/2496: loss=3.454762
+  step 2100/2496: loss=3.510385
+  step 2200/2496: loss=3.491289
+  step 2300/2496: loss=3.119236
+  step 2400/2496: loss=3.400034
+Epoch 18/100: loss=3.474364 lr=0.003689
+  epoch 18: eval skipped (valEveryEpochs = 5; next scored epoch 20)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 15543497286991550915)
+  step 0/2496: loss=3.460939
+  step 1/2496: loss=3.187609
+  step 2/2496: loss=3.320402
+  step 100/2496: loss=3.533944
+  step 200/2496: loss=3.347714
+  step 300/2496: loss=3.411768
+  step 400/2496: loss=3.424340
+  step 500/2496: loss=3.563442
+  step 600/2496: loss=3.621463
+  step 700/2496: loss=3.588301
+  step 800/2496: loss=3.539962
+  step 900/2496: loss=3.860990
+  step 1000/2496: loss=3.500247
+  step 1100/2496: loss=3.531340
+  step 1200/2496: loss=3.802068
+  step 1300/2496: loss=3.453602
+  step 1400/2496: loss=3.703355
+  step 1500/2496: loss=3.625632
+  step 1600/2496: loss=3.333703
+  step 1700/2496: loss=3.280946
+  step 1800/2496: loss=3.306220
+  step 1900/2496: loss=3.197055
+  step 2000/2496: loss=3.544363
+  step 2100/2496: loss=3.373353
+  step 2200/2496: loss=3.230713
+  step 2300/2496: loss=3.373484
+  step 2400/2496: loss=3.226493
+Epoch 19/100: loss=3.449027 lr=0.003654
+  epoch 19: eval skipped (valEveryEpochs = 5; next scored epoch 20)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 5156231410878907471)
+  step 0/2496: loss=3.663346
+  step 1/2496: loss=3.439596
+  step 2/2496: loss=3.495207
+  step 100/2496: loss=3.212379
+  step 200/2496: loss=3.236038
+  step 300/2496: loss=3.435963
+  step 400/2496: loss=3.540341
+  step 500/2496: loss=3.552929
+  step 600/2496: loss=3.681719
+  step 700/2496: loss=3.410925
+  step 800/2496: loss=3.391768
+  step 900/2496: loss=3.618878
+  step 1000/2496: loss=3.018839
+  step 1100/2496: loss=3.650991
+  step 1200/2496: loss=3.397844
+  step 1300/2496: loss=3.272610
+  step 1400/2496: loss=3.424382
+  step 1500/2496: loss=3.501128
+  step 1600/2496: loss=3.486387
+  step 1700/2496: loss=3.455971
+  step 1800/2496: loss=3.298117
+  step 1900/2496: loss=3.377631
+  step 2000/2496: loss=3.288697
+  step 2100/2496: loss=3.098249
+  step 2200/2496: loss=3.474480
+  step 2300/2496: loss=3.484689
+  step 2400/2496: loss=3.259101
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792948905.040166 4144841 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792948907.149741 4144990 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792948907.796399 4145065 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792948909.860127 4145212 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 20/100: loss=3.422671 lr=0.003618
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 20: test_acc = 28623/50000 = 57.246000%  top5 = 40558/50000 = 81.116000%  [95% CI 56.81–57.68]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e20.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 17103418390073597145)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792948951.311474 4145398 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 10), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 1 of 4 replaced after epoch 20 (generation 2, seed 10)
+  step 0/2496: loss=3.458995
+I0000 00:00:1792948955.081926 4145566 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 1/2496: loss=3.244917
+  step 2/2496: loss=3.370483
+  step 100/2496: loss=3.462345
+  step 200/2496: loss=3.332072
+  step 300/2496: loss=3.144840
+  step 400/2496: loss=3.306031
+  step 500/2496: loss=3.243799
+  step 600/2496: loss=3.382608
+  step 700/2496: loss=3.376907
+  step 800/2496: loss=3.484405
+  step 900/2496: loss=3.238581
+  step 1000/2496: loss=3.375007
+  step 1100/2496: loss=3.265863
+  step 1200/2496: loss=3.428256
+  step 1300/2496: loss=3.413282
+  step 1400/2496: loss=3.383857
+  step 1500/2496: loss=3.437148
+  step 1600/2496: loss=3.128417
+  step 1700/2496: loss=3.276213
+  step 1800/2496: loss=3.536674
+  step 1900/2496: loss=3.123191
+  step 2000/2496: loss=3.549295
+  step 2100/2496: loss=3.479109
+  step 2200/2496: loss=3.564969
+  step 2300/2496: loss=3.439370
+  step 2400/2496: loss=3.586655
+Epoch 21/100: loss=3.392659 lr=0.003580
+  epoch 21: eval skipped (valEveryEpochs = 5; next scored epoch 25)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 15561446930454548641)
+  step 0/2496: loss=3.153562
+  step 1/2496: loss=3.073046
+  step 2/2496: loss=3.253891
+  step 100/2496: loss=3.243031
+  step 200/2496: loss=3.718671
+  step 300/2496: loss=3.382855
+  step 400/2496: loss=3.311844
+  step 500/2496: loss=3.370658
+  step 600/2496: loss=3.377365
+  step 700/2496: loss=2.960331
+  step 800/2496: loss=3.364368
+  step 900/2496: loss=3.780900
+  step 1000/2496: loss=3.150124
+  step 1100/2496: loss=3.221943
+  step 1200/2496: loss=3.344359
+  step 1300/2496: loss=3.560686
+  step 1400/2496: loss=3.036141
+  step 1500/2496: loss=3.301716
+  step 1600/2496: loss=3.377202
+  step 1700/2496: loss=3.255926
+  step 1800/2496: loss=3.291275
+  step 1900/2496: loss=3.613811
+  step 2000/2496: loss=3.076012
+  step 2100/2496: loss=3.262116
+  step 2200/2496: loss=3.393040
+  step 2300/2496: loss=3.346841
+  step 2400/2496: loss=3.314759
+Epoch 22/100: loss=3.368637 lr=0.003541
+  epoch 22: eval skipped (valEveryEpochs = 5; next scored epoch 25)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2371253300580136026)
+  step 0/2496: loss=3.463269
+  step 1/2496: loss=3.174307
+  step 2/2496: loss=3.605042
+  step 100/2496: loss=3.227458
+  step 200/2496: loss=3.206507
+  step 300/2496: loss=3.538572
+  step 400/2496: loss=3.390162
+  step 500/2496: loss=3.591010
+  step 600/2496: loss=3.065475
+  step 700/2496: loss=3.299458
+  step 800/2496: loss=3.511835
+  step 900/2496: loss=3.305466
+  step 1000/2496: loss=3.330705
+  step 1100/2496: loss=3.392379
+  step 1200/2496: loss=3.695409
+  step 1300/2496: loss=3.556538
+  step 1400/2496: loss=3.384513
+  step 1500/2496: loss=3.491267
+  step 1600/2496: loss=3.467871
+  step 1700/2496: loss=3.386659
+  step 1800/2496: loss=3.646843
+  step 1900/2496: loss=3.203240
+  step 2000/2496: loss=3.219622
+  step 2100/2496: loss=3.131169
+  step 2200/2496: loss=3.459839
+  step 2300/2496: loss=3.373506
+  step 2400/2496: loss=3.482545
+Epoch 23/100: loss=3.345501 lr=0.003500
+  epoch 23: eval skipped (valEveryEpochs = 5; next scored epoch 25)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7831691692681511285)
+  step 0/2496: loss=3.425080
+  step 1/2496: loss=3.248295
+  step 2/2496: loss=3.398715
+  step 100/2496: loss=3.238821
+  step 200/2496: loss=3.301768
+  step 300/2496: loss=3.093720
+  step 400/2496: loss=3.019148
+  step 500/2496: loss=3.413588
+  step 600/2496: loss=3.149825
+  step 700/2496: loss=2.990467
+  step 800/2496: loss=3.187788
+  step 900/2496: loss=3.231767
+  step 1000/2496: loss=3.451109
+  step 1100/2496: loss=3.352288
+  step 1200/2496: loss=3.587489
+  step 1300/2496: loss=3.072691
+  step 1400/2496: loss=3.284243
+  step 1500/2496: loss=3.203399
+  step 1600/2496: loss=3.470092
+  step 1700/2496: loss=3.295909
+  step 1800/2496: loss=3.339767
+  step 1900/2496: loss=3.421820
+  step 2000/2496: loss=3.209936
+  step 2100/2496: loss=3.335514
+  step 2200/2496: loss=3.157030
+  step 2300/2496: loss=3.015916
+  step 2400/2496: loss=3.202929
+Epoch 24/100: loss=3.325453 lr=0.003458
+  epoch 24: eval skipped (valEveryEpochs = 5; next scored epoch 25)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 14730727828458165750)
+  step 0/2496: loss=3.149420
+  step 1/2496: loss=3.434671
+  step 2/2496: loss=3.372406
+  step 100/2496: loss=3.449435
+  step 200/2496: loss=3.567405
+  step 300/2496: loss=3.619542
+  step 400/2496: loss=3.106781
+  step 500/2496: loss=3.334931
+  step 600/2496: loss=3.368449
+  step 700/2496: loss=3.319103
+  step 800/2496: loss=3.513453
+  step 900/2496: loss=3.148164
+  step 1000/2496: loss=3.314935
+  step 1100/2496: loss=2.986094
+  step 1200/2496: loss=3.295929
+  step 1300/2496: loss=3.264256
+  step 1400/2496: loss=3.211706
+  step 1500/2496: loss=3.203941
+  step 1600/2496: loss=3.514782
+  step 1700/2496: loss=3.397868
+  step 1800/2496: loss=3.450367
+  step 1900/2496: loss=3.540761
+  step 2000/2496: loss=3.295719
+  step 2100/2496: loss=3.558538
+  step 2200/2496: loss=2.982148
+  step 2300/2496: loss=3.177005
+  step 2400/2496: loss=3.433972
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792952060.923037 4157613 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792952063.029461 4157753 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792952063.681216 4157828 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792952065.765115 4157970 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 25/100: loss=3.310122 lr=0.003414
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 25: test_acc = 29978/50000 = 59.956000%  top5 = 41565/50000 = 83.130000%  [95% CI 59.53–60.38]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e25.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 9584514126399210314)
+  step 0/2496: loss=3.135669
+  step 1/2496: loss=3.485944
+  step 2/2496: loss=3.228753
+  step 100/2496: loss=3.134120
+  step 200/2496: loss=3.260817
+  step 300/2496: loss=3.063872
+  step 400/2496: loss=3.373780
+  step 500/2496: loss=3.159935
+  step 600/2496: loss=2.965251
+  step 700/2496: loss=3.345004
+  step 800/2496: loss=3.312904
+  step 900/2496: loss=3.435570
+  step 1000/2496: loss=3.185818
+  step 1100/2496: loss=3.038531
+  step 1200/2496: loss=2.961334
+  step 1300/2496: loss=3.414804
+  step 1400/2496: loss=3.289686
+  step 1500/2496: loss=3.436896
+  step 1600/2496: loss=3.237665
+  step 1700/2496: loss=3.133680
+  step 1800/2496: loss=3.060268
+  step 1900/2496: loss=2.995039
+  step 2000/2496: loss=3.488714
+  step 2100/2496: loss=3.576473
+  step 2200/2496: loss=3.436791
+  step 2300/2496: loss=3.197098
+  step 2400/2496: loss=3.135575
+Epoch 26/100: loss=3.288241 lr=0.003369
+  epoch 26: eval skipped (valEveryEpochs = 5; next scored epoch 30)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 9445876905424854814)
+  step 0/2496: loss=3.213425
+  step 1/2496: loss=3.138600
+  step 2/2496: loss=3.351416
+  step 100/2496: loss=3.268954
+  step 200/2496: loss=3.563012
+  step 300/2496: loss=3.410629
+  step 400/2496: loss=2.739334
+  step 500/2496: loss=3.180251
+  step 600/2496: loss=3.783231
+  step 700/2496: loss=3.728808
+  step 800/2496: loss=3.251871
+  step 900/2496: loss=3.236764
+  step 1000/2496: loss=2.873111
+  step 1100/2496: loss=3.454749
+  step 1200/2496: loss=3.110037
+  step 1300/2496: loss=3.599934
+  step 1400/2496: loss=3.016855
+  step 1500/2496: loss=3.407485
+  step 1600/2496: loss=3.320658
+  step 1700/2496: loss=3.337628
+  step 1800/2496: loss=3.539416
+  step 1900/2496: loss=3.496265
+  step 2000/2496: loss=3.277388
+  step 2100/2496: loss=3.042302
+  step 2200/2496: loss=3.032130
+  step 2300/2496: loss=3.517796
+  step 2400/2496: loss=3.545349
+Epoch 27/100: loss=3.273794 lr=0.003323
+  epoch 27: eval skipped (valEveryEpochs = 5; next scored epoch 30)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7468345312647489467)
+  step 0/2496: loss=3.287970
+  step 1/2496: loss=3.209497
+  step 2/2496: loss=3.472158
+  step 100/2496: loss=3.146299
+  step 200/2496: loss=3.125951
+  step 300/2496: loss=3.104831
+  step 400/2496: loss=3.653848
+  step 500/2496: loss=3.117746
+  step 600/2496: loss=3.260096
+  step 700/2496: loss=3.332138
+  step 800/2496: loss=3.101810
+  step 900/2496: loss=3.564672
+  step 1000/2496: loss=3.297137
+  step 1100/2496: loss=3.349965
+  step 1200/2496: loss=3.152988
+  step 1300/2496: loss=3.236359
+  step 1400/2496: loss=3.434990
+  step 1500/2496: loss=3.238519
+  step 1600/2496: loss=3.334880
+  step 1700/2496: loss=3.115632
+  step 1800/2496: loss=2.973561
+  step 1900/2496: loss=3.280127
+  step 2000/2496: loss=3.356441
+  step 2100/2496: loss=3.188659
+  step 2200/2496: loss=3.108934
+  step 2300/2496: loss=3.287768
+  step 2400/2496: loss=3.172815
+Epoch 28/100: loss=3.253382 lr=0.003275
+  epoch 28: eval skipped (valEveryEpochs = 5; next scored epoch 30)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 18292695662227874352)
+  step 0/2496: loss=2.840352
+  step 1/2496: loss=3.108375
+  step 2/2496: loss=3.064815
+  step 100/2496: loss=3.146520
+  step 200/2496: loss=3.403844
+  step 300/2496: loss=3.543255
+  step 400/2496: loss=3.046538
+  step 500/2496: loss=3.311002
+  step 600/2496: loss=3.152979
+  step 700/2496: loss=3.254394
+  step 800/2496: loss=3.236484
+  step 900/2496: loss=3.623961
+  step 1000/2496: loss=3.171755
+  step 1100/2496: loss=3.061369
+  step 1200/2496: loss=3.434636
+  step 1300/2496: loss=3.252793
+  step 1400/2496: loss=3.163073
+  step 1500/2496: loss=3.166848
+  step 1600/2496: loss=3.371445
+  step 1700/2496: loss=3.477032
+  step 1800/2496: loss=3.641324
+  step 1900/2496: loss=3.262512
+  step 2000/2496: loss=3.468911
+  step 2100/2496: loss=3.259593
+  step 2200/2496: loss=3.252330
+  step 2300/2496: loss=3.321128
+  step 2400/2496: loss=3.321280
+Epoch 29/100: loss=3.239952 lr=0.003226
+  epoch 29: eval skipped (valEveryEpochs = 5; next scored epoch 30)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7706170697689999053)
+  step 0/2496: loss=3.376894
+  step 1/2496: loss=3.240420
+  step 2/2496: loss=3.061803
+  step 100/2496: loss=3.413611
+  step 200/2496: loss=3.370454
+  step 300/2496: loss=3.465022
+  step 400/2496: loss=3.211314
+  step 500/2496: loss=3.526270
+  step 600/2496: loss=3.269944
+  step 700/2496: loss=3.134856
+  step 800/2496: loss=3.314794
+  step 900/2496: loss=3.101212
+  step 1000/2496: loss=3.464872
+  step 1100/2496: loss=3.667414
+  step 1200/2496: loss=3.232882
+  step 1300/2496: loss=3.241076
+  step 1400/2496: loss=3.385267
+  step 1500/2496: loss=2.986545
+  step 1600/2496: loss=3.276673
+  step 1700/2496: loss=3.433339
+  step 1800/2496: loss=3.214499
+  step 1900/2496: loss=3.059067
+  step 2000/2496: loss=3.109680
+  step 2100/2496: loss=3.288460
+  step 2200/2496: loss=3.384652
+  step 2300/2496: loss=2.867198
+  step 2400/2496: loss=3.133756
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792955212.171203 4170232 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792955214.272879 4170383 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792955214.872391 4170481 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792955216.995542 4170668 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 30/100: loss=3.225107 lr=0.003176
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 30: test_acc = 29617/50000 = 59.234000%  top5 = 41064/50000 = 82.128000%  [95% CI 58.80–59.66]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e30.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 10765302920645865787)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792955258.255503 4171014 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 15), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 2 of 4 replaced after epoch 30 (generation 3, seed 15)
+  step 0/2496: loss=3.118853
+  step 1/2496: loss=3.242045
+I0000 00:00:1792955262.248344 4171154 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 2/2496: loss=3.038433
+  step 100/2496: loss=3.250392
+  step 200/2496: loss=3.403620
+  step 300/2496: loss=3.253269
+  step 400/2496: loss=3.108061
+  step 500/2496: loss=3.231998
+  step 600/2496: loss=3.141007
+  step 700/2496: loss=3.123797
+  step 800/2496: loss=3.064877
+  step 900/2496: loss=3.162475
+  step 1000/2496: loss=3.133831
+  step 1100/2496: loss=3.164829
+  step 1200/2496: loss=3.117502
+  step 1300/2496: loss=3.190408
+  step 1400/2496: loss=3.129214
+  step 1500/2496: loss=3.188030
+  step 1600/2496: loss=3.503575
+  step 1700/2496: loss=3.291761
+  step 1800/2496: loss=2.984114
+  step 1900/2496: loss=3.467218
+  step 2000/2496: loss=3.131712
+  step 2100/2496: loss=3.307275
+  step 2200/2496: loss=3.197371
+  step 2300/2496: loss=3.023206
+  step 2400/2496: loss=3.173567
+Epoch 31/100: loss=3.204760 lr=0.003124
+  epoch 31: eval skipped (valEveryEpochs = 5; next scored epoch 35)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 4498595405763810323)
+  step 0/2496: loss=3.064102
+  step 1/2496: loss=2.562712
+  step 2/2496: loss=3.144856
+  step 100/2496: loss=3.372727
+  step 200/2496: loss=3.351623
+  step 300/2496: loss=3.260493
+  step 400/2496: loss=3.380956
+  step 500/2496: loss=3.199870
+  step 600/2496: loss=3.401207
+  step 700/2496: loss=3.302945
+  step 800/2496: loss=3.475129
+  step 900/2496: loss=3.199352
+  step 1000/2496: loss=3.052810
+  step 1100/2496: loss=3.227535
+  step 1200/2496: loss=3.209073
+  step 1300/2496: loss=3.075975
+  step 1400/2496: loss=3.151075
+  step 1500/2496: loss=2.986409
+  step 1600/2496: loss=3.205607
+  step 1700/2496: loss=3.039768
+  step 1800/2496: loss=3.195481
+  step 1900/2496: loss=3.119405
+  step 2000/2496: loss=3.360385
+  step 2100/2496: loss=2.950029
+  step 2200/2496: loss=3.019969
+  step 2300/2496: loss=3.393636
+  step 2400/2496: loss=2.910941
+Epoch 32/100: loss=3.192582 lr=0.003072
+  epoch 32: eval skipped (valEveryEpochs = 5; next scored epoch 35)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 9907859599669142352)
+  step 0/2496: loss=3.172489
+  step 1/2496: loss=3.404780
+  step 2/2496: loss=3.102736
+  step 100/2496: loss=2.774107
+  step 200/2496: loss=3.272719
+  step 300/2496: loss=3.347785
+  step 400/2496: loss=2.646575
+  step 500/2496: loss=2.968051
+  step 600/2496: loss=3.155508
+  step 700/2496: loss=3.385066
+  step 800/2496: loss=3.405107
+  step 900/2496: loss=2.790601
+  step 1000/2496: loss=3.294309
+  step 1100/2496: loss=2.884201
+  step 1200/2496: loss=2.958368
+  step 1300/2496: loss=2.937489
+  step 1400/2496: loss=3.195391
+  step 1500/2496: loss=3.304005
+  step 1600/2496: loss=2.863738
+  step 1700/2496: loss=2.936813
+  step 1800/2496: loss=3.083950
+  step 1900/2496: loss=3.159732
+  step 2000/2496: loss=3.153183
+  step 2100/2496: loss=3.342510
+  step 2200/2496: loss=3.108825
+  step 2300/2496: loss=3.211824
+  step 2400/2496: loss=3.253995
+Epoch 33/100: loss=3.181210 lr=0.003018
+  epoch 33: eval skipped (valEveryEpochs = 5; next scored epoch 35)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 12129337056048718472)
+  step 0/2496: loss=3.202725
+  step 1/2496: loss=3.390707
+  step 2/2496: loss=3.334266
+  step 100/2496: loss=3.091581
+  step 200/2496: loss=3.426798
+  step 300/2496: loss=3.436063
+  step 400/2496: loss=3.171587
+  step 500/2496: loss=3.154362
+  step 600/2496: loss=3.166562
+  step 700/2496: loss=3.010697
+  step 800/2496: loss=3.097468
+  step 900/2496: loss=3.453344
+  step 1000/2496: loss=3.444331
+  step 1100/2496: loss=3.269930
+  step 1200/2496: loss=3.156245
+  step 1300/2496: loss=2.939996
+  step 1400/2496: loss=3.196311
+  step 1500/2496: loss=3.059238
+  step 1600/2496: loss=3.146161
+  step 1700/2496: loss=3.008665
+  step 1800/2496: loss=3.087669
+  step 1900/2496: loss=2.999167
+  step 2000/2496: loss=3.215180
+  step 2100/2496: loss=3.388418
+  step 2200/2496: loss=3.211807
+  step 2300/2496: loss=3.037701
+  step 2400/2496: loss=3.442083
+Epoch 34/100: loss=3.174333 lr=0.002964
+  epoch 34: eval skipped (valEveryEpochs = 5; next scored epoch 35)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 9959866250897268840)
+  step 0/2496: loss=3.281054
+  step 1/2496: loss=3.551727
+  step 2/2496: loss=3.246595
+  step 100/2496: loss=3.117195
+  step 200/2496: loss=3.209064
+  step 300/2496: loss=3.448565
+  step 400/2496: loss=3.216831
+  step 500/2496: loss=3.360145
+  step 600/2496: loss=3.136843
+  step 700/2496: loss=3.222677
+  step 800/2496: loss=3.121893
+  step 900/2496: loss=2.816063
+  step 1000/2496: loss=3.153810
+  step 1100/2496: loss=2.695861
+  step 1200/2496: loss=3.113478
+  step 1300/2496: loss=3.056823
+  step 1400/2496: loss=3.289059
+  step 1500/2496: loss=3.216076
+  step 1600/2496: loss=3.311814
+  step 1700/2496: loss=2.851637
+  step 1800/2496: loss=3.168332
+  step 1900/2496: loss=3.039771
+  step 2000/2496: loss=3.422945
+  step 2100/2496: loss=3.112603
+  step 2200/2496: loss=3.369886
+  step 2300/2496: loss=3.289373
+  step 2400/2496: loss=3.344731
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792958397.009179 4183496 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792958399.110564 4183644 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792958399.758569 4183720 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792958401.872732 4183859 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 35/100: loss=3.154069 lr=0.002908
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 35: test_acc = 31173/50000 = 62.346000%  top5 = 42425/50000 = 84.850000%  [95% CI 61.92–62.77]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e35.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 5979445552958372274)
+  step 0/2496: loss=3.270656
+  step 1/2496: loss=3.361684
+  step 2/2496: loss=3.119995
+  step 100/2496: loss=3.164140
+  step 200/2496: loss=2.912227
+  step 300/2496: loss=3.166906
+  step 400/2496: loss=3.069886
+  step 500/2496: loss=3.216088
+  step 600/2496: loss=3.312720
+  step 700/2496: loss=3.320554
+  step 800/2496: loss=2.987193
+  step 900/2496: loss=3.012967
+  step 1000/2496: loss=3.345656
+  step 1100/2496: loss=3.445905
+  step 1200/2496: loss=2.894216
+  step 1300/2496: loss=3.434862
+  step 1400/2496: loss=3.262466
+  step 1500/2496: loss=3.130136
+  step 1600/2496: loss=3.247550
+  step 1700/2496: loss=3.298937
+  step 1800/2496: loss=3.000285
+  step 1900/2496: loss=3.134224
+  step 2000/2496: loss=2.812765
+  step 2100/2496: loss=3.038310
+  step 2200/2496: loss=3.175732
+  step 2300/2496: loss=3.073020
+  step 2400/2496: loss=3.432379
+Epoch 36/100: loss=3.138603 lr=0.002852
+  epoch 36: eval skipped (valEveryEpochs = 5; next scored epoch 40)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2613353091545462456)
+  step 0/2496: loss=3.012347
+  step 1/2496: loss=2.693775
+  step 2/2496: loss=3.436269
+  step 100/2496: loss=3.072033
+  step 200/2496: loss=3.233904
+  step 300/2496: loss=2.973917
+  step 400/2496: loss=3.143161
+  step 500/2496: loss=3.234397
+  step 600/2496: loss=3.431210
+  step 700/2496: loss=3.277413
+  step 800/2496: loss=3.327104
+  step 900/2496: loss=3.601432
+  step 1000/2496: loss=3.513136
+  step 1100/2496: loss=3.304038
+  step 1200/2496: loss=3.236819
+  step 1300/2496: loss=2.863624
+  step 1400/2496: loss=3.238690
+  step 1500/2496: loss=2.904130
+  step 1600/2496: loss=3.000408
+  step 1700/2496: loss=3.012770
+  step 1800/2496: loss=3.368809
+  step 1900/2496: loss=3.200142
+  step 2000/2496: loss=3.021710
+  step 2100/2496: loss=3.108546
+  step 2200/2496: loss=3.306894
+  step 2300/2496: loss=3.027948
+  step 2400/2496: loss=3.125601
+Epoch 37/100: loss=3.127062 lr=0.002794
+  epoch 37: eval skipped (valEveryEpochs = 5; next scored epoch 40)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 8159800887894637434)
+  step 0/2496: loss=3.273321
+  step 1/2496: loss=3.208227
+  step 2/2496: loss=3.299822
+  step 100/2496: loss=3.070913
+  step 200/2496: loss=3.001016
+  step 300/2496: loss=2.750467
+  step 400/2496: loss=3.231991
+  step 500/2496: loss=3.255767
+  step 600/2496: loss=3.373990
+  step 700/2496: loss=3.076538
+  step 800/2496: loss=3.120390
+  step 900/2496: loss=3.201560
+  step 1000/2496: loss=3.115256
+  step 1100/2496: loss=3.093895
+  step 1200/2496: loss=3.058731
+  step 1300/2496: loss=2.802336
+  step 1400/2496: loss=3.253068
+  step 1500/2496: loss=2.788775
+  step 1600/2496: loss=3.258481
+  step 1700/2496: loss=2.892223
+  step 1800/2496: loss=3.081590
+  step 1900/2496: loss=3.210512
+  step 2000/2496: loss=3.062836
+  step 2100/2496: loss=3.280274
+  step 2200/2496: loss=3.302939
+  step 2300/2496: loss=3.085923
+  step 2400/2496: loss=3.100184
+Epoch 38/100: loss=3.113056 lr=0.002736
+  epoch 38: eval skipped (valEveryEpochs = 5; next scored epoch 40)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 16675442162483756757)
+  step 0/2496: loss=3.105725
+  step 1/2496: loss=3.068143
+  step 2/2496: loss=3.308275
+  step 100/2496: loss=3.139538
+  step 200/2496: loss=2.848485
+  step 300/2496: loss=3.310945
+  step 400/2496: loss=3.386383
+  step 500/2496: loss=3.313704
+  step 600/2496: loss=3.108253
+  step 700/2496: loss=3.198898
+  step 800/2496: loss=2.975070
+  step 900/2496: loss=3.324519
+  step 1000/2496: loss=3.244804
+  step 1100/2496: loss=3.013332
+  step 1200/2496: loss=2.861907
+  step 1300/2496: loss=3.204358
+  step 1400/2496: loss=3.197131
+  step 1500/2496: loss=2.893243
+  step 1600/2496: loss=2.957634
+  step 1700/2496: loss=3.454276
+  step 1800/2496: loss=3.203503
+  step 1900/2496: loss=3.178884
+  step 2000/2496: loss=2.992691
+  step 2100/2496: loss=2.984534
+  step 2200/2496: loss=3.133467
+  step 2300/2496: loss=2.876028
+  step 2400/2496: loss=2.855940
+Epoch 39/100: loss=3.104297 lr=0.002678
+  epoch 39: eval skipped (valEveryEpochs = 5; next scored epoch 40)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 9661800529021466872)
+  step 0/2496: loss=2.912107
+  step 1/2496: loss=3.058935
+  step 2/2496: loss=3.177614
+  step 100/2496: loss=3.014614
+  step 200/2496: loss=2.986676
+  step 300/2496: loss=2.976987
+  step 400/2496: loss=3.135128
+  step 500/2496: loss=3.117736
+  step 600/2496: loss=3.068510
+  step 700/2496: loss=2.942908
+  step 800/2496: loss=3.385839
+  step 900/2496: loss=2.936367
+  step 1000/2496: loss=3.131795
+  step 1100/2496: loss=2.892851
+  step 1200/2496: loss=2.981415
+  step 1300/2496: loss=3.268099
+  step 1400/2496: loss=3.000257
+  step 1500/2496: loss=2.955999
+  step 1600/2496: loss=3.102072
+  step 1700/2496: loss=3.146003
+  step 1800/2496: loss=3.286561
+  step 1900/2496: loss=2.851436
+  step 2000/2496: loss=3.040646
+  step 2100/2496: loss=3.103603
+  step 2200/2496: loss=3.317405
+  step 2300/2496: loss=3.344524
+  step 2400/2496: loss=2.954555
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792961577.788657    3621 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792961579.915029    3784 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792961580.554864    3859 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792961582.630675    4009 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 40/100: loss=3.092202 lr=0.002618
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 40: test_acc = 32733/50000 = 65.466000%  top5 = 43478/50000 = 86.956000%  [95% CI 65.05–65.88]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e40.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 1018646438412392254)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792961623.697961    4221 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 20), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 3 of 4 replaced after epoch 40 (generation 4, seed 20)
+  step 0/2496: loss=3.020467
+  step 1/2496: loss=3.209039
+  step 2/2496: loss=3.122485
+I0000 00:00:1792961627.825115    4378 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 100/2496: loss=3.312469
+  step 200/2496: loss=2.910801
+  step 300/2496: loss=3.028010
+  step 400/2496: loss=3.224025
+  step 500/2496: loss=2.775697
+  step 600/2496: loss=3.085441
+  step 700/2496: loss=3.241560
+  step 800/2496: loss=2.942558
+  step 900/2496: loss=3.271511
+  step 1000/2496: loss=3.051907
+  step 1100/2496: loss=3.088263
+  step 1200/2496: loss=2.988636
+  step 1300/2496: loss=2.993857
+  step 1400/2496: loss=2.825460
+  step 1500/2496: loss=2.820141
+  step 1600/2496: loss=3.083662
+  step 1700/2496: loss=2.950744
+  step 1800/2496: loss=3.181648
+  step 1900/2496: loss=3.075137
+  step 2000/2496: loss=3.183120
+  step 2100/2496: loss=3.095428
+  step 2200/2496: loss=2.850387
+  step 2300/2496: loss=2.740718
+  step 2400/2496: loss=2.780159
+Epoch 41/100: loss=3.077484 lr=0.002558
+  epoch 41: eval skipped (valEveryEpochs = 5; next scored epoch 45)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 4410495332169913393)
+  step 0/2496: loss=3.323997
+  step 1/2496: loss=3.259859
+  step 2/2496: loss=3.074105
+  step 100/2496: loss=2.954472
+  step 200/2496: loss=3.496951
+  step 300/2496: loss=2.959383
+  step 400/2496: loss=3.089207
+  step 500/2496: loss=3.130921
+  step 600/2496: loss=2.822355
+  step 700/2496: loss=3.049726
+  step 800/2496: loss=3.293184
+  step 900/2496: loss=2.928628
+  step 1000/2496: loss=3.288544
+  step 1100/2496: loss=3.172267
+  step 1200/2496: loss=3.221495
+  step 1300/2496: loss=3.473655
+  step 1400/2496: loss=2.892093
+  step 1500/2496: loss=3.149880
+  step 1600/2496: loss=2.921206
+  step 1700/2496: loss=2.735264
+  step 1800/2496: loss=2.996677
+  step 1900/2496: loss=2.920457
+  step 2000/2496: loss=3.151619
+  step 2100/2496: loss=3.127549
+  step 2200/2496: loss=3.010924
+  step 2300/2496: loss=2.855429
+  step 2400/2496: loss=2.896221
+Epoch 42/100: loss=3.060970 lr=0.002498
+  epoch 42: eval skipped (valEveryEpochs = 5; next scored epoch 45)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 3268437285550510171)
+  step 0/2496: loss=3.064654
+  step 1/2496: loss=2.742461
+  step 2/2496: loss=2.954412
+  step 100/2496: loss=2.956281
+  step 200/2496: loss=2.910591
+  step 300/2496: loss=3.188819
+  step 400/2496: loss=3.053364
+  step 500/2496: loss=3.288966
+  step 600/2496: loss=3.057133
+  step 700/2496: loss=3.071122
+  step 800/2496: loss=3.011210
+  step 900/2496: loss=3.100451
+  step 1000/2496: loss=3.204199
+  step 1100/2496: loss=2.903160
+  step 1200/2496: loss=3.127796
+  step 1300/2496: loss=2.941113
+  step 1400/2496: loss=3.357127
+  step 1500/2496: loss=2.959164
+  step 1600/2496: loss=2.980866
+  step 1700/2496: loss=3.360225
+  step 1800/2496: loss=2.984579
+  step 1900/2496: loss=3.076462
+  step 2000/2496: loss=3.099609
+  step 2100/2496: loss=2.984389
+  step 2200/2496: loss=3.210849
+  step 2300/2496: loss=3.537775
+  step 2400/2496: loss=3.124495
+Epoch 43/100: loss=3.047370 lr=0.002436
+  epoch 43: eval skipped (valEveryEpochs = 5; next scored epoch 45)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 14113855107266723867)
+  step 0/2496: loss=3.191248
+  step 1/2496: loss=2.950381
+  step 2/2496: loss=2.854879
+  step 100/2496: loss=3.188505
+  step 200/2496: loss=2.959537
+  step 300/2496: loss=2.785460
+  step 400/2496: loss=2.713880
+  step 500/2496: loss=3.322855
+  step 600/2496: loss=3.167398
+  step 700/2496: loss=2.864242
+  step 800/2496: loss=3.061036
+  step 900/2496: loss=2.799748
+  step 1000/2496: loss=2.978534
+  step 1100/2496: loss=2.920088
+  step 1200/2496: loss=3.117651
+  step 1300/2496: loss=2.985691
+  step 1400/2496: loss=2.507526
+  step 1500/2496: loss=3.092345
+  step 1600/2496: loss=2.959229
+  step 1700/2496: loss=3.017951
+  step 1800/2496: loss=3.061106
+  step 1900/2496: loss=3.108628
+  step 2000/2496: loss=3.127216
+  step 2100/2496: loss=3.091838
+  step 2200/2496: loss=2.700206
+  step 2300/2496: loss=3.273677
+  step 2400/2496: loss=2.690113
+Epoch 44/100: loss=3.035666 lr=0.002375
+  epoch 44: eval skipped (valEveryEpochs = 5; next scored epoch 45)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7792107704196945550)
+  step 0/2496: loss=2.888057
+  step 1/2496: loss=2.898824
+  step 2/2496: loss=2.914877
+  step 100/2496: loss=2.915262
+  step 200/2496: loss=3.164126
+  step 300/2496: loss=2.915130
+  step 400/2496: loss=2.891976
+  step 500/2496: loss=2.878235
+  step 600/2496: loss=3.038836
+  step 700/2496: loss=3.020156
+  step 800/2496: loss=3.133813
+  step 900/2496: loss=3.080992
+  step 1000/2496: loss=3.007037
+  step 1100/2496: loss=3.045816
+  step 1200/2496: loss=3.036722
+  step 1300/2496: loss=2.971931
+  step 1400/2496: loss=3.280610
+  step 1500/2496: loss=3.008689
+  step 1600/2496: loss=3.024142
+  step 1700/2496: loss=3.426294
+  step 1800/2496: loss=3.140337
+  step 1900/2496: loss=3.004143
+  step 2000/2496: loss=2.720345
+  step 2100/2496: loss=2.829390
+  step 2200/2496: loss=2.936968
+  step 2300/2496: loss=3.142624
+  step 2400/2496: loss=3.017489
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792964792.848228   17428 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792964794.959122   17576 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792964795.596183   17652 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792964797.721065   17808 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 45/100: loss=3.026170 lr=0.002313
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 45: test_acc = 32996/50000 = 65.992000%  top5 = 43568/50000 = 87.136000%  [95% CI 65.58–66.41]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e45.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7328223470083932133)
+  step 0/2496: loss=3.139838
+  step 1/2496: loss=3.343817
+  step 2/2496: loss=3.040638
+  step 100/2496: loss=2.908539
+  step 200/2496: loss=2.761091
+  step 300/2496: loss=2.941153
+  step 400/2496: loss=3.039367
+  step 500/2496: loss=3.019602
+  step 600/2496: loss=3.091925
+  step 700/2496: loss=2.996470
+  step 800/2496: loss=2.807508
+  step 900/2496: loss=2.853671
+  step 1000/2496: loss=3.081295
+  step 1100/2496: loss=2.935616
+  step 1200/2496: loss=2.714650
+  step 1300/2496: loss=2.994816
+  step 1400/2496: loss=3.015703
+  step 1500/2496: loss=3.279019
+  step 1600/2496: loss=3.157559
+  step 1700/2496: loss=2.617305
+  step 1800/2496: loss=2.969010
+  step 1900/2496: loss=2.803888
+  step 2000/2496: loss=2.858212
+  step 2100/2496: loss=2.993146
+  step 2200/2496: loss=3.050245
+  step 2300/2496: loss=3.051518
+  step 2400/2496: loss=2.991172
+Epoch 46/100: loss=3.013597 lr=0.002251
+  epoch 46: eval skipped (valEveryEpochs = 5; next scored epoch 50)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2778712111803395629)
+  step 0/2496: loss=3.015839
+  step 1/2496: loss=3.127326
+  step 2/2496: loss=3.135952
+  step 100/2496: loss=3.180851
+  step 200/2496: loss=3.329222
+  step 300/2496: loss=2.936965
+  step 400/2496: loss=3.086011
+  step 500/2496: loss=2.959135
+  step 600/2496: loss=3.046507
+  step 700/2496: loss=3.094766
+  step 800/2496: loss=3.121450
+  step 900/2496: loss=2.974479
+  step 1000/2496: loss=2.985455
+  step 1100/2496: loss=2.953547
+  step 1200/2496: loss=2.879954
+  step 1300/2496: loss=2.801142
+  step 1400/2496: loss=2.883203
+  step 1500/2496: loss=3.168378
+  step 1600/2496: loss=3.148310
+  step 1700/2496: loss=2.963871
+  step 1800/2496: loss=3.037727
+  step 1900/2496: loss=2.931660
+  step 2000/2496: loss=2.981440
+  step 2100/2496: loss=2.944542
+  step 2200/2496: loss=2.794056
+  step 2300/2496: loss=3.087475
+  step 2400/2496: loss=3.279238
+Epoch 47/100: loss=3.001516 lr=0.002188
+  epoch 47: eval skipped (valEveryEpochs = 5; next scored epoch 50)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 8753499488777878769)
+  step 0/2496: loss=3.057760
+  step 1/2496: loss=2.652089
+  step 2/2496: loss=2.831535
+  step 100/2496: loss=2.948658
+  step 200/2496: loss=2.913882
+  step 300/2496: loss=2.822674
+  step 400/2496: loss=3.381165
+  step 500/2496: loss=3.210683
+  step 600/2496: loss=2.925358
+  step 700/2496: loss=3.065663
+  step 800/2496: loss=3.094879
+  step 900/2496: loss=3.309593
+  step 1000/2496: loss=3.044607
+  step 1100/2496: loss=2.869131
+  step 1200/2496: loss=2.776882
+  step 1300/2496: loss=2.988033
+  step 1400/2496: loss=3.022003
+  step 1500/2496: loss=3.131380
+  step 1600/2496: loss=2.701040
+  step 1700/2496: loss=3.186740
+  step 1800/2496: loss=3.298313
+  step 1900/2496: loss=2.970879
+  step 2000/2496: loss=2.990936
+  step 2100/2496: loss=2.675983
+  step 2200/2496: loss=2.951330
+  step 2300/2496: loss=3.037911
+  step 2400/2496: loss=2.761766
+Epoch 48/100: loss=2.989929 lr=0.002126
+  epoch 48: eval skipped (valEveryEpochs = 5; next scored epoch 50)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 6981193696633554021)
+  step 0/2496: loss=3.168577
+  step 1/2496: loss=2.949008
+  step 2/2496: loss=2.765420
+  step 100/2496: loss=3.295414
+  step 200/2496: loss=3.140175
+  step 300/2496: loss=2.870502
+  step 400/2496: loss=2.697783
+  step 500/2496: loss=2.967490
+  step 600/2496: loss=2.791379
+  step 700/2496: loss=2.861417
+  step 800/2496: loss=3.078548
+  step 900/2496: loss=2.931663
+  step 1000/2496: loss=2.937438
+  step 1100/2496: loss=2.965233
+  step 1200/2496: loss=2.926695
+  step 1300/2496: loss=2.877553
+  step 1400/2496: loss=3.034546
+  step 1500/2496: loss=3.115399
+  step 1600/2496: loss=2.936305
+  step 1700/2496: loss=2.893469
+  step 1800/2496: loss=3.202739
+  step 1900/2496: loss=3.109461
+  step 2000/2496: loss=2.991668
+  step 2100/2496: loss=2.737433
+  step 2200/2496: loss=3.079827
+  step 2300/2496: loss=2.946423
+  step 2400/2496: loss=3.077113
+Epoch 49/100: loss=2.980858 lr=0.002063
+  epoch 49: eval skipped (valEveryEpochs = 5; next scored epoch 50)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 832889806538942263)
+  step 0/2496: loss=2.741529
+  step 1/2496: loss=2.782708
+  step 2/2496: loss=2.792379
+  step 100/2496: loss=3.085683
+  step 200/2496: loss=2.842489
+  step 300/2496: loss=3.123534
+  step 400/2496: loss=3.001682
+  step 500/2496: loss=2.810985
+  step 600/2496: loss=2.891458
+  step 700/2496: loss=2.915410
+  step 800/2496: loss=2.858080
+  step 900/2496: loss=3.064603
+  step 1000/2496: loss=2.868746
+  step 1100/2496: loss=2.752173
+  step 1200/2496: loss=2.684904
+  step 1300/2496: loss=2.933434
+  step 1400/2496: loss=2.925609
+  step 1500/2496: loss=2.937862
+  step 1600/2496: loss=2.929404
+  step 1700/2496: loss=2.719523
+  step 1800/2496: loss=2.961100
+  step 1900/2496: loss=2.867812
+  step 2000/2496: loss=2.809057
+  step 2100/2496: loss=2.667923
+  step 2200/2496: loss=3.103430
+  step 2300/2496: loss=2.887571
+  step 2400/2496: loss=3.046319
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792968006.091323   30619 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792968008.180329   30759 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792968008.826460   30836 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792968010.941507   30977 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 50/100: loss=2.964987 lr=0.002000
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 50: test_acc = 33608/50000 = 67.216000%  top5 = 44144/50000 = 88.288000%  [95% CI 66.80–67.63]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e50.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 13444633392631315538)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792968051.690831   31183 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 21), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 0 of 4 replaced after epoch 50 (generation 5, seed 21)
+I0000 00:00:1792968055.274978   31349 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 0/2496: loss=2.664070
+  step 1/2496: loss=3.042797
+  step 2/2496: loss=3.124230
+  step 100/2496: loss=3.033480
+  step 200/2496: loss=2.836982
+  step 300/2496: loss=2.831255
+  step 400/2496: loss=2.767565
+  step 500/2496: loss=3.070478
+  step 600/2496: loss=2.905671
+  step 700/2496: loss=2.519203
+  step 800/2496: loss=2.765988
+  step 900/2496: loss=2.944930
+  step 1000/2496: loss=2.678846
+  step 1100/2496: loss=2.794739
+  step 1200/2496: loss=3.291752
+  step 1300/2496: loss=2.974147
+  step 1400/2496: loss=2.879867
+  step 1500/2496: loss=3.032411
+  step 1600/2496: loss=3.027223
+  step 1700/2496: loss=2.750037
+  step 1800/2496: loss=2.947896
+  step 1900/2496: loss=3.124191
+  step 2000/2496: loss=3.032863
+  step 2100/2496: loss=3.048361
+  step 2200/2496: loss=2.836430
+  step 2300/2496: loss=3.398987
+  step 2400/2496: loss=3.095357
+Epoch 51/100: loss=2.954221 lr=0.001937
+  epoch 51: eval skipped (valEveryEpochs = 5; next scored epoch 55)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 8191053922827497757)
+  step 0/2496: loss=3.117535
+  step 1/2496: loss=2.914794
+  step 2/2496: loss=2.970879
+  step 100/2496: loss=2.982273
+  step 200/2496: loss=2.839166
+  step 300/2496: loss=3.019585
+  step 400/2496: loss=2.841680
+  step 500/2496: loss=2.905856
+  step 600/2496: loss=3.080873
+  step 700/2496: loss=2.737022
+  step 800/2496: loss=2.976417
+  step 900/2496: loss=3.207420
+  step 1000/2496: loss=2.990512
+  step 1100/2496: loss=2.966990
+  step 1200/2496: loss=2.872676
+  step 1300/2496: loss=2.667134
+  step 1400/2496: loss=3.042512
+  step 1500/2496: loss=2.872742
+  step 1600/2496: loss=3.019454
+  step 1700/2496: loss=3.078513
+  step 1800/2496: loss=3.084328
+  step 1900/2496: loss=2.979122
+  step 2000/2496: loss=3.047963
+  step 2100/2496: loss=2.760069
+  step 2200/2496: loss=2.745282
+  step 2300/2496: loss=2.822689
+  step 2400/2496: loss=3.101601
+Epoch 52/100: loss=2.950530 lr=0.001875
+  epoch 52: eval skipped (valEveryEpochs = 5; next scored epoch 55)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7476864798626173970)
+  step 0/2496: loss=2.935120
+  step 1/2496: loss=2.745874
+  step 2/2496: loss=3.021737
+  step 100/2496: loss=3.012468
+  step 200/2496: loss=2.831048
+  step 300/2496: loss=2.922522
+  step 400/2496: loss=2.813755
+  step 500/2496: loss=3.251548
+  step 600/2496: loss=2.891996
+  step 700/2496: loss=3.024006
+  step 800/2496: loss=2.682766
+  step 900/2496: loss=2.937328
+  step 1000/2496: loss=2.892910
+  step 1100/2496: loss=2.945862
+  step 1200/2496: loss=2.856729
+  step 1300/2496: loss=2.855978
+  step 1400/2496: loss=3.031605
+  step 1500/2496: loss=3.303406
+  step 1600/2496: loss=2.941846
+  step 1700/2496: loss=2.660295
+  step 1800/2496: loss=2.952188
+  step 1900/2496: loss=2.738170
+  step 2000/2496: loss=2.994957
+  step 2100/2496: loss=3.071467
+  step 2200/2496: loss=2.945845
+  step 2300/2496: loss=2.885101
+  step 2400/2496: loss=3.047686
+Epoch 53/100: loss=2.928478 lr=0.001812
+  epoch 53: eval skipped (valEveryEpochs = 5; next scored epoch 55)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 5096873702844372951)
+  step 0/2496: loss=3.100973
+  step 1/2496: loss=2.910083
+  step 2/2496: loss=2.801663
+  step 100/2496: loss=2.691601
+  step 200/2496: loss=2.921336
+  step 300/2496: loss=2.582185
+  step 400/2496: loss=2.796613
+  step 500/2496: loss=3.259707
+  step 600/2496: loss=2.952513
+  step 700/2496: loss=2.886393
+  step 800/2496: loss=2.794321
+  step 900/2496: loss=3.080560
+  step 1000/2496: loss=2.977042
+  step 1100/2496: loss=3.013590
+  step 1200/2496: loss=2.900634
+  step 1300/2496: loss=3.012704
+  step 1400/2496: loss=2.922029
+  step 1500/2496: loss=2.742630
+  step 1600/2496: loss=2.757543
+  step 1700/2496: loss=2.922458
+  step 1800/2496: loss=2.862987
+  step 1900/2496: loss=2.717887
+  step 2000/2496: loss=2.939023
+  step 2100/2496: loss=2.796224
+  step 2200/2496: loss=2.885522
+  step 2300/2496: loss=2.982752
+  step 2400/2496: loss=3.222199
+Epoch 54/100: loss=2.918647 lr=0.001750
+  epoch 54: eval skipped (valEveryEpochs = 5; next scored epoch 55)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 10082351911644730754)
+  step 0/2496: loss=2.846013
+  step 1/2496: loss=2.859968
+  step 2/2496: loss=2.974450
+  step 100/2496: loss=2.634694
+  step 200/2496: loss=2.872040
+  step 300/2496: loss=3.151549
+  step 400/2496: loss=2.757741
+  step 500/2496: loss=2.886871
+  step 600/2496: loss=3.135005
+  step 700/2496: loss=3.148439
+  step 800/2496: loss=2.810158
+  step 900/2496: loss=3.057365
+  step 1000/2496: loss=3.037142
+  step 1100/2496: loss=3.287168
+  step 1200/2496: loss=3.089258
+  step 1300/2496: loss=2.861626
+  step 1400/2496: loss=3.024429
+  step 1500/2496: loss=2.714146
+  step 1600/2496: loss=2.876424
+  step 1700/2496: loss=2.821895
+  step 1800/2496: loss=3.095591
+  step 1900/2496: loss=3.032694
+  step 2000/2496: loss=2.699534
+  step 2100/2496: loss=3.033974
+  step 2200/2496: loss=3.217557
+  step 2300/2496: loss=2.885995
+  step 2400/2496: loss=2.898420
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792971206.306398   43914 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792971208.427031   44067 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792971209.043756   44144 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792971211.127641   44290 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 55/100: loss=2.896991 lr=0.001687
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 55: test_acc = 34366/50000 = 68.732000%  top5 = 44411/50000 = 88.822000%  [95% CI 68.32–69.14]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e55.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 15328717030077389987)
+  step 0/2496: loss=2.765393
+  step 1/2496: loss=2.920851
+  step 2/2496: loss=2.920706
+  step 100/2496: loss=2.610953
+  step 200/2496: loss=2.904282
+  step 300/2496: loss=2.705186
+  step 400/2496: loss=2.780842
+  step 500/2496: loss=2.846594
+  step 600/2496: loss=3.032533
+  step 700/2496: loss=2.997640
+  step 800/2496: loss=2.732386
+  step 900/2496: loss=2.743731
+  step 1000/2496: loss=2.548328
+  step 1100/2496: loss=3.083830
+  step 1200/2496: loss=2.981754
+  step 1300/2496: loss=3.044783
+  step 1400/2496: loss=3.187889
+  step 1500/2496: loss=2.858388
+  step 1600/2496: loss=3.010607
+  step 1700/2496: loss=2.964976
+  step 1800/2496: loss=2.957210
+  step 1900/2496: loss=3.136426
+  step 2000/2496: loss=2.910896
+  step 2100/2496: loss=2.710486
+  step 2200/2496: loss=2.652356
+  step 2300/2496: loss=3.141324
+  step 2400/2496: loss=2.897307
+Epoch 56/100: loss=2.888879 lr=0.001625
+  epoch 56: eval skipped (valEveryEpochs = 5; next scored epoch 60)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 1144068814154929607)
+  step 0/2496: loss=2.958496
+  step 1/2496: loss=3.008906
+  step 2/2496: loss=2.901607
+  step 100/2496: loss=2.684444
+  step 200/2496: loss=2.730211
+  step 300/2496: loss=2.743334
+  step 400/2496: loss=2.851542
+  step 500/2496: loss=2.735913
+  step 600/2496: loss=2.902444
+  step 700/2496: loss=2.709109
+  step 800/2496: loss=2.806890
+  step 900/2496: loss=2.990090
+  step 1000/2496: loss=2.914949
+  step 1100/2496: loss=2.853371
+  step 1200/2496: loss=2.824666
+  step 1300/2496: loss=3.019589
+  step 1400/2496: loss=2.748466
+  step 1500/2496: loss=3.046015
+  step 1600/2496: loss=3.091920
+  step 1700/2496: loss=2.740862
+  step 1800/2496: loss=2.542310
+  step 1900/2496: loss=2.935378
+  step 2000/2496: loss=3.074510
+  step 2100/2496: loss=3.031739
+  step 2200/2496: loss=2.861175
+  step 2300/2496: loss=2.707481
+  step 2400/2496: loss=2.752026
+Epoch 57/100: loss=2.872473 lr=0.001564
+  epoch 57: eval skipped (valEveryEpochs = 5; next scored epoch 60)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 13430235963058399141)
+  step 0/2496: loss=2.670454
+  step 1/2496: loss=2.635835
+  step 2/2496: loss=2.921157
+  step 100/2496: loss=3.227684
+  step 200/2496: loss=2.615128
+  step 300/2496: loss=2.783752
+  step 400/2496: loss=2.543619
+  step 500/2496: loss=2.751836
+  step 600/2496: loss=2.892879
+  step 700/2496: loss=2.942050
+  step 800/2496: loss=2.896545
+  step 900/2496: loss=2.621299
+  step 1000/2496: loss=2.684940
+  step 1100/2496: loss=3.070051
+  step 1200/2496: loss=2.820863
+  step 1300/2496: loss=2.693867
+  step 1400/2496: loss=2.673882
+  step 1500/2496: loss=2.736639
+  step 1600/2496: loss=2.930538
+  step 1700/2496: loss=2.942729
+  step 1800/2496: loss=3.014316
+  step 1900/2496: loss=2.750293
+  step 2000/2496: loss=3.115069
+  step 2100/2496: loss=2.959572
+  step 2200/2496: loss=2.882189
+  step 2300/2496: loss=2.901196
+  step 2400/2496: loss=2.984548
+Epoch 58/100: loss=2.863905 lr=0.001503
+  epoch 58: eval skipped (valEveryEpochs = 5; next scored epoch 60)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 16380863825838778230)
+  step 0/2496: loss=2.596992
+  step 1/2496: loss=2.961988
+  step 2/2496: loss=2.595392
+  step 100/2496: loss=2.974335
+  step 200/2496: loss=2.688958
+  step 300/2496: loss=2.407903
+  step 400/2496: loss=2.919051
+  step 500/2496: loss=2.912390
+  step 600/2496: loss=2.820422
+  step 700/2496: loss=2.538101
+  step 800/2496: loss=2.620610
+  step 900/2496: loss=3.151951
+  step 1000/2496: loss=2.955158
+  step 1100/2496: loss=2.865670
+  step 1200/2496: loss=2.826470
+  step 1300/2496: loss=3.006577
+  step 1400/2496: loss=3.393225
+  step 1500/2496: loss=2.823910
+  step 1600/2496: loss=2.474687
+  step 1700/2496: loss=2.961277
+  step 1800/2496: loss=2.824543
+  step 1900/2496: loss=2.751025
+  step 2000/2496: loss=2.648635
+  step 2100/2496: loss=2.835619
+  step 2200/2496: loss=2.899947
+  step 2300/2496: loss=3.217254
+  step 2400/2496: loss=2.786718
+Epoch 59/100: loss=2.851183 lr=0.001442
+  epoch 59: eval skipped (valEveryEpochs = 5; next scored epoch 60)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 9970671450381554964)
+  step 0/2496: loss=2.998047
+  step 1/2496: loss=2.669318
+  step 2/2496: loss=2.728864
+  step 100/2496: loss=2.850308
+  step 200/2496: loss=2.748602
+  step 300/2496: loss=3.081369
+  step 400/2496: loss=2.930532
+  step 500/2496: loss=2.704933
+  step 600/2496: loss=2.793014
+  step 700/2496: loss=2.700630
+  step 800/2496: loss=2.829203
+  step 900/2496: loss=2.726454
+  step 1000/2496: loss=2.494894
+  step 1100/2496: loss=3.003204
+  step 1200/2496: loss=2.832260
+  step 1300/2496: loss=2.815893
+  step 1400/2496: loss=2.716146
+  step 1500/2496: loss=3.064171
+  step 1600/2496: loss=2.981617
+  step 1700/2496: loss=2.544341
+  step 1800/2496: loss=2.636465
+  step 1900/2496: loss=2.707283
+  step 2000/2496: loss=2.874630
+  step 2100/2496: loss=2.950712
+  step 2200/2496: loss=2.806242
+  step 2300/2496: loss=2.745718
+  step 2400/2496: loss=3.012031
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792974399.137889   57088 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792974401.256486   57244 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792974401.892217   57320 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792974403.997044   57460 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 60/100: loss=2.843383 lr=0.001382
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 60: test_acc = 35276/50000 = 70.552000%  top5 = 44964/50000 = 89.928000%  [95% CI 70.15–70.95]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e60.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 17675322429949267683)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792974444.989178   57683 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 26), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 1 of 4 replaced after epoch 60 (generation 6, seed 26)
+  step 0/2496: loss=3.116533
+I0000 00:00:1792974449.002832   57824 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 1/2496: loss=2.782816
+  step 2/2496: loss=2.853366
+  step 100/2496: loss=2.894735
+  step 200/2496: loss=3.100801
+  step 300/2496: loss=2.729723
+  step 400/2496: loss=2.837483
+  step 500/2496: loss=2.762782
+  step 600/2496: loss=3.178128
+  step 700/2496: loss=2.598674
+  step 800/2496: loss=2.898517
+  step 900/2496: loss=2.584566
+  step 1000/2496: loss=2.499269
+  step 1100/2496: loss=2.963784
+  step 1200/2496: loss=2.898051
+  step 1300/2496: loss=3.035441
+  step 1400/2496: loss=2.557319
+  step 1500/2496: loss=2.998101
+  step 1600/2496: loss=2.673848
+  step 1700/2496: loss=2.643872
+  step 1800/2496: loss=3.086492
+  step 1900/2496: loss=2.822258
+  step 2000/2496: loss=2.700060
+  step 2100/2496: loss=2.689836
+  step 2200/2496: loss=2.874119
+  step 2300/2496: loss=2.874669
+  step 2400/2496: loss=2.538321
+Epoch 61/100: loss=2.825928 lr=0.001323
+  epoch 61: eval skipped (valEveryEpochs = 5; next scored epoch 65)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 14840946178600425011)
+  step 0/2496: loss=2.845863
+  step 1/2496: loss=2.726072
+  step 2/2496: loss=2.882875
+  step 100/2496: loss=2.851705
+  step 200/2496: loss=2.735966
+  step 300/2496: loss=2.745487
+  step 400/2496: loss=2.774778
+  step 500/2496: loss=2.849620
+  step 600/2496: loss=2.900873
+  step 700/2496: loss=2.757038
+  step 800/2496: loss=2.780627
+  step 900/2496: loss=2.999291
+  step 1000/2496: loss=2.800962
+  step 1100/2496: loss=2.859496
+  step 1200/2496: loss=2.456027
+  step 1300/2496: loss=2.830030
+  step 1400/2496: loss=2.885289
+  step 1500/2496: loss=2.800721
+  step 1600/2496: loss=2.919392
+  step 1700/2496: loss=2.869893
+  step 1800/2496: loss=2.800247
+  step 1900/2496: loss=2.684690
+  step 2000/2496: loss=3.137825
+  step 2100/2496: loss=2.819949
+  step 2200/2496: loss=2.696853
+  step 2300/2496: loss=2.687089
+  step 2400/2496: loss=2.730519
+Epoch 62/100: loss=2.813384 lr=0.001264
+  epoch 62: eval skipped (valEveryEpochs = 5; next scored epoch 65)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 12037984355894675606)
+  step 0/2496: loss=2.771365
+  step 1/2496: loss=2.687541
+  step 2/2496: loss=2.858240
+  step 100/2496: loss=2.774208
+  step 200/2496: loss=2.930212
+  step 300/2496: loss=2.761295
+  step 400/2496: loss=3.000831
+  step 500/2496: loss=2.812881
+  step 600/2496: loss=2.563079
+  step 700/2496: loss=2.599050
+  step 800/2496: loss=2.569679
+  step 900/2496: loss=2.501168
+  step 1000/2496: loss=2.993781
+  step 1100/2496: loss=2.719296
+  step 1200/2496: loss=2.936785
+  step 1300/2496: loss=2.726266
+  step 1400/2496: loss=2.751361
+  step 1500/2496: loss=3.057112
+  step 1600/2496: loss=2.737782
+  step 1700/2496: loss=2.697147
+  step 1800/2496: loss=2.738224
+  step 1900/2496: loss=2.945507
+  step 2000/2496: loss=2.795345
+  step 2100/2496: loss=2.924256
+  step 2200/2496: loss=2.625055
+  step 2300/2496: loss=2.865474
+  step 2400/2496: loss=2.875550
+Epoch 63/100: loss=2.797036 lr=0.001206
+  epoch 63: eval skipped (valEveryEpochs = 5; next scored epoch 65)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 8548609108583183456)
+  step 0/2496: loss=2.637133
+  step 1/2496: loss=2.948002
+  step 2/2496: loss=2.793704
+  step 100/2496: loss=2.733981
+  step 200/2496: loss=2.642848
+  step 300/2496: loss=2.940294
+  step 400/2496: loss=2.946779
+  step 500/2496: loss=2.712552
+  step 600/2496: loss=2.569556
+  step 700/2496: loss=3.155797
+  step 800/2496: loss=2.472439
+  step 900/2496: loss=3.157812
+  step 1000/2496: loss=2.773250
+  step 1100/2496: loss=2.647195
+  step 1200/2496: loss=2.661764
+  step 1300/2496: loss=2.792944
+  step 1400/2496: loss=2.722182
+  step 1500/2496: loss=2.980975
+  step 1600/2496: loss=2.850231
+  step 1700/2496: loss=2.791357
+  step 1800/2496: loss=2.561947
+  step 1900/2496: loss=2.545138
+  step 2000/2496: loss=2.817943
+  step 2100/2496: loss=2.633789
+  step 2200/2496: loss=2.728641
+  step 2300/2496: loss=2.447351
+  step 2400/2496: loss=2.695178
+Epoch 64/100: loss=2.784775 lr=0.001149
+  epoch 64: eval skipped (valEveryEpochs = 5; next scored epoch 65)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 5146041623261000319)
+  step 0/2496: loss=2.778666
+  step 1/2496: loss=3.081743
+  step 2/2496: loss=3.040459
+  step 100/2496: loss=2.663193
+  step 200/2496: loss=2.935956
+  step 300/2496: loss=2.788244
+  step 400/2496: loss=3.040291
+  step 500/2496: loss=2.510310
+  step 600/2496: loss=2.826353
+  step 700/2496: loss=2.813418
+  step 800/2496: loss=3.055809
+  step 900/2496: loss=2.602481
+  step 1000/2496: loss=2.830461
+  step 1100/2496: loss=2.383626
+  step 1200/2496: loss=2.842737
+  step 1300/2496: loss=2.953450
+  step 1400/2496: loss=2.699953
+  step 1500/2496: loss=2.602921
+  step 1600/2496: loss=2.716672
+  step 1700/2496: loss=2.652539
+  step 1800/2496: loss=2.779880
+  step 1900/2496: loss=2.773270
+  step 2000/2496: loss=2.657116
+  step 2100/2496: loss=2.852286
+  step 2200/2496: loss=3.123018
+  step 2300/2496: loss=2.896456
+  step 2400/2496: loss=2.572662
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792977590.565165   70260 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792977592.694364   70417 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792977593.311292   70492 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792977595.433980   70633 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 65/100: loss=2.771259 lr=0.001092
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 65: test_acc = 35614/50000 = 71.228000%  top5 = 45145/50000 = 90.290000%  [95% CI 70.83–71.62]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e65.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 17259559171652483633)
+  step 0/2496: loss=2.621789
+  step 1/2496: loss=2.967721
+  step 2/2496: loss=2.448794
+  step 100/2496: loss=2.688159
+  step 200/2496: loss=3.047762
+  step 300/2496: loss=2.749897
+  step 400/2496: loss=2.670554
+  step 500/2496: loss=2.608666
+  step 600/2496: loss=2.691830
+  step 700/2496: loss=2.798502
+  step 800/2496: loss=2.482309
+  step 900/2496: loss=2.779651
+  step 1000/2496: loss=2.626604
+  step 1100/2496: loss=2.838753
+  step 1200/2496: loss=2.963417
+  step 1300/2496: loss=2.670720
+  step 1400/2496: loss=2.913283
+  step 1500/2496: loss=2.714960
+  step 1600/2496: loss=2.860738
+  step 1700/2496: loss=2.625787
+  step 1800/2496: loss=2.897957
+  step 1900/2496: loss=2.660495
+  step 2000/2496: loss=3.094029
+  step 2100/2496: loss=2.817306
+  step 2200/2496: loss=2.932674
+  step 2300/2496: loss=2.850137
+  step 2400/2496: loss=2.746762
+Epoch 66/100: loss=2.760204 lr=0.001037
+  epoch 66: eval skipped (valEveryEpochs = 5; next scored epoch 70)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7718968945954964812)
+  step 0/2496: loss=2.718218
+  step 1/2496: loss=2.690267
+  step 2/2496: loss=2.717282
+  step 100/2496: loss=2.868261
+  step 200/2496: loss=2.860238
+  step 300/2496: loss=2.755873
+  step 400/2496: loss=2.697809
+  step 500/2496: loss=2.871383
+  step 600/2496: loss=2.524752
+  step 700/2496: loss=3.012601
+  step 800/2496: loss=2.902323
+  step 900/2496: loss=2.904321
+  step 1000/2496: loss=2.604228
+  step 1100/2496: loss=2.689674
+  step 1200/2496: loss=2.541507
+  step 1300/2496: loss=2.888253
+  step 1400/2496: loss=2.377269
+  step 1500/2496: loss=2.595256
+  step 1600/2496: loss=2.620622
+  step 1700/2496: loss=2.865222
+  step 1800/2496: loss=2.906098
+  step 1900/2496: loss=2.567910
+  step 2000/2496: loss=3.011587
+  step 2100/2496: loss=2.608269
+  step 2200/2496: loss=2.942414
+  step 2300/2496: loss=2.374810
+  step 2400/2496: loss=2.940982
+Epoch 67/100: loss=2.739342 lr=0.000982
+  epoch 67: eval skipped (valEveryEpochs = 5; next scored epoch 70)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 9201308138196610996)
+  step 0/2496: loss=2.617853
+  step 1/2496: loss=2.562337
+  step 2/2496: loss=2.515118
+  step 100/2496: loss=2.960651
+  step 200/2496: loss=2.993570
+  step 300/2496: loss=2.588669
+  step 400/2496: loss=2.828981
+  step 500/2496: loss=2.586377
+  step 600/2496: loss=2.873998
+  step 700/2496: loss=2.667824
+  step 800/2496: loss=2.846405
+  step 900/2496: loss=2.733212
+  step 1000/2496: loss=2.467322
+  step 1100/2496: loss=2.805779
+  step 1200/2496: loss=2.896944
+  step 1300/2496: loss=2.696643
+  step 1400/2496: loss=2.882871
+  step 1500/2496: loss=2.622735
+  step 1600/2496: loss=2.483556
+  step 1700/2496: loss=2.882626
+  step 1800/2496: loss=2.924109
+  step 1900/2496: loss=2.656380
+  step 2000/2496: loss=2.629958
+  step 2100/2496: loss=2.787694
+  step 2200/2496: loss=2.950394
+  step 2300/2496: loss=2.572592
+  step 2400/2496: loss=2.681379
+Epoch 68/100: loss=2.735336 lr=0.000929
+  epoch 68: eval skipped (valEveryEpochs = 5; next scored epoch 70)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7492113628219072843)
+  step 0/2496: loss=2.507086
+  step 1/2496: loss=2.756320
+  step 2/2496: loss=2.637073
+  step 100/2496: loss=2.857946
+  step 200/2496: loss=2.606664
+  step 300/2496: loss=2.707096
+  step 400/2496: loss=2.478289
+  step 500/2496: loss=2.630484
+  step 600/2496: loss=2.566323
+  step 700/2496: loss=2.747092
+  step 800/2496: loss=2.555699
+  step 900/2496: loss=2.705422
+  step 1000/2496: loss=2.682788
+  step 1100/2496: loss=2.556478
+  step 1200/2496: loss=2.944120
+  step 1300/2496: loss=2.900906
+  step 1400/2496: loss=2.497108
+  step 1500/2496: loss=2.912861
+  step 1600/2496: loss=2.595544
+  step 1700/2496: loss=2.896508
+  step 1800/2496: loss=2.611671
+  step 1900/2496: loss=2.585185
+  step 2000/2496: loss=3.050232
+  step 2100/2496: loss=2.551087
+  step 2200/2496: loss=2.662145
+  step 2300/2496: loss=3.160083
+  step 2400/2496: loss=2.910639
+Epoch 69/100: loss=2.720057 lr=0.000876
+  epoch 69: eval skipped (valEveryEpochs = 5; next scored epoch 70)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 4218947209653965258)
+  step 0/2496: loss=2.589357
+  step 1/2496: loss=2.546596
+  step 2/2496: loss=2.630179
+  step 100/2496: loss=2.822291
+  step 200/2496: loss=2.673984
+  step 300/2496: loss=2.585921
+  step 400/2496: loss=2.848316
+  step 500/2496: loss=2.569404
+  step 600/2496: loss=2.691158
+  step 700/2496: loss=2.713627
+  step 800/2496: loss=2.603987
+  step 900/2496: loss=2.718811
+  step 1000/2496: loss=2.836883
+  step 1100/2496: loss=2.652899
+  step 1200/2496: loss=2.754486
+  step 1300/2496: loss=2.578413
+  step 1400/2496: loss=2.680730
+  step 1500/2496: loss=2.732118
+  step 1600/2496: loss=2.771508
+  step 1700/2496: loss=2.830329
+  step 1800/2496: loss=2.503880
+  step 1900/2496: loss=2.583143
+  step 2000/2496: loss=2.782991
+  step 2100/2496: loss=2.962176
+  step 2200/2496: loss=2.838809
+  step 2300/2496: loss=2.522053
+  step 2400/2496: loss=2.523618
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792980775.409545   83786 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792980777.561799   83927 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792980778.201848   84002 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792980780.303491   84143 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 70/100: loss=2.706080 lr=0.000825
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 70: test_acc = 36465/50000 = 72.930000%  top5 = 45665/50000 = 91.330000%  [95% CI 72.54–73.32]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e70.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 17135370825601337639)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792980821.771466   84540 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 31), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 2 of 4 replaced after epoch 70 (generation 7, seed 31)
+  step 0/2496: loss=2.657018
+  step 1/2496: loss=2.831542
+I0000 00:00:1792980825.724525   84704 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 2/2496: loss=2.799562
+  step 100/2496: loss=2.684898
+  step 200/2496: loss=2.419377
+  step 300/2496: loss=2.467073
+  step 400/2496: loss=2.734808
+  step 500/2496: loss=2.716112
+  step 600/2496: loss=2.942470
+  step 700/2496: loss=2.606485
+  step 800/2496: loss=2.797022
+  step 900/2496: loss=3.039289
+  step 1000/2496: loss=2.947670
+  step 1100/2496: loss=2.714381
+  step 1200/2496: loss=2.859371
+  step 1300/2496: loss=2.899350
+  step 1400/2496: loss=3.084035
+  step 1500/2496: loss=2.675608
+  step 1600/2496: loss=2.781944
+  step 1700/2496: loss=2.771064
+  step 1800/2496: loss=2.755324
+  step 1900/2496: loss=2.720804
+  step 2000/2496: loss=2.903177
+  step 2100/2496: loss=2.585242
+  step 2200/2496: loss=2.703670
+  step 2300/2496: loss=2.892036
+  step 2400/2496: loss=2.654500
+Epoch 71/100: loss=2.693852 lr=0.000774
+  epoch 71: eval skipped (valEveryEpochs = 5; next scored epoch 75)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 3900194120776660435)
+  step 0/2496: loss=2.786443
+  step 1/2496: loss=2.736596
+  step 2/2496: loss=2.810172
+  step 100/2496: loss=2.831697
+  step 200/2496: loss=2.589113
+  step 300/2496: loss=2.615993
+  step 400/2496: loss=2.945519
+  step 500/2496: loss=2.402837
+  step 600/2496: loss=2.911396
+  step 700/2496: loss=2.463630
+  step 800/2496: loss=2.245878
+  step 900/2496: loss=2.363262
+  step 1000/2496: loss=2.536589
+  step 1100/2496: loss=2.783179
+  step 1200/2496: loss=2.805827
+  step 1300/2496: loss=2.579877
+  step 1400/2496: loss=2.670487
+  step 1500/2496: loss=2.472867
+  step 1600/2496: loss=2.866869
+  step 1700/2496: loss=2.554666
+  step 1800/2496: loss=2.661702
+  step 1900/2496: loss=3.210645
+  step 2000/2496: loss=2.687043
+  step 2100/2496: loss=2.296996
+  step 2200/2496: loss=2.691590
+  step 2300/2496: loss=2.627561
+  step 2400/2496: loss=2.641245
+Epoch 72/100: loss=2.674671 lr=0.000725
+  epoch 72: eval skipped (valEveryEpochs = 5; next scored epoch 75)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 1667862718893101810)
+  step 0/2496: loss=2.488240
+  step 1/2496: loss=2.495927
+  step 2/2496: loss=2.608290
+  step 100/2496: loss=2.743147
+  step 200/2496: loss=2.689687
+  step 300/2496: loss=2.870603
+  step 400/2496: loss=2.513077
+  step 500/2496: loss=2.755090
+  step 600/2496: loss=2.873197
+  step 700/2496: loss=2.538959
+  step 800/2496: loss=2.749786
+  step 900/2496: loss=2.492927
+  step 1000/2496: loss=2.772207
+  step 1100/2496: loss=2.467506
+  step 1200/2496: loss=2.889252
+  step 1300/2496: loss=2.748778
+  step 1400/2496: loss=2.333946
+  step 1500/2496: loss=2.736014
+  step 1600/2496: loss=2.522606
+  step 1700/2496: loss=2.374914
+  step 1800/2496: loss=2.717634
+  step 1900/2496: loss=2.820282
+  step 2000/2496: loss=2.775614
+  step 2100/2496: loss=2.766042
+  step 2200/2496: loss=2.693659
+  step 2300/2496: loss=2.635288
+  step 2400/2496: loss=2.571771
+Epoch 73/100: loss=2.662977 lr=0.000678
+  epoch 73: eval skipped (valEveryEpochs = 5; next scored epoch 75)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 10530365214367325701)
+  step 0/2496: loss=2.831052
+  step 1/2496: loss=2.663337
+  step 2/2496: loss=2.864380
+  step 100/2496: loss=2.616624
+  step 200/2496: loss=2.627415
+  step 300/2496: loss=2.657142
+  step 400/2496: loss=2.414346
+  step 500/2496: loss=2.939238
+  step 600/2496: loss=2.400016
+  step 700/2496: loss=2.650230
+  step 800/2496: loss=3.098714
+  step 900/2496: loss=2.454801
+  step 1000/2496: loss=2.702126
+  step 1100/2496: loss=2.491826
+  step 1200/2496: loss=2.765414
+  step 1300/2496: loss=2.953059
+  step 1400/2496: loss=2.847826
+  step 1500/2496: loss=2.395046
+  step 1600/2496: loss=2.796039
+  step 1700/2496: loss=2.770832
+  step 1800/2496: loss=2.544479
+  step 1900/2496: loss=2.697814
+  step 2000/2496: loss=2.745487
+  step 2100/2496: loss=2.353068
+  step 2200/2496: loss=2.618731
+  step 2300/2496: loss=2.487621
+  step 2400/2496: loss=2.535749
+Epoch 74/100: loss=2.653002 lr=0.000631
+  epoch 74: eval skipped (valEveryEpochs = 5; next scored epoch 75)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7591586421903891996)
+  step 0/2496: loss=2.491989
+  step 1/2496: loss=2.843874
+  step 2/2496: loss=2.766244
+  step 100/2496: loss=2.642092
+  step 200/2496: loss=2.492033
+  step 300/2496: loss=2.815391
+  step 400/2496: loss=2.520465
+  step 500/2496: loss=2.623812
+  step 600/2496: loss=2.712703
+  step 700/2496: loss=2.530790
+  step 800/2496: loss=2.339644
+  step 900/2496: loss=2.346834
+  step 1000/2496: loss=2.822724
+  step 1100/2496: loss=2.519923
+  step 1200/2496: loss=2.588375
+  step 1300/2496: loss=2.631836
+  step 1400/2496: loss=2.687436
+  step 1500/2496: loss=2.349648
+  step 1600/2496: loss=2.774720
+  step 1700/2496: loss=2.554993
+  step 1800/2496: loss=2.785630
+  step 1900/2496: loss=2.592083
+  step 2000/2496: loss=2.617918
+  step 2100/2496: loss=2.455251
+  step 2200/2496: loss=2.603259
+  step 2300/2496: loss=2.572877
+  step 2400/2496: loss=2.376969
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792983967.255749   96927 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792983969.372835   97081 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792983970.029759   97156 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792983972.149751   97298 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 75/100: loss=2.638014 lr=0.000586
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 75: test_acc = 36771/50000 = 73.542000%  top5 = 45804/50000 = 91.608000%  [95% CI 73.15–73.93]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e75.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 3742929633157955344)
+  step 0/2496: loss=2.679755
+  step 1/2496: loss=2.775466
+  step 2/2496: loss=2.819090
+  step 100/2496: loss=2.742861
+  step 200/2496: loss=2.630724
+  step 300/2496: loss=2.398427
+  step 400/2496: loss=2.525617
+  step 500/2496: loss=2.772456
+  step 600/2496: loss=2.624128
+  step 700/2496: loss=2.443839
+  step 800/2496: loss=2.761332
+  step 900/2496: loss=2.744761
+  step 1000/2496: loss=2.890269
+  step 1100/2496: loss=2.721349
+  step 1200/2496: loss=2.807813
+  step 1300/2496: loss=2.677540
+  step 1400/2496: loss=2.465278
+  step 1500/2496: loss=2.901676
+  step 1600/2496: loss=2.416522
+  step 1700/2496: loss=2.326809
+  step 1800/2496: loss=2.738361
+  step 1900/2496: loss=2.613253
+  step 2000/2496: loss=2.612238
+  step 2100/2496: loss=2.765749
+  step 2200/2496: loss=2.617047
+  step 2300/2496: loss=2.377187
+  step 2400/2496: loss=2.535389
+Epoch 76/100: loss=2.619371 lr=0.000542
+  epoch 76: eval skipped (valEveryEpochs = 5; next scored epoch 80)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7098613090479284137)
+  step 0/2496: loss=2.610435
+  step 1/2496: loss=2.761967
+  step 2/2496: loss=2.813287
+  step 100/2496: loss=2.545034
+  step 200/2496: loss=2.922540
+  step 300/2496: loss=2.454653
+  step 400/2496: loss=2.952027
+  step 500/2496: loss=2.576187
+  step 600/2496: loss=2.632847
+  step 700/2496: loss=2.685934
+  step 800/2496: loss=2.424857
+  step 900/2496: loss=2.309647
+  step 1000/2496: loss=2.664168
+  step 1100/2496: loss=2.389455
+  step 1200/2496: loss=2.749488
+  step 1300/2496: loss=2.538434
+  step 1400/2496: loss=2.876833
+  step 1500/2496: loss=2.448689
+  step 1600/2496: loss=2.564628
+  step 1700/2496: loss=2.398948
+  step 1800/2496: loss=2.473791
+  step 1900/2496: loss=2.681761
+  step 2000/2496: loss=2.574918
+  step 2100/2496: loss=2.722326
+  step 2200/2496: loss=2.560898
+  step 2300/2496: loss=2.338336
+  step 2400/2496: loss=2.513937
+Epoch 77/100: loss=2.610673 lr=0.000500
+  epoch 77: eval skipped (valEveryEpochs = 5; next scored epoch 80)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 4110568810519016318)
+  step 0/2496: loss=2.665029
+  step 1/2496: loss=2.315866
+  step 2/2496: loss=2.841550
+  step 100/2496: loss=2.518529
+  step 200/2496: loss=2.693703
+  step 300/2496: loss=2.537583
+  step 400/2496: loss=2.643112
+  step 500/2496: loss=2.483047
+  step 600/2496: loss=2.319355
+  step 700/2496: loss=2.724409
+  step 800/2496: loss=2.842640
+  step 900/2496: loss=2.685854
+  step 1000/2496: loss=2.705720
+  step 1100/2496: loss=2.311865
+  step 1200/2496: loss=2.686905
+  step 1300/2496: loss=2.410271
+  step 1400/2496: loss=2.671935
+  step 1500/2496: loss=2.500603
+  step 1600/2496: loss=2.613941
+  step 1700/2496: loss=2.482630
+  step 1800/2496: loss=2.534688
+  step 1900/2496: loss=3.024294
+  step 2000/2496: loss=2.542696
+  step 2100/2496: loss=2.697179
+  step 2200/2496: loss=2.570687
+  step 2300/2496: loss=2.372395
+  step 2400/2496: loss=2.841966
+Epoch 78/100: loss=2.593602 lr=0.000459
+  epoch 78: eval skipped (valEveryEpochs = 5; next scored epoch 80)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 12513913567821666295)
+  step 0/2496: loss=2.444782
+  step 1/2496: loss=2.588021
+  step 2/2496: loss=2.364444
+  step 100/2496: loss=2.509427
+  step 200/2496: loss=2.482022
+  step 300/2496: loss=2.109557
+  step 400/2496: loss=2.546605
+  step 500/2496: loss=2.800855
+  step 600/2496: loss=2.538206
+  step 700/2496: loss=2.515272
+  step 800/2496: loss=2.434672
+  step 900/2496: loss=2.557171
+  step 1000/2496: loss=2.572103
+  step 1100/2496: loss=2.954070
+  step 1200/2496: loss=2.793286
+  step 1300/2496: loss=2.782045
+  step 1400/2496: loss=2.720670
+  step 1500/2496: loss=2.781682
+  step 1600/2496: loss=2.582254
+  step 1700/2496: loss=2.702399
+  step 1800/2496: loss=2.633787
+  step 1900/2496: loss=2.641106
+  step 2000/2496: loss=2.316051
+  step 2100/2496: loss=2.673513
+  step 2200/2496: loss=2.514882
+  step 2300/2496: loss=2.695235
+  step 2400/2496: loss=2.462621
+Epoch 79/100: loss=2.585781 lr=0.000420
+  epoch 79: eval skipped (valEveryEpochs = 5; next scored epoch 80)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 3328488304718215266)
+  step 0/2496: loss=2.921015
+  step 1/2496: loss=2.617933
+  step 2/2496: loss=2.511495
+  step 100/2496: loss=2.529379
+  step 200/2496: loss=2.849957
+  step 300/2496: loss=2.312573
+  step 400/2496: loss=2.722956
+  step 500/2496: loss=2.434798
+  step 600/2496: loss=2.512459
+  step 700/2496: loss=2.514086
+  step 800/2496: loss=2.719362
+  step 900/2496: loss=2.960495
+  step 1000/2496: loss=2.547386
+  step 1100/2496: loss=2.754028
+  step 1200/2496: loss=2.420547
+  step 1300/2496: loss=2.437248
+  step 1400/2496: loss=2.393971
+  step 1500/2496: loss=2.579586
+  step 1600/2496: loss=2.448258
+  step 1700/2496: loss=2.111549
+  step 1800/2496: loss=2.570922
+  step 1900/2496: loss=2.689684
+  step 2000/2496: loss=2.355058
+  step 2100/2496: loss=2.712358
+  step 2200/2496: loss=2.583745
+  step 2300/2496: loss=2.799906
+  step 2400/2496: loss=2.641930
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792987152.469749  110866 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792987154.589852  111009 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792987155.224087  111087 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792987157.318464  111241 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 80/100: loss=2.578750 lr=0.000382
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 80: test_acc = 37524/50000 = 75.048000%  top5 = 46219/50000 = 92.438000%  [95% CI 74.67–75.43]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e80.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 1174676679352251872)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792987198.613902  111435 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 36), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 3 of 4 replaced after epoch 80 (generation 8, seed 36)
+  step 0/2496: loss=2.544658
+  step 1/2496: loss=2.573716
+I0000 00:00:1792987202.547262  111588 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 2/2496: loss=2.713290
+  step 100/2496: loss=2.625126
+  step 200/2496: loss=2.603491
+  step 300/2496: loss=2.497583
+  step 400/2496: loss=2.579085
+  step 500/2496: loss=2.600739
+  step 600/2496: loss=2.705543
+  step 700/2496: loss=2.640576
+  step 800/2496: loss=2.381193
+  step 900/2496: loss=2.616524
+  step 1000/2496: loss=2.883748
+  step 1100/2496: loss=2.547449
+  step 1200/2496: loss=2.492153
+  step 1300/2496: loss=2.705994
+  step 1400/2496: loss=2.636310
+  step 1500/2496: loss=2.494227
+  step 1600/2496: loss=2.617778
+  step 1700/2496: loss=2.562785
+  step 1800/2496: loss=2.296451
+  step 1900/2496: loss=2.529735
+  step 2000/2496: loss=2.811967
+  step 2100/2496: loss=2.625611
+  step 2200/2496: loss=2.407932
+  step 2300/2496: loss=2.757386
+  step 2400/2496: loss=2.186576
+Epoch 81/100: loss=2.559254 lr=0.000346
+  epoch 81: eval skipped (valEveryEpochs = 5; next scored epoch 85)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 9988042531522748596)
+  step 0/2496: loss=2.341729
+  step 1/2496: loss=2.447395
+  step 2/2496: loss=2.484586
+  step 100/2496: loss=2.301150
+  step 200/2496: loss=2.321851
+  step 300/2496: loss=2.799715
+  step 400/2496: loss=2.560238
+  step 500/2496: loss=2.729186
+  step 600/2496: loss=2.382721
+  step 700/2496: loss=2.298333
+  step 800/2496: loss=2.679109
+  step 900/2496: loss=2.384093
+  step 1000/2496: loss=2.481808
+  step 1100/2496: loss=2.360152
+  step 1200/2496: loss=2.675386
+  step 1300/2496: loss=2.574113
+  step 1400/2496: loss=2.563234
+  step 1500/2496: loss=2.973663
+  step 1600/2496: loss=2.585414
+  step 1700/2496: loss=2.464870
+  step 1800/2496: loss=2.248566
+  step 1900/2496: loss=2.380346
+  step 2000/2496: loss=2.391276
+  step 2100/2496: loss=2.397083
+  step 2200/2496: loss=2.755106
+  step 2300/2496: loss=2.535637
+  step 2400/2496: loss=2.405728
+Epoch 82/100: loss=2.545898 lr=0.000311
+  epoch 82: eval skipped (valEveryEpochs = 5; next scored epoch 85)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 12290882455890923934)
+  step 0/2496: loss=2.445310
+  step 1/2496: loss=2.490987
+  step 2/2496: loss=2.483756
+  step 100/2496: loss=2.745116
+  step 200/2496: loss=2.552324
+  step 300/2496: loss=2.690703
+  step 400/2496: loss=2.642157
+  step 500/2496: loss=2.222598
+  step 600/2496: loss=2.255365
+  step 700/2496: loss=2.251459
+  step 800/2496: loss=2.443568
+  step 900/2496: loss=2.764128
+  step 1000/2496: loss=2.496512
+  step 1100/2496: loss=2.625161
+  step 1200/2496: loss=2.548739
+  step 1300/2496: loss=2.505534
+  step 1400/2496: loss=2.932732
+  step 1500/2496: loss=2.182682
+  step 1600/2496: loss=2.479972
+  step 1700/2496: loss=2.571182
+  step 1800/2496: loss=2.378176
+  step 1900/2496: loss=2.555470
+  step 2000/2496: loss=2.474238
+  step 2100/2496: loss=2.414244
+  step 2200/2496: loss=2.527524
+  step 2300/2496: loss=2.718161
+  step 2400/2496: loss=2.591043
+Epoch 83/100: loss=2.538341 lr=0.000279
+  epoch 83: eval skipped (valEveryEpochs = 5; next scored epoch 85)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 17248350367956348675)
+  step 0/2496: loss=2.456309
+  step 1/2496: loss=2.819320
+  step 2/2496: loss=2.475456
+  step 100/2496: loss=2.902849
+  step 200/2496: loss=2.177494
+  step 300/2496: loss=2.504148
+  step 400/2496: loss=2.639668
+  step 500/2496: loss=2.419872
+  step 600/2496: loss=2.547268
+  step 700/2496: loss=2.581753
+  step 800/2496: loss=2.455883
+  step 900/2496: loss=2.376863
+  step 1000/2496: loss=2.444005
+  step 1100/2496: loss=2.595220
+  step 1200/2496: loss=2.476417
+  step 1300/2496: loss=2.519677
+  step 1400/2496: loss=2.348893
+  step 1500/2496: loss=2.614159
+  step 1600/2496: loss=2.404674
+  step 1700/2496: loss=2.751033
+  step 1800/2496: loss=2.746871
+  step 1900/2496: loss=2.465845
+  step 2000/2496: loss=2.629742
+  step 2100/2496: loss=2.837530
+  step 2200/2496: loss=2.433226
+  step 2300/2496: loss=2.428756
+  step 2400/2496: loss=2.602516
+Epoch 84/100: loss=2.530578 lr=0.000247
+  epoch 84: eval skipped (valEveryEpochs = 5; next scored epoch 85)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 3366384431486653690)
+  step 0/2496: loss=2.535920
+  step 1/2496: loss=2.622492
+  step 2/2496: loss=2.609625
+  step 100/2496: loss=2.719918
+  step 200/2496: loss=2.357495
+  step 300/2496: loss=2.415409
+  step 400/2496: loss=2.663247
+  step 500/2496: loss=2.793632
+  step 600/2496: loss=2.629597
+  step 700/2496: loss=2.309416
+  step 800/2496: loss=2.560364
+  step 900/2496: loss=2.301975
+  step 1000/2496: loss=2.366166
+  step 1100/2496: loss=2.299788
+  step 1200/2496: loss=2.593179
+  step 1300/2496: loss=2.296944
+  step 1400/2496: loss=2.781454
+  step 1500/2496: loss=2.520230
+  step 1600/2496: loss=2.575431
+  step 1700/2496: loss=2.601789
+  step 1800/2496: loss=2.620852
+  step 1900/2496: loss=2.418372
+  step 2000/2496: loss=2.321757
+  step 2100/2496: loss=2.448310
+  step 2200/2496: loss=2.600769
+  step 2300/2496: loss=2.375677
+  step 2400/2496: loss=2.211497
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792990343.481961  124122 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792990345.604669  124263 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792990346.253106  124339 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792990348.361083  124479 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 85/100: loss=2.516921 lr=0.000218
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 85: test_acc = 38086/50000 = 76.172000%  top5 = 46480/50000 = 92.960000%  [95% CI 75.80–76.54]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e85.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2028911737529431922)
+  step 0/2496: loss=2.504741
+  step 1/2496: loss=2.571986
+  step 2/2496: loss=2.668434
+  step 100/2496: loss=2.695380
+  step 200/2496: loss=2.584643
+  step 300/2496: loss=2.413811
+  step 400/2496: loss=2.642394
+  step 500/2496: loss=2.516116
+  step 600/2496: loss=2.432018
+  step 700/2496: loss=2.172566
+  step 800/2496: loss=2.648226
+  step 900/2496: loss=2.357243
+  step 1000/2496: loss=2.676561
+  step 1100/2496: loss=2.550803
+  step 1200/2496: loss=2.720680
+  step 1300/2496: loss=2.515437
+  step 1400/2496: loss=2.236807
+  step 1500/2496: loss=2.462684
+  step 1600/2496: loss=2.441359
+  step 1700/2496: loss=2.614200
+  step 1800/2496: loss=2.490739
+  step 1900/2496: loss=2.216063
+  step 2000/2496: loss=2.345783
+  step 2100/2496: loss=2.291897
+  step 2200/2496: loss=2.045474
+  step 2300/2496: loss=2.559642
+  step 2400/2496: loss=2.521956
+Epoch 86/100: loss=2.508599 lr=0.000190
+  epoch 86: eval skipped (valEveryEpochs = 5; next scored epoch 90)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 919220074722254681)
+  step 0/2496: loss=2.443503
+  step 1/2496: loss=2.780841
+  step 2/2496: loss=2.621524
+  step 100/2496: loss=2.558673
+  step 200/2496: loss=2.686734
+  step 300/2496: loss=2.592587
+  step 400/2496: loss=2.083556
+  step 500/2496: loss=2.693977
+  step 600/2496: loss=2.414457
+  step 700/2496: loss=2.376976
+  step 800/2496: loss=2.470824
+  step 900/2496: loss=2.606182
+  step 1000/2496: loss=2.244982
+  step 1100/2496: loss=2.646359
+  step 1200/2496: loss=2.326254
+  step 1300/2496: loss=2.551247
+  step 1400/2496: loss=2.452131
+  step 1500/2496: loss=2.657234
+  step 1600/2496: loss=2.426785
+  step 1700/2496: loss=2.495134
+  step 1800/2496: loss=2.495731
+  step 1900/2496: loss=2.379045
+  step 2000/2496: loss=2.463528
+  step 2100/2496: loss=2.539900
+  step 2200/2496: loss=2.538134
+  step 2300/2496: loss=2.584644
+  step 2400/2496: loss=2.601958
+Epoch 87/100: loss=2.497966 lr=0.000165
+  epoch 87: eval skipped (valEveryEpochs = 5; next scored epoch 90)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 4568902426871885651)
+  step 0/2496: loss=2.312083
+  step 1/2496: loss=2.650394
+  step 2/2496: loss=2.359878
+  step 100/2496: loss=2.665313
+  step 200/2496: loss=2.302085
+  step 300/2496: loss=2.412876
+  step 400/2496: loss=2.259358
+  step 500/2496: loss=2.748798
+  step 600/2496: loss=2.753518
+  step 700/2496: loss=2.478357
+  step 800/2496: loss=2.651981
+  step 900/2496: loss=2.346958
+  step 1000/2496: loss=2.399001
+  step 1100/2496: loss=2.258920
+  step 1200/2496: loss=2.813868
+  step 1300/2496: loss=2.425159
+  step 1400/2496: loss=2.642215
+  step 1500/2496: loss=2.564844
+  step 1600/2496: loss=2.364980
+  step 1700/2496: loss=2.378256
+  step 1800/2496: loss=2.426338
+  step 1900/2496: loss=2.618467
+  step 2000/2496: loss=2.622931
+  step 2100/2496: loss=2.394099
+  step 2200/2496: loss=2.441990
+  step 2300/2496: loss=2.508924
+  step 2400/2496: loss=2.323789
+Epoch 88/100: loss=2.491383 lr=0.000141
+  epoch 88: eval skipped (valEveryEpochs = 5; next scored epoch 90)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 11556650136187989849)
+  step 0/2496: loss=2.447763
+  step 1/2496: loss=2.439545
+  step 2/2496: loss=2.292983
+  step 100/2496: loss=2.409630
+  step 200/2496: loss=2.428864
+  step 300/2496: loss=2.486406
+  step 400/2496: loss=2.507602
+  step 500/2496: loss=2.504828
+  step 600/2496: loss=2.538050
+  step 700/2496: loss=2.341008
+  step 800/2496: loss=2.698380
+  step 900/2496: loss=2.479012
+  step 1000/2496: loss=2.537621
+  step 1100/2496: loss=2.519709
+  step 1200/2496: loss=2.669401
+  step 1300/2496: loss=2.379862
+  step 1400/2496: loss=2.681928
+  step 1500/2496: loss=2.402443
+  step 1600/2496: loss=2.462228
+  step 1700/2496: loss=2.423677
+  step 1800/2496: loss=2.382339
+  step 1900/2496: loss=2.537065
+  step 2000/2496: loss=2.451705
+  step 2100/2496: loss=2.394676
+  step 2200/2496: loss=2.536298
+  step 2300/2496: loss=2.774104
+  step 2400/2496: loss=2.336788
+Epoch 89/100: loss=2.476352 lr=0.000118
+  epoch 89: eval skipped (valEveryEpochs = 5; next scored epoch 90)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 6429069071640791446)
+  step 0/2496: loss=2.255585
+  step 1/2496: loss=2.314726
+  step 2/2496: loss=2.729689
+  step 100/2496: loss=2.339575
+  step 200/2496: loss=2.694924
+  step 300/2496: loss=2.708417
+  step 400/2496: loss=2.628760
+  step 500/2496: loss=2.396380
+  step 600/2496: loss=2.564238
+  step 700/2496: loss=2.232657
+  step 800/2496: loss=2.367592
+  step 900/2496: loss=2.539139
+  step 1000/2496: loss=2.517397
+  step 1100/2496: loss=2.445719
+  step 1200/2496: loss=2.298347
+  step 1300/2496: loss=2.471311
+  step 1400/2496: loss=2.581302
+  step 1500/2496: loss=2.348816
+  step 1600/2496: loss=2.507925
+  step 1700/2496: loss=2.502912
+  step 1800/2496: loss=2.745235
+  step 1900/2496: loss=2.666178
+  step 2000/2496: loss=2.306541
+  step 2100/2496: loss=2.582734
+  step 2200/2496: loss=2.220585
+  step 2300/2496: loss=2.515415
+  step 2400/2496: loss=2.422409
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792993527.273860  136972 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792993529.389889  137114 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792993530.040300  137190 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792993532.153356  137330 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 90/100: loss=2.475155 lr=0.000098
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 90: test_acc = 38451/50000 = 76.902000%  top5 = 46613/50000 = 93.226000%  [95% CI 76.53–77.27]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e90.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 6436299842864444073)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792993573.602992  137670 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — train split, batch 512, 196608 floats/img (seed 37), UINT8 wire (normalized in C)
+  ▸ shim respawn: producer 0 of 4 replaced after epoch 90 (generation 9, seed 37)
+I0000 00:00:1792993577.197938  137863 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+  step 0/2496: loss=2.737630
+  step 1/2496: loss=2.329027
+  step 2/2496: loss=2.320451
+  step 100/2496: loss=2.520918
+  step 200/2496: loss=2.235860
+  step 300/2496: loss=2.490250
+  step 400/2496: loss=2.427671
+  step 500/2496: loss=2.561750
+  step 600/2496: loss=2.688799
+  step 700/2496: loss=2.630636
+  step 800/2496: loss=2.714627
+  step 900/2496: loss=2.241531
+  step 1000/2496: loss=2.292960
+  step 1100/2496: loss=2.166903
+  step 1200/2496: loss=2.419143
+  step 1300/2496: loss=2.206380
+  step 1400/2496: loss=2.616379
+  step 1500/2496: loss=2.427194
+  step 1600/2496: loss=2.726993
+  step 1700/2496: loss=2.467772
+  step 1800/2496: loss=2.583999
+  step 1900/2496: loss=2.808770
+  step 2000/2496: loss=2.502228
+  step 2100/2496: loss=2.430658
+  step 2200/2496: loss=2.265461
+  step 2300/2496: loss=2.489236
+  step 2400/2496: loss=2.830657
+Epoch 91/100: loss=2.469815 lr=0.000079
+  epoch 91: eval skipped (valEveryEpochs = 5; next scored epoch 95)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2115442859421689202)
+  step 0/2496: loss=2.322163
+  step 1/2496: loss=2.228969
+  step 2/2496: loss=2.432765
+  step 100/2496: loss=2.627784
+  step 200/2496: loss=2.372696
+  step 300/2496: loss=2.331825
+  step 400/2496: loss=2.501941
+  step 500/2496: loss=2.600874
+  step 600/2496: loss=2.503413
+  step 700/2496: loss=2.574262
+  step 800/2496: loss=2.458439
+  step 900/2496: loss=2.495987
+  step 1000/2496: loss=2.313195
+  step 1100/2496: loss=2.508467
+  step 1200/2496: loss=2.226720
+  step 1300/2496: loss=2.678474
+  step 1400/2496: loss=2.589261
+  step 1500/2496: loss=2.603810
+  step 1600/2496: loss=2.718410
+  step 1700/2496: loss=2.606017
+  step 1800/2496: loss=2.593102
+  step 1900/2496: loss=2.483382
+  step 2000/2496: loss=2.353017
+  step 2100/2496: loss=2.553151
+  step 2200/2496: loss=2.532976
+  step 2300/2496: loss=2.545053
+  step 2400/2496: loss=2.524877
+Epoch 92/100: loss=2.461971 lr=0.000063
+  epoch 92: eval skipped (valEveryEpochs = 5; next scored epoch 95)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 11266565150104621162)
+  step 0/2496: loss=2.424074
+  step 1/2496: loss=2.569835
+  step 2/2496: loss=2.591380
+  step 100/2496: loss=2.587115
+  step 200/2496: loss=2.479693
+  step 300/2496: loss=2.463434
+  step 400/2496: loss=2.338747
+  step 500/2496: loss=2.665038
+  step 600/2496: loss=2.555279
+  step 700/2496: loss=2.418153
+  step 800/2496: loss=2.364279
+  step 900/2496: loss=2.536798
+  step 1000/2496: loss=2.498733
+  step 1100/2496: loss=2.353801
+  step 1200/2496: loss=2.299621
+  step 1300/2496: loss=2.786106
+  step 1400/2496: loss=2.260957
+  step 1500/2496: loss=2.401516
+  step 1600/2496: loss=2.305537
+  step 1700/2496: loss=2.350705
+  step 1800/2496: loss=2.226195
+  step 1900/2496: loss=2.047040
+  step 2000/2496: loss=2.569921
+  step 2100/2496: loss=2.841228
+  step 2200/2496: loss=2.398507
+  step 2300/2496: loss=2.624389
+  step 2400/2496: loss=2.602983
+Epoch 93/100: loss=2.458316 lr=0.000048
+  epoch 93: eval skipped (valEveryEpochs = 5; next scored epoch 95)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 18392391272369389410)
+  step 0/2496: loss=2.509555
+  step 1/2496: loss=2.527834
+  step 2/2496: loss=2.580727
+  step 100/2496: loss=2.373223
+  step 200/2496: loss=2.301613
+  step 300/2496: loss=2.143465
+  step 400/2496: loss=2.502310
+  step 500/2496: loss=2.571161
+  step 600/2496: loss=2.402635
+  step 700/2496: loss=2.266233
+  step 800/2496: loss=2.183286
+  step 900/2496: loss=2.439102
+  step 1000/2496: loss=2.615750
+  step 1100/2496: loss=2.319374
+  step 1200/2496: loss=2.284544
+  step 1300/2496: loss=2.563641
+  step 1400/2496: loss=2.499515
+  step 1500/2496: loss=2.532548
+  step 1600/2496: loss=2.484307
+  step 1700/2496: loss=2.190240
+  step 1800/2496: loss=2.481479
+  step 1900/2496: loss=2.370888
+  step 2000/2496: loss=2.522444
+  step 2100/2496: loss=2.179688
+  step 2200/2496: loss=2.595545
+  step 2300/2496: loss=2.737734
+  step 2400/2496: loss=2.533667
+Epoch 94/100: loss=2.452750 lr=0.000035
+  epoch 94: eval skipped (valEveryEpochs = 5; next scored epoch 95)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 15755957682976217823)
+  step 0/2496: loss=2.605027
+  step 1/2496: loss=2.617401
+  step 2/2496: loss=2.399108
+  step 100/2496: loss=2.653939
+  step 200/2496: loss=2.254847
+  step 300/2496: loss=2.430809
+  step 400/2496: loss=2.389296
+  step 500/2496: loss=2.605421
+  step 600/2496: loss=2.580956
+  step 700/2496: loss=2.572749
+  step 800/2496: loss=2.440298
+  step 900/2496: loss=2.513767
+  step 1000/2496: loss=2.515095
+  step 1100/2496: loss=2.422348
+  step 1200/2496: loss=2.305989
+  step 1300/2496: loss=2.524583
+  step 1400/2496: loss=2.471119
+  step 1500/2496: loss=2.294494
+  step 1600/2496: loss=2.401201
+  step 1700/2496: loss=2.659579
+  step 1800/2496: loss=2.278391
+  step 1900/2496: loss=2.363376
+  step 2000/2496: loss=2.186910
+  step 2100/2496: loss=2.653191
+  step 2200/2496: loss=2.369757
+  step 2300/2496: loss=2.396965
+  step 2400/2496: loss=2.609144
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792996724.495787  150210 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792996726.599741  150385 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792996727.249300  150462 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792996729.357017  150601 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 95/100: loss=2.447341 lr=0.000025
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 95: test_acc = 38711/50000 = 77.422000%  top5 = 46696/50000 = 93.392000%  [95% CI 77.05–77.79]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e95.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 5509479351279834115)
+  step 0/2496: loss=2.487773
+  step 1/2496: loss=2.527360
+  step 2/2496: loss=2.521604
+  step 100/2496: loss=2.536527
+  step 200/2496: loss=2.632267
+  step 300/2496: loss=2.362086
+  step 400/2496: loss=2.037828
+  step 500/2496: loss=2.611272
+  step 600/2496: loss=2.898374
+  step 700/2496: loss=2.214818
+  step 800/2496: loss=2.287290
+  step 900/2496: loss=2.256668
+  step 1000/2496: loss=2.379908
+  step 1100/2496: loss=2.555881
+  step 1200/2496: loss=2.437878
+  step 1300/2496: loss=2.383464
+  step 1400/2496: loss=2.267957
+  step 1500/2496: loss=2.264740
+  step 1600/2496: loss=2.389694
+  step 1700/2496: loss=2.477972
+  step 1800/2496: loss=2.466897
+  step 1900/2496: loss=2.316333
+  step 2000/2496: loss=2.598526
+  step 2100/2496: loss=2.398840
+  step 2200/2496: loss=2.635992
+  step 2300/2496: loss=2.356061
+  step 2400/2496: loss=2.566259
+Epoch 96/100: loss=2.441354 lr=0.000016
+  epoch 96: eval skipped (valEveryEpochs = 5; next scored epoch 100)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 3965111093044958123)
+  step 0/2496: loss=2.874052
+  step 1/2496: loss=2.401587
+  step 2/2496: loss=2.178133
+  step 100/2496: loss=2.508526
+  step 200/2496: loss=2.262501
+  step 300/2496: loss=2.447863
+  step 400/2496: loss=2.293085
+  step 500/2496: loss=2.497146
+  step 600/2496: loss=2.606573
+  step 700/2496: loss=2.485796
+  step 800/2496: loss=2.416138
+  step 900/2496: loss=2.492477
+  step 1000/2496: loss=2.484398
+  step 1100/2496: loss=2.440151
+  step 1200/2496: loss=2.412672
+  step 1300/2496: loss=2.351192
+  step 1400/2496: loss=2.392416
+  step 1500/2496: loss=2.764640
+  step 1600/2496: loss=2.728914
+  step 1700/2496: loss=2.309268
+  step 1800/2496: loss=2.247493
+  step 1900/2496: loss=2.262354
+  step 2000/2496: loss=2.487662
+  step 2100/2496: loss=2.356036
+  step 2200/2496: loss=2.395762
+  step 2300/2496: loss=2.267911
+  step 2400/2496: loss=2.652796
+Epoch 97/100: loss=2.446133 lr=0.000009
+  epoch 97: eval skipped (valEveryEpochs = 5; next scored epoch 100)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 8904190402863112453)
+  step 0/2496: loss=2.399293
+  step 1/2496: loss=2.421711
+  step 2/2496: loss=2.572929
+  step 100/2496: loss=2.175160
+  step 200/2496: loss=2.360409
+  step 300/2496: loss=2.712809
+  step 400/2496: loss=2.193893
+  step 500/2496: loss=2.497432
+  step 600/2496: loss=2.472659
+  step 700/2496: loss=2.745512
+  step 800/2496: loss=2.575771
+  step 900/2496: loss=2.361564
+  step 1000/2496: loss=2.563511
+  step 1100/2496: loss=2.504165
+  step 1200/2496: loss=2.612336
+  step 1300/2496: loss=2.482894
+  step 1400/2496: loss=2.409348
+  step 1500/2496: loss=2.528668
+  step 1600/2496: loss=2.669914
+  step 1700/2496: loss=2.466051
+  step 1800/2496: loss=2.321155
+  step 1900/2496: loss=2.391271
+  step 2000/2496: loss=2.391788
+  step 2100/2496: loss=2.572260
+  step 2200/2496: loss=2.235189
+  step 2300/2496: loss=2.358114
+  step 2400/2496: loss=2.472775
+Epoch 98/100: loss=2.442572 lr=0.000004
+  epoch 98: eval skipped (valEveryEpochs = 5; next scored epoch 100)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 10337611185668133529)
+  step 0/2496: loss=2.329966
+  step 1/2496: loss=2.508242
+  step 2/2496: loss=2.541095
+  step 100/2496: loss=2.428487
+  step 200/2496: loss=2.343900
+  step 300/2496: loss=2.549928
+  step 400/2496: loss=2.384337
+  step 500/2496: loss=2.527269
+  step 600/2496: loss=2.261738
+  step 700/2496: loss=2.284299
+  step 800/2496: loss=2.437350
+  step 900/2496: loss=2.540849
+  step 1000/2496: loss=2.373126
+  step 1100/2496: loss=2.489410
+  step 1200/2496: loss=2.348822
+  step 1300/2496: loss=2.332762
+  step 1400/2496: loss=2.251804
+  step 1500/2496: loss=2.546556
+  step 1600/2496: loss=2.472697
+  step 1700/2496: loss=2.579460
+  step 1800/2496: loss=2.378983
+  step 1900/2496: loss=2.520417
+  step 2000/2496: loss=2.359702
+  step 2100/2496: loss=2.334179
+  step 2200/2496: loss=2.327946
+  step 2300/2496: loss=2.697859
+  step 2400/2496: loss=2.024654
+Epoch 99/100: loss=2.446897 lr=0.000001
+  epoch 99: eval skipped (valEveryEpochs = 5; next scored epoch 100)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 2891072042646085082)
+  step 0/2496: loss=2.240623
+  step 1/2496: loss=2.375933
+  step 2/2496: loss=2.757820
+  step 100/2496: loss=2.366629
+  step 200/2496: loss=2.356267
+  step 300/2496: loss=2.161262
+  step 400/2496: loss=2.412428
+  step 500/2496: loss=2.356968
+  step 600/2496: loss=2.621546
+  step 700/2496: loss=2.365577
+  step 800/2496: loss=2.420154
+  step 900/2496: loss=2.571067
+  step 1000/2496: loss=2.373688
+  step 1100/2496: loss=2.427942
+  step 1200/2496: loss=2.410293
+  step 1300/2496: loss=2.345985
+  step 1400/2496: loss=2.292162
+  step 1500/2496: loss=2.396268
+  step 1600/2496: loss=2.629598
+  step 1700/2496: loss=2.291051
+  step 1800/2496: loss=2.583014
+  step 1900/2496: loss=2.135227
+  step 2000/2496: loss=2.625017
+  step 2100/2496: loss=2.702785
+  step 2200/2496: loss=2.705899
+  step 2300/2496: loss=2.203135
+  step 2400/2496: loss=2.488661
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792999917.867941  190416 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792999920.001322  190571 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792999920.661177  190648 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792999922.775006  190788 tf_record_dataset_op.cc:396] The default buffer size is 262144, which is overridden by the user specified `buffer_size` of 8388608
+[pjrt_ffi] RESIDENT: @mnv4in256_fwd_eval holds 387 parameter tensors (37.3 MB) on 4 devices; they stop crossing PCIe from here
+Epoch 100/100: loss=2.445283 lr=0.000000
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 0)
+  imagenet shim: jax/.lake/build/generated_mobilenet_v4_imagenet_full_shim.py — validation split, batch 256, 196608 floats/img (seed 1)
+  imagenet shim: 2 sharded producers (round-robin over batches)
+  ▸ val: STREAMED per pass — 2 batch-block producer(s), 256-row blocks k, k+2, … read round-robin, nothing held
+  ▸ val = all 50000 streamed (timm's denominator)
+  epoch 100: test_acc = 38708/50000 = 77.416000%  top5 = 46739/50000 = 93.478000%  [95% CI 77.05–77.78]
+    per-example top-1 bitmap -> runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4in256_accdp8x128wxdropdowd01bf16_accdp8x128wxdropdowd01bf16_e100.bin (50000 bytes)
+    BN companion -> .lake/build/mnv4in256_accdp8x128wxdropdowd01bf16_ckpt_xla_e100dp26.bin.bn (67904 floats x 2, hash 7513337219876521728)
+done (trained MobileNetV4-Conv-M (ImageNet-1k, paper tier, 256²) accdp8x128wxdropdowd01bf16 + cosine/warmup via packed threading).

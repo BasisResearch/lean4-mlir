@@ -36,3 +36,7 @@ The pair ties: −0.04 is a tenth of one run's ±0.37 95 % half-width. The curve
 the way through; at e60 they are 34,750 and 34,753 correct. The 500-epoch recipe this tier cuts from is
 not run. McNemar needs a JAX bitmap, which the trainer does not write; the checkpoint is
 `/home/skoonce/mnv4_full100_r256_2614/mobilenet_v4_imagenet_full100.state.npz` for a rescore.
+
+**McNemar, 2026-10-26:** the JAX e100 state rescored at f32 (38,691, `rescore_jax_f32.log`) against this
+run's e100 bitmap: 2,170 only JAX / 2,155 only verified, p = 0.83 (`mcnemar.txt`). The rerun after
+3333bbd5 and the cross-run pairings: `../2026-10-24-mnv4-full100-verified/RESULTS.md`.

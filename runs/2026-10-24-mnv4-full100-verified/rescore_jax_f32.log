@@ -1,0 +1,20 @@
+=== mnv4 full100 jax e100 f32 ===
+eval dtype: f32 forward (EVAL_DTYPE=f32); the module's DT=bfloat16 CONV_DT=bfloat16
+backend=gpu devices=1
+gen=generated/generated_mobilenet_v4_imagenet_full100.py
+state=/home/skoonce/mnv4_full100_dp26_2624/mobilenet_v4_imagenet_full100_e100.state.npz
+eval protocol: 256px, crop_pct=0.875000 (timm resize-then-crop, antialiased)
+state tuple (from the module): (params, opt_state, bn_state)
+  params=233 bn=154 opt=467 leaves -> 854 total (file has 854) ✓
+loaded step=31200
+scoring the live weights + running BN buffers
+
+── scoring at 256px, crop_pct 0.875 — train (the module's own)
+E1026 13:34:17.421829  284293 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1026 13:34:18.106148  284300 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+E1026 13:34:18.306705  284310 cuda_timer.cc:88] Delay kernel timed out: measured time has sub-optimal accuracy. There may be a missing warmup execution, please investigate in Nsight Systems.
+   per-image top-1 bitmap -> ../runs/2026-10-24-mnv4-full100-verified/bitmaps/mnv4_full100_jax_f32.bin (50000 bytes, 38870 set) — pair with scripts/demos/mcnemar.py
+   top-1: 38870/50000 = 77.74%   top-5: 46750/50000 = 93.50%
+
+=== FULL VAL (f32 forward (EVAL_DTYPE=f32)) ===
+256px crop 0.875  top-1  77.74%  top-5  93.50%  (50000 images)  train (the module's own)

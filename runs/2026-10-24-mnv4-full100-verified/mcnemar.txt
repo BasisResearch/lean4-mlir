@@ -1,0 +1,13 @@
+  n = 50000
+  jax-f32    38870/50000 = 77.74%   95% CI 77.37–78.10
+  verified   38708/50000 = 77.42%   95% CI 77.05–77.78
+  unpaired gap: -0.32 pt   (the CIs OVERLAP — unpaired, this is inconclusive)
+
+  paired table:  both right 36637   both wrong 9059   only jax-f32 2233   only verified 2071
+  discordant: 4304 of 50000 (8.6%) — the only images the test looks at
+  McNemar exact two-sided p = 0.01411   (chi2 w/ continuity = 6.02)
+  ✓ SIGNIFICANT at p<0.05 — jax-f32 is better on this val set, and the finite-set
+    CI above is NOT the right reason to doubt it (the comparison is paired)
+
+  ⚠ This is about these two CHECKPOINTS, not about the recipe. A claim of the form
+    'change X is worth Y points' needs n seeds per arm, not a paired test on one pair.
