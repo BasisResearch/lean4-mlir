@@ -69,7 +69,7 @@ Every definition and theorem below takes a `UibSpec` binder `s` and reads its wi
 sides 224/112/56/28/14/7, letting `den` and width-indexed `rfl`s run ends in kernel timeouts
 (`MobileNetV4FullB.lean`). Stated at a row binder they stay stuck; the capstone then
 instantiates at the 21 concrete rows — at the final side `f` (`mnv4Row{k} f`), so the one
-statement covers the 224 artifacts (`f = 7`) and the paper tier's `mnv4in256` ones (`f = 8`).
+statement covers the artifacts at 224×224 (`f = 7`) and the paper tier's `mnv4in256` ones (`f = 8`).
 
 ## The chain, node for node from `uibBackSkipGradB`
 
@@ -960,7 +960,7 @@ noncomputable def mnv4Blk21 (N f : Nat) {nCls : Nat} (w : Mnv4BWeights nCls)
     **No smoothness hypothesis and no `0 < ε`**, and `N` and `nCls` are both binders. The folds
     are `∀ cot` statements at explicitly constructed cotangents; the kink and positivity conditions
     live in the `CertLayer`s whose `.ok` `MobileNetV4FullBVJP.lean` binds. The final side `f`
-    is a binder, as ResNet-50's `q`: `f = 7` is the 224 artifacts (`mnv4in_adamdp64`, …), `f = 8`
+    is a binder, as ResNet-50's `q`: `f = 7` is the artifacts at 224×224 (`mnv4in_adamdp64`, …), `f = 8`
     the paper tier's `mnv4in256_acc{,dp}8x128wxdropdowd01bf16`. One device, at either precision:
     `bf16` selects the conv and depthwise weight nodes' kind — `false` the f32 artifacts', `true`
     the bf16 ones', read over ℝ (`Bf16Erasure`); the right-hand side is the same certified
