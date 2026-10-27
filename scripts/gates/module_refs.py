@@ -126,8 +126,8 @@ def main() -> int:
         if f.startswith(SCAN_SKIP):
             continue
         for n, line in enumerate(texts[f].split("\n"), 1):
-            if re.match(r"(?:public |meta |private )*import ", line):
-                continue                      # Lean itself resolves these
+            if re.match(r"(?:public |meta |private )*(?:import|open|export) ", line):
+                continue  # Lean resolves these, including namespaces from dependencies.
             for m in PATH.finditer(line):
                 tok = m.group(0)
                 if tok.startswith(("http", "//")) or "github.com" in line[:m.start()][-80:]:
