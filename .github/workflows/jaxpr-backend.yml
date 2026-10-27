@@ -1,0 +1,25 @@
+name: Jaxpr backend proofs
+on:
+  pull_request:
+    paths: ['LeanMlir/Jaxpr/**', 'lakefile.lean', 'lean-toolchain', '.github/workflows/jaxpr-backend.yml']
+  push:
+    branches: ['codex/jaxpr-backend']
+    paths: ['LeanMlir/Jaxpr/**', 'lakefile.lean', 'lean-toolchain', '.github/workflows/jaxpr-backend.yml']
+  workflow_dispatch:
+jobs:
+  compiler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build compiler and audit axioms
+        run: |
+          lake build JaxprBackend jaxpr-newton-step
+          lake env lean LeanMlir/Jaxpr/Audit.lean
+          if rg -n '\b(sorry|admit|sorryAx)\b|^axiom ' LeanMlir/Jaxpr --glob '*.lean'; then exit 1; fi
+      - name: Smoke test actual compiled executor
+        run: test "$(.lake/build/bin/jaxpr-newton-step 1065353216)" = '1069547520 1048576000'
