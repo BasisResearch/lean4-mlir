@@ -78,8 +78,8 @@ theorem execution_preserves_code (h : DataExecution instructions s final)
     have hr := ih hn (by simpa [hb] using sep)
     exact ⟨hr.1, hr.2.trans hb⟩
 
-/-- A concrete layout supplies separation. All UInt32 slots occupy the first
-    16 GiB; a code image of at most 4 GiB starts immediately after them.
+/-- A concrete layout supplies separation. The data arena covers every UInt32
+    slot; code starts above it, with the size bound stated in the theorem.
     This supplies only address separation, not OS mappings or permissions. -/
 theorem separated_layout (length : Nat) (h : length ≤ 4294967296) :
     CodeSeparate 17179869184 length 0 := by
