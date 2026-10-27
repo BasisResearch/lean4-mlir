@@ -3358,3 +3358,11 @@ script lint do
     ("python3", #["scripts/gates/check_render_coverage.py"]),
     ("python3", #["scripts/gates/train_step_arity.py"]),
     ("python3", #["scripts/gates/import_audit.py", "implied"])]
+
+/-- Restricted Jaxpr backend: IEEE source semantics and compiler proofs. -/
+lean_lib «JaxprBackend» where
+  srcDir := "."
+  roots := #[`LeanMlir.Jaxpr.SSA, `LeanMlir.Jaxpr.Audit]
+
+lean_exe «jaxpr-newton-step» where
+  root := `LeanMlir.Jaxpr.Main
