@@ -5,8 +5,10 @@ native execution. Every program in the source language must be covered.
 Newton is an application of that theorem. Output certificates, test corpora,
 and per-program translation validation do not meet this objective.
 
-The implementation is incomplete. The current native theorems end at a data
-projection of x86 execution. Full architectural execution remains required.
+The implementation is incomplete. Decoded-byte call execution now includes
+full register widths, output stores, MXCSR setup/restoration and the native
+return. Connecting this to memory fetch, permissions and architectural faults
+remains required.
 
 ## Checked compiler stages
 
@@ -24,12 +26,32 @@ projection of x86 execution. Full architectural execution remains required.
 | `Native/Addressing` | Generated code establishes RAX zero-extension before indexed accesses |
 | `Native/CodeMemory` | Code bytes survive data stores; concrete separated address layout |
 | `Native/Fetch` | All executions fetched from current memory preserve source outputs; executions exist |
+| `Native/Registers` | Full RAX and XMM effects refine data execution; MXCSR controls and preserved registers are tracked |
+| `Native/Regions` | Byte separation for source slots and output buffers |
+| `Native/ABIInstructions` | Output stores, MXCSR instructions and RET encodings and effects |
+| `Native/Outputs` | Output buffers contain the evaluated output list, including literals |
+| `Native/Call` | Prologue, body, outputs and epilogue preserve results and return state |
+| `Native/ProgramCounter` | Decoded-byte calls advance RIP and return through the stack; universal preservation and existence |
 
 `jaxpr_fetched_execution` quantifies over the source program, initial state and
 every execution fetched from the loaded instruction image. Its companion proves
 execution exists for every program and state with loaded, separated code. PC
 advances by decoded lengths. Stores preserve code bytes. Neither theorem requires
 a per-program certificate or an output comparison.
+
+`call_byte_pc_execution_correct` reads the caller's output buffer after the
+generated RET. It proves equality with source evaluation, the stack-derived
+return address, stack-pointer advancement, exact MXCSR restoration and callee
+register preservation. `call_byte_pc_execution_exists` supplies an execution
+for every program and state satisfying byte-region separation. Neither theorem
+assumes a preferred entry rounding mode: the prologue installs RNE and gradual
+underflow, then the epilogue restores the saved MXCSR.
+
+The byte-call relation decodes an immutable byte stream. The separate fetched
+data theorem reads current memory. Their composition into one architectural
+fetch relation is unfinished. Arithmetic permits arbitrary sticky exception
+status additions and NaN representations; exact IEEE exception status and its
+connection to processor execution remain open.
 
 Source arithmetic uses Lean 4.35's kernel-visible `Float32` model. Operations
 are add, subtract, multiply, divide, negate, absolute value and square root.
@@ -45,12 +67,11 @@ this invariant at indexed accesses without requiring it at entry.
 
 ## Required completion work
 
-1. Connect the fetched data execution relation to architectural execution:
-   canonical addresses, permissions, all register effects, MXCSR rounding and
-   exception behaviour. Code fetch and separation are proved for the data model;
-   architectural fault behaviour remains open.
-2. Emit and prove ABI output stores, literal outputs, entry and return.
-   Observing source atoms in final memory is the current data theorem's endpoint.
+1. Compose the fetched data and full-register call proofs: preserve the loaded
+   code through output and red-zone stores, and fetch using architectural RIP.
+2. Complete architectural execution: canonical addresses, page permissions,
+   CPU mode/features, valid MXCSR loads, exception status and faults, and the
+   return constraints. The current call relation has no fault semantics.
 3. Extend native lowering through control flow, loop-carried values, tensors,
    index arithmetic and the concrete linear solve used by Newton. The current
    scalar frontend does not cover the complete exported Newton loop.
@@ -75,7 +96,7 @@ lake env lean LeanMlir/Jaxpr/Audit.lean
 The final command prints `1069547520 1048576000`, the binary32 representations
 of the next iterate and residual for input 1. This is an execution smoke test.
 
-The AWS gate checks twenty-four theorem closures and rejects dependencies beyond
+The AWS gate checks thirty-four theorem closures and rejects dependencies beyond
 `propext`, `Classical.choice` and `Quot.sound`. Native-evaluation axioms are
 rejected. The proofs use core/Std; upstream neural-network proofs are outside
 this target's import closure.

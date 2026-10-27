@@ -1,9 +1,6 @@
 module
-import LeanMlir.Jaxpr.SSA
-import LeanMlir.Jaxpr.Native.Select
-import LeanMlir.Jaxpr.Native.NaNExecution
-import LeanMlir.Jaxpr.Native.Addressing
 import LeanMlir.Jaxpr.Native.Fetch
+import LeanMlir.Jaxpr.Native.ProgramCounter
 import Lean
 
 open Lean in
@@ -28,7 +25,17 @@ run_cmd do
       ``LeanMlir.Jaxpr.Native.execution_preserves_code,
       ``LeanMlir.Jaxpr.Native.separated_layout,
       ``LeanMlir.Jaxpr.Native.jaxpr_fetched_execution,
-      ``LeanMlir.Jaxpr.Native.jaxpr_fetched_execution_exists] do
+      ``LeanMlir.Jaxpr.Native.jaxpr_fetched_execution_exists,
+      ``LeanMlir.Jaxpr.Native.registerStep_data,
+      ``LeanMlir.Jaxpr.Native.register_execution_refines,
+      ``LeanMlir.Jaxpr.Native.jaxpr_register_execution,
+      ``LeanMlir.Jaxpr.Native.decodeABI_encode,
+      ``LeanMlir.Jaxpr.Native.compileOutputs_correct,
+      ``LeanMlir.Jaxpr.Native.outputs_execution_correct,
+      ``LeanMlir.Jaxpr.Native.call_execution_correct,
+      ``LeanMlir.Jaxpr.Native.call_execution_exists,
+      ``LeanMlir.Jaxpr.Native.call_byte_pc_execution_correct,
+      ``LeanMlir.Jaxpr.Native.call_byte_pc_execution_exists] do
     for axiomName in ← collectAxioms name do
       unless #[``propext, ``Classical.choice, ``Quot.sound].contains axiomName do
         throwError "Unexpected axiom in {name}: {axiomName}"
@@ -56,3 +63,13 @@ run_cmd do
 #print axioms LeanMlir.Jaxpr.Native.separated_layout
 #print axioms LeanMlir.Jaxpr.Native.jaxpr_fetched_execution
 #print axioms LeanMlir.Jaxpr.Native.jaxpr_fetched_execution_exists
+#print axioms LeanMlir.Jaxpr.Native.registerStep_data
+#print axioms LeanMlir.Jaxpr.Native.register_execution_refines
+#print axioms LeanMlir.Jaxpr.Native.jaxpr_register_execution
+#print axioms LeanMlir.Jaxpr.Native.decodeABI_encode
+#print axioms LeanMlir.Jaxpr.Native.compileOutputs_correct
+#print axioms LeanMlir.Jaxpr.Native.outputs_execution_correct
+#print axioms LeanMlir.Jaxpr.Native.call_execution_correct
+#print axioms LeanMlir.Jaxpr.Native.call_execution_exists
+#print axioms LeanMlir.Jaxpr.Native.call_byte_pc_execution_correct
+#print axioms LeanMlir.Jaxpr.Native.call_byte_pc_execution_exists
